@@ -1,0 +1,7 @@
+@font-face {
+  font-family: JianZiPu;
+  src: url("JianZiPu.otf") format("opentype");
+}
+.jzp-font {
+  font-family: JianZiPu, monospace;
+}

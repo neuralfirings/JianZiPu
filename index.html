@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>      
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>JianZiPu Font</title>
+
+    <!-- Bootstrap --> 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+		<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+
+
+    <!-- JianZiPu -->
+    <script src="dist/jianzipu.js"></script>
+    <link rel="stylesheet" href="dist/jianzipu.css">
+
+    <script>
+    	var ua = navigator.userAgent.toLowerCase(); 
+    	if (ua.indexOf('chrome') == -1) {
+    		alert('The compmiler has only been tested in Chrome. Safari has some issues, not sure about other browsers.')
+    	}
+    	$(document).ready(function() {
+    		$(".jianzipu-input").keyup(function() {
+    			sh = $(this).val()
+    			$(".jianzipu-output-string").html(sh)
+    			$('.jianzipu-output-character').val(paragraphToCharacters(sh)) //.split('\n').join('<br />'))
+    		})
+
+    		// $('.copy').click() {
+    		// 	var copyText = $(".jzp-output-character-copy")[0]
+      //     copyText.select();
+      //     copyText.setSelectionRange(0, 99999); 
+      //     navigator.clipboard.writeText(copyText.value);
+    		// }
+    	})
+    </script>
+
+    <style>
+    	label {
+    		font-weight: bold;
+    		display: block;
+    	}
+    </style>
+  </head>
+  <body>
+		<nav class="nav"></nav>  
+		<div class="container-fluid" id="content">
+			
+			<div class="row">
+				<div class="col">
+					<br />
+					<h1>JianZiPu Font</h1>
+				</div>
+			</div>
+
+			<div class="row" style="margin-right: 1.5rem">
+				<div class="col">
+					<label>Input Example (String)</label>
+					5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)
+					<br/>
+				</div>
+				<div class="col jzp">
+					<label>Output Example (String)</label>
+					[[5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)]]
+					<br/>
+				</div>
+				<div class="col jzp">
+					<label>Compiled Character (JianZiPu Font)</label>
+					<div style="font-size: 3rem;">
+					[[[5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)]]]
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col">
+					<br />
+					<h3>Try it</h3>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col">
+					<label>Input</label>
+					<pre><textarea class="jianzipu-input form-control" rows="9" placeholder="ex: 6ks(6.7) "></textarea></pre>
+					<br />
+					<label>Output (String)</label>
+					<div class="jzp-font jianzipu-output-string"></div>
+					<br/>
+				</div>
+				<div class="col">
+					<label>Compiled Character (JianZiPu Font)</label>
+					<textarea class="jzp-font jianzipu-output-character form-control" rows="3" style="font-size: 3rem; padding-right: 3rem"></textarea>
+				</div>
+			</div>
+			<br />
+			<br />
+			<br />
+		</div>
+  </body>
+</html>
