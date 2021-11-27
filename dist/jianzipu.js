@@ -251,21 +251,21 @@ const charRules = {
 		{ regex: /\(\d+\)/,
 			doFor: /\(\d+\)/,
 			do: [
-				{ regex: /(?<=\().*(?=\))/, area: 'huiHalf' }
+				{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'huiHalf' } 
 			]
 		},
 		{ regex: /\(.*\..\)/, 
 			doFor: /\(.*\..\)/,
 			do: [
-				{ regex: /(?<=\().*(?=\.)/, area: 'huiHalfTop' },
-				{ regex: /(?<=\.).*(?=\))/, area: 'huiHalfBottom' }
+				{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'huiHalfTop' },
+				{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'huiHalfBottom',  },
 			]
 		},
 		{ regex: /[0-9],[0-9]/, 
 			doFor: /[0-9],[0-9]/,
 			do: [
-				{ regex: /(?<=).*(?=\,)/, area: 'strHalfTop' },
-				{ regex: /(?<=\,).*(?=)/, area: 'strHalfBottom' },
+				{ regex: /\d.*\,/, remove: [','], area: 'strHalfTop' },
+				{ regex: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 			]
 		},
 		{ regex: /j|V/, area: 'thirdMidFull', 
@@ -295,14 +295,14 @@ const charRules = {
 						{ regex: /\(\d+\)/,
 							doFor: /\(\d+\)/,
 							do: [
-								{ regex: /(?<=\().*(?=\))/, area: 'thirdMidRight' }
+								{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
 							]
 						},
 						{ regex: /\(.*\..\)/, 
 							doFor: /\(.*\..\)/,
 							do: [
-								{ regex: /(?<=\().*(?=\.)/, area: 'thirdMidRightTop' },
-								{ regex: /(?<=\.).*(?=\))/, area: 'thirdMidRightBottom' }
+								{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
+								{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
 							]
 						},				
 						{ regex: /\(0\)/, 
@@ -327,14 +327,14 @@ const charRules = {
 						{ regex: /\(\d+\)/,
 							doFor: /\(\d+\)/,
 							do: [
-								{ regex: /(?<=\().*(?=\))/, area: 'thirdMidRight' }
+								{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
 							]
 						},
 						{ regex: /\(.*\..\)/, 
 							doFor: /\(.*\..\)/,
 							do: [
-								{ regex: /(?<=\().*(?=\.)/, area: 'thirdMidRightTop' },
-								{ regex: /(?<=\.).*(?=\))/, area: 'thirdMidRightBottom' }
+								{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
+								{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
 							]
 						},				
 						{ regex: /\(0\)/, 
@@ -354,38 +354,6 @@ DEBUG = false
 
 ////////////////////////////////////////////////////////////////////////
 
-String.prototype.contains = function(str) {
-	if (typeof str == 'string') {
-		if (this.indexOf(str) > -1)
-			return true
-		else
-			return false
-	}
-	else if (typeof str == 'object') {
-		for (var i=0;i<str.length;i++) {
-			if (this.indexOf(str[i]) > -1) 
-				return true
-		}
-		return false
-	}
-}
-String.prototype.replaceAll = function(replaceThis, withThis) {
-	return this.split(replaceThis).join(withThis)
-}
-function removeItemAll(arr, value) {
-  var i = 0;
-  while (i < arr.length) {
-    if (arr[i] === value) {
-      arr.splice(i, 1);
-    } else {
-      ++i;
-    }
-  }
-  return arr;
-}
-
-////////////////////////////////////////////////////////////////////////
-
 function getStructure(ogStr, structureMap) {
 	var strMap = {}
 	var str = ogStr.match(structureMap.doFor)[0]
@@ -395,8 +363,14 @@ function getStructure(ogStr, structureMap) {
 			var matchInfo = str.match(structureMap.do[i].regex)
 			if (matchInfo.index != undefined) {
 				if (structureMap.do[i].area != undefined) {
+					var matchChar = matchInfo[0]
+					if (structureMap.do[i].remove != undefined) {
+						for (var j=0; j<structureMap.do[i].remove.length; j++) {
+							matchChar = matchChar.replaceAll(structureMap.do[i].remove[j], '')
+						}
+					}
 					strMap[matchInfo.index + startIdx] = {
-						chars: matchInfo[0],
+						chars: matchChar,
 						length: matchInfo[0].length, 
 						area: structureMap.do[i].area
 					}
