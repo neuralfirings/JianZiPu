@@ -230,117 +230,117 @@ const charMap = {
 	]},
 }
 const charRules = {
-	doFor: /.*/,
+	for: /.*/,
 	do: [
-		{ regex: /[0-9]/, area: 'strFull'},
-		{ regex: /(n|k|l|h|u|i|o|c|U)/, area: 'rhFull'},
-		{ regex: /\(\d.*\)/, 
-			doFor: /.*/,
+		{ if: /[0-9]/, area: 'strFull'},
+		{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhFull'},
+		{ if: /\(\d.*\)/, 
+			for: /.*/,
 			do: [
-				{ regex: /[0-9]/, area: 'strHalf'},
-				{ regex: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
+				{ if: /[0-9]/, area: 'strHalf'},
+				{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
 			]
 		},
-		{ regex: /(s|d|v|f|x)/, area: 'lhHalf',
-			doFor: /.*/,
+		{ if: /(s|d|v|f|x)/, area: 'lhHalf',
+			for: /.*/,
 			do: [
-				{ regex: /[0-9]/, area: 'strHalf'},
-				{ regex: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
+				{ if: /[0-9]/, area: 'strHalf'},
+				{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
 			]
 		},
-		{ regex: /\(\d+\)/,
-			doFor: /\(\d+\)/,
+		{ if: /\(\d+\)/,
+			for: /\(\d+\)/,
 			do: [
-				{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'huiHalf' } 
+				{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'huiHalf' } 
 			]
 		},
-		{ regex: /\(.*\..\)/, 
-			doFor: /\(.*\..\)/,
+		{ if: /\(.*\..\)/, 
+			for: /\(.*\..\)/,
 			do: [
-				{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'huiHalfTop' },
-				{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'huiHalfBottom',  },
+				{ if: /\(\d.*\./, remove: ['(', '.'], area: 'huiHalfTop' },
+				{ if: /\.\d.*\)/, remove: [')', '.'], area: 'huiHalfBottom',  },
 			]
 		},
-		{ regex: /[0-9],[0-9]/, 
-			doFor: /[0-9],[0-9]/,
+		{ if: /[0-9],[0-9]/, 
+			for: /[0-9],[0-9]/,
 			do: [
-				{ regex: /\d.*\,/, remove: [','], area: 'strHalfTop' },
-				{ regex: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
+				{ if: /\d.*\,/, remove: [','], area: 'strHalfTop' },
+				{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 			]
 		},
-		{ regex: /j|V/, area: 'thirdMidFull', 
-			doFor: /.*/,
+		{ if: /j|V/, area: 'thirdMidFull', 
+			for: /.*/,
 			do: [
-				{ regex: /[0-9]/, area: 'strThird'},
-				{ regex: /(n|k|l|h|u|i|o|c)/, area: 'rhThirdBottom'}
+				{ if: /[0-9]/, area: 'strThird'},
+				{ if: /(n|k|l|h|u|i|o|c)/, area: 'rhThirdBottom'}
 			]
 		},
-		{ regex: /\(0\)/, 
-			doFor: /\(0\)/,
+		{ if: /\(0\)/, 
+			for: /\(0\)/,
 			do: [
-				{ regex: /0/, area: 'huiHalfFull'}
+				{ if: /0/, area: 'huiHalfFull'}
 			]
 		},
-		{ regex: /\//, area: 'halfUpper' },
-		{ regex: /\\/, area: 'halfLeft'  },
-		{ regex: /H|Y|I|O/, area: 'cuo', 
-			doFor: /[^H|Y|I|O]*/i,
+		{ if: /\//, area: 'halfUpper' },
+		{ if: /\\/, area: 'halfLeft'  },
+		{ if: /H|Y|I|O/, area: 'cuo', 
+			for: /[^H|Y|I|O]*/i,
 			do: [
-				{ regex: /[0-9]/, area: 'strHalf' },
-				{ regex: /(s|d|v|f|x)|(\([0-9].*\))/,
-					doFor: /.*/,
+				{ if: /[0-9]/, area: 'strHalf' },
+				{ if: /(s|d|v|f|x)|(\([0-9].*\))/,
+					for: /.*/,
 					do: [
-						{ regex: /[0-9]/, area: 'strThird'},
-						{ regex: /s|d|v|f|x/, area: 'thirdMidLeft' },
-						{ regex: /\(\d+\)/,
-							doFor: /\(\d+\)/,
+						{ if: /[0-9]/, area: 'strThird'},
+						{ if: /s|d|v|f|x/, area: 'thirdMidLeft' },
+						{ if: /\(\d+\)/,
+							for: /\(\d+\)/,
 							do: [
-								{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
+								{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
 							]
 						},
-						{ regex: /\(.*\..\)/, 
-							doFor: /\(.*\..\)/,
+						{ if: /\(.*\..\)/, 
+							for: /\(.*\..\)/,
 							do: [
-								{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
-								{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
+								{ if: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
+								{ if: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
 							]
 						},				
-						{ regex: /\(0\)/, 
-							doFor: /.*/,
+						{ if: /\(0\)/, 
+							for: /.*/,
 							do: [
-								{ regex: /0/, area: 'thirdMidFull'}
+								{ if: /0/, area: 'thirdMidFull'}
 							]
 						},
 					]
 				}
 			]
 		},
-		{ regex: /H|Y|I|O/, area: 'cuo', 
-			doFor: /[H|Y|I|O](.*)/,
+		{ if: /H|Y|I|O/, area: 'cuo', 
+			for: /[H|Y|I|O](.*)/,
 			do: [
-				{ regex: /[0-9]/, area: 'strHalf' },
-				{ regex: /(s|d|v|f|x)|(\([0-9].*\))/,
-					doFor: /.*/,
+				{ if: /[0-9]/, area: 'strHalf' },
+				{ if: /(s|d|v|f|x)|(\([0-9].*\))/,
+					for: /.*/,
 					do: [
-						{ regex: /[0-9]/, area: 'strThird'},
-						{ regex: /s|d|v|f|x/, area: 'thirdMidLeft' },
-						{ regex: /\(\d+\)/,
-							doFor: /\(\d+\)/,
+						{ if: /[0-9]/, area: 'strThird'},
+						{ if: /s|d|v|f|x/, area: 'thirdMidLeft' },
+						{ if: /\(\d+\)/,
+							for: /\(\d+\)/,
 							do: [
-								{ regex: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
+								{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
 							]
 						},
-						{ regex: /\(.*\..\)/, 
-							doFor: /\(.*\..\)/,
+						{ if: /\(.*\..\)/, 
+							for: /\(.*\..\)/,
 							do: [
-								{ regex: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
-								{ regex: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
+								{ if: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
+								{ if: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
 							]
 						},				
-						{ regex: /\(0\)/, 
-							doFor: /.*/,
+						{ if: /\(0\)/, 
+							for: /.*/,
 							do: [
-								{ regex: /0/, area: 'thirdMidFull'}
+								{ if: /0/, area: 'thirdMidFull'}
 							]
 						},
 					]
@@ -356,11 +356,11 @@ DEBUG = false
 
 function getStructure(ogStr, structureMap) {
 	var strMap = {}
-	var str = ogStr.match(structureMap.doFor)[0]
-	var startIdx = ogStr.match(structureMap.doFor).index
+	var str = ogStr.match(structureMap.for)[0]
+	var startIdx = ogStr.match(structureMap.for).index
 	for (var i=0; i<structureMap.do.length; i++) {
-		if (str.match(structureMap.do[i].regex)) {
-			var matchInfo = str.match(structureMap.do[i].regex)
+		if (str.match(structureMap.do[i].if)) {
+			var matchInfo = str.match(structureMap.do[i].if)
 			if (matchInfo.index != undefined) {
 				if (structureMap.do[i].area != undefined) {
 					var matchChar = matchInfo[0]
@@ -375,7 +375,7 @@ function getStructure(ogStr, structureMap) {
 						area: structureMap.do[i].area
 					}
 				}
-				if (structureMap.do[i].doFor != undefined) {
+				if (structureMap.do[i].for != undefined) {
 					subStrMap = getStructure(str, structureMap.do[i])
 					for (var k in subStrMap) {
 						strMap[Number(k) + startIdx] = subStrMap[k]
@@ -385,7 +385,7 @@ function getStructure(ogStr, structureMap) {
 			}
 			else if (false) { // for multimatches (e.g., with /g tag); ignoring for now tho
 				var j=0
-				while (j<100 && (matchPartInfo = structureMap.do[i].regex.exec(str)) != null) {
+				while (j<100 && (matchPartInfo = structureMap.do[i].if.exec(str)) != null) {
 					strMap[matchInfo.index] = {
 						chars: matchInfo[0],
 						length: matchPartInfo[0].length, 
@@ -429,7 +429,7 @@ function paragraphToCharacters(para) {
 			else {
 				translation = stringToCharacter(words[i])
 			}
-			words[i] = translation == '' ? words[i] : translation + ' '
+			words[i] = translation == '' && words[i] != '' ? words[i] : translation + ' '
 		}
 		lines[j] = words.join('')
 	}
