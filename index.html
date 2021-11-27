@@ -18,10 +18,10 @@
 
     <script>
     	$(document).ready(function() {
-    		$(".jianzipu-input").keyup(function() {
+    		$(".jianzipu-input").on("keyup", function() {
     			sh = $(this).val()
-    			$(".jianzipu-output-string").html(sh)
-    			$('.jianzipu-output-character').val(paragraphToCharacters(sh)) //.split('\n').join('<br />'))
+    			$(".jianzipu-output-string").val(sh)
+    			$('.jianzipu-output-character').val(paragraphToCharacters(sh)) 
     		})
     	})
     </script>
@@ -45,17 +45,17 @@
 			</div>
 
 			<div class="row" style="margin-right: 1.5rem">
-				<div class="col">
+				<div class="col-md-4">
 					<label>Input Example (String)</label>
 					5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)
 					<br/>
 				</div>
-				<div class="col jzp">
+				<div class="col-md-4 jzp">
 					<label>Output Example (String)</label>
 					[[5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)]]
 					<br/>
 				</div>
-				<div class="col jzp">
+				<div class="col-md-4 jzp">
 					<label>Compiled Character (JianZiPu Font)</label>
 					<div style="font-size: 3rem;">
 					[[[5ujs(7) 6ks(6.7) 3k(0) 3k 5V(5.6) sc(9) 3j(5)d 3(0)H5s(6) U4,3v(7)]]]
@@ -71,17 +71,16 @@
 			</div>
 
 			<div class="row">
-				<div class="col">
+				<div class="col-md-6">
 					<label>Input</label>
 					<pre><textarea class="jianzipu-input form-control" rows="9" placeholder="ex: 6ks(6.7) "></textarea></pre>
-					<br />
 					<label>Output (String)</label>
-					<div class="jzp-font jianzipu-output-string"></div>
+					<input type="text" class="form-control jzp-font jianzipu-output-string" />
 					<br/>
 				</div>
-				<div class="col">
+				<div class="col-md-6">
 					<label>Compiled Character (JianZiPu Font)</label>
-					<textarea class="jzp-font jianzipu-output-character form-control" rows="3" style="font-size: 3rem; padding-right: 3rem"></textarea>
+					<textarea class="jzp-font jianzipu-output-character form-control" rows="3" style="font-size: 3rem; padding-right: 3rem; display: inline-block;"></textarea>
 				</div>
 			</div>
 			<br />
