@@ -5,7 +5,7 @@ FamilyName: JianZiPu
 Weight: Regular
 Copyright: Copyright (c) 2021, Nancy Yi Liang
 UComments: "2021-11-17: Created with FontForge (http://fontforge.org)"
-Version: 001.000
+Version: 000.13
 ItalicAngle: 0
 UnderlinePosition: -100
 UnderlineWidth: 50
@@ -22,7 +22,7 @@ OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1637215561
-ModificationTime: 1637359077
+ModificationTime: 1638078104
 OS2TypoAscent: 0
 OS2TypoAOffset: 1
 OS2TypoDescent: 0

@@ -19,7 +19,7 @@ const charMap = {
 		{ "key": "v", "filename":"v_da_l", "unicode": 58016, "width": 1000},
 		{ "key": "V", "filename":"V_yan_l", "unicode": 58017, "width": 1000},
 		{ "key": "x", "filename":"x_gui_l", "unicode": 58018, "width": 1000},
-		{ "key": "U", "filename":"U_li_m", "unicode": 58019, "width": 1000},
+		{ "key": "U", "filename":"U_li_m", "unicode": 58019, "width": 1000}
 	]},
 	"rhFull": { "x": 100, "y": 100, "w": 800, "h": 800, "components": [
 		{ "key": "n", "filename": "n_bo_l", "unicode": 58020, "width": 0 },
@@ -64,7 +64,7 @@ const charMap = {
 		{ "key": "f", "filename": "f_index_s", "unicode": 58051, "width": 0},
 		{ "key": "d", "filename": "d_zhong_s", "unicode": 58052, "width": 0},
 		{ "key": "s", "filename": "s_ming_s", "unicode": 58053, "width": 0},
-		{ "key": "x", "filename": "x_gui_s", "unicode": 58054, "width": 0},
+		{ "key": "x", "filename": "x_gui_s", "unicode": 58054, "width": 0}
 	]},
 	"huiHalf": { "x": 500, "y": 100, "w": 400, "h": 305, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58055, "width": 0 },
@@ -79,7 +79,7 @@ const charMap = {
 		{ "key": "10", "filename": "10_shi_s", "unicode": 58064, "width": 0 },
 		{ "key": "11", "filename": "11_s", "unicode": 58065, "width": 0 },
 		{ "key": "12", "filename": "12_s", "unicode": 58066, "width": 0 },
-		{ "key": "13", "filename": "13_s", "unicode": 58067, "width": 0 },
+		{ "key": "13", "filename": "13_s", "unicode": 58067, "width": 0 }
 	]},
 	"huiHalfTop": { "x": 500, "y": 100, "w": 400, "h": 150, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58068, "width": 0 },
@@ -94,7 +94,7 @@ const charMap = {
 		{ "key": "10", "filename": "10_shi_s", "unicode": 58077, "width": 0 },
 		{ "key": "11", "filename": "11_s", "unicode": 58078, "width": 0 },
 		{ "key": "12", "filename": "12_s", "unicode": 58079, "width": 0 },
-		{ "key": "13", "filename": "13_s", "unicode": 58080, "width": 0 },
+		{ "key": "13", "filename": "13_s", "unicode": 58080, "width": 0 }
 	]},
 	"huiHalfBottom": { "x": 500, "y": 255, "w": 400, "h": 150, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58081, "width": 0 },
@@ -116,7 +116,7 @@ const charMap = {
 		{ "key": "l", "filename": "l_da_m", "unicode": 58095, "width": 0 },
 		{ "key": "o", "filename": "o_zhai_m", "unicode": 58096, "width": 0 },
 		{ "key": "c", "filename": "c_qiaqi_m", "unicode": 58097, "width": 0 },
-		{ "key": "U", "filename": "U_li_m", "unicode": 58098, "width": 0 },
+		{ "key": "U", "filename": "U_li_m", "unicode": 58098, "width": 0 }
 	]},
 	"strHalf": { "x": 245, "y": 540, "w": 520, "h": 230 , "components": [
 		{ "key": "1", "filename": "1_yi_m", "unicode": 58099, "width": 0 },
@@ -170,7 +170,7 @@ const charMap = {
 		{ "key": "10", "filename": "10_shi_s", "unicode": 58137, "width": 0 },
 		{ "key": "11", "filename": "11_s", "unicode": 58138, "width": 0 },
 		{ "key": "12", "filename": "12_s", "unicode": 58139, "width": 0 },
-		{ "key": "13", "filename": "13_s", "unicode": 58140, "width": 0 },
+		{ "key": "13", "filename": "13_s", "unicode": 58140, "width": 0 }
 	]},
 	"rhThirdBottom": { "x": 100, "y": 660, "w": 800, "h": 305, "components": [
 		{ "key": "n", "filename": "n_bo_m", "unicode": 58141, "width": 0 },
@@ -203,7 +203,7 @@ const charMap = {
 		{ "key": "H", "filename": "H_cuo_m", "unicode": 58158, "width": 667 },
 		{ "key": "Y", "filename": "Y_fancuo_m", "unicode": 58159, "width": 667 },
 		{ "key": "I", "filename": "I_dacuo_m", "unicode": 58160, "width": 667 },
-		{ "key": "O", "filename": "O_dafancuo_m", "unicode": 58161, "width": 667 },
+		{ "key": "O", "filename": "O_dafancuo_m", "unicode": 58161, "width": 667 }
 	]},
 	"thirdMidRightTop": { "x": 500, "y": 420, "w": 230, "h": 112, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58162, "width": 0 },
@@ -218,7 +218,7 @@ const charMap = {
 		{ "key": "10", "filename": "10_shi_s", "unicode": 58171, "width": 0 },
 		{ "key": "11", "filename": "11_s", "unicode": 58172, "width": 0 },
 		{ "key": "12", "filename": "12_s", "unicode": 58173, "width": 0 },
-		{ "key": "13", "filename": "13_s", "unicode": 58174, "width": 0 },
+		{ "key": "13", "filename": "13_s", "unicode": 58174, "width": 0 }
 	]},
 	"thirdMidRightBottom": { "x": 500, "y": 538, "w": 230, "h": 112, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58175, "width": 0 },
@@ -229,228 +229,6 @@ const charMap = {
 		{ "key": "6", "filename": "6_liu_s", "unicode": 58180, "width": 0 },
 		{ "key": "7", "filename": "7_qi_s", "unicode": 58181, "width": 0 },
 		{ "key": "8", "filename": "8_ba_s", "unicode": 58182, "width": 0 },
-		{ "key": "9", "filename": "9_jiu_s", "unicode": 58183, "width": 0 },
-	]},
+		{ "key": "9", "filename": "9_jiu_s", "unicode": 58183, "width": 0 }
+	]}
 }
-const charRules = {
-	for: /.*/,
-	do: [
-		{ if: /[0-9]/, area: 'strFull'},
-		{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhFull'},
-		{ if: /\(\d.*\)/, 
-			for: /.*/,
-			do: [
-				{ if: /[0-9]/, area: 'strHalf'},
-				{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
-			]
-		},
-		{ if: /(s|d|v|f|x)/, area: 'lhHalf',
-			for: /.*/,
-			do: [
-				{ if: /[0-9]/, area: 'strHalf'},
-				{ if: /(n|k|l|h|u|i|o|c|U)/, area: 'rhHalf'},
-			]
-		},
-		{ if: /\(\d+\)/,
-			for: /\(\d+\)/,
-			do: [
-				{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'huiHalf' } 
-			]
-		},
-		{ if: /\(.*\..\)/, 
-			for: /\(.*\..\)/,
-			do: [
-				{ if: /\(\d.*\./, remove: ['(', '.'], area: 'huiHalfTop' },
-				{ if: /\.\d.*\)/, remove: [')', '.'], area: 'huiHalfBottom',  },
-			]
-		},
-		{ if: /[0-9],[0-9]/, 
-			for: /[0-9],[0-9]/,
-			do: [
-				{ if: /\d.*\,/, remove: [','], area: 'strHalfTop' },
-				{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
-			]
-		},
-		{ if: /j|V/, area: 'thirdMidFull', 
-			for: /.*/,
-			do: [
-				{ if: /[0-9]/, area: 'strThird'},
-				{ if: /(n|k|l|h|u|i|o|c)/, area: 'rhThirdBottom'}
-			]
-		},
-		{ if: /\(0\)/, 
-			for: /\(0\)/,
-			do: [
-				{ if: /0/, area: 'huiHalfFull'}
-			]
-		},
-		{ if: /\//, area: 'halfUpper' },
-		{ if: /\\/, area: 'halfLeft'  },
-		{ if: /H|Y|I|O/, area: 'cuo', 
-			for: /[^H|Y|I|O]*/i,
-			do: [
-				{ if: /[0-9]/, area: 'strHalf' },
-				{ if: /(s|d|v|f|x)|(\([0-9].*\))/,
-					for: /.*/,
-					do: [
-						{ if: /[0-9]/, area: 'strThird'},
-						{ if: /s|d|v|f|x/, area: 'thirdMidLeft' },
-						{ if: /\(\d+\)/,
-							for: /\(\d+\)/,
-							do: [
-								{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
-							]
-						},
-						{ if: /\(.*\..\)/, 
-							for: /\(.*\..\)/,
-							do: [
-								{ if: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
-								{ if: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
-							]
-						},				
-						{ if: /\(0\)/, 
-							for: /.*/,
-							do: [
-								{ if: /0/, area: 'thirdMidFull'}
-							]
-						},
-					]
-				}
-			]
-		},
-		{ if: /H|Y|I|O/, area: 'cuo', 
-			for: /[H|Y|I|O](.*)/,
-			do: [
-				{ if: /[0-9]/, area: 'strHalf' },
-				{ if: /(s|d|v|f|x)|(\([0-9].*\))/,
-					for: /.*/,
-					do: [
-						{ if: /[0-9]/, area: 'strThird'},
-						{ if: /s|d|v|f|x/, area: 'thirdMidLeft' },
-						{ if: /\(\d+\)/,
-							for: /\(\d+\)/,
-							do: [
-								{ if: /\(\d.*\)/, remove: ['(', ')'], area: 'thirdMidRight' }
-							]
-						},
-						{ if: /\(.*\..\)/, 
-							for: /\(.*\..\)/,
-							do: [
-								{ if: /\(\d.*\./, remove: ['(', '.'], area: 'thirdMidRightTop' },
-								{ if: /\.\d.*\)/, remove: [')', '.'], area: 'thirdMidRightBottom' }
-							]
-						},				
-						{ if: /\(0\)/, 
-							for: /.*/,
-							do: [
-								{ if: /0/, area: 'thirdMidFull'}
-							]
-						},
-					]
-				}
-			]
-		},
-	]
-}
-
-DEBUG = false
-
-////////////////////////////////////////////////////////////////////////
-
-function getStructure(ogStr, structureMap) {
-	var strMap = {}
-	var str = ogStr.match(structureMap.for)[0]
-	var startIdx = ogStr.match(structureMap.for).index
-	for (var i=0; i<structureMap.do.length; i++) {
-		if (str.match(structureMap.do[i].if)) {
-			var matchInfo = str.match(structureMap.do[i].if)
-			if (matchInfo.index != undefined) {
-				if (structureMap.do[i].area != undefined) {
-					var matchChar = matchInfo[0]
-					if (structureMap.do[i].remove != undefined) {
-						for (var j=0; j<structureMap.do[i].remove.length; j++) {
-							matchChar = matchChar.replaceAll(structureMap.do[i].remove[j], '')
-						}
-					}
-					strMap[matchInfo.index + startIdx] = {
-						chars: matchChar,
-						length: matchInfo[0].length, 
-						area: structureMap.do[i].area
-					}
-				}
-				if (structureMap.do[i].for != undefined) {
-					subStrMap = getStructure(str, structureMap.do[i])
-					for (var k in subStrMap) {
-						strMap[Number(k) + startIdx] = subStrMap[k]
-					}
-					DEBUG ? console.log('subStrMap', subStrMap) : 0
-				}
-			}
-			else if (false) { // for multimatches (e.g., with /g tag); ignoring for now tho
-				var j=0
-				while (j<100 && (matchPartInfo = structureMap.do[i].if.exec(str)) != null) {
-					strMap[matchInfo.index] = {
-						chars: matchInfo[0],
-						length: matchPartInfo[0].length, 
-						areas: structureMap.do[i].areas
-					}
-					strMapAreas = strMapAreas.concat(structureMap.do[i].areas)
-				  j++
-				}
-			}
-		}
-	}
-	return strMap
-}
-function stringToCharacter(str) {
-	str = str.replaceAll('V', 'Vv')
-	var strMap = getStructure(str, charRules)
-	DEBUG ? console.log('strMap', strMap) : ''
-
-	// get unicodes
-	var character = '';
-	for (var k in strMap) {
-		for (var i=0;i<charMap[strMap[k].area].components.length; i++) {
-			if (charMap[strMap[k].area].components[i].key == strMap[k].chars) {
-				character += String.fromCharCode(charMap[strMap[k].area].components[i].unicode)
-			}
-		}
-	}
-	return character
-}
-function paragraphToCharacters(para) {
-	var lines = para.split('\n')
-	for (var j=0;j<lines.length; j++) {
-		var words = lines[j].split(' ')
-		for (var i=0;i<words.length;i++) {
-			var cuo1, cuo2, translation
-			if (false && words[i].split('H').length > 1) {
-				cuo1 = words[i].split('H')[0]
-				cuo2 = words[i].split('H')[1]
-				translation = stringToCharacter(cuo1) + stringToCharacter('H') + stringToCharacter(cuo2)
-			}
-			else {
-				translation = stringToCharacter(words[i])
-			}
-			words[i] = translation == '' && words[i] != '' ? words[i] : translation + ' '
-		}
-		lines[j] = words.join('')
-	}
-	return lines.join('\n')
-}
-
-////////////////////////////////////////////////////////////////////////
-
-document.addEventListener("DOMContentLoaded", function(event) { 
-	var jzpInBrackets = document.getElementsByClassName("jzp")
-	for (var i=0;i<jzpInBrackets.length;i++) {
-		let newDivHTML = jzpInBrackets[i].innerHTML
-		newDivHTML = newDivHTML.replaceAll('[[[', '<span class="jzp-font jzp-characters">').replaceAll(']]]', '</span>')
-		newDivHTML = newDivHTML.replaceAll('[[', '<span class="jzp-font">').replaceAll(']]', '</span>')
-		jzpInBrackets[i].innerHTML = newDivHTML
-		jzpInCharacters = jzpInBrackets[i].getElementsByClassName("jzp-characters")
-		for (var j=0;j<jzpInCharacters.length;j++) {
-			jzpInCharacters[j].innerText = paragraphToCharacters(jzpInCharacters[j].innerText)
-		}
-	}
-})

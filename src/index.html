@@ -13,8 +13,9 @@
 
 
     <!-- JianZiPu -->
-    <script src="dist/jianzipu.min.js"></script>
-    <link rel="stylesheet" href="dist/jianzipu.css">
+    <script src="charMap.js"></script>
+    <script src="charRules.js"></script>
+    <script src="jianzipu.js"></script>
 
     <script>
     	$(document).ready(function() {
@@ -31,6 +32,13 @@
     		font-weight: bold;
     		display: block;
     	}
+    	@font-face {
+			  font-family: JianZiPu;
+			  src: url("JianZiPu.otf") format("opentype");
+			}
+			.jzp-font {
+			  font-family: JianZiPu, monospace;
+			}
     </style>
   </head>
   <body>

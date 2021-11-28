@@ -123,16 +123,19 @@ The compiler then executes the areas in order. For example `{ regex: /[0-9]/, ar
 These are the steps I use. 
 
 1. Edit components
-	* Open `/font/JianZiPuComponents.sketch`: select all / export as SVG (transparent background)
-2. Modify `charMap` variable in the `/font/fontForgeScript.py` file and the `/dist/jianzipu.js` file. 
+	* Open `/src/JianZiPuComponents.sketch`: select all / export as SVG (transparent background)
+2. Modify `/src/charMap.js` file
 	* Make sure unicodes are unique and something in the 58000 range
 	* To do this in Sublime (with Text Pastry plugin): highlight `"unicode": ` > Ctrl+Cmd+G to select all > Scroll over to the unicodes and replace with > Package: Text Pastry Command Line, `\i(58000,1)`
-3. Modify `charRules` variable in the `/dist/jianzipu.js` file if rules need to be modified. Get comfy with RegEx.
+3. Modify `/src/charRules.js` file if rules need to be modified. Get comfy with RegEx.
 4. Create the font
-	* Open JianZiPu.template.sfd, save as new version (ex: JianZiPu.v10.sfd) (also update the font version Edit > Font Info)
-	* Modify `/font/fontForgeScript.py` so that it's pointing to the right directories for SVGs, and the right FontForge file
+	* Open JianZiPu.blank.sfd, save as new version (ex: JianZiPu.sfd) (also update the font version Edit > Font Info)
+	* Modify `/src/fontForgeScript.py` > HOME_PATH so that it's pointing to the JianZiPu directory
 	* Open Python console (Ctrl + .) > copy/paste in fontForgeScript.py > run
 	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
+5. Compile Javascript, while in JianZiPu directory..
+	* run `uglifyjs ./src/*.js -o ./dist/jianzipu.min.js` or something similar
+	* run `cp ./dev/JianZiPu.otf ./dist/JianZiPu.otf`
 
 ## Example of Shorthand
 
