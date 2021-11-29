@@ -116,5 +116,14 @@ const charRules = {
 				}
 			]
 		},
+		{ if: /退/, area: 'chineseChar' },
+		{ if: /长吟/, area: 'chineseChar' },
+		{ if: /進/, area: 'chineseChar' },
+		{ if: /分开/, area: 'chineseChar' },
+		{ if: /止起/, area: 'chineseChar' },
+		{ if: /泛起/, area: 'chineseChar' },
+		{ if: /大息/, area: 'chineseChar' },
+		{ if: /少息/, area: 'chineseChar' },
+		{ if: /復/, area: 'chineseChar' }
 	]
 }

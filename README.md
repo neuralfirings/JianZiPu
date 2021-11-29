@@ -135,7 +135,7 @@ These are the steps I use.
 	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
 5. Compile Javascript, while in JianZiPu directory..
 	* run `uglifyjs ./src/*.js -o ./dist/jianzipu.min.js` or something similar
-	* run `cp ./dev/JianZiPu.otf ./dist/JianZiPu.otf`
+	* run `cp ./src/JianZiPu.otf ./dist/JianZiPu.otf`
 
 ## Example of Shorthand
 
