@@ -32,8 +32,8 @@ There are also some special characters which compiles into Guqin variation.
 | Input for compiler | Output from compmiler |
 | --- | --- |
 | 退 (tuì) | ![](assets/退_char.png) |
-| 長吟 / 长吟 (cháng yín)| ![](assets/长吟_char.png) |
-| 進 / 进 (jìn) | ![](assets/進_char.png) |
+| 长吟 / 長吟(cháng yín)| ![](assets/长吟_char.png) |
+| 进 / 進 (jìn) | ![](assets/進_char.png) |
 | 分开 (fēn kāi) | ![](assets/分开_char.png) |
 | 泛止 (fàn zhǐ) | ![](assets/泛止_char.png) |
 | 泛起 (fàn qǐ) | ![](assets/泛起_char.png) |
