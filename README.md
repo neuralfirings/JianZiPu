@@ -4,7 +4,7 @@ JianZiPu is a way to write notation for Guqin (古琴) music. This document will
 
 Demo: https://neuralfirings.github.io/jianzipu/
 
-![](demo/screenshotCompiler.png)
+![](assets/screenshotCompiler.png)
 
 
 ## Guqin Shorthand for JianZiPu entry
@@ -25,7 +25,21 @@ So a string like `6ks(9)` would produce a character that represents...
 * `s` -- press the string with left hand 4th finger on...
 * `(9)` -- hui position 9
 
-![](demo/6ks(9).character.png)
+![](assets/6ks(9).character.png)
+
+There are also some special characters which compiles into Guqin variation. 
+
+| Input for compiler | Output from compmiler |
+| --- | --- |
+| 退 | ![](assets/退_char.png) |
+| 长吟 | ![](assets/长吟_char.png) |
+| 進 | ![](assets/進_char.png) |
+| 分开 | ![](assets/分开_char.png) |
+| 泛止 | ![](assets/泛止_char.png) |
+| 泛起 | ![](assets/泛起_char.png) |
+| 大息 | ![](assets/大息_char.png) |
+| 少息 | ![](assets/少息_char.png) |
+| 復 | ![](assets/復_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
@@ -36,7 +50,7 @@ You can also find this compiler here: https://neuralfirings.github.io/jianzipu/
 If you want to embed JianZiPu in your website, you can copy/paste the three files in the `/dist` folder and include them in your header. 
 
 ```
-<script src="/path/to/jianzipu.js"></script>
+<script src="/path/to/jianzipu.min.js"></script>
 <link rel="stylesheet" href="/path/to/jianzipu.css">
 ```
 
@@ -44,7 +58,7 @@ Or, you can use the GitHub.io as CDN.
 
 
 ```
-<script src="https://neuralfirings.github.io/jianzipu/dist/jianzipu.js"></script>
+<script src="https://neuralfirings.github.io/jianzipu/dist/jianzipu.min.js"></script>
 <link rel="stylesheet" href="https://neuralfirings.github.io/jianzipu/dist/jianzipu.css">
 ```
 
@@ -55,21 +69,21 @@ To render JianZiPu on your website:
 
 **Example of a String:**
 
-![](demo/6ks(9).string.png)
+![](assets/6ks(9).string.png)
 ```
 <div class="jzp">[[6ks(9)]]</div>
 ```
 
 **Example of a Character:**
 
-![](demo/6ks(9).character.png)
+![](assets/6ks(9).character.png)
 ```
 <div class="jzp">[[[6ks(9)]]]</div>
 ```
 
 **Example of Using the Raw Font:**
 
-![](demo/6ks(9).character.png)
+![](assets/6ks(9).character.png)
 
 ```
 <div class="jzp-font" style="font-size: 5rem">&#58101;&#58090;&#58053;&#58063;</div>
@@ -134,8 +148,7 @@ These are the steps I use.
 	* Open Python console (Ctrl + .) > copy/paste in fontForgeScript.py > run
 	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
 5. Compile Javascript, while in JianZiPu directory..
-	* run `uglifyjs ./src/*.js -o ./dist/jianzipu.min.js` or something similar
-	* run `cp ./src/JianZiPu.otf ./dist/JianZiPu.otf`
+	* run `./build` to build for the dist folder
 
 ## Example of Shorthand
 
@@ -154,7 +167,7 @@ Here are the first few lines of my favorite Guqin piece to play, 梧叶舞秋风
 
 This generates
 
-![](demo/leavesExample.png)
+![](assets/leavesExample.png)
 
 ## To Do 
 
