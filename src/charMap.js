@@ -24,13 +24,15 @@ const charMap = {
 	"chineseChar": { "x": 250, "y": 250, "w": 500, "h": 500, "components": [
 		{ "key": "退", "filename": "退_char", "unicode": 58020, "width": 0 },
 		{ "key": "长吟", "filename": "长吟_char", "unicode": 58021, "width": 0 },
+		{ "key": "長吟", "filename": "长吟_char", "unicode": 58021, "width": 0 },
 		{ "key": "進", "filename": "進_char", "unicode": 58022, "width": 0 },
+		{ "key": "进", "filename": "進_char", "unicode": 58022, "width": 0 },
 		{ "key": "分开", "filename": "分开_char", "unicode": 58023, "width": 0 },
 		{ "key": "泛止", "filename": "泛止_char", "unicode": 58024, "width": 0 },
 		{ "key": "泛起", "filename": "泛起_char", "unicode": 58025, "width": 0 },
 		{ "key": "大息", "filename": "大息_char", "unicode": 58026, "width": 0 },
 		{ "key": "少息", "filename": "少息_char", "unicode": 58027, "width": 0 },
-		{ "key": "復", "filename": "復_char", "unicode": 58028, "width": 0 }
+		{ "key": "复", "filename": "復_char", "unicode": 58028, "width": 0 }
 	]},
 	"rhFull": { "x": 100, "y": 100, "w": 800, "h": 800, "components": [
 		{ "key": "n", "filename": "n_bo_l", "unicode": 58029, "width": 0 },
