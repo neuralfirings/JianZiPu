@@ -32,14 +32,14 @@ There are also some special characters which compiles into Guqin variation.
 | Input for compiler | Output from compmiler |
 | --- | --- |
 | 退 (tuì) | ![](assets/退_char.png) |
-| 长吟 (cháng yín)| ![](assets/长吟_char.png) |
-| 進 (jìn) | ![](assets/進_char.png) |
+| 長吟 / 长吟 (cháng yín)| ![](assets/长吟_char.png) |
+| 進 / 进 (jìn) | ![](assets/進_char.png) |
 | 分开 (fēn kāi) | ![](assets/分开_char.png) |
 | 泛止 (fàn zhǐ) | ![](assets/泛止_char.png) |
 | 泛起 (fàn qǐ) | ![](assets/泛起_char.png) |
 | 大息 (dà xī) | ![](assets/大息_char.png) |
 | 少息 (shǎo xī) | ![](assets/少息_char.png) |
-| 復 (fù) | ![](assets/復_char.png) |
+| 复 (fù) | ![](assets/復_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
