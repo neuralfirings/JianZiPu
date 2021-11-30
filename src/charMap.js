@@ -21,7 +21,7 @@ const charMap = {
 		{ "key": "x", "filename":"x_gui_l", "unicode": 58018, "width": 1000},
 		{ "key": "U", "filename":"U_li_m", "unicode": 58019, "width": 1000}
 	]},
-	"chineseChar": { "x": 200, "y": 200, "w": 600, "h": 600, "components": [
+	"chineseChar": { "x": 250, "y": 250, "w": 500, "h": 500, "components": [
 		{ "key": "退", "filename": "退_char", "unicode": 58020, "width": 0 },
 		{ "key": "长吟", "filename": "长吟_char", "unicode": 58021, "width": 0 },
 		{ "key": "進", "filename": "進_char", "unicode": 58022, "width": 0 },
