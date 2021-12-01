@@ -17,6 +17,8 @@ The core of this font is a series of components (think, letters in word) that ov
 * **Right hand positions**: reprented by: `njkl` for plucks towards the player, `huio` away from the player
 * **Chords (cuo)**: representedy by `H` (cuo), `U` (fan cuo), `I` (da cuo), `O` (da+fan cuo). 
 * **Li**: represented by `U` 
+* **注/绰**: represented by `\` and `/`
+* **急**: represented by `>` (like arrow speeding into)
 
 So a string like `6ks(9)` would produce a character that represents...
 

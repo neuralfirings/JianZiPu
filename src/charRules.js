@@ -50,7 +50,7 @@ const charRules = {
 				{ if: /0/, area: 'huiHalfFull'}
 			]
 		},
-		{ if: /\//, area: 'halfUpper' },
+		{ if: /\/|\>/, area: 'halfUpper' },
 		{ if: /\\/, area: 'halfLeft'  },
 		{ if: /H|Y|I|O/, area: 'cuo', 
 			for: /[^H|Y|I|O]*/i,
