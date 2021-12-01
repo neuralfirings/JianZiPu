@@ -117,8 +117,8 @@ const charRules = {
 			]
 		},
 		{ if: /退/, area: 'chineseChar' },
-		{ if: /长吟|長吟/, area: 'chineseChar' },
-		{ if: /进|進/, area: 'chineseChar' },
+		{ if: /长吟|長吟/, use: '长吟', area: 'chineseChar' },
+		{ if: /进|進/, use: '进', area: 'chineseChar' },
 		{ if: /分开/, area: 'chineseChar' },
 		{ if: /泛止/, area: 'chineseChar' },
 		{ if: /泛起/, area: 'chineseChar' },

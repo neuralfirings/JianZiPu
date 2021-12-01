@@ -29,10 +29,8 @@ const charMap = {
 		{ "key": "泛止", "filename": "泛止_char", "unicode": 58024, "width": 0 },
 		{ "key": "泛起", "filename": "泛起_char", "unicode": 58025, "width": 0 },
 		{ "key": "退", "filename": "退_char", "unicode": 58026, "width": 0 },
-		{ "key": "進", "filename": "進_char", "unicode": 58027, "width": 0 },
-		{ "key": "進", "filename": "進_char", "unicode": 58028, "width": 0 },
-		{ "key": "长吟", "filename": "长吟_char", "unicode": 58029, "width": 0 },
-		{ "key": "長吟", "filename": "长吟_char", "unicode": 58030, "width": 0 }
+		{ "key": "进", "filename": "进_char", "unicode": 58027, "width": 0 },
+		{ "key": "长吟", "filename": "长吟_char", "unicode": 58029, "width": 0 }
 	]},
 	"rhFull": { "x": 100, "y": 100, "w": 800, "h": 800, "components": [
 		{ "key": "n", "filename": "n_bo_l", "unicode": 58031, "width": 0 },

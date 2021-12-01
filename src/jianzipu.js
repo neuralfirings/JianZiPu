@@ -11,7 +11,7 @@ function getStructure(ogStr, structureMap) {
 			var matchInfo = str.match(structureMap.do[i].if)
 			if (matchInfo.index != undefined) {
 				if (structureMap.do[i].area != undefined) {
-					var matchChar = matchInfo[0]
+					var matchChar = structureMap.do[i].use != undefined ? structureMap.do[i].use : matchInfo[0]
 					if (structureMap.do[i].remove != undefined) {
 						for (var j=0; j<structureMap.do[i].remove.length; j++) {
 							matchChar = matchChar.replaceAll(structureMap.do[i].remove[j], '')
