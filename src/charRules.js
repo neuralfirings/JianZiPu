@@ -46,6 +46,12 @@ const charRules = {
 				{ if: /0/, area: 'huiHalfFull'}
 			]
 		},
+		{ if: /\(13\.\d\)/,  area: 'huiHalf',
+			for: /\(13\.\d\)/,
+			do: [
+				{ if: /13\.\d/, use: '13.1', area: 'huiHalf'}
+			]
+		},
 		{ if: /[0-9],[0-9]/, 
 			for: /[0-9],[0-9]/,
 			do: [
