@@ -170,10 +170,10 @@ const charMap = {
 		{ "key": "j", "filename": "j_mo_s", "unicode": 58139, "width": 0 },
 		{ "key": "V", "filename": "V_yan_s", "unicode": 58140, "width": 0 },
 		{ "key": "0", "filename": "0_san_m", "unicode": 58141, "width": 0 },
-		{ "key": "沸", "filename": "沸_s", "unicode": 58142, "width": 0 },
-		{ "key": "滚", "filename": "滚_s", "unicode": 58143, "width": 0 },
-		{ "key": "滚沸", "filename": "滚沸_s", "unicode": 58144, "width": 0 },
-		{ "key": "到", "filename": "到_s", "unicode": 58145, "width": 0 }
+		{ "key": "F", "filename": "沸_s", "unicode": 58142, "width": 0 },
+		{ "key": "G", "filename": "滚_s", "unicode": 58143, "width": 0 },
+		{ "key": "GF", "filename": "滚沸_s", "unicode": 58144, "width": 0 },
+		{ "key": "D", "filename": "到_s", "unicode": 58145, "width": 0 }
 	]},
 	"thirdMidLeft": { "x": 260, "y": 420, "w": 230, "h": 230, "components": [
 		{ "key": "v", "filename": "v_da_s", "unicode": 58146, "width": 0},

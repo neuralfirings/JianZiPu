@@ -14,11 +14,14 @@ The core of this font is a series of components (think, letters in word) that ov
 * **Strings**: represented by numbers outside of parentheses.
 * **Hui position**: represented by numbers inside parentheses, since huis are round and parentheses are round, like `(7)` or `(6.7)`. Use `(0)` for open string.
 * **Left hand positions**: represented by the following: `s,d,f,v` since that's where the left hand fingers are on a (US-based) keyboard
-* **Right hand positions**: reprented by: `njkl` for plucks towards the player, `huio` away from the player
+* **Right hand positions**: reprented by: `njkl` for plucks towards the player, `huio` away from the player, you can also do things like `ju` for 抹挑, `ki` for 勾剔, and `lo` for 打摘
 * **Chords (cuo)**: representedy by `H` (cuo), `U` (fan cuo), `I` (da cuo), `O` (da+fan cuo). 
+* **Bo/La**: represented by `B` and `L` (ex: `3BL4` is a BoLa on the 3rd and 4th string)
+* **雙彈/三彈**: represented by `TT` and `TTT` (ex: `3TT4` is a 雙彈 on the 3rd and 4th string)
 * **Li**: represented by `U` 
 * **注/绰**: represented by `\` and `/`
 * **急**: represented by `>` (like arrow speeding into)
+* **滾/沸/到**: represented by `G`, `F`, and `D` (ex: `7G(0) D1`)
 
 So a string like `6ks(9)` would produce a character that represents...
 
@@ -31,7 +34,7 @@ So a string like `6ks(9)` would produce a character that represents...
 
 There are also some special characters which compiles into Guqin variation. 
 
-| Input for compiler | Output from compmiler |
+| Input for compiler | Output from compiler |
 | --- | --- |
 | 退 (tuì) | ![](assets/退_char.png) |
 | 长吟 / 長吟(cháng yín)| ![](assets/长吟_char.png) |
@@ -42,6 +45,12 @@ There are also some special characters which compiles into Guqin variation.
 | 大息 (dà xī) | ![](assets/大息_char.png) |
 | 少息 (shǎo xī) | ![](assets/少息_char.png) |
 | 复 (fù) | ![](assets/復_char.png) |
+| 细吟 | ![](assets/细吟_char.png) |
+| 带起 | ![](assets/带起_char.png) |
+| 对起 | ![](assets/对起_char.png) |
+| 爪起 | ![](assets/爪起_char.png) |
+| 撇起 | ![](assets/撇起_char.png) |
+| 起 | ![](assets/起_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 

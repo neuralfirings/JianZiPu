@@ -37,7 +37,7 @@ const charRules = {
 				{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 			]
 		},
-		{ if: /j|V|滚沸|滚|沸|到/, area: 'thirdMidFull', 
+		{ if: /j|V|GF|G|F|D/, area: 'thirdMidFull', 
 			for: /.*/,
 			do: [
 				{ if: /[0-9]/, area: 'strThird'},
@@ -122,14 +122,14 @@ const charRules = {
 		{ if: /进|進/, use: '进', area: 'chineseChar' },
 		{ if: /分开/, area: 'chineseChar' },
 		{ if: /泛止/, area: 'chineseChar' },
-		{ if: /泛起/, area: 'chineseChar' },
 		{ if: /大息/, area: 'chineseChar' },
 		{ if: /少息/, area: 'chineseChar' },
 		{ if: /复/, area: 'chineseChar' },
+		{ if: /起/, area: 'chineseChar' },
+		{ if: /泛起/, area: 'chineseChar' },
 		{ if: /带起/, area: 'chineseChar' },
 		{ if: /对起/, area: 'chineseChar' },
 		{ if: /爪起/, area: 'chineseChar' },
 		{ if: /撇起/, area: 'chineseChar' },
-		{ if: /起/, area: 'chineseChar' }
 	]
 }

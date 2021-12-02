@@ -1,4 +1,4 @@
-DEBUG = false
+DEBUG = true
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -22,11 +22,17 @@ function getStructure(ogStr, structureMap) {
 						length: matchInfo[0].length, 
 						area: structureMap.do[i].area
 					}
+					for (var j=1;j<matchInfo[0].length;j++) {
+						delete strMap[matchInfo.index + startIdx + j] 
+					}
 				}
 				if (structureMap.do[i].for != undefined) {
 					subStrMap = getStructure(str, structureMap.do[i])
 					for (var k in subStrMap) {
 						strMap[Number(k) + startIdx] = subStrMap[k]
+						for (var j=1;j<subStrMap[k].length;j++) {
+							delete strMap[Number(k) + startIdx + j]
+						}
 					}
 					DEBUG ? console.log('subStrMap', subStrMap) : 0
 				}
