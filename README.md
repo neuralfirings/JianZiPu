@@ -56,13 +56,13 @@ The core of this font is a series of components (think, letters in word) that ov
 |v|大|大|dà|x|
 |x|跪|跪|guì|x|
 |c|掐起|掐起|qiā qǐ|x|
-|V|罨 or 掩|罨 or 掩|yǎn|x|
+|V or X|罨 or 掩|罨 or 掩|yǎn|x|
 
 **Example**
 
 
 ```
-5ks(7) 5kd(7) 5kf(7) 5kv(7) 5kx(7) cs(7) 5Vv(7)
+5ks(7) 5kd(7) 5kf(7) 5kv(7) 5kx(7) cs(7) 5Xv(7)
 ```
 
 <img src="assets/ExampleBasicLeftHand.png" width="400"/>
