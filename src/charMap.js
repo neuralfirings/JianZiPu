@@ -129,7 +129,7 @@ const charMap = {
 		{ "keys": ["8"], "filename": "8_ba_s", "unicode": 58108, "width": 0 },
 		{ "keys": ["9"], "filename": "9_jiu_s", "unicode": 58109, "width": 0 }
 	]},
-	"rhHalf": { "x": 100, "y": 431, "w": 800, "h": 469, "components": [
+	"rhHalf": { "x": 155, "y": 455, "w": 690, "h": 470, "components": [
 		{ "keys": ["n", "擘"], "filename": "n_bo_m", "unicode": 58110, "width": 0 },
 		{ "keys": ["h", "托"], "filename": "h_tuo_m", "unicode": 58111, "width": 0 },
 		{ "keys": ["u", "挑"], "filename": "u_tiao_m", "unicode": 58112, "width": 0 },
@@ -142,7 +142,7 @@ const charMap = {
 		{ "keys": ["c", "掐起", "掐起"], "filename": "c_qiaqi_m", "unicode": 58119, "width": 0 },
 		{ "keys": ["U", "L", "历", "歷"], "filename": "U_li_m", "unicode": 58120, "width": 0 }
 	]},
-	"strHalf": { "x": 245, "y": 560, "w": 520, "h": 230 , "components": [
+	"strHalf": { "x": 240, "y": 575, "w": 525, "h": 230 , "components": [
 		{ "keys": ["1"], "filename": "1_yi_m", "unicode": 58121, "width": 0 },
 		{ "keys": ["2"], "filename": "2_er_m", "unicode": 58122, "width": 0 },
 		{ "keys": ["3"], "filename": "3_san_m", "unicode": 58123, "width": 0 },
@@ -200,7 +200,7 @@ const charMap = {
 		{ "keys": ["12"], "filename": "12_s", "unicode": 58165, "width": 0 },
 		{ "keys": ["13"], "filename": "13_s", "unicode": 58166, "width": 0 }
 	]},
-	"rhThirdBottom": { "x": 100, "y": 620, "w": 800, "h": 350, "components": [
+	"rhThirdBottom": { "x": 175, "y": 620, "w": 645, "h": 350, "components": [
 		{ "keys": ["n", "擘", "擘"], "filename": "n_bo_m", "unicode": 58167, "width": 0 },
 		{ "keys": ["h", "托", "托"], "filename": "h_tuo_m", "unicode": 58168, "width": 0 },
 		{ "keys": ["u", "挑", "挑"], "filename": "u_tiao_m", "unicode": 58169, "width": 0 },
@@ -211,20 +211,20 @@ const charMap = {
 		{ "keys": ["ki", "勾剔", "勾剔"], "filename": "ki", "unicode": 58174, "width": 0 },
 		{ "keys": ["lo", "打摘", "打摘"], "filename": "lo", "unicode": 58175, "width": 0 }
 	]},
-	"strThird": { "x": 100, "y": 620, "w": 800, "h": 350, "components": [
-		{ "keys": ["1"], "filename": "1_yi_l", "unicode": 58176, "width": 0 },
-		{ "keys": ["2"], "filename": "2_er_l", "unicode": 58177, "width": 0 },
-		{ "keys": ["3"], "filename": "3_san_l", "unicode": 58178, "width": 0 },
-		{ "keys": ["4"], "filename": "4_si_l", "unicode": 58179, "width": 0 },
-		{ "keys": ["5"], "filename": "5_wu_l", "unicode": 58180, "width": 0 },
-		{ "keys": ["6"], "filename": "6_liu_l", "unicode": 58181, "width": 0 },
-		{ "keys": ["7"], "filename": "7_qi_l", "unicode": 58182, "width": 0 }
+	"strThird": { "x": 260, "y": 690, "w": 475, "h": 210, "components": [
+		{ "keys": ["1"], "filename": "1_yi_m", "unicode": 58176, "width": 0 },
+		{ "keys": ["2"], "filename": "2_er_m", "unicode": 58177, "width": 0 },
+		{ "keys": ["3"], "filename": "3_san_m", "unicode": 58178, "width": 0 },
+		{ "keys": ["4"], "filename": "4_si_m", "unicode": 58179, "width": 0 },
+		{ "keys": ["5"], "filename": "5_wu_m", "unicode": 58180, "width": 0 },
+		{ "keys": ["6"], "filename": "6_liu_m", "unicode": 58181, "width": 0 },
+		{ "keys": ["7"], "filename": "7_qi_m", "unicode": 58182, "width": 0 }
 	]},
 	"halfUpper": { "x": 375, "y": 345, "w": 260, "h": 145, "components": [
 		{ "keys": ["/", "绰", "綽"], "filename": "fwdSlash_shang_s", "unicode": 58183, "width": 0 },
 		{ "keys": [">", "急", "急"], "filename": "ji_s", "unicode": 58184, "width": 0 }
 	]},
-	"halfLeft": { "x": 0, "y": 430, "w": 100, "h": 500, "components": [
+	"halfLeft": { "x": 55, "y": 455, "w": 100, "h": 470, "components": [
 		{ "keys": ["\\", "注", "注"], "filename": "bckSlash_xia_m", "unicode": 58185, "width": 0 }
 	]},
 	"fullUpper": { "x": 330, "y": -55, "w": 330, "h": 185, "components": [
