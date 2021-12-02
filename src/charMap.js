@@ -39,16 +39,16 @@ const charMap = {
 		{ "key": "起", "filename": "起_char", "unicode": 58034, "width": 0 }
 	]},
 	"rhFull": { "x": 100, "y": 100, "w": 800, "h": 800, "components": [
-		{ "key": "n", "filename": "n_bo_l", "unicode": 58035, "width": 0 },
-		{ "key": "h", "filename": "h_tuo_l", "unicode": 58036, "width": 0 },
-		{ "key": "u", "filename": "u_tiao_l", "unicode": 58037, "width": 0 },
-		{ "key": "k", "filename": "k_gou_l", "unicode": 58038, "width": 0 },
-		{ "key": "i", "filename": "i_ti_l", "unicode": 58039, "width": 0 },
-		{ "key": "l", "filename": "l_da_l", "unicode": 58040, "width": 0 },
-		{ "key": "o", "filename": "o_zhai_l", "unicode": 58041, "width": 0 },
+		{ "key": "n", "filename": "n_bo_m", "unicode": 58035, "width": 0 },
+		{ "key": "h", "filename": "h_tuo_m", "unicode": 58036, "width": 0 },
+		{ "key": "u", "filename": "u_tiao_m", "unicode": 58037, "width": 0 },
+		{ "key": "k", "filename": "k_gou_m", "unicode": 58038, "width": 0 },
+		{ "key": "i", "filename": "i_ti_m", "unicode": 58039, "width": 0 },
+		{ "key": "l", "filename": "l_da_m", "unicode": 58040, "width": 0 },
+		{ "key": "o", "filename": "o_zhai_m", "unicode": 58041, "width": 0 },
 		{ "key": "ki", "filename": "ki", "unicode": 58042, "width": 0 },
 		{ "key": "lo", "filename": "lo", "unicode": 58043, "width": 0 },
-		{ "key": "c", "filename": "c_qiaqi_l", "unicode": 58044, "width": 0 },
+		{ "key": "c", "filename": "c_qiaqi_m", "unicode": 58044, "width": 0 },
 		{ "key": "U", "filename": "U_li_m", "unicode": 58045, "width": 0 }
 	]},
 	"strFull": { "x": 200, "y": 200, "w": 600, "h": 600, "components": [
@@ -224,44 +224,51 @@ const charMap = {
 	"halfLeft": { "x": 0, "y": 430, "w": 100, "h": 500, "components": [
 		{ "key": "\\", "filename": "bckSlash_xia_m", "unicode": 58182, "width": 0 }
 	]},
+	"fullUpper": { "x": 330, "y": -55, "w": 330, "h": 185, "components": [
+		{ "key": "/", "filename": "fwdSlash_shang_s", "unicode": 58183, "width": 0 },
+		{ "key": ">", "filename": "ji_s", "unicode": 58184, "width": 0 }
+	]},
+	"fullLeft": { "x": -20, "y": 130, "w": 150, "h": 730, "components": [
+		{ "key": "\\", "filename": "bckSlash_xia_m", "unicode": 58185, "width": 0 }
+	]},
 	"huiHalfFull": { "x": 100, "y": 100, "w": 800, "h": 305, "components": [
-		{ "key": "0", "filename": "0_san_m", "unicode": 58183, "width": 0 }
+		{ "key": "0", "filename": "0_san_m", "unicode": 58186, "width": 0 }
 	]},
 	"cuo": { "x": 450, "y": -175, "w": 825, "h": 1175, "components": [
-		{ "key": "H", "filename": "H_cuo_m", "unicode": 58184, "width": 667 },
-		{ "key": "Y", "filename": "Y_fancuo_m", "unicode": 58185, "width": 667 },
-		{ "key": "I", "filename": "I_dacuo_m", "unicode": 58186, "width": 667 },
-		{ "key": "O", "filename": "O_dafancuo_m", "unicode": 58187, "width": 667 },
-		{ "key": "B", "filename": "bo", "unicode": 58188, "width": 667 },
-		{ "key": "L", "filename": "la", "unicode": 58189, "width": 667 },
-		{ "key": "BL", "filename": "bola", "unicode": 58190, "width": 667 },
-		{ "key": "TT", "filename": "shuangtan", "unicode": 58191, "width": 667 },
-		{ "key": "TTT", "filename": "santan", "unicode": 58192, "width": 667 }
+		{ "key": "H", "filename": "H_cuo_m", "unicode": 58187, "width": 667 },
+		{ "key": "Y", "filename": "Y_fancuo_m", "unicode": 58188, "width": 667 },
+		{ "key": "I", "filename": "I_dacuo_m", "unicode": 58189, "width": 667 },
+		{ "key": "O", "filename": "O_dafancuo_m", "unicode": 58190, "width": 667 },
+		{ "key": "B", "filename": "bo", "unicode": 58191, "width": 667 },
+		{ "key": "L", "filename": "la", "unicode": 58192, "width": 667 },
+		{ "key": "BL", "filename": "bola", "unicode": 58193, "width": 667 },
+		{ "key": "TT", "filename": "shuangtan", "unicode": 58194, "width": 667 },
+		{ "key": "TTT", "filename": "santan", "unicode": 58195, "width": 667 }
 	]},
 	"thirdMidRightTop": { "x": 500, "y": 420, "w": 230, "h": 112, "components": [
-		{ "key": "1", "filename": "1_yi_s", "unicode": 58193, "width": 0 },
-		{ "key": "2", "filename": "2_er_s", "unicode": 58194, "width": 0 },
-		{ "key": "3", "filename": "3_san_s", "unicode": 58195, "width": 0 },
-		{ "key": "4", "filename": "4_si_s", "unicode": 58196, "width": 0 },
-		{ "key": "5", "filename": "5_wu_s", "unicode": 58197, "width": 0 },
-		{ "key": "6", "filename": "6_liu_s", "unicode": 58198, "width": 0 },
-		{ "key": "7", "filename": "7_qi_s", "unicode": 58199, "width": 0 },
-		{ "key": "8", "filename": "8_ba_s", "unicode": 58200, "width": 0 },
-		{ "key": "9", "filename": "9_jiu_s", "unicode": 58201, "width": 0 },
-		{ "key": "10", "filename": "10_shi_s", "unicode": 58202, "width": 0 },
-		{ "key": "11", "filename": "11_s", "unicode": 58203, "width": 0 },
-		{ "key": "12", "filename": "12_s", "unicode": 58204, "width": 0 },
-		{ "key": "13", "filename": "13_s", "unicode": 58205, "width": 0 }
+		{ "key": "1", "filename": "1_yi_s", "unicode": 58196, "width": 0 },
+		{ "key": "2", "filename": "2_er_s", "unicode": 58197, "width": 0 },
+		{ "key": "3", "filename": "3_san_s", "unicode": 58198, "width": 0 },
+		{ "key": "4", "filename": "4_si_s", "unicode": 58199, "width": 0 },
+		{ "key": "5", "filename": "5_wu_s", "unicode": 58200, "width": 0 },
+		{ "key": "6", "filename": "6_liu_s", "unicode": 58201, "width": 0 },
+		{ "key": "7", "filename": "7_qi_s", "unicode": 58202, "width": 0 },
+		{ "key": "8", "filename": "8_ba_s", "unicode": 58203, "width": 0 },
+		{ "key": "9", "filename": "9_jiu_s", "unicode": 58204, "width": 0 },
+		{ "key": "10", "filename": "10_shi_s", "unicode": 58205, "width": 0 },
+		{ "key": "11", "filename": "11_s", "unicode": 58206, "width": 0 },
+		{ "key": "12", "filename": "12_s", "unicode": 58207, "width": 0 },
+		{ "key": "13", "filename": "13_s", "unicode": 58208, "width": 0 }
 	]},
 	"thirdMidRightBottom": { "x": 500, "y": 538, "w": 230, "h": 112, "components": [
-		{ "key": "1", "filename": "1_yi_s", "unicode": 58206, "width": 0 },
-		{ "key": "2", "filename": "2_er_s", "unicode": 58207, "width": 0 },
-		{ "key": "3", "filename": "3_san_s", "unicode": 58208, "width": 0 },
-		{ "key": "4", "filename": "4_si_s", "unicode": 58209, "width": 0 },
-		{ "key": "5", "filename": "5_wu_s", "unicode": 58210, "width": 0 },
-		{ "key": "6", "filename": "6_liu_s", "unicode": 58211, "width": 0 },
-		{ "key": "7", "filename": "7_qi_s", "unicode": 58212, "width": 0 },
-		{ "key": "8", "filename": "8_ba_s", "unicode": 58213, "width": 0 },
-		{ "key": "9", "filename": "9_jiu_s", "unicode": 58214, "width": 0 }
+		{ "key": "1", "filename": "1_yi_s", "unicode": 58209, "width": 0 },
+		{ "key": "2", "filename": "2_er_s", "unicode": 58210, "width": 0 },
+		{ "key": "3", "filename": "3_san_s", "unicode": 58211, "width": 0 },
+		{ "key": "4", "filename": "4_si_s", "unicode": 58212, "width": 0 },
+		{ "key": "5", "filename": "5_wu_s", "unicode": 58213, "width": 0 },
+		{ "key": "6", "filename": "6_liu_s", "unicode": 58214, "width": 0 },
+		{ "key": "7", "filename": "7_qi_s", "unicode": 58215, "width": 0 },
+		{ "key": "8", "filename": "8_ba_s", "unicode": 58216, "width": 0 },
+		{ "key": "9", "filename": "9_jiu_s", "unicode": 58217, "width": 0 }
 	]}
 }

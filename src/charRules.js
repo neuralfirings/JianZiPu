@@ -3,11 +3,21 @@ const charRules = {
 	do: [
 		{ if: /[0-9]/, area: 'strFull'},
 		{ if: /(n|ki|k|lo|l|h|u|i|o|c|U)/, area: 'rhFull'},
+		{ if: /\/|\>/, area: 'fullUpper' },
+		{ if: /\\/, area: 'fullLeft'  },
 		{ if: /\(\d.*\)/, 
 			for: /.*/,
 			do: [
 				{ if: /[0-9]/, area: 'strHalf'},
 				{ if: /(n|ki|k|lo|h|u|i|o|c|U)/, area: 'rhHalf'},
+			]
+		},
+		{
+			if: /\(\d.*\)|(s|d|v|f|x)/, 
+			for: /.*/,
+			do: [
+				{ if: /\/|\>/, area: 'halfUpper' },
+				{ if: /\\/, area: 'halfLeft'  },
 			]
 		},
 		{ if: /(s|d|v|f|x)/, area: 'lhHalf',
@@ -30,6 +40,12 @@ const charRules = {
 				{ if: /\.\d.*\)/, remove: [')', '.'], area: 'huiHalfBottom',  },
 			]
 		},
+		{ if: /\(0\)/, 
+			for: /\(0\)/,
+			do: [
+				{ if: /0/, area: 'huiHalfFull'}
+			]
+		},
 		{ if: /[0-9],[0-9]/, 
 			for: /[0-9],[0-9]/,
 			do: [
@@ -44,14 +60,6 @@ const charRules = {
 				{ if: /(n|ki|k|lo|l|h|u|i|o|c)/, area: 'rhThirdBottom'}
 			]
 		},
-		{ if: /\(0\)/, 
-			for: /\(0\)/,
-			do: [
-				{ if: /0/, area: 'huiHalfFull'}
-			]
-		},
-		{ if: /\/|\>/, area: 'halfUpper' },
-		{ if: /\\/, area: 'halfLeft'  },
 		{ if: /H|Y|I|O|TTT|TT|BL|B|L/, area: 'cuo', 
 			for: /[^H|Y|I|O|TTT|TT|BL|B|L]*/i,
 			do: [
