@@ -51,6 +51,8 @@ There are also some special characters which compiles into Guqin variation.
 | 爪起 | ![](assets/爪起_char.png) |
 | 撇起 | ![](assets/撇起_char.png) |
 | 起 | ![](assets/起_char.png) |
+| 打圆 | ![](assets/打圆_char.png) |
+| 撞 | ![](assets/撞_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
