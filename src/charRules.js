@@ -145,5 +145,7 @@ const charRules = {
 		{ if: /对起/, area: 'chineseChar' },
 		{ if: /爪起/, area: 'chineseChar' },
 		{ if: /撇起/, area: 'chineseChar' },
+		{ if: /打圆/, area: 'chineseChar' },
+		{ if: /撞/, area: 'chineseChar' },
 	]
 }
