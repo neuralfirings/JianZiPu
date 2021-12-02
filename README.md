@@ -7,23 +7,9 @@ Demo: https://neuralfirings.github.io/jianzipu/
 ![](assets/screenshotCompiler.png)
 
 
-## Guqin Shorthand for JianZiPu entry
+## Guqin Shorthand for writing JianZiPu
 
-The core of this font is a series of components (think, letters in word) that overlaps to form characters. These letters are represented by unicode characters. To determine which unicode characters to use, we will need to compile a shorthand developed for this font. The compiler looks at:
-
-* **Strings**: represented by numbers outside of parentheses.
-* **Hui position**: represented by numbers inside parentheses, since huis are round and parentheses are round, like `(7)` or `(6.7)`. Use `(0)` for open string.
-* **Left hand positions**: represented by the following: `s,d,f,v` since that's where the left hand fingers are on a (US-based) keyboard
-* **Right hand positions**: reprented by: `njkl` for plucks towards the player, `huio` away from the player, you can also do things like `ju` for 抹挑, `ki` for 勾剔, and `lo` for 打摘
-* **Chords (cuo)**: representedy by `H` (cuo), `U` (fan cuo), `I` (da cuo), `O` (da+fan cuo). 
-* **Bo/La**: represented by `B` and `L` (ex: `3BL4` is a BoLa on the 3rd and 4th string)
-* **雙彈/三彈**: represented by `TT` and `TTT` (ex: `3TT4` is a 雙彈 on the 3rd and 4th string)
-* **Li**: represented by `U` 
-* **注/绰**: represented by `\` and `/`
-* **急**: represented by `>` (like arrow speeding into)
-* **滾/沸/到**: represented by `G`, `F`, and `D` (ex: `7G(0) D1`)
-
-So a string like `6ks(9)` would produce a character that represents...
+The core of this font is a series of components (think, letters in word) that overlaps to form characters. These letters are represented by unicode characters. To determine which unicode characters to use, we will need to compile a shorthand developed for this font. So a string like `6ks(9)` would produce a character that represents...
 
 * `6` -- 6th string
 * `k` -- gou (pluck inward with the right middle finger)
@@ -32,27 +18,135 @@ So a string like `6ks(9)` would produce a character that represents...
 
 ![](assets/6ks(9).character.png)
 
-There are also some special characters which compiles into Guqin variation. 
+### Basic Right Hand
 
-| Input for compiler | Output from compiler |
-| --- | --- |
-| 退 (tuì) | ![](assets/退_char.png) |
-| 长吟 / 長吟(cháng yín)| ![](assets/长吟_char.png) |
-| 进 / 進 (jìn) | ![](assets/進_char.png) |
-| 分开 (fēn kāi) | ![](assets/分开_char.png) |
-| 泛止 (fàn zhǐ) | ![](assets/泛止_char.png) |
-| 泛起 (fàn qǐ) | ![](assets/泛起_char.png) |
-| 大息 (dà xī) | ![](assets/大息_char.png) |
-| 少息 (shǎo xī) | ![](assets/少息_char.png) |
-| 复 (fù) | ![](assets/復_char.png) |
-| 细吟 | ![](assets/细吟_char.png) |
-| 带起 | ![](assets/带起_char.png) |
-| 对起 | ![](assets/对起_char.png) |
-| 爪起 | ![](assets/爪起_char.png) |
-| 撇起 | ![](assets/撇起_char.png) |
-| 起 | ![](assets/起_char.png) |
-| 打圆 | ![](assets/打圆_char.png) |
-| 撞 | ![](assets/撞_char.png) |
+|Input (Alphabetical)|Input (Simplified)|Input (Traditional)|PinYin|
+|--|--|--|--|
+|n|擘|擘|bō|
+|h|托|托|tuō|
+|j|抹|抹|mǒ|
+|u|挑|挑|tiāo|
+|k|勾|勾|gōu|
+|i|剔|剔|tī|
+|l|打|打|dǎ|
+|o|摘|摘|zhāi|
+|ju|抹挑|抹挑|mǒ tiāo|
+|ki|勾剔|勾剔|gōu tī|
+|lo|打摘|打摘|dǎ zhāi|
+|U or L|历|歷|lì|
+
+
+**Example**
+
+```
+5n(0) 5h(0) 5j(0) 5u(0) 5k(0) 5i(0) 5l(0) 5o(0)
+5ju(0) 5ki(0) 5lo(0) U5,4(0)
+```
+
+<img src="assets/ExampleBasicRightHand.png" width="400"/>
+
+
+### Basic Left Hand
+
+|Input (Alphabetical)|Input (Simplified)|Input (Traditional)|PinYin|Output|
+|--|--|--|--|--|
+|s|名|名|míng|x|
+|d|中|中|zhōng|x|
+|f|食|食|shí|x|
+|v|大|大|dà|x|
+|x|跪|跪|guì|x|
+|c|掐起|掐起|qiā qǐ|x|
+|V|罨 or 掩|罨 or 掩|yǎn|x|
+
+**Example**
+
+
+```
+5ks(7) 5kd(7) 5kf(7) 5kv(7) 5kx(7) cs(7) 5Vv(7)
+```
+
+<img src="assets/ExampleBasicLeftHand.png" width="400"/>
+
+### Chords and Chord-ish Things
+
+|Input (Alphabetical)|Input (Simplified)|Input (Traditional)|PinYin|Output|
+|--|--|--|--|--|
+|Y or FC|反撮|反撮|fǎn cuō|x|
+|I or DC|大撮|大撮|dà cuō|x|
+|O or DFC|大反撮|大反撮|dà fǎn cuō|x|
+|H or C|撮|撮|cuō|x|
+|TTT|三弹|三彈|sān dàn|x|
+|TT|双弹|雙彈|shuāng dàn|x|
+|BL|泼刺|潑刺|pō cì|x|
+|B|泼|潑|pō|x|
+|L|刺|刺|cì|x|
+
+**Example**
+
+```
+3H5 3(0)Y5s(7) 3I5 | 4TT3 4v(7.6)TTT3(0) | 4BL3 4B3 4L3
+```
+
+<img src="assets/ExampleChords.png" width="800"/>
+
+
+### Glissandos
+
+|Input (Alphabetical)|Input (Simplified)|Input (Traditional)|PinYin|Output|
+|--|--|--|--|--|
+|GF|滚沸|滾沸|gǔnfú|x|
+|G|滚|滾|gǔn|x|
+|F|沸|沸|fú|x|
+|D|到|到|dào|x|
+
+**Example**
+
+```
+1(0)F4 D7 | 1(0)GF4 D7 | 7(0)G4 D1
+```
+
+<img src="assets/ExampleGlissandos.png" width="400"/>
+
+
+### Speed Modifiers
+
+|Input (Alphabetical)|Input (Simplified)|Input (Traditional)|PinYin|Output|
+|--|--|--|--|--|
+|/|绰|綽|chaō|x|
+|>|急|急|jí|x|
+|\\|注|注|zhù|x|
+
+**Example**
+
+
+```
+3k>(0) /3k(0) \3k(0)
+```
+
+<img src="assets/ExampleSpeedMods.png" width="200"/>
+
+
+### Chinese Character Entry Only
+
+|Input (Simplified)|Input (Traditional)|PinYin|Output|
+|--|--|--|--|
+|退|退|tuì|![](assets/退_char.png) |
+|进|進|jìn|![](assets/进_char.png) |
+|长吟|長吟|zhǎng yín|![](assets/长吟_char.png) |
+|细吟|細吟|xì yín|![](assets/细吟_char.png) |
+|分开|分開|fēnkāi|![](assets/分开_char.png) |
+|泛止|泛止|fàn zhǐ|![](assets/泛止_char.png) |
+|大息|大息|dà xī|![](assets/大息_char.png) |
+|少息|少息|shǎo xī|![](assets/少息_char.png) |
+|復|復|fù|![](assets/復_char.png) |
+|起|起|qǐ|![](assets/起_char.png) |
+|泛起|泛起|fàn qǐ|![](assets/泛起_char.png) |
+|带起|帶起|dài qǐ|![](assets/带起_char.png) |
+|对起|對起|duì qǐ|![](assets/对起_char.png) |
+|爪起|爪起|zhǎo qǐ|![](assets/爪起_char.png) |
+|撇起|撇起|piē qǐ|![](assets/撇起_char.png) |
+|打圆|打圓|dǎ yuán|![](assets/打圆_char.png) |
+|撞|撞|zhuàng|![](assets/撞_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
@@ -104,15 +198,15 @@ To render JianZiPu on your website:
 
 ## Usage as a Font
 
-To use the font, install `/dist/JianZiPu.otf` file. You will still need a converter since the font itself uses unicodes in the 58000 range (per its html entity)
+To use the font, install `/dist/JianZiPu.otf` file. You will still need a compiler since the font itself uses unicodes in the 58000 range (per its html entity)
 
-You can access the converter here: https://neuralfirings.github.io/jianzipu/ 
+You can access the compiler here: https://neuralfirings.github.io/jianzipu/ 
 
 You type in the string (e.g., `3ks(7)`), and then copy/paste the compiled characters. 
 
 You can also use the unicodes themselves, but this might get a bit unweildy. 
 
-## Font Mechanics
+## Technical Documentation
 
 This is the part where we go into the nitty gritty of how this font works, and how you can contribute in this project. 
 
@@ -162,34 +256,6 @@ These are the steps I use.
 	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
 5. Compile Javascript, while in JianZiPu directory..
 	* run `./build` to build for the dist folder
-
-## Example of Shorthand
-
-**梧叶舞秋风**
-
-Here are the first few lines of my favorite Guqin piece to play, 梧叶舞秋风.
-
-```
-3fk(7) 4k 6vu(7) 3sk(9) 6vk(7) f(7)U7,6 5k 6vu(7) 3fk(7) 7vu(7) 6u 3s(9)k  
-6vu(7) 3fk(7) 4k 5juv(7) 3fk(7) 5vu(7) 5juf(7) 3kf(7) 5vu(7) 4u 1kd(9)
-4vk(7) 6vu(7) 3sk(9) 6vu(7) 4,3Uv(7) 4,3Uv(7) 2fk(7) 4vu(7) 3k 4sk(7.6)
-7juv(6.2) \7jv(7) \7u sc(7.6) 6us(10.9) 
-6V(7) 4kf(7) 5uv(7) 4uv(7.6) 2fk(7.6) \3v(7.9)k 4vk(7.6) 5u? sc(8.5) 3k(0) 5v(8.5)u 
-4v(9)k 5v(8.5)u 4uv(9) sc(10) 3sk(10.8) 4vu(10) 2kf(10)? 3sk(10.8)
-```
-
-This generates
-
-![](assets/leavesExample.png)
-
-## To Do 
-
-Should probably move this to use the Issues tracker in Github.
-
-- slides in cuo
-- Shuang1 Tan3 (in the Leaves)
-- insert random text in vertical order
-- Fix styling in the hui decimal
 
 ## Credits/License
 

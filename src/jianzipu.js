@@ -54,7 +54,7 @@ function getStructure(ogStr, structureMap) {
 	return strMap
 }
 function stringToCharacter(str) {
-	str = str.replaceAll('V', 'Vv')
+	// str = str.replaceAll('V', 'Vv')
 	var strMap = getStructure(str, charRules)
 	DEBUG ? console.log('strMap', strMap) : ''
 
@@ -62,7 +62,7 @@ function stringToCharacter(str) {
 	var character = '';
 	for (var k in strMap) {
 		for (var i=0;i<charMap[strMap[k].area].components.length; i++) {
-			if (charMap[strMap[k].area].components[i].key == strMap[k].chars) {
+			if (charMap[strMap[k].area].components[i].keys.some(v => v === strMap[k].chars)) {
 				character += String.fromCharCode(charMap[strMap[k].area].components[i].unicode)
 			}
 		}

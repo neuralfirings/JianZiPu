@@ -17,7 +17,7 @@ for area in charMap:
 
 		# import
 		if area == "char":
-			glyph = font.createChar(fontforge.unicodeFromName(component['key']))
+			glyph = font.createChar(fontforge.unicodeFromName(component['keys'][0]))
 		else:
 			glyph = font.createChar(component['unicode'])
 		glyph.clear()
@@ -57,7 +57,7 @@ for area in charMap:
 
 		# Rename
 		if area == "char":
-			glyph.glyphname = component['key']
+			glyph.glyphname = component['keys'][0]
 		else:
 			glyph.glyphname = 'u' + str(component['unicode'])
 		print('done with: ' + glyph.glyphname)
