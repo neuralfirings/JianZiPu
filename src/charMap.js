@@ -78,14 +78,14 @@ const charMap = {
 		{ "key": "6", "filename": "6_liu_l", "unicode": 58065, "width": 0 },
 		{ "key": "7", "filename": "7_qi_l", "unicode": 58066, "width": 0 }
 	]},
-	"lhHalf": { "x": 100, "y": 100, "w": 374, "h": 305, "components": [
+	"lhHalf": { "x": 100, "y": 45, "w": 375, "h": 305, "components": [
 		{ "key": "v", "filename": "v_da_s", "unicode": 58067, "width": 0},
 		{ "key": "f", "filename": "f_index_s", "unicode": 58068, "width": 0},
 		{ "key": "d", "filename": "d_zhong_s", "unicode": 58069, "width": 0},
 		{ "key": "s", "filename": "s_ming_s", "unicode": 58070, "width": 0},
 		{ "key": "x", "filename": "x_gui_s", "unicode": 58071, "width": 0}
 	]},
-	"huiHalf": { "x": 500, "y": 100, "w": 400, "h": 305, "components": [
+	"huiHalf": { "x": 500, "y": 45, "w": 400, "h": 305, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58072, "width": 0 },
 		{ "key": "2", "filename": "2_er_s", "unicode": 58073, "width": 0 },
 		{ "key": "3", "filename": "3_san_s", "unicode": 58074, "width": 0 },
@@ -100,7 +100,7 @@ const charMap = {
 		{ "key": "12", "filename": "12_s", "unicode": 58083, "width": 0 },
 		{ "key": "13", "filename": "13_s", "unicode": 58084, "width": 0 }
 	]},
-	"huiHalfTop": { "x": 500, "y": 100, "w": 400, "h": 150, "components": [
+	"huiHalfTop": { "x": 500, "y": 45, "w": 400, "h": 150, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58085, "width": 0 },
 		{ "key": "2", "filename": "2_er_s", "unicode": 58086, "width": 0 },
 		{ "key": "3", "filename": "3_san_s", "unicode": 58087, "width": 0 },
@@ -115,7 +115,7 @@ const charMap = {
 		{ "key": "12", "filename": "12_s", "unicode": 58096, "width": 0 },
 		{ "key": "13", "filename": "13_s", "unicode": 58097, "width": 0 }
 	]},
-	"huiHalfBottom": { "x": 500, "y": 255, "w": 400, "h": 150, "components": [
+	"huiHalfBottom": { "x": 500, "y": 200, "w": 400, "h": 150, "components": [
 		{ "key": "1", "filename": "1_yi_s", "unicode": 58098, "width": 0 },
 		{ "key": "2", "filename": "2_er_s", "unicode": 58099, "width": 0 },
 		{ "key": "3", "filename": "3_san_s", "unicode": 58100, "width": 0 },
@@ -139,7 +139,7 @@ const charMap = {
 		{ "key": "c", "filename": "c_qiaqi_m", "unicode": 58116, "width": 0 },
 		{ "key": "U", "filename": "U_li_m", "unicode": 58117, "width": 0 }
 	]},
-	"strHalf": { "x": 245, "y": 540, "w": 520, "h": 230 , "components": [
+	"strHalf": { "x": 245, "y": 560, "w": 520, "h": 230 , "components": [
 		{ "key": "1", "filename": "1_yi_m", "unicode": 58118, "width": 0 },
 		{ "key": "2", "filename": "2_er_m", "unicode": 58119, "width": 0 },
 		{ "key": "3", "filename": "3_san_m", "unicode": 58120, "width": 0 },
@@ -166,7 +166,7 @@ const charMap = {
 		{ "key": "6", "filename": "6_liu_m", "unicode": 58137, "width": 0 },
 		{ "key": "7", "filename": "7_qi_m", "unicode": 58138, "width": 0 }
 	]},
-	"thirdMidFull": { "x": 300, "y": 420, "w": 400, "h": 240, "components": [
+	"thirdMidFull": { "x": 300, "y": 375, "w": 400, "h": 220, "components": [
 		{ "key": "j", "filename": "j_mo_s", "unicode": 58139, "width": 0 },
 		{ "key": "V", "filename": "V_yan_s", "unicode": 58140, "width": 0 },
 		{ "key": "0", "filename": "0_san_m", "unicode": 58141, "width": 0 },
@@ -197,7 +197,7 @@ const charMap = {
 		{ "key": "12", "filename": "12_s", "unicode": 58162, "width": 0 },
 		{ "key": "13", "filename": "13_s", "unicode": 58163, "width": 0 }
 	]},
-	"rhThirdBottom": { "x": 100, "y": 660, "w": 800, "h": 305, "components": [
+	"rhThirdBottom": { "x": 100, "y": 620, "w": 800, "h": 350, "components": [
 		{ "key": "n", "filename": "n_bo_m", "unicode": 58164, "width": 0 },
 		{ "key": "h", "filename": "h_tuo_m", "unicode": 58165, "width": 0 },
 		{ "key": "u", "filename": "u_tiao_m", "unicode": 58166, "width": 0 },
@@ -208,7 +208,7 @@ const charMap = {
 		{ "key": "ki", "filename": "ki", "unicode": 58171, "width": 0 },
 		{ "key": "lo", "filename": "lo", "unicode": 58172, "width": 0 }
 	]},
-	"strThird": { "x": 230, "y": 690, "w": 540, "h": 250, "components": [
+	"strThird": { "x": 100, "y": 620, "w": 800, "h": 350, "components": [
 		{ "key": "1", "filename": "1_yi_l", "unicode": 58173, "width": 0 },
 		{ "key": "2", "filename": "2_er_l", "unicode": 58174, "width": 0 },
 		{ "key": "3", "filename": "3_san_l", "unicode": 58175, "width": 0 },
@@ -231,7 +231,7 @@ const charMap = {
 	"fullLeft": { "x": -20, "y": 130, "w": 150, "h": 730, "components": [
 		{ "key": "\\", "filename": "bckSlash_xia_m", "unicode": 58185, "width": 0 }
 	]},
-	"huiHalfFull": { "x": 100, "y": 100, "w": 800, "h": 305, "components": [
+	"huiHalfFull": { "x": 100, "y": 45, "w": 800, "h": 305, "components": [
 		{ "key": "0", "filename": "0_san_m", "unicode": 58186, "width": 0 }
 	]},
 	"cuo": { "x": 450, "y": -175, "w": 825, "h": 1175, "components": [
