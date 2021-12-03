@@ -5,11 +5,12 @@ const rgxRh =
 	"ki|勾剔|勾剔|"+
 	"k|勾|勾|"+
 	"i|剔|剔|"+
-	"lo|打摘|打摘|"+
 	"l|打|打|"+
 	"o|摘|摘|"+
 	"c|掐起|掐起|"+
 	"U|L|历|歷"
+const rgxRhThirdBottom = 
+	"lo|打摘|打摘"
 const rgxLh = 
 	"s|名|名|"+
 	"d|中|中|"+
@@ -131,6 +132,12 @@ const charRules = {
 			do: [
 				{ if: /[0-9]/, area: 'strThird'},
 				{ if: new RegExp(rgxRh), area: 'rhThirdBottom'}
+			]
+		},
+		{ if: new RegExp(rgxRhThirdBottom), area: 'rhThirdBottom', 
+			for: /.*/,
+			do: [
+				{ if: /[0-9]/, area: 'strThird'}
 			]
 		},
 
