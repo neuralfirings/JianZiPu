@@ -60,5 +60,4 @@ for area in charMap:
 			glyph.glyphname = component['keys'][0]
 		else:
 			glyph.glyphname = 'u' + str(component['unicode'])
-		print('done with: ' + glyph.glyphname)
 print('ALL DONE!')

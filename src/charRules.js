@@ -61,10 +61,12 @@ const charRules = {
 		{ if: /撇起|撇起/, area: 'chineseChar' },
 		{ if: /打圆|打圓/, area: 'chineseChar' },
 		{ if: /撞|撞/, area: 'chineseChar' },
+		{ if: /散|散/, area: 'chineseChar' },
+		{ if: /如|如/, area: 'chineseChar' },
 
 		// full jzp
 		{ if: /[0-9]/, area: 'strFull'},
-		{ if: new RegExp(rgxRh), area: 'rhFull'},
+		{ if: new RegExp(`(${rgxRhThirdBottom})|(${rgxRh})|(${rgxMid})`), area: 'rhFull'},
 		{ if: new RegExp(rgxModUpper), area: 'fullUpper' },
 		{ if: new RegExp(rgxModLeft), area: 'fullLeft'  },
 
@@ -74,6 +76,12 @@ const charRules = {
 			do: [
 				{ if: /[0-9]/, area: 'strHalf'},
 				{ if: new RegExp(rgxRh), area: 'rhHalf'},
+				{ if: new RegExp(rgxRhThirdBottom), area: 'rhThirdBottom', 
+					for: /.*/,
+					do: [
+						{ if: /[0-9]/, area: 'strThird'}
+					]
+				},
 			]
 		},
 		{
@@ -89,6 +97,12 @@ const charRules = {
 			do: [
 				{ if: /[0-9]/, area: 'strHalf'},
 				{ if: new RegExp(rgxRh), area: 'rhHalf'},
+				{ if: new RegExp(rgxRhThirdBottom), area: 'rhThirdBottom', 
+					for: /.*/,
+					do: [
+						{ if: /[0-9]/, area: 'strThird'}
+					]
+				},
 			]
 		},
 		{ if: /\(\d+\)/,
@@ -132,12 +146,6 @@ const charRules = {
 			do: [
 				{ if: /[0-9]/, area: 'strThird'},
 				{ if: new RegExp(rgxRh), area: 'rhThirdBottom'}
-			]
-		},
-		{ if: new RegExp(rgxRhThirdBottom), area: 'rhThirdBottom', 
-			for: /.*/,
-			do: [
-				{ if: /[0-9]/, area: 'strThird'}
 			]
 		},
 
