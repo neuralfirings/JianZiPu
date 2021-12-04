@@ -63,6 +63,7 @@ const charRules = {
 		{ if: /撞|撞/, area: 'chineseChar' },
 		{ if: /散|散/, area: 'chineseChar' },
 		{ if: /如|如/, area: 'chineseChar' },
+		{ if: /外|外/, area: 'chineseChar' },
 
 		// full jzp
 		{ if: /[0-9]/, area: 'strFull'},

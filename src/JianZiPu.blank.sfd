@@ -5,7 +5,7 @@ FamilyName: JianZiPu
 Weight: Regular
 Copyright: Copyright (c) 2021, Nancy Yi Liang and JianZiPu Authors (https://github.com/neuralfirings/JianZiPu)
 UComments: "2021-11-17: Created with FontForge (http://fontforge.org)"
-Version: 0.015
+Version: 0.017
 ItalicAngle: 0
 UnderlinePosition: -100
 UnderlineWidth: 50
@@ -22,7 +22,7 @@ OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1637215561
-ModificationTime: 1638378582
+ModificationTime: 1638630010
 PfmFamily: 17
 TTFWeight: 400
 TTFWidth: 5
