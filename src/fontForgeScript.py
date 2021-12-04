@@ -29,7 +29,6 @@ for area in charMap:
 		svgWidth = float(root.attrib['width'].replace('px', ''))
 		svgHeight = float(root.attrib['height'].replace('px', ''))
 		bb = glyph.boundingBox()
-		# print('bb: ' + str(svgWidth) + 'x' + str(svgHeight))
 		scaleWidth = charMap[area]['w'] / svgWidth
 		scaleHeight = charMap[area]['h'] / svgHeight
 		if 'scale' in component.keys():
@@ -40,10 +39,9 @@ for area in charMap:
 		scoochY = 800-scaleHeight*800
 
 		# Import, scale, and scooch
-		# print('scale: ' + str(scaleWidth) + ', ' + str(scaleHeight))
 		glyph.transform((scaleWidth, 0.0, 0.0, scaleHeight, 0, 0)) # scaleX, skewX, skewY, scaleY, positionX, positionY
-		glyph.transform((1, 0.0, 0.0, 1, 0, 800-800*scaleHeight)) # scaleX, skewX, skewY, scaleY, positionX, positionY
-		glyph.transform((1, 0.0, 0.0, 1, charMap[area]['x'], -charMap[area]['y'])) # scaleX, skewX, skewY, scaleY, positionX, positionY
+		glyph.transform((1, 0.0, 0.0, 1, 0, 800-800*scaleHeight)) 
+		glyph.transform((1, 0.0, 0.0, 1, charMap[area]['x'], -charMap[area]['y'])) 
 		
 		# Clean up
 		glyph.removeOverlap()
