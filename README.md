@@ -147,6 +147,9 @@ The core of this font is a series of components (think, letters in word) that ov
 |撇起|撇起|piē qǐ|![](assets/撇起_char.png) |
 |打圆|打圓|dǎ yuán|![](assets/打圆_char.png) |
 |撞|撞|zhuàng|![](assets/撞_char.png) |
+|散|散|sàn|![](assets/散_char.png) |
+|如|如|rú|![](assets/如_char.png) |
+|外|外|wài|![](assets/wai_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
