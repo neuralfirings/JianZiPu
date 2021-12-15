@@ -1,4 +1,5 @@
 const rgxRh = 
+	"lun|轮|輪"+
 	"n|擘|擘|"+
 	"h|托|托|"+
 	"u|挑|挑|"+
@@ -8,7 +9,7 @@ const rgxRh =
 	"l|打|打|"+
 	"o|摘|摘|"+
 	"c|掐起|掐起|"+
-	"U|L|历|歷"
+	"U|历|歷"
 const rgxRhThirdBottom = 
 	"lo|打摘|打摘"
 const rgxLh = 
@@ -46,14 +47,17 @@ const charRules = {
 		// characters
 		{ if: /退|退/, area: 'chineseChar' },
 		{ if: /进|進/, use: '进', area: 'chineseChar' },
+		{ if: /吟|吟/, area: 'chineseChar' },
 		{ if: /长吟|長吟/, use: '长吟', area: 'chineseChar' },
 		{ if: /细吟|細吟/, area: 'chineseChar' },
 		{ if: /分开|分開/, area: 'chineseChar' },
 		{ if: /泛止|泛止/, area: 'chineseChar' },
 		{ if: /大息|大息/, area: 'chineseChar' },
 		{ if: /少息|少息/, area: 'chineseChar' },
-		{ if: /復|復/, area: 'chineseChar' },
+		{ if: /复|復|復/, area: 'chineseChar' },
 		{ if: /起|起/, area: 'chineseChar' },
+		{ if: /泛|泛/, area: 'chineseChar' },
+		{ if: /止|止/, area: 'chineseChar' },
 		{ if: /泛起|泛起/, area: 'chineseChar' },
 		{ if: /带起|帶起/, area: 'chineseChar' },
 		{ if: /对起|對起/, area: 'chineseChar' },
@@ -64,6 +68,8 @@ const charRules = {
 		{ if: /散|散/, area: 'chineseChar' },
 		{ if: /如|如/, area: 'chineseChar' },
 		{ if: /外|外/, area: 'chineseChar' },
+		{ if: /猱|猱/, area: 'chineseChar' },
+		{ if: /应合|應合/, area: 'chineseChar' },
 
 		// full jzp
 		{ if: /[0-9]/, area: 'strFull'},

@@ -132,24 +132,29 @@ The core of this font is a series of components (think, letters in word) that ov
 |--|--|--|--|
 |退|退|tuì|![](assets/退_char.png) |
 |进|進|jìn|![](assets/进_char.png) |
+|復|復|fù|![](assets/復_char.png) |
+|撞|撞|zhuàng|![](assets/撞_char.png) |
+|吟|吟|yín|![](assets/yin_char.png) |
+|猱|猱|náo|![](assets/nao_char.png) |
 |长吟|長吟|zhǎng yín|![](assets/长吟_char.png) |
 |细吟|細吟|xì yín|![](assets/细吟_char.png) |
 |分开|分開|fēnkāi|![](assets/分开_char.png) |
-|泛止|泛止|fàn zhǐ|![](assets/泛止_char.png) |
 |大息|大息|dà xī|![](assets/大息_char.png) |
 |少息|少息|shǎo xī|![](assets/少息_char.png) |
-|復|復|fù|![](assets/復_char.png) |
-|起|起|qǐ|![](assets/起_char.png) |
+|泛|泛|fàn|![](assets/fan_char.png) |
+|止|止|zhǐ|![](assets/zhi_char.png) |
+|起|起|qǐ|![](assets/qi_char.png) |
 |泛起|泛起|fàn qǐ|![](assets/泛起_char.png) |
+|泛止|泛止|fàn zhǐ|![](assets/泛止_char.png) |
 |带起|帶起|dài qǐ|![](assets/带起_char.png) |
 |对起|對起|duì qǐ|![](assets/对起_char.png) |
 |爪起|爪起|zhǎo qǐ|![](assets/爪起_char.png) |
 |撇起|撇起|piē qǐ|![](assets/撇起_char.png) |
 |打圆|打圓|dǎ yuán|![](assets/打圆_char.png) |
-|撞|撞|zhuàng|![](assets/撞_char.png) |
 |散|散|sàn|![](assets/散_char.png) |
 |如|如|rú|![](assets/如_char.png) |
 |外|外|wài|![](assets/wai_char.png) |
+|应合|应合|yīng hé|![](assets/yinghe_char.png) |
 
 Now, if you just type this in the font you'll get a string of components, not the actual characters. To produce the actual character, you'll need a special compiler. It just so happens, I have included one in this package in the form of a webpage. If you clone this package and open the `index.html` file, you should get a text area for inputting the shorthand. 
 
