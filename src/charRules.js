@@ -1,5 +1,4 @@
 const rgxRh = 
-	"lun|轮|輪"+
 	"n|擘|擘|"+
 	"h|托|托|"+
 	"u|挑|挑|"+
@@ -35,6 +34,9 @@ const rgxMid =
 	"G|滚|滾|"+
 	"F|沸|沸|"+
 	"D|到|到"
+const rgxMidFake = 
+	"banlun|半轮|半輪|"+
+	"lun|轮|輪"	
 const rgxModUpper = 
 	"\\/|绰|綽|"+
 	"\\>" // |急|急
@@ -169,6 +171,14 @@ const charRules = {
 			do: [
 				{ if: /[0-9]/, area: 'strThird'},
 				{ if: new RegExp(rgxRh), area: 'rhThirdBottom'}
+			]
+		},
+
+		// fakethird (luns)
+		{ if: new RegExp(rgxMidFake), area: 'thirdMidFull', 
+			for: /.*/,
+			do: [
+				{ if: /[0-9]/, area: 'strThird'}
 			]
 		},
 
