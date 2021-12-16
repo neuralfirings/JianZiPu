@@ -37,7 +37,7 @@ const rgxMid =
 	"D|到|到"
 const rgxModUpper = 
 	"\\/|绰|綽|"+
-	"\\>|急|急"
+	"\\>" // |急|急
 const rgxModLeft = 
 	"\\\\|注|注"
 
@@ -57,6 +57,7 @@ const charRules = {
 		{ if: /如|如/, area: 'chineseChar' },
 		{ if: /外|外/, area: 'chineseChar' },
 		{ if: /猱|猱/, area: 'chineseChar' },
+		{ if: /急|急/, area: 'chineseChar' },
 		{ if: /长吟|長吟/, use: '长吟', area: 'chineseChar' },
 		{ if: /细吟|細吟/, area: 'chineseChar' },
 		{ if: /分开|分開/, area: 'chineseChar' },
@@ -224,6 +225,7 @@ const charRules = {
 		},
 
 		// overwrite
-		{ if: /打圆|打圓/, area: 'chineseChar' }
+		{ if: /打圆|打圓/, area: 'chineseChar' },
+		{ if: /急|急/, area: 'chineseChar' }
 	]
 }
