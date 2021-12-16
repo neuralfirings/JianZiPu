@@ -81,7 +81,7 @@ const charMap = {
 		{ "keys":[ "6"], "filename": "6_liu_l", "unicode": 58072, "width": 0 },
 		{ "keys":[ "7"], "filename": "7_qi_l", "unicode": 58073, "width": 0 }
 	]},
-	"strFullTop": { "x": 355, "y": 200, "w": 290, "h": 290, "components": [
+	"strFullTop": { "x": 330, "y": 135, "w": 400, "h": 400, "components": [
 		{ "keys":[ "1"], "filename": "1_yi_l", "unicode": 58074, "width": 0 },
 		{ "keys":[ "2"], "filename": "2_er_l", "unicode": 58075, "width": 0 },
 		{ "keys":[ "3"], "filename": "3_san_l", "unicode": 58076, "width": 0 },
@@ -90,14 +90,14 @@ const charMap = {
 		{ "keys":[ "6"], "filename": "6_liu_l", "unicode": 58079, "width": 0 },
 		{ "keys":[ "7"], "filename": "7_qi_l", "unicode": 58080, "width": 0 }
 	]},
-	"strFullTop": { "x": 355, "y": 510, "w": 290, "h": 290, "components": [
-		{ "keys": ["1"], "filename": "1_yi_l", "unicode": 58081, "width": 0 },
-		{ "keys": ["2"], "filename": "2_er_l", "unicode": 58082, "width": 0 },
-		{ "keys": ["3"], "filename": "3_san_l", "unicode": 58083, "width": 0 },
-		{ "keys": ["4"], "filename": "4_si_l", "unicode": 58084, "width": 0 },
-		{ "keys": ["5"], "filename": "5_wu_l", "unicode": 58085, "width": 0 },
-		{ "keys": ["6"], "filename": "6_liu_l", "unicode": 58086, "width": 0 },
-		{ "keys": ["7"], "filename": "7_qi_l", "unicode": 58087, "width": 0 }
+	"strFullBottom": { "x": 330, "y": 540, "w": 400, "h": 400, "components": [
+		{ "keys":[ "1"], "filename": "1_yi_l", "unicode": 58081, "width": 0 },
+		{ "keys":[ "2"], "filename": "2_er_l", "unicode": 58082, "width": 0 },
+		{ "keys":[ "3"], "filename": "3_san_l", "unicode": 58083, "width": 0 },
+		{ "keys":[ "4"], "filename": "4_si_l", "unicode": 58084, "width": 0 },
+		{ "keys":[ "5"], "filename": "5_wu_l", "unicode": 58085, "width": 0 },
+		{ "keys":[ "6"], "filename": "6_liu_l", "unicode": 58086, "width": 0 },
+		{ "keys":[ "7"], "filename": "7_qi_l", "unicode": 58087, "width": 0 }
 	]},
 	"lhHalf": { "x": 100, "y": 45, "w": 375, "h": 305, "components": [
 		{ "keys": ["s", "名"], "filename": "s_ming_s", "unicode": 58088, "width": 0},

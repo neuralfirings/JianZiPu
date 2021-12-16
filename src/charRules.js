@@ -77,6 +77,14 @@ const charRules = {
 		{ if: new RegExp(`(${rgxRhThirdBottom})|(${rgxRh})|(${rgxMid})`), area: 'rhFull'},
 		{ if: new RegExp(rgxModUpper), area: 'fullUpper' },
 		{ if: new RegExp(rgxModLeft), area: 'fullLeft'  },
+		// li
+		{ if: /[0-9],[0-9]/, 
+			for: /[0-9],[0-9]/,
+			do: [
+				{ if: /\d.*\,/, remove: [','], area: 'strFullTop' },
+				{ if: /\,\d.*/, remove: [','], area: 'strFullBottom' },
+			]
+		},
 
 		// halves
 		{ if: /\(\d.*\)/, 
@@ -88,6 +96,14 @@ const charRules = {
 					for: /.*/,
 					do: [
 						{ if: /[0-9]/, area: 'strThird'}
+					]
+				},
+				// li
+				{ if: /[0-9],[0-9]/, 
+					for: /[0-9],[0-9]/,
+					do: [
+						{ if: /\d.*\,/, remove: [','], area: 'strHalfTop' },
+						{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 					]
 				},
 			]
@@ -109,6 +125,14 @@ const charRules = {
 					for: /.*/,
 					do: [
 						{ if: /[0-9]/, area: 'strThird'}
+					]
+				},
+				// li
+				{ if: /[0-9],[0-9]/, 
+					for: /[0-9],[0-9]/,
+					do: [
+						{ if: /\d.*\,/, remove: [','], area: 'strHalfTop' },
+						{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 					]
 				},
 			]
@@ -136,15 +160,6 @@ const charRules = {
 			for: /\(13\.\d\)/,
 			do: [
 				{ if: /13\.\d/, use: '13.1', area: 'huiHalf'}
-			]
-		},
-
-		// li
-		{ if: /[0-9],[0-9]/, 
-			for: /[0-9],[0-9]/,
-			do: [
-				{ if: /\d.*\,/, remove: [','], area: 'strHalfTop' },
-				{ if: /\,\d.*/, remove: [','], area: 'strHalfBottom' },
 			]
 		},
 
