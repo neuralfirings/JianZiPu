@@ -138,6 +138,7 @@ The core of this font is a series of components (think, letters in word) that ov
 |猱|猱|náo|![](assets/nao_char.png) |
 |长吟|長吟|zhǎng yín|![](assets/长吟_char.png) |
 |细吟|細吟|xì yín|![](assets/细吟_char.png) |
+|定吟|定吟|dìng yín|![](assets/dingyin_char.png) |
 |分开|分開|fēnkāi|![](assets/分开_char.png) |
 |大息|大息|dà xī|![](assets/大息_char.png) |
 |少息|少息|shǎo xī|![](assets/少息_char.png) |

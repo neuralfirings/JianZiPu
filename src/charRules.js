@@ -49,6 +49,7 @@ const charRules = {
 		// characters
 		{ if: /退|退/, area: 'chineseChar' },
 		{ if: /进|進/, use: '进', area: 'chineseChar' },
+		{ if: /定|定/, area: 'chineseChar' },
 		{ if: /吟|吟/, area: 'chineseChar' },
 		{ if: /复|復|復/, area: 'chineseChar' },
 		{ if: /起|起/, area: 'chineseChar' },
@@ -62,6 +63,7 @@ const charRules = {
 		{ if: /急|急/, area: 'chineseChar' },
 		{ if: /长吟|長吟/, use: '长吟', area: 'chineseChar' },
 		{ if: /细吟|細吟/, area: 'chineseChar' },
+		{ if: /定吟|定吟/, area: 'chineseChar' },
 		{ if: /分开|分開/, area: 'chineseChar' },
 		{ if: /泛止|泛止/, area: 'chineseChar' },
 		{ if: /大息|大息/, area: 'chineseChar' },
