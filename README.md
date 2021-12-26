@@ -43,7 +43,7 @@ The core of this font is a series of components (think, letters in word) that ov
 5ju(0) 5ki(0) 5lo(0) U5,4(0)
 ```
 
-<img src="assets/ExampleBasicRightHand.png" width="400"/>
+<img src="assets/example1.png" width="400"/>
 
 
 ### Basic Left Hand
@@ -65,7 +65,7 @@ The core of this font is a series of components (think, letters in word) that ov
 5ks(7) 5kd(7) 5kf(7) 5kv(7) 5kx(7) cs(7) 5Xv(7)
 ```
 
-<img src="assets/ExampleBasicLeftHand.png" width="400"/>
+<img src="assets/example2.png" width="400"/>
 
 ### Chords and Chord-ish Things
 
@@ -87,7 +87,7 @@ The core of this font is a series of components (think, letters in word) that ov
 3H5 3(0)Y5s(7) 3I5 | 4TT3 4v(7.6)TTT3(0) | 4BL3 4B3 4L3
 ```
 
-<img src="assets/ExampleChords.png" width="800"/>
+<img src="assets/example3.png" width="800"/>
 
 
 ### Glissandos
@@ -105,7 +105,7 @@ The core of this font is a series of components (think, letters in word) that ov
 1(0)F4 D7 | 1(0)GF4 D7 | 7(0)G4 D1
 ```
 
-<img src="assets/ExampleGlissandos.png" width="400"/>
+<img src="assets/example4.png" width="400"/>
 
 
 ### Speed Modifiers
@@ -123,7 +123,7 @@ The core of this font is a series of components (think, letters in word) that ov
 3k>(0) /3k(0) \3k(0)
 ```
 
-<img src="assets/ExampleSpeedMods.png" width="200"/>
+<img src="assets/example5.png" width="200"/>
 
 
 ### Chinese Character Entry Only
