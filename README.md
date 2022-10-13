@@ -254,6 +254,7 @@ These are the steps I use.
 
 1. Edit components
 	* Open `/src/JianZiPuComponents.sketch`: select all / export as SVG (transparent background)
+	* Working on a Figma file to produce the SVGs: https://www.figma.com/file/A6CYEphQAU0spsjnHjtGRl/JianZiPuComponents
 2. Modify `/src/charMap.js` file
 	* Make sure unicodes are unique and something in the 58000 range
 	* To do this in Sublime (with Text Pastry plugin): highlight `"unicode": ` > Ctrl+Cmd+G to select all > Scroll over to the unicodes and replace with > Package: Text Pastry Command Line, `\i(58000,1)`

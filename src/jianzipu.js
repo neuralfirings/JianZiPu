@@ -55,6 +55,7 @@ function getStructure(ogStr, structureMap) {
 }
 function stringToCharacter(str) {
 	// str = str.replaceAll('V', 'Vv')
+	str = str.replaceAll('（', '(').replaceAll('）', ')').replaceAll('。', '.')
 	var strMap = getStructure(str, charRules)
 	DEBUG ? console.log('strMap', strMap) : ''
 

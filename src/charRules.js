@@ -187,7 +187,6 @@ const charRules = {
 		// cuos/chords
 		{ if: new RegExp(rgxChords), area: 'cuo', 
 			for: new RegExp("[^" + rgxChords + "]*", "i"),
-			// for: /[^H|Y|I|O|TTT|TT|BL|B|L]*/i,
 			do: [
 				{ if: /[0-9]/, area: 'strHalf' },
 				{ if: new RegExp("("+rgxLh + ")|(\\([0-9].*\\))"),

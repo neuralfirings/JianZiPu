@@ -249,11 +249,11 @@ const charMap = {
 		{ "keys": ["\\", "注", "注"], "filename": "bckSlash_xia_m", "unicode": 58206, "width": 0 }
 	]},
 	"fullUpper": { "x": 330, "y": -55, "w": 330, "h": 185, "components": [
-		{ "keys": ["/"], "filename": "fwdSlash_shang_s", "unicode": 58207, "width": 0 },
-		{ "keys": [">"], "filename": "ji_s", "unicode": 58208, "width": 0 }
+		{ "keys": ["/", "绰", "綽"], "filename": "fwdSlash_shang_s", "unicode": 58207, "width": 0 },
+		{ "keys": [">", "急", "急"], "filename": "ji_s", "unicode": 58208, "width": 0 }
 	]},
 	"fullLeft": { "x": -20, "y": 130, "w": 150, "h": 730, "components": [
-		{ "keys": ["\\"], "filename": "bckSlash_xia_m", "unicode": 58209, "width": 0 }
+		{ "keys": ["\\", "注", "注"], "filename": "bckSlash_xia_m", "unicode": 58209, "width": 0 }
 	]},
 	"huiHalfFull": { "x": 100, "y": 45, "w": 800, "h": 305, "components": [
 		{ "keys": ["0"], "filename": "0_san_m", "unicode": 58210, "width": 0 }
