@@ -55,7 +55,24 @@ function getStructure(ogStr, structureMap) {
 }
 function stringToCharacter(str) {
 	// str = str.replaceAll('V', 'Vv')
-	str = str.replaceAll('（', '(').replaceAll('）', ')').replaceAll('。', '.')
+	str = str.replaceAll('（', '(')
+		.replaceAll('）', ')')
+		.replaceAll('。', '.')
+		.replaceAll('一', '1')
+		.replaceAll('二', '2')
+		.replaceAll('三', '3')
+		.replaceAll('四', '4')
+		.replaceAll('五', '5')
+		.replaceAll('六', '6')
+		.replaceAll('七', '7')
+		.replaceAll('八', '8')
+		.replaceAll('九', '9')
+		.replaceAll('十一', '11')
+		.replaceAll('十二', '12')
+		.replaceAll('十三', '13')
+		.replaceAll('十', '10')
+		.replaceAll('半', '.5')
+
 	var strMap = getStructure(str, charRules)
 	DEBUG ? console.log('strMap', strMap) : ''
 
