@@ -265,7 +265,7 @@ These are the steps I use.
 	* Open Python console (Ctrl + .) > copy/paste in fontForgeScript.py > run
 	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
 5. Compile Javascript, while in JianZiPu directory..
-	* run `./build` to build for the dist folder
+	* run `./build.sh` to build for the dist folder
 
 ## Credits/License
 
