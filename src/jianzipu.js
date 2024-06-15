@@ -1,4 +1,4 @@
-DEBUG = false
+DEBUG = true
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -53,25 +53,106 @@ function getStructure(ogStr, structureMap) {
 	}
 	return strMap
 }
+
+function jianZiToStr(str) {
+	alphaNumArr = str.trim().split(/(\d+(?:\.\d+)?)/);
+	DEBUG ? console.log('alphaNumArr', alphaNumArr) : ""
+	countNumbers = alphaNumArr.filter(e => !isNaN(e) && e != "").length
+	if (countNumbers > 1 || (countNumbers == 1 && str.indexOf("掐起") > -1)) {
+		firstNumIdx = alphaNumArr.findIndex(e => !isNaN(e) && e != "")
+		firstNumStr = alphaNumArr[firstNumIdx]
+		// the next section converts 34 to 3.4, 12 to 12, 1.2 to 1.2, 125 to 12.5
+		if (firstNumStr.indexOf(".") == -1) {
+			if (["10", "11", "12", "13"].indexOf(firstNumStr.substring(0,2)) > -1) {
+				if (firstNumStr.length >= 3) {
+					firstNumStr = firstNumStr.slice(0, -1) + "." + firstNumStr.slice(-1);
+				}
+			}
+			else {
+				if (firstNumStr.length >= 2) {
+					firstNumStr = firstNumStr.slice(0, -1) + "." + firstNumStr.slice(-1);
+				}
+			}
+		}
+		alphaNumArr[firstNumIdx] = ''
+		UIndx = alphaNumArr.findIndex(e => e === "U" || e === "历" || e === "歷")
+		if (UIndx > -1) {
+			DEBUG ? console.log('UIndx', alphaNumArr) : ""
+			if (alphaNumArr[UIndx+1] != undefined && !alphaNumArr[UIndx+1].isNaN) {
+				commaMe = alphaNumArr[UIndx+1]
+				alphaNumArr[UIndx+1] = commaMe.slice(0, -1) + "," + commaMe.slice(-1);
+			}
+		}
+		alphaNumArr.push(`(${firstNumStr})`)
+	}
+	str = alphaNumArr.join('')
+	DEBUG ? console.log('new str', str) : ""
+	return str
+}
+
+function cuoJianZiToStr(str) {
+	lastChar = str.slice(-1)
+	if (Number(lastChar) >= 1 && Number(lastChar) <= 7) {
+		stringNum = lastChar
+		str = str.slice(0, -1) + "l" + stringNum // hack: insert a "l" here to break up the hui and string numbers, will remove a few lines down
+		str = jianZiToStr(str)
+		str = str.replace('l', '') // whoop there it is
+	}
+	return str
+}
+
 function stringToCharacter(str) {
 	// str = str.replaceAll('V', 'Vv')
 	str = str.replaceAll('（', '(')
 		.replaceAll('）', ')')
 		.replaceAll('。', '.')
-		.replaceAll('一', '1')
-		.replaceAll('二', '2')
-		.replaceAll('三', '3')
+		.replaceAll('散', '0')
 		.replaceAll('四', '4')
 		.replaceAll('五', '5')
 		.replaceAll('六', '6')
 		.replaceAll('七', '7')
 		.replaceAll('八', '8')
 		.replaceAll('九', '9')
+		.replaceAll('一一', '1.1')
+		.replaceAll('一二', '1.2')
+		.replaceAll('一三', '1.3')
 		.replaceAll('十一', '11')
 		.replaceAll('十二', '12')
+		.replaceAll('十三外', '13.5')
 		.replaceAll('十三', '13')
+		.replaceAll('一', '1')
+		.replaceAll('二', '2')
+		.replaceAll('三', '3')
 		.replaceAll('十', '10')
-		.replaceAll('半', '.5')
+		.replaceAll('半轮', 'banlun')
+		.replaceAll('半', '.5') 
+	
+	// following are new
+	if (str.indexOf('(') == -1) {
+		// cuo
+		const cuoStarters = [
+			"Y", "FC", "反撮", "反撮",
+			"I", "DC", "大撮", "大撮",
+			"O", "DFC", "大反撮", "大反撮", 
+			"H", "C", "撮", "撮",
+		];
+		if (cuoStarters.some(substring => str.startsWith(substring))) {
+			const cuoType = cuoStarters.filter(substring => str.startsWith(substring))[0];
+			DEBUG ? console.log('cuoType', cuoType) : ''	
+			str = str.replace(cuoType, '');
+			strParts = str.split('|');
+			DEBUG ? console.log('strParts', strParts) : ''
+			strParts[0] = cuoJianZiToStr(strParts[0]);
+			strParts[1] = cuoJianZiToStr(strParts[1]);
+			str = strParts[0] + cuoType + strParts[1];
+		}
+		// no cuo
+		else {
+			str = jianZiToStr(str)
+		}
+	}
+	if (str.length != 1) { str = str.replaceAll('急', '>') }
+	// end new
 
 	var strMap = getStructure(str, charRules)
 	DEBUG ? console.log('strMap', strMap) : ''
