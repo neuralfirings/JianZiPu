@@ -119,6 +119,7 @@ function stringToCharacter(str) {
 		.replaceAll('十一', '11')
 		.replaceAll('十二', '12')
 		.replaceAll('十三外', '13.5')
+		.replaceAll('外', '13.5')
 		.replaceAll('十三', '13')
 		.replaceAll('一', '1')
 		.replaceAll('二', '2')
