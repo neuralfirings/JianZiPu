@@ -3,9 +3,9 @@ FontName: JianZiPu
 FullName: JianZiPu
 FamilyName: JianZiPu
 Weight: Regular
-Copyright: Copyright (c) 2021, Nancy Yi Liang and JianZiPu Authors (https://github.com/neuralfirings/JianZiPu)
+Copyright: Copyright (c) 2024, Nancy Yi Liang and JianZiPu Authors (https://github.com/neuralfirings/JianZiPu)
 UComments: "2021-11-17: Created with FontForge (http://fontforge.org)"
-Version: 0.019
+Version: 1.00
 ItalicAngle: 0
 UnderlinePosition: -100
 UnderlineWidth: 50
@@ -22,7 +22,7 @@ OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1637215561
-ModificationTime: 1640357270
+ModificationTime: 1719683965
 PfmFamily: 17
 TTFWeight: 400
 TTFWidth: 5
@@ -45,7 +45,7 @@ OS2Vendor: 'PfEd'
 MarkAttachClasses: 1
 DEI: 91125
 LangName: 1033 "" "" "" "" "" "" "" "" "" "" "" "" "" "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL" "http://scripts.sil.org/OFL"
-Encoding: Custom
+Encoding: Original
 UnicodeInterp: none
 NameList: AGL For New Fonts
 DisplaySize: -48
@@ -56,27 +56,6 @@ OnlyBitmaps: 1
 BeginPrivate: 0
 EndPrivate
 TeXData: 1 0 0 1048576 524288 349525 0 1048576 349525 783286 444596 497025 792723 393216 433062 380633 303038 157286 324010 404750 52429 2506097 1059062 262144
-BeginChars: 2 3
-
-StartChar: uni0000
-Encoding: 0 0 0
-Width: 0
-Flags: W
-LayerCount: 2
-EndChar
-
-StartChar: NameMe.1
-Encoding: -1 -1 1
-Width: 1000
-Flags: W
-LayerCount: 2
-EndChar
-
-StartChar: space
-Encoding: 1 32 2
-Width: 1000
-Flags: W
-LayerCount: 2
-EndChar
+BeginChars: 0 0
 EndChars
 EndSplineFont

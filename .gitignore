@@ -1,5 +1,9 @@
-**/.DS_Store
+*{} 
+
+.DS_Store
 old/
 ignore/
 local/
-README.html
+README} 
+
+.html
