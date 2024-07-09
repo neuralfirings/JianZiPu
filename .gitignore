@@ -1,9 +1,6 @@
-*{} 
-
 .DS_Store
 old/
 ignore/
 local/
-README} 
-
-.html
+node_modules/
+.parcel-cache/

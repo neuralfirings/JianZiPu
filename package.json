@@ -1,0 +1,17 @@
+{
+  "name": "jianzipu",
+  "version": "2.0.0",
+  "source": "src/jianzipu.js",  
+  "main": "dist/jianzipu.js",
+  "type": "module",
+  "files": ["dist"],
+  "scripts": {
+    "build": "parcel build",
+    "watch": "parcel watch"
+  },
+  "author": "Nancy Yi Liang",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel": "^2.12.0"
+  }
+}
