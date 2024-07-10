@@ -5,8 +5,21 @@
   "main": "dist/jianzipu.js",
   "type": "module",
   "files": ["dist"],
+  "targets": {
+    "frontend": {
+      "source": "src/index.html",
+      "distDir": "web"
+    },
+    "backend": {
+      "source": "src/jianzipu.js",
+      "outputFormat": "esmodule",
+      "isLibrary": true,
+      "distDir": "dist"
+    }
+  },
   "scripts": {
-    "build": "parcel build",
+    "dev": "parcel src/index.html --dist-dir dev -p 1425",
+    "build": "parcel build --public-url ./",
     "watch": "parcel watch"
   },
   "author": "Nancy Yi Liang",

@@ -1,16 +1,26 @@
 import codecs
 import xml.etree.ElementTree as ET
 import json
+import os
 
-HOME_PATH = '/Users/nyl/git_projects/JianZiPu'
-FILE_NAME = "JianZiPu.v2.0.sfd"
+# Get the current font, set HOME_PATH and FILE_NAME
+current_font = fontforge.activeFont()
+if current_font is not None:
+    file_path = current_font.path
+    if file_path is not None:
+        HOME_PATH = os.path.dirname(file_path)
+        FILE_NAME = os.path.basename(file_path)
+    else:
+        print("No file is currently open.")
+else:
+    print("No active font found.")
 
-with codecs.open(HOME_PATH + '/src/charMap.json', 'r', 'utf-8') as dataFile:
+with codecs.open(HOME_PATH + '/charMap.json', 'r', 'utf-8') as dataFile:
     data = dataFile.read()
     obj = data[data.find('{') : data.rfind('}')+1]
     charMap = json.loads(obj)
     
-font = fontforge.open(HOME_PATH + '/src/' + FILE_NAME)
+font = fontforge.open(HOME_PATH + '/' + FILE_NAME)
 unicodes = []
 for area in charMap:
   if area == "spacer":
@@ -38,7 +48,7 @@ for area in charMap:
     
     if component['filename'] != 'empty':
       # import SVG
-      fp = HOME_PATH+'/src/components/' + component['filename'] + '.svg'
+      fp = HOME_PATH+'/components/' + component['filename'] + '.svg'
       glyph.importOutlines(fp, scale=False)
       
 

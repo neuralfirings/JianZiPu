@@ -4,3 +4,5 @@ ignore/
 local/
 node_modules/
 .parcel-cache/
+dev/
+web/
