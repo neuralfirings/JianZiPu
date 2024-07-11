@@ -7,7 +7,7 @@
     <title>JianZiPu Font</title>
 
 		<!-- Favicon -->
-		<link id="favicon" rel="icon" href="favicon.ico" type="image/x-icon">
+		<link rel="icon" href="favicon.ico" />
 
     <!-- Bootstrap --> 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
@@ -77,13 +77,14 @@
 				</div>
 			</div>
 
+			<hr />
+
 			<div class="row">
 				<div class="col">
 					<br />
 					<h3>Examples</h3>
 				</div>
 			</div>
-
 			<div class="row" style="margin-right: 1.5rem">
 				<div class="col-md-6">
 					<label>Input Example (Alphabet)</label>
@@ -100,6 +101,8 @@
 					</div>
 				</div>
 			</div>
+			
+			<hr />
 
 			<div class="row">
 				<div class="col">
@@ -119,14 +122,15 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					<label>Basic Left Hand</label>
+					<h4>1: Left Hand</h4>
+					<label>1a: Basic Left Hand</label>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>中文</th>
-									<th>拼音</th>
-									<th>output</th>
+									<th width="25%">ASCII</th>
+									<th width="25%">中文</th>
+									<th width="25%">拼音</th>
+									<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
@@ -161,14 +165,14 @@
 						</tr>
 					</table>
 
-					<label>Other Left Hand Techniques</label>
+					<label>1b: Other Common Left Hand Techniques</label>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>中文</th>
-									<th>拼音</th>
-									<th>output</th>
+									<th width="25%">ASCII</th>
+									<th width="25%">中文</th>
+									<th width="25%">拼音</th>
+									<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
@@ -185,20 +189,60 @@
 						</tr>
 					</table>	
 
-					<label>Slide and Speed Modifiers</label>
+					<u>Standalone Characters</u><br />
+					<small>
+						preface these with <code>#</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
+					</small>
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+						</thead>
+						<tr>
+							<td>#daiqi</td>
+							<td>#带起</td>
+							<td>dài qǐ</td>
+							<td>[[[#带起]]]</td>
+						</tr>
+						<tr>
+							<td>#duiqi</td>
+							<td>#对起</td>
+							<td>duì qǐ</td>
+							<td>[[[#对起]]]</td>
+						</tr>
+						<tr>
+							<td>#zhuaqi</td>
+							<td>#抓起</td>
+							<td>zhuā qǐ</td>
+							<td>[[[#抓起]]]</td>
+						</tr>
+						<tr>
+							<td>#pieqi</td>
+							<td>#撇起</td>
+							<td>piē qǐ</td>
+							<td>[[[#撇起]]]</td>
+						</tr>
+					</table>
+
+
+					<label>1c: Speed mods & mods related to 韵 production</label>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>中文</th>
-									<th>拼音</th>
-									<th>output</th>
+									<th width="25%">ASCII</th>
+									<th width="25%">中文</th>
+									<th width="25%">拼音</th>
+									<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
 								<td>/</td>
 								<td>绰</td>
-								<td>chaō</td>
+								<td>chuò</td>
 								<td class="jzp">[[[/]]]</td>
 						</tr>
 						<tr>
@@ -209,27 +253,110 @@
 						</tr>
 						<tr>
 								<td>\</td>
-								<td>|注</td>
+								<td>注</td>
 								<td>zhù</td>
 								<td class="jzp">[[[\]]]</td>
 						</tr>
 					</table>
+
+					<u>Standalone Characters</u><br />
+					<small>
+						preface these with <code>#</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
+					</small>
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+						</thead>
+						<tr>
+							<td>#tui</td>
+							<td>#退</td>
+							<td>tuì</td>
+							<td>[[[#退]]]</td>
+						</tr>
+						<tr>
+								<td>#jin</td>
+								<td>#进</td>
+								<td>jìn</td>
+								<td>[[[#进]]]</td>
+						</tr>
+						<tr>
+								<td>#fu4</td>
+								<td>#復</td>
+								<td>fù</td>
+								<td>[[[#復]]]</td>
+						</tr>
+						<tr>
+								<td>#zhuang</td>
+								<td>#撞</td>
+								<td>zhuàng</td>
+								<td>[[[#撞]]]</td>
+						</tr>
+						<tr>
+								<td>#yin</td>
+								<td>#吟</td>
+								<td>yín</td>
+								<td>[[[#吟]]]</td>
+						</tr>
+						<tr>
+								<td>#nao</td>
+								<td>#猱</td>
+								<td>náo</td>
+								<td>[[[#猱]]]</td>
+						</tr>
+						<tr>
+								<td>#changyin</td>
+								<td>#长吟</td>
+								<td>cháng yín</td>
+								<td>[[[#长吟]]]</td>
+						</tr>
+						<tr>
+								<td>#xiyin</td>
+								<td>#细吟</td>
+								<td>xì yín</td>
+								<td>[[[#细吟]]]</td>
+						</tr>
+						<tr>
+								<td>#dingyin</td>
+								<td>#定吟</td>
+								<td>dìng yín</td>
+								<td>[[[#定吟]]]</td>
+						</tr>
+						<tr>
+								<td>#fenkai</td>
+								<td>#分开</td>
+								<td>fēnkāi</td>
+								<td>[[[#分开]]]</td>
+						</tr>
+						<tr>
+							<td>#yinghe</td>
+							<td>#应合</td>
+							<td>yìng hé</td>
+							<td>[[[#应合]]]</td>
+						</tr>
+					</table>
+
 				</div>
 				<div class="col-md-6">
-					<label>Basic Right Hand</label>
+					<h4>2: Right Hand</h4>
+					<label>2a: Basic Right Hand</label>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>中文</th>
-									<th>拼音</th>
-									<th>output</th>
+									<th width="25%">ASCII</th>
+									<th width="25%">中文</th>
+									<th width="25%">拼音</th>
+									<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
 								<td>n</td>
-								<td>擘</td>
-								<td>bō</td>
+								<td>劈</td>
+								<td>pī</td>
 								<td class="jzp">[[[n]]]</td>
 						</tr>
 						<tr>
@@ -247,7 +374,7 @@
 						<tr>
 								<td>u</td>
 								<td>挑</td>
-								<td>tiāo</td>
+								<td>tiǎo</td>
 								<td class="jzp">[[[u]]]</td>
 						</tr>
 						<tr>
@@ -259,7 +386,7 @@
 						<tr>
 								<td>i</td>
 								<td>剔</td>
-								<td>tī</td>
+								<td>tì</td>
 								<td class="jzp">[[[i]]]</td>
 						</tr>
 						<tr>
@@ -277,7 +404,7 @@
 						<tr>
 								<td>ju</td>
 								<td>抹挑</td>
-								<td>mǒ tiāo</td>
+								<td>mó tiǎo</td>
 								<td class="jzp">[[[ju]]]</td>
 						</tr>
 						<tr>
@@ -294,14 +421,14 @@
 						</tr>
 					</table>
 
-					<label>Multinotes (Chords, Glissandos)</label>
+					<label>2b: Multinotes (Chords, Glissandos, etc.) based on Above</label>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>中文</th>
-									<th>拼音</th>
-									<th>output</th>
+									<th width="25%">ASCII</th>
+									<th width="25%">中文</th>
+									<th width="25%">拼音</th>
+									<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
@@ -328,179 +455,235 @@
 								<td>bàn lún</td>
 								<td class="jzp">[[[banlun]]]</td>
 						</tr>
+						<tr>
+								<td>TT</td>
+								<td>双弹</td>
+								<td>shuāng tán</td>
+								<td class="jzp">[[[TT]]]</td>
+						</tr>
+						<tr>
+								<td>TTT</td>
+								<td>三弹</td>
+								<td>sān tán</td>
+								<td class="jzp">[[[TTT]]]</td>
+						</tr>
+						<tr>
+								<td>B</td>
+								<td>拨</td>
+								<td>bō</td>
+								<td class="jzp">[[[B]]]</td>
+						</tr>
+						<tr>
+								<td>L</td>
+								<td>剌</td>
+								<td>là</td>
+								<td class="jzp">[[[L]]]</td>
+						</tr>
+						<tr>
+								<td>BL</td>
+								<td>拨剌</td>
+								<td>bō là</td>
+								<td class="jzp">[[[BL]]]</td>
+						</tr>
 					</table>
+
+
+					<u>Standalone Characters</u><br />
+					<small>
+						preface these with <code>#</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
+					</small>
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+						</thead>
+
+						<tr>
+							<td>#dayuan</td>
+							<td>#打圆</td>
+							<td>dǎ yuán</td>
+							<td>[[[#打圆]]]</td>
+						</tr>
+						<tr>
+							<td>#gun</td>
+							<td>#滚</td>
+							<td>gǔn</td>
+							<td>[[[#滚]]]</td>
+						</tr>
+						<tr>
+							<td>#fu</td>
+							<td>#沸</td>
+							<td>fú</td>
+							<td>[[[#沸]]]</td>
+						</tr>
+					</table>
+
 				</div>
 			</div>
 			<div class="row">
 				<div class="col">
-					<label>Standalone Characters</label>
-					<p>Preface with <code>#</code></p>
-					<p>Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+					<h4>3. General Symbols</h4>
+					<p>Preface with <code>#</code> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+					
+					<u>3a: Related to Score: TBD</u><br /><br />
+
+					<u>3b: Related to Notes</u><br/>
 					<table class="table table-sm jzp">
 						<thead>
 							<tr>
-									<th>key</th>
-									<th>拼音</th>
-									<th>output</th>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
-							<td>#退, #tui</td>
-							<td>tuì</td>
-							<td>[[[#退]]]</td>
-					</tr>
-					<tr>
-							<td>#进, #jin</td>
-							<td>jìn</td>
-							<td>[[[#进]]]</td>
-					</tr>
-					<tr>
-							<td>#復, #fu4</td>
-							<td>fù</td>
-							<td>[[[#復]]]</td>
-					</tr>
-					<tr>
-							<td>#撞, #zhuang</td>
-							<td>zhuàng</td>
-							<td>[[[#撞]]]</td>
-					</tr>
-					<tr>
-							<td>#吟, #yin</td>
-							<td>yín</td>
-							<td>[[[#吟]]]</td>
-					</tr>
-					<tr>
-							<td>#猱, #nao</td>
-							<td>náo</td>
-							<td>[[[#猱]]]</td>
-					</tr>
-					<tr>
-							<td>#长吟, #changyin</td>
-							<td>cháng yín</td>
-							<td>[[[#长吟]]]</td>
-					</tr>
-					<tr>
-							<td>#细吟, #xiyin</td>
-							<td>xì yín</td>
-							<td>[[[#细吟]]]</td>
-					</tr>
-					<tr>
-							<td>#定吟, #dingyin</td>
-							<td>dìng yín</td>
-							<td>[[[#定吟]]]</td>
-					</tr>
-					<tr>
-							<td>#分开, #fenkai</td>
-							<td>fēnkāi</td>
-							<td>[[[#分开]]]</td>
-					</tr>
-					<tr>
-							<td>#大息, #daxi</td>
-							<td>dà xī</td>
-							<td>[[[#大息]]]</td>
-					</tr>
-					<tr>
-							<td>#少息, #shaoxi</td>
-							<td>shǎo xī</td>
-							<td>[[[#少息]]]</td>
-					</tr>
-					<tr>
-							<td>#泛, #fan</td>
+							<td>#fan</td>
+							<td>#泛</td>
 							<td>fàn</td>
 							<td>[[[#泛]]]</td>
-					</tr>
-					<tr>
-							<td>#止, #zhi</td>
+						</tr>
+						<tr>
+							<td>#zhi</td>
+							<td>#止</td>
 							<td>zhǐ</td>
 							<td>[[[#止]]]</td>
-					</tr>
-					<tr>
-							<td>#起, #qi3</td>
+						</tr>
+						<tr>
+							<td>#qi3</td>
+							<td>#起</td>
 							<td>qǐ</td>
 							<td>[[[#起]]]</td>
-					</tr>
-					<tr>
-							<td>#泛起, #fanqi</td>
+						</tr>
+						<tr>
+							<td>#fanqi</td>
+							<td>#泛起</td>
 							<td>fàn qǐ</td>
 							<td>[[[#泛起]]]</td>
-					</tr>
-					<tr>
-							<td>#泛止, #fanzhi</td>
+						</tr>
+						<tr>
+							<td>#fanzhi</td>
+							<td>#泛止</td>
 							<td>fàn zhǐ</td>
 							<td>[[[#泛止]]]</td>
-					</tr>
-					<tr>
-							<td>#带起, #daiqi</td>
-							<td>dài qǐ</td>
-							<td>[[[#带起]]]</td>
-					</tr>
-					<tr>
-							<td>#对起, #duiqi</td>
-							<td>duì qǐ</td>
-							<td>[[[#对起]]]</td>
-					</tr>
-					<tr>
-							<td>#抓起, #zhuaqi</td>
-							<td>zhuā qǐ</td>
-							<td>[[[#抓起]]]</td>
-					</tr>
-					<tr>
-							<td>#撇起, #pieqi</td>
-							<td>piē qǐ</td>
-							<td>[[[#撇起]]]</td>
-					</tr>
-					<tr>
-							<td>#打圆, #dayuan</td>
-							<td>dǎ yuán</td>
-							<td>[[[#打圆]]]</td>
-					</tr>
-					<tr>
-							<td>#如, #ru</td>
+						</tr>
+						<tr>
+							<td>#ru</td>
+							<td>#如</Td>
 							<td>rú</td>
 							<td>[[[#如]]]</td>
-					</tr>
-					<tr>
-							<td>#外, #wai</td>
-							<td>wài</td>
-							<td>[[[#外]]]</td>
-					</tr>
-					<tr>
-							<td>#应合, #yinghe</td>
-							<td>yīng hé</td>
-							<td>[[[#应合]]]</td>
-					</tr>
-					<tr>
-							<td>#滚, #gun</td>
-							<td>gǔn</td>
-							<td>[[[#滚]]]</td>
-					</tr>
-					<tr>
-							<td>#沸, #fu</td>
-							<td>fú</td>
-							<td>[[[#沸]]]</td>
-					</tr>
-					<tr>
+						</tr>
+					</table>
+
+					<u>3c: Related to String & Hui Number</u><br />
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+							<td>#1..#10</td>
+							<td>#一..#十</td>
+							<td></td>
+							<td>[[[#3]]] [[[#5]]] [[[#8]]]</td>
+							<tr>
+								<td>#wai</td>
+								<td>#外</td>
+								<td>wài</td>
+								<td>[[[#外]]]</td>
+							</tr>
+							<tr>
+								<td>#san, #0</td>
+								<td>#散</td>
+								<td>sǎn</td>
+								<td>[[[#san]]]</td>
+							</tr>
+							<tr>
+								<td>#ban</td>
+								<td>#半</td>
+								<td>bàn</td>
+								<td>[[[#ban]]]</td>
+							</tr>
+							<tr>
+								<td>#shang</td>
+								<td>#上</td>
+								<td>shàng</td>
+								<td>[[[#shang]]]</td>
+							</tr>
+							<tr>
+								<td>#xia</td>
+								<td>#下</td>
+								<td>xìa</td>
+								<td>[[[#xia]]]</td>
+							</tr>
+						</thead>
+					</table>
+
+					<u>3d: related to position： TBD</u><br />
+					<br />
+
+					<u>3e: related to expression</u><br />
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+						</thead>
+						<tr>
+							<td>#daxi</td>
+							<td>#大息</td>
+							<td>dà xī</td>
+							<td>[[[#大息]]]</td>
+						</tr>
+						<tr>
+							<td>#shaoxi</td>
+							<td>#少息</td>
+							<td>shǎo xī</td>
+							<td>[[[#少息]]]</td>
+						</tr>
+					</table>
+
+					<u>Placeholder for Future/Unknown Characters</u><br />
+					<table class="table table-sm jzp">
+						<thead>
+							<tr>
+								<th width="25%">ASCII</th>
+								<th width="25%">中文</th>
+								<th width="25%">拼音</th>
+								<th width="25%">output</th>
+							</tr>
+						</thead>
+						<tr>
 							<td>#*</td>
-							<td>for unknown characters</td>
+							<td></td>
+							<td></td>
 							<td>[[[#*]]]</td>
-					</tr>
+						</tr>
 				</table>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col">
-					<label>Vertical Characters</label>
-					<p>Preface with <code>:</code> and split characters with <code>,</code> or each character/letter will be split in its own line. You can use any characters in the standalone character table above, but the font is optimized to display vertically for: 1-10 (一到十), 0 (散), wai (外), shang (上), xia (下), gun (滚), fu (沸), dao (到), ru (如).</p>
-					<p>Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+					<h4>4. Vertical Characters</h4>
+					<p>Preface with <code>:</code> and split characters with <code>,</code> or each character/letter will be split in its own line. You can use any characters that are in the standalone character set, but the font is optimized to display vertically for: 1-10 (一到十), 0 (散), wai (外), shang (上), xia (下), gun (滚), fu (沸), dao (到), ru (如).</p>
 					<table class="table table-sm">
 						<thead>
 							<tr>
-								<th>key</th>
-								<th>output</th>
+								<th width="25%">ASCII</th>
+								<th width="25%">output</th>
 							</tr>
 						</thead>
 						<tr>
-							<td>：上五六<br />：上56<br />shang,5,6</td>
+							<td>：上五六<br />：上56<br />:shang,5,6</td>
 							<td class="jzp xl" style="vertical-align: middle;">[[[：上56]]]</td>
 						</tr>
 						<tr>
@@ -512,8 +695,8 @@
 							<td class="jzp xl" style="vertical-align: middle;">[[[：散滚沸]]]</td>
 						</tr>
 						<tr>
-							<td>：到五<br />:dao,5</td>
-							<td class="jzp xl" style="vertical-align: middle;">[[[:dao,5]]]</td>
+							<td>：至五<br />:zhi4,5</td>
+							<td class="jzp xl" style="vertical-align: middle;">[[[:zhi4,5]]]</td>
 						</tr>
 						<tr>
 							<td>：如一<br />:ru,1</td>
