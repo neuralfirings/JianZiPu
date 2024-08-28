@@ -1,24 +1,24 @@
 ﻿area,keys,filename,width,layouts,translations
-area_hui;area_hui_2,0,h_open,0,,散;散;sàn
-area_left,s,l_ming,0,,名;名;míng
-area_left,d,l_zhong,0,,中;中;zhōng
-area_left,f,l_shi,0,,食;食;shí
-area_left,v,l_da,0,,大;大;dà
-area_left,x,l_gui,0,,跪;跪;guì
-area_hui;area_hui_2,1,h_yi,0,,一;一;yī
-area_hui;area_hui_2,2,h_er,0,,二;二;èr
-area_hui;area_hui_2,3,h_san,0,,三;三;sān
-area_hui;area_hui_2,4,h_si,0,,四;四;sì
-area_hui;area_hui_2,5,h_wu,0,,五;五;wǔ
-area_hui;area_hui_2,6,h_liu,0,,六;六;liù
-area_hui;area_hui_2,7,h_qi,0,,七;七;qī
-area_hui;area_hui_2,8,h_ba,0,,八;八;bā
-area_hui;area_hui_2,9,h_jiu,0,,九;九;jiǔ
-area_hui;area_hui_2,10,h_shi,0,,十;十;shí
-area_hui;area_hui_2,11,h_shiyi,0,,十一;十一;shí yī
-area_hui;area_hui_2,12,h_shier,0,,十二;十二;shí èr
-area_hui;area_hui_2,13,h_shisan,0,,十三;十三;shí sān
-area_hui;area_hui_2,13+,h_wai,0,,外;wai
+area_left;area_left_1;area_left_2;area_left_3;area_left_4,s,l_ming,0,,名;名;míng
+area_left;area_left_1;area_left_2;area_left_3;area_left_4,d,l_zhong,0,,中;中;zhōng
+area_left;area_left_1;area_left_2;area_left_3;area_left_4,f,l_shi,0,,食;食;shí
+area_left;area_left_1;area_left_2;area_left_3;area_left_4,v,l_da,0,,大;大;dà
+area_left;area_left_1;area_left_2;area_left_3;area_left_4,x,l_gui,0,,跪;跪;guì
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,0,h_open,0,,散;散;sàn
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,1,h_yi,0,,一;一;yī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,2,h_er,0,,二;二;èr
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,3,h_san,0,,三;三;sān
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,4,h_si,0,,四;四;sì
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,5,h_wu,0,,五;五;wǔ
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,6,h_liu,0,,六;六;liù
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,7,h_qi,0,,七;七;qī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,8,h_ba,0,,八;八;bā
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,9,h_jiu,0,,九;九;jiǔ
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,10,h_shi,0,,十;十;shí
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,11,h_shiyi,0,,十一;十一;shí yī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,12,h_shier,0,,十二;十二;shí èr
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13,h_shisan,0,,十三;十三;shí sān
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13+,h_wai,0,,外;wai
 area_right,n,r_pi,0,layout_bo;layout_bo_chuo;layout_bo_rt,劈;劈;pī
 area_right,h,r_tuo,0,layout_tuo;layout_tuo_chuo;layout_tuo_rt,托;托;tuō
 area_right,j,r_mo,0,layout_mo;layout_mo_chuo;layout_mo_rt,抹;抹;mǒ
@@ -50,28 +50,28 @@ area_string;area_string_2;area_string_top;area_string_bottom,S4,s_si,0,,
 area_string;area_string_2;area_string_top;area_string_bottom,S5,s_wu,0,,
 area_string;area_string_2;area_string_top;area_string_bottom,S6,s_liu,0,,
 area_string;area_string_2;area_string_top;area_string_bottom,S7,s_qi,0,,
-area_hui_small_top;area_hui_small_top_2,1.,hs_yi,0,,
-area_hui_small_top;area_hui_small_top_2,2.,hs_er,0,,
-area_hui_small_top;area_hui_small_top_2,3.,hs_san,0,,
-area_hui_small_top;area_hui_small_top_2,4.,hs_si,0,,
-area_hui_small_top;area_hui_small_top_2,5.,hs_wu,0,,
-area_hui_small_top;area_hui_small_top_2,6.,hs_liu,0,,
-area_hui_small_top;area_hui_small_top_2,7.,hs_qi,0,,
-area_hui_small_top;area_hui_small_top_2,8.,hs_ba,0,,
-area_hui_small_top;area_hui_small_top_2,9.,hs_jiu,0,,
-area_hui_small_top;area_hui_small_top_2,10.,hs_shi,0,,
-area_hui_small_top;area_hui_small_top_2,11.,hs_shiyi,0,,
-area_hui_small_top;area_hui_small_top_2,12.,hs_shier,0,,
-area_hui_small_top;area_hui_small_top_2,13.,hs_shisan,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.1,hs_yi,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.2,hs_er,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.3,hs_san,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.4,hs_si,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.5,hs_ban,0,,半;半;bàn
-area_hui_small_bottom;area_hui_small_bottom_2,.6,hs_liu,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.7,hs_qi,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.8,hs_ba,0,,
-area_hui_small_bottom;area_hui_small_bottom_2,.9,hs_jiu,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,1.,hs_yi,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,2.,hs_er,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,3.,hs_san,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,4.,hs_si,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,5.,hs_wu,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,6.,hs_liu,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,7.,hs_qi,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,8.,hs_ba,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,9.,hs_jiu,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,10.,hs_shi,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,11.,hs_shiyi,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,12.,hs_shier,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,13.,hs_shisan,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.1,hs_yi,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.2,hs_er,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.3,hs_san,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.4,hs_si,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.5,hs_ban,0,,半;半;bàn
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.6,hs_liu,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.7,hs_qi,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.8,hs_ba,0,,
+area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.9,hs_jiu,0,,
 area_left_mod1;area_left_mod1_2,/,lm_chuo,0,,绰;綽;chuò
 area_left_mod1;area_left_mod1_2,>,lm_ji,0,,急;急;jí
 area_left_mod2;area_left_mod2_2,\,lm_zhu,0,,|注;注;zhù
@@ -139,7 +139,7 @@ area_char;area_char1;area_char2;area_char3;area_char4,长吟,ch_changyin,0,,长�
 area_char;area_char1;area_char2;area_char3;area_char4,应合,ch_yinghe,0,,应合;應合;yìng hé;yinghe
 area_char;area_char1;area_char2;area_char3;area_char4,打圆,ch_dayuan,0,,打圆;打圓;dǎ yuán;dayuan
 area_char;area_char1;area_char2;area_char3;area_char4,*,placeholder,0,,
-area_suo;area_char;area_char1;area_char2;area_char3;area_char4,bs,ch_baisuo_sm,0,,背璅;背璅;bài suǒ;baisuo
-area_suo;area_char;area_char1;area_char2;area_char3;area_char4,ds,ch_duansuo_sm,0,,短璅;短璅;duǎn suǒ;duansuo
-area_suo;area_char;area_char1;area_char2;area_char3;area_char4,cs,ch_changsuo_sm,0,,长鎻;長鎻;cháng suǒ;changsuo
-area_diejuan;area_char;area_char1;area_char2;area_char3;area_char4,dj,ch_diejuan_sm,0,,叠蠲; 疊蠲;dié juān;diejuan
+area_char;area_char1;area_char2;area_char3;area_char4,bs,ch_baisuo_sm,0,,背璅;背璅;bài suǒ;baisuo
+area_char;area_char1;area_char2;area_char3;area_char4,ds,ch_duansuo_sm,0,,短璅;短璅;duǎn suǒ;duansuo
+area_char;area_char1;area_char2;area_char3;area_char4,cs,ch_changsuo_sm,0,,长璅;長璅;cháng suǒ;changsuo
+area_char;area_char1;area_char2;area_char3;area_char4,dj,ch_diejuan_sm,0,,叠蠲; 疊蠲;dié juān;diejuan
