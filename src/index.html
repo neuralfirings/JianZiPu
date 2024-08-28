@@ -18,6 +18,12 @@
 		<script type="module">
 			import { convert } from './jianzipu.js'
     	$(document).ready(function() {
+// 				$(".jianzipu-input").val(`v64n5 v64h5 v64u5 v64k5 v64i5 v64l5 v64o5 Cv64,5|v64,5 C5|5
+// v64/n5 v64/h5 v64/u5 v64/k5 v64/i5 v64/l5 v64/o5 Cv64,/5|v64,5 C/5|/4
+// v64>n5 v64>h5 v64>u5 v64>k5 v64>i5 v64>l5 v64>o5 Cv64,>5|v64,5 C>5|>4`)
+// 				let sh = $(".jianzipu-input").val()
+// 				$('.jianzipu-output-character').val(convert(sh))
+
     		$(".jianzipu-input").on("keyup", function() {
     			let sh = $(this).val()
     			$('.jianzipu-output-character').val(convert(sh)) 
@@ -490,7 +496,7 @@
 
 					<u>Standalone Characters</u><br />
 					<small>
-						preface these with <code>#</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
+						preface these with <code>#</code> (single charactger) or <code>:</code> (vertical characters separated by comma) and best use Chinese characters to avoid ambiguity with homonym pinyins
 					</small>
 					<table class="table table-sm jzp">
 						<thead>
@@ -519,6 +525,30 @@
 							<td>#沸</td>
 							<td>fú</td>
 							<td>[[[#沸]]]</td>
+						</tr>
+						<tr>
+							<td>:baisuo, bs</td>
+							<td>:背璅</td>
+							<td>bài suǒ</td>
+							<td>[[[:背璅]]] s9bs5 [[[s9bs5]]]</td>
+						</tr>
+						<tr>
+							<td>:duansuo, ds</td>
+							<td>:短璅</td>
+							<td>duǎn suǒ</td>
+							<td>[[[:短璅]]]</td>
+						</tr>
+						<tr>
+							<td>:changsuom, cs</td>
+							<td>:长璅</td>
+							<td>cháng suǒ</td>
+							<td>[[[:长璅]]]</td>
+						</tr>
+						<tr>
+							<td>:diejuan, dj</td>
+							<td>:叠蠲</td>
+							<td>dié juan</td>
+							<td>[[[#叠蠲]]]</td>
 						</tr>
 					</table>
 

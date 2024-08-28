@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "dev": "parcel src/index.html --dist-dir dev -p 1425",
+    "dev": "parcel src/index.html --dist-dir dev -p 1664",
     "build": "parcel build --public-url ./",
     "watch": "parcel watch"
   },

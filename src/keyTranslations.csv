@@ -103,3 +103,11 @@ lun,轮,輪,lún,,pluck_3,yes
 应合,应合,應合,yìng hé,yinghe,char,
 打圆,打圆,打圓,dǎ yuán,dayuan,char,
 *,*,*,*,*,char,
+背,背璅,背璅,bài suǒ,baisuo,char,
+短,短璅,短璅,duǎn suǒ,duansuo,char,
+长,长鎻,長鎻,cháng suǒ,changsuo,char,
+bs,背璅,背璅,bài suǒ,baisuo,pluck,yes
+ds,短璅,短璅,duǎn suǒ,duansuo,pluck,yes
+cs,长鎻,長鎻,cháng suǒ,changsuo,pluck,yes
+dj,叠蠲, 疊蠲,dié juān,diejuan,pluck,yes
+叠,叠蠲, 疊蠲,dié juān,diejuan,char,

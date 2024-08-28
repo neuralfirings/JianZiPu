@@ -1,0 +1,1 @@
+{"mappings":"AAAA;;;;;AAIA","sources":["src/jianzipu.css"],"sourcesContent":["@font-face {\n  font-family: JianZiPu;\n  src: url(\"./JianZiPu.otf\") format(\"opentype\");\n}\n.jzp-font {\n  font-family: JianZiPu, \"Kaiti SC\", \"Ma Shan Zheng\", monospace;\n  font-size: 3rem;\n}"],"names":[],"version":3,"file":"jianzipu.fee3cd97.css.map"}

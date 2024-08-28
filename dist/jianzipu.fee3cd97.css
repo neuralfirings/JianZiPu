@@ -1,0 +1,10 @@
+@font-face {
+  font-family: JianZiPu;
+  src: url("JianZiPu.fd390ce1.otf") format("opentype");
+}
+
+.jzp-font {
+  font-family: JianZiPu, Kaiti SC, Ma Shan Zheng, monospace;
+  font-size: 3rem;
+}
+/*# sourceMappingURL=jianzipu.fee3cd97.css.map */

@@ -35,6 +35,7 @@ else if (args.includes("--compile")) {
     return Math.round(Number(line.split(": ")[1].replace("%;", "")) / 100 * total)
   }
   ctr = 0
+  let advanceWidths = {}
   figmaArr.forEach((line) => {
     if (line == "")
       return
@@ -43,6 +44,12 @@ else if (args.includes("--compile")) {
       currLayout = line.substring(3, line.length - 3)
       console.log("layout", currLayout)
       figmaObj[currLayout] =  {}
+    }
+
+    if (currLayout && line.includes("width: ") && figmaObj[currLayout].width == undefined) {
+      const w = Math.round(Number(line.split(": ")[1].replace("px", "").replace(";", "")))
+      figmaObj[currLayout].width = w
+      advanceWidths[w] = undefined
     }
 
     // console.log(ctr, currLayout)
@@ -103,7 +110,7 @@ else if (args.includes("--compile")) {
   let csvObj = []
 
   areaMap = {}
-  let csvKeys = ["area", "keys", "filename", "width"]//csvArr[0].trim().split(",")
+  let csvKeys = ["area", "keys", "filename", "width", "layouts", "translations"]//csvArr[0].trim().split(",")
   csvArr.forEach((line, i) => {
     if (line == "" || i == 0)
       return
@@ -115,18 +122,19 @@ else if (args.includes("--compile")) {
         if (i<csvKeys.length)
           obj[csvKeys[i]] = cell.trim()
       })
-      // csvObj.push(obj)
+      csvObj.push(obj)
       if (areaMap[area] == undefined)
         areaMap[area] = []
       areaMap[area].push({
         "keys": obj.keys.split(";"),
         "filename": obj.filename,
-        "width": Number(obj.width)
+        "width": Number(obj.width),
+        "layouts": obj.layouts == "" ? [] : obj.layouts.split(";")
       })
     })
   })
   if (verbose)
-    console.log("2. areaMap", areaMap)
+    console.log("2. areaMap", JSON.stringify(areaMap, null, 2))
   else if (!terse)
     console.log("2. areaMap", Object.keys(areaMap))
   else
@@ -140,24 +148,44 @@ else if (args.includes("--compile")) {
   // spacer
   charMap.spacer = {unicode: unicode}
   unicode++
+  charMap.spacers = {}
+  for (let w in advanceWidths) {
+    charMap.spacers[w] = {
+      unicode: unicode,
+      width: Number(w)
+    }
+    unicode++
+  }
 
   // glyphs
   for (let layout in figmaObj) {
+    const l = layout.replace("layout_", "")
+    charMap[l] = {
+      width: figmaObj[layout].width,
+      areas: {}
+    }
     for (let area in figmaObj[layout]) {
-      charMap[layout + "__" + area] = JSON.parse(JSON.stringify(figmaObj[layout][area]))
-      cMLA = charMap[layout + "__" + area]
-      cMLA.components = areaMap[area] ? JSON.parse(JSON.stringify(areaMap[area])) : []
-      for (let i=0; i<cMLA.components.length; i++) {
-        const unicodeDictKey = `${cMLA.x}_${cMLA.y}_${cMLA.w}_${cMLA.h}_${cMLA.components[i].filename}_${cMLA.components[i].width}`
+      if (area == "width")
+        continue
+      let a = area.replace("area_", "")
+      let thisArea = JSON.parse(JSON.stringify(figmaObj[layout][area]))
+      // cMLA = charMap[layout + "__" + area]
+      thisArea.components = areaMap[area] ? JSON.parse(JSON.stringify(
+        areaMap[area].filter((a) => a.layouts.includes(layout) || a.layouts.length == 0)
+      )) : []
+      // console.log("cMLA", layout, area, cMLA)
+      for (let i=0; i<thisArea.components.length; i++) {
+        const unicodeDictKey = `${thisArea.x}_${thisArea.y}_${thisArea.w}_${thisArea.h}_${thisArea.components[i].filename}_${thisArea.components[i].width}`
         if (unicodeDict[unicodeDictKey] == undefined) {
-          cMLA.components[i].unicode = unicode
+          thisArea.components[i].unicode = unicode
           unicodeDict[unicodeDictKey] = unicode
           unicode++
         }
         else {
-          cMLA.components[i].unicode = unicodeDict[unicodeDictKey]
+          thisArea.components[i].unicode = unicodeDict[unicodeDictKey]
         }
       }
+      charMap[l].areas[a] = thisArea
     }
   }
   if (verbose)
@@ -168,10 +196,34 @@ else if (args.includes("--compile")) {
     console.log("3. charMap done")
   // #endregion
 
+  // #region PART 4: areaKeySVGMap.csv > babelDict
+  let babelDictStr = []
+  csvObj.forEach((obj) => {
+    const translations = obj.translations.split(";").filter((t) => t != "")
+    const keys = obj.keys.split(";").filter((k) => k != "")
+    keys.map(k => {
+      let obj = { "key": k, "translation": k }
+      let str = JSON.stringify(obj)
+      if (!babelDictStr.includes(str)) babelDictStr.push(str)
+    
+      translations.map((t) => {
+        obj = { "key": k, "translation": t }
+        str = JSON.stringify(obj)
+        if (!babelDictStr.includes(str)) babelDictStr.push(str)
+      })
+    })
+  })
+  let babelDict = babelDictStr.map((str) => JSON.parse(str))
+  // babelDict = babelDict.sort((a, b) => b.translations.length - a.translations.length)
+  if (verbose)
+    console.log("4. babelDict", babelDict)
+  else
+    console.log("4. babelDict done")
 
   if (args.includes("--write")) {
     fs.writeFileSync("charMap.json", JSON.stringify(charMap))
-    console.log("WROTE TO FILE!", "charMap.json")
+    fs.writeFileSync("babelDict.json", JSON.stringify(babelDict))
+    console.log("WROTE TO FILE!", "charMap.json", "babelDict.json")
   }
   else {
     console.log("Did NOT write to file.")
