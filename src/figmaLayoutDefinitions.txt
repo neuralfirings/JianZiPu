@@ -699,10 +699,10 @@ bottom: 0%;
 /* 一二三四五六七八九十 十一 十二 十三 */
 
 position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
 
 background: #000000;
 
@@ -1029,10 +1029,10 @@ bottom: 0%;
 /* 一二三四五六七八九十 十一 十二 十三 */
 
 position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
 
 background: #000000;
 
@@ -1324,10 +1324,10 @@ bottom: 0%;
 /* 一二三四五六七八九十 十一 十二 十三 */
 
 position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
 
 background: #000000;
 
@@ -2413,10 +2413,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -2617,10 +2617,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -2821,10 +2821,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -3056,10 +3056,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -3194,10 +3194,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 4.29px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -3410,10 +3410,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -3676,10 +3676,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 4.29px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -4662,7 +4662,7 @@ top: 500px;
 
 
 
-/* ch_wu */
+/* s_wu */
 
 position: absolute;
 left: 0%;
@@ -4672,13 +4672,13 @@ bottom: 0%;
 
 
 
-/* 五 */
+/* 二三五六七八九十 */
 
 position: absolute;
-left: 4.4%;
-right: 4.53%;
-top: 15.8%;
-bottom: 15.94%;
+left: -4.29%;
+right: -4.13%;
+top: 9.29%;
+bottom: 9.45%;
 
 background: #000000;
 
@@ -5923,1160 +5923,6 @@ bottom: -2.33%;
 background: #000000;
 
 
-/* layout_cuo_left */
-
-box-sizing: border-box;
-
-position: relative;
-width: 500px;
-height: 1000px;
-left: 13663px;
-top: 330px;
-
-background: #FFFFFF;
-border: 1px solid #000000;
-
-
-/* area_right */
-
-position: absolute;
-width: 660px;
-height: 660px;
-left: 220px;
-top: 187px;
-
-
-
-/* r_cuo */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 早 */
-
-position: absolute;
-width: 1132.8px;
-height: 1350.1px;
-left: -49px;
-top: -338px;
-
-background: #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 148px;
-top: 662px;
-
-
-
-/* s_san */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-width: 319px;
-height: 260px;
-left: 49px;
-top: 80px;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 103px;
-height: 420px;
-left: 42px;
-top: 662px;
-
-
-
-/* lm_zhu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 洚 */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 4.89%;
-bottom: 1.49%;
-
-background: #000000;
-
-
-/* area_hui_small_bottom */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 349px;
-top: 462px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui_small_top */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 349px;
-top: 261px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 349px;
-top: 317px;
-
-
-
-/* h_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 一二三四五六七八九十 十一 十二 十三 */
-
-position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
-
-background: #000000;
-
-
-/* area_left */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 4px;
-top: 317px;
-
-border: 1px solid #000000;
-
-
-/* l_zhong */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-left: 8.7%;
-right: 8.35%;
-top: -3.77%;
-bottom: -4.05%;
-
-background: #000000;
-
-
-/* layout_cuo_right */
-
-box-sizing: border-box;
-
-position: relative;
-width: 1000px;
-height: 1000px;
-left: 14163px;
-top: 330px;
-
-border: 1px solid #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 399px;
-top: 670px;
-
-
-
-/* s_san */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-width: 319px;
-height: 260px;
-left: 49px;
-top: 80px;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 103px;
-height: 420px;
-left: 293px;
-top: 671px;
-
-
-
-/* lm_zhu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 洚 */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 4.89%;
-bottom: 1.49%;
-
-background: #000000;
-
-
-/* area_hui_small_bottom */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 600px;
-top: 470px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui_small_top */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 600px;
-top: 269px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 600px;
-top: 325px;
-
-
-
-/* h_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 一二三四五六七八九十 十一 十二 十三 */
-
-position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
-
-background: #000000;
-
-
-/* area_left */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 255px;
-top: 325px;
-
-border: 1px solid #000000;
-
-
-/* l_zhong */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-left: 8.7%;
-right: 8.35%;
-top: -3.77%;
-bottom: -4.05%;
-
-background: #000000;
-
-
-/* layout_cuo_v3_left */
-
-box-sizing: border-box;
-
-position: relative;
-width: 500px;
-height: 1000px;
-left: 13677px;
-top: 3487px;
-
-background: #FFFFFF;
-border: 1px solid #000000;
-
-
-/* area_right */
-
-position: absolute;
-width: 660px;
-height: 660px;
-left: 220px;
-top: 187px;
-
-
-
-/* r_shuangtan */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-width: 551px;
-height: 455.54px;
-left: 257px;
-top: -364.01px;
-
-background: #000000;
-
-
-/* 双 口口 */
-
-position: absolute;
-width: 540.58px;
-height: 282.45px;
-left: 267.42px;
-top: -364.01px;
-
-background: #000000;
-
-
-/* 口口 */
-
-position: absolute;
-width: 260.45px;
-height: 231.51px;
-left: 257px;
-top: -139.98px;
-
-background: #000000;
-
-
-/* 口口 */
-
-position: absolute;
-width: 260.45px;
-height: 231.51px;
-left: 517.45px;
-top: -139.98px;
-
-background: #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 148px;
-top: 842px;
-
-
-
-/* s_wu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-left: -4.29%;
-right: -4.13%;
-top: 9.29%;
-bottom: 9.45%;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 103px;
-height: 420px;
-left: 42px;
-top: 842px;
-
-
-
-/* lm_zhu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 洚 */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 4.89%;
-bottom: 1.49%;
-
-background: #000000;
-
-
-/* area_left_mod1 */
-
-position: absolute;
-width: 165px;
-height: 165px;
-left: 250px;
-top: 710px;
-
-
-
-/* lm_chuo */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 绰注 */
-
-position: absolute;
-left: 20.47%;
-right: -24.19%;
-top: -26.05%;
-bottom: -2.33%;
-
-background: #000000;
-
-
-/* area_hui_small_bottom */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 349px;
-top: 462px;
-
-
-
-/* hs_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-width: 252.46px;
-height: 177.38px;
-left: 3.84px;
-top: 25.86px;
-
-background: #000000;
-border: 4px solid #000000;
-
-
-/* area_hui_small_top */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 349px;
-top: 261px;
-
-
-
-/* hs_qi */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 0.61%;
-top: 0%;
-bottom: -0.27%;
-
-background: #000000;
-border: 6px solid #000000;
-
-
-/* area_hui */
-
-position: absolute;
-visibility: hidden;
-width: 345px;
-height: 345px;
-left: 349px;
-top: 317px;
-
-
-
-/* area_left */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 4px;
-top: 317px;
-
-border: 1px solid #000000;
-
-
-/* l_da */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-width: 351.73px;
-height: 321.78px;
-left: 0px;
-top: 12px;
-
-background: #000000;
-
-
-/* layout_cuo_v3_right */
-
-box-sizing: border-box;
-
-position: relative;
-width: 1000px;
-height: 1000px;
-left: 14177px;
-top: 3487px;
-
-border: 1px solid #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 428px;
-top: 842px;
-
-
-
-/* s_san */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-width: 319px;
-height: 260px;
-left: 49px;
-top: 80px;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 103px;
-height: 420px;
-left: 322px;
-top: 792px;
-
-
-
-/* lm_zhu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 洚 */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 4.89%;
-bottom: 1.49%;
-
-background: #000000;
-
-
-/* area_left_mod1 */
-
-position: absolute;
-width: 165px;
-height: 165px;
-left: 530px;
-top: 710px;
-
-
-
-/* lm_chuo */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 绰注 */
-
-position: absolute;
-left: 20.47%;
-right: -24.19%;
-top: -26.05%;
-bottom: -2.33%;
-
-background: #000000;
-
-
-/* area_hui_small_bottom */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 629px;
-top: 462px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui_small_top */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 629px;
-top: 261px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_hui */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 629px;
-top: 317px;
-
-
-
-/* h_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 一二三四五六七八九十 十一 十二 十三 */
-
-position: absolute;
-width: 336.61px;
-height: 236.51px;
-left: 8px;
-top: 55px;
-
-background: #000000;
-
-
-/* area_left */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 284px;
-top: 317px;
-
-border: 1px solid #000000;
-
-
-/* l_zhong */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-left: 8.7%;
-right: 8.35%;
-top: -3.77%;
-bottom: -4.05%;
-
-background: #000000;
-
-
-/* layout_cuo_v2_left */
-
-box-sizing: border-box;
-
-position: relative;
-width: 500px;
-height: 1000px;
-left: 13663px;
-top: 1817px;
-
-background: #FFFFFF;
-border: 1px solid #000000;
-
-
-/* area_right */
-
-position: absolute;
-width: 660px;
-height: 660px;
-left: 220px;
-top: 187px;
-
-
-
-/* r_cuo */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 早 */
-
-position: absolute;
-width: 1132.8px;
-height: 1350.1px;
-left: -49px;
-top: -338px;
-
-background: #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 228px;
-top: 482px;
-
-
-
-/* s_wu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-left: -4.29%;
-right: -4.13%;
-top: 9.29%;
-bottom: 9.45%;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 104px;
-height: 425px;
-left: 121px;
-top: 482px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_left_mod1 */
-
-position: absolute;
-width: 165px;
-height: 165px;
-left: 330px;
-top: 349px;
-
-
-
-/* lm_chuo */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 绰注 */
-
-position: absolute;
-left: 20.47%;
-right: -24.19%;
-top: -26.05%;
-bottom: -2.33%;
-
-background: #000000;
-
-
-/* layout_cuo_v2_right */
-
-box-sizing: border-box;
-
-position: relative;
-width: 1000px;
-height: 1000px;
-left: 14163px;
-top: 1817px;
-
-border: 1px solid #000000;
-
-
-/* area_string */
-
-position: absolute;
-width: 400px;
-height: 400px;
-left: 408px;
-top: 482px;
-
-
-
-/* s_wu */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 二三五六七八九十 */
-
-position: absolute;
-left: -4.29%;
-right: -4.13%;
-top: 9.29%;
-bottom: 9.45%;
-
-background: #000000;
-
-
-/* area_left_mod2 */
-
-position: absolute;
-width: 103px;
-height: 420px;
-left: 305px;
-top: 482px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_left_mod1 */
-
-position: absolute;
-width: 165px;
-height: 165px;
-left: 510px;
-top: 349px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
 /* layout_tiao_rt */
 
 box-sizing: border-box;
@@ -7145,10 +5991,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 3.79px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -7283,10 +6129,10 @@ bottom: 0%;
 /* 四 */
 
 position: absolute;
-width: 411.57px;
-height: 298.89px;
-left: calc(50% - 411.57px/2 + 4.29px);
-top: calc(50% - 298.89px/2 + 0.44px);
+left: 1.9%;
+right: 0.1%;
+top: 14.52%;
+bottom: 14.31%;
 
 background: #000000;
 
@@ -7939,674 +6785,6 @@ bottom: -2.33%;
 background: #000000;
 
 
-/* layout_vertjzp3 */
-
-box-sizing: border-box;
-
-position: relative;
-width: 1000px;
-height: 1000px;
-left: 4927px;
-top: 7955px;
-
-border: 1px solid #000000;
-
-
-/* leftHandGroup3 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 174px;
-top: 800px;
-
-
-
-/* area_hui_small_bottom_3 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: 1001px;
-
-
-
-/* hs_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-width: 252.46px;
-height: 177.38px;
-left: 3.84px;
-top: 25.86px;
-
-background: #000000;
-border: 4px solid #000000;
-
-
-/* area_hui_small_top_3 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: 800px;
-
-
-
-/* hs_qi */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 0.61%;
-top: 0%;
-bottom: -0.27%;
-
-background: #000000;
-border: 6px solid #000000;
-
-
-/* area_hui_3 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 519px;
-top: 856px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_3 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 174px;
-top: 856px;
-
-border: 1px solid #000000;
-
-
-/* l_da */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-width: 351.73px;
-height: 321.78px;
-left: 0px;
-top: 12px;
-
-background: #000000;
-
-
-/* area_char3 */
-
-position: absolute;
-left: 25%;
-right: 25%;
-top: 77.5%;
-bottom: -27.5%;
-
-
-
-/* leftHandGroup2 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 174px;
-top: 300px;
-
-
-
-/* area_hui_small_bottom_2 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: 501px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_small_top_2 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: 300px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_2 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 519px;
-top: 356px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_2 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 174px;
-top: 356px;
-
-border: 1px solid #000000;
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_char2 */
-
-position: absolute;
-left: 25.1%;
-right: 24.9%;
-top: 27.5%;
-bottom: 22.5%;
-
-
-
-/* leftHandGroup1 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 174px;
-top: -200px;
-
-
-
-/* area_hui_small_bottom_1 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: 1px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_small_top_1 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 519px;
-top: -200px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_1 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 519px;
-top: -144px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_1 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 174px;
-top: -144px;
-
-border: 1px solid #000000;
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_char1 */
-
-position: absolute;
-left: 25.1%;
-right: 24.9%;
-top: -22.5%;
-bottom: 72.5%;
-
-
-
-/* ch_diejuan_sm */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 叠 */
-
-position: absolute;
-left: 0.57%;
-right: 0.39%;
-top: 4%;
-bottom: 4.25%;
-
-background: #000000;
-
-
-/* layout_vertjzp2 */
-
-box-sizing: border-box;
-
-position: relative;
-width: 1000px;
-height: 1000px;
-left: 3740px;
-top: 7955px;
-
-border: 1px solid #000000;
-
-
-/* leftHandGroup2 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 155px;
-top: 525px;
-
-
-
-/* area_hui_small_bottom_2 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 726px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_small_top_2 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 525px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_2 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 500px;
-top: 581px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_2 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 155px;
-top: 581px;
-
-border: 1px solid #000000;
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_char2 */
-
-position: absolute;
-left: 23.2%;
-right: 26.8%;
-top: 50%;
-bottom: 0%;
-
-
-
-/* leftHandGroup1 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 155px;
-top: 25px;
-
-
-
-/* area_hui_small_bottom_1 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 226px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_small_top_1 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 25px;
-
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_hui_1 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 500px;
-top: 81px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_1 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 155px;
-top: 81px;
-
-border: 1px solid #000000;
-
-
-/* blank */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* area_char1 */
-
-position: absolute;
-left: 23.2%;
-right: 26.8%;
-top: 0%;
-bottom: 50%;
-
-
-
-/* ch_diejuan_sm */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 叠 */
-
-position: absolute;
-left: 0.57%;
-right: 0.39%;
-top: 4%;
-bottom: 4.25%;
-
-background: #000000;
-
-
 /* layout_vertjzp1 */
 
 box-sizing: border-box;
@@ -8754,165 +6932,17 @@ bottom: 4.25%;
 background: #000000;
 
 
-/* layout_vertjzp4 */
+/* layout_vertjzp3 */
 
 box-sizing: border-box;
 
 position: relative;
 width: 1000px;
 height: 1000px;
-left: 6218px;
+left: 5040px;
 top: 7955px;
 
 border: 1px solid #000000;
-
-
-/* leftHandGroup4 */
-
-position: absolute;
-width: 690px;
-height: 401px;
-left: 155px;
-top: 1007px;
-
-
-
-/* area_hui_small_bottom_4 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 1208px;
-
-
-
-/* hs_si */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-width: 252.46px;
-height: 177.38px;
-left: 3.84px;
-top: 25.86px;
-
-background: #000000;
-border: 4px solid #000000;
-
-
-/* area_hui_small_top_4 */
-
-position: absolute;
-width: 260px;
-height: 200px;
-left: 500px;
-top: 1007px;
-
-
-
-/* hs_qi */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 0.61%;
-top: 0%;
-bottom: -0.27%;
-
-background: #000000;
-border: 6px solid #000000;
-
-
-/* area_hui_4 */
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 500px;
-top: 1063px;
-
-
-
-/* empty */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* Union */
-
-position: absolute;
-left: 0%;
-right: -1.41%;
-top: -1.41%;
-bottom: -1.41%;
-
-
-
-/* area_left_4 */
-
-box-sizing: border-box;
-
-position: absolute;
-width: 345px;
-height: 345px;
-left: 155px;
-top: 1063px;
-
-border: 1px solid #000000;
-
-
-/* l_da */
-
-position: absolute;
-left: 0%;
-right: 0%;
-top: 0%;
-bottom: 0%;
-
-
-
-/* 大中食 */
-
-position: absolute;
-width: 351.73px;
-height: 321.78px;
-left: 0px;
-top: 12px;
-
-background: #000000;
-
-
-/* area_char4 */
-
-position: absolute;
-left: 23.1%;
-right: 26.9%;
-top: 98.2%;
-bottom: -48.2%;
-
 
 
 /* leftHandGroup3 */
@@ -8921,7 +6951,7 @@ position: absolute;
 width: 690px;
 height: 401px;
 left: 155px;
-top: 507px;
+top: 621px;
 
 
 
@@ -8931,11 +6961,11 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: 708px;
+top: 822px;
 
 
 
-/* hs_si */
+/* blank */
 
 position: absolute;
 left: 0%;
@@ -8943,18 +6973,6 @@ right: 0%;
 top: 0%;
 bottom: 0%;
 
-
-
-/* Vector */
-
-position: absolute;
-width: 252.46px;
-height: 177.38px;
-left: 3.84px;
-top: 25.86px;
-
-background: #000000;
-border: 4px solid #000000;
 
 
 /* area_hui_small_top_3 */
@@ -8963,11 +6981,11 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: 507px;
+top: 621px;
 
 
 
-/* hs_qi */
+/* blank */
 
 position: absolute;
 left: 0%;
@@ -8977,25 +6995,13 @@ bottom: 0%;
 
 
 
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 0.61%;
-top: 0%;
-bottom: -0.27%;
-
-background: #000000;
-border: 6px solid #000000;
-
-
 /* area_hui_3 */
 
 position: absolute;
 width: 345px;
 height: 345px;
 left: 500px;
-top: 563px;
+top: 677px;
 
 
 
@@ -9027,12 +7033,12 @@ position: absolute;
 width: 345px;
 height: 345px;
 left: 155px;
-top: 563px;
+top: 677px;
 
 border: 1px solid #000000;
 
 
-/* l_da */
+/* blank */
 
 position: absolute;
 left: 0%;
@@ -9042,34 +7048,13 @@ bottom: 0%;
 
 
 
-/* 大中食 */
-
-position: absolute;
-width: 351.73px;
-height: 321.78px;
-left: 0px;
-top: 12px;
-
-background: #000000;
-
-
-/* area_char3 */
-
-position: absolute;
-left: 23.1%;
-right: 26.9%;
-top: 48.2%;
-bottom: 1.8%;
-
-
-
 /* leftHandGroup2 */
 
 position: absolute;
 width: 690px;
 height: 401px;
 left: 155px;
-top: 7px;
+top: 271px;
 
 
 
@@ -9079,7 +7064,7 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: 208px;
+top: 472px;
 
 
 
@@ -9099,7 +7084,7 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: 7px;
+top: 271px;
 
 
 
@@ -9119,7 +7104,7 @@ position: absolute;
 width: 345px;
 height: 345px;
 left: 500px;
-top: 63px;
+top: 327px;
 
 
 
@@ -9151,7 +7136,7 @@ position: absolute;
 width: 345px;
 height: 345px;
 left: 155px;
-top: 63px;
+top: 327px;
 
 border: 1px solid #000000;
 
@@ -9166,23 +7151,13 @@ bottom: 0%;
 
 
 
-/* area_char2 */
-
-position: absolute;
-left: 23.2%;
-right: 26.8%;
-top: -1.8%;
-bottom: 51.8%;
-
-
-
 /* leftHandGroup1 */
 
 position: absolute;
 width: 690px;
 height: 401px;
 left: 155px;
-top: -493px;
+top: -79px;
 
 
 
@@ -9192,7 +7167,7 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: -292px;
+top: 122px;
 
 
 
@@ -9212,7 +7187,7 @@ position: absolute;
 width: 260px;
 height: 200px;
 left: 500px;
-top: -493px;
+top: -79px;
 
 
 
@@ -9232,7 +7207,376 @@ position: absolute;
 width: 345px;
 height: 345px;
 left: 500px;
-top: -437px;
+top: -23px;
+
+
+
+/* h_jiu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 九 */
+
+position: absolute;
+width: 358.63px;
+height: 317.71px;
+left: calc(50% - 358.63px/2 + 0.81px);
+top: calc(50% - 317.71px/2 + 0.35px);
+
+background: #000000;
+
+
+/* area_left_1 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: -23px;
+
+border: 1px solid #000000;
+
+
+/* l_ming */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 名 */
+
+position: absolute;
+width: 346.03px;
+height: 339.56px;
+left: calc(50% - 346.03px/2 + 0.51px);
+top: calc(50% - 339.56px/2 + 0.28px);
+
+background: #000000;
+
+
+/* area_char1 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: -25px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_char2 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 325px;
+
+
+
+/* ch_lun_sm */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: -10.57%;
+right: -10.5%;
+top: 0%;
+bottom: -0.14%;
+
+background: #000000;
+
+
+/* 半轮分同 */
+
+position: absolute;
+left: 6.29%;
+right: 6.34%;
+top: 42.29%;
+bottom: -0.14%;
+
+background: #000000;
+
+
+/* 半轮分同 */
+
+position: absolute;
+left: 29.48%;
+right: 29.89%;
+top: 30.27%;
+bottom: 56.51%;
+
+background: #000000;
+
+
+/* Union */
+
+position: absolute;
+left: -10.57%;
+right: -10.5%;
+top: 0%;
+bottom: 43.97%;
+
+background: #000000;
+
+
+/* 半轮分同 */
+
+position: absolute;
+left: 52.53%;
+right: -10.5%;
+top: 8.85%;
+bottom: 49.89%;
+
+background: #000000;
+
+
+/* 半轮分同 */
+
+position: absolute;
+left: 30.05%;
+right: 27.45%;
+top: -18.98%;
+bottom: 34.15%;
+
+background: #000000;
+transform: rotate(28.75deg);
+
+
+/* area_char3 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 675px;
+
+
+
+/* ch_wu_sm */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 五 */
+
+position: absolute;
+width: 371.11px;
+height: 278.95px;
+left: calc(50% - 371.11px/2 - 0.45px);
+top: calc(50% - 278.95px/2 + 0.47px);
+
+background: #000000;
+
+
+/* layout_vertjzp2 */
+
+box-sizing: border-box;
+
+position: relative;
+width: 1000px;
+height: 1000px;
+left: 3853px;
+top: 7955px;
+
+border: 1px solid #000000;
+
+
+/* leftHandGroup2 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: 447px;
+
+
+
+/* area_hui_small_bottom_2 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 648px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_small_top_2 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 447px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_2 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: 503px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_left_2 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: 503px;
+
+border: 1px solid #000000;
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* leftHandGroup1 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: 96px;
+
+
+
+/* area_hui_small_bottom_1 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 297px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_small_top_1 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 96px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_1 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: 152px;
 
 
 
@@ -9264,7 +7608,7 @@ position: absolute;
 width: 345px;
 height: 345px;
 left: 155px;
-top: -437px;
+top: 152px;
 
 border: 1px solid #000000;
 
@@ -9282,14 +7626,14 @@ bottom: 0%;
 /* area_char1 */
 
 position: absolute;
-left: 23.2%;
-right: 26.8%;
-top: -51.8%;
-bottom: 101.8%;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 150px;
 
 
 
-/* ch_diejuan_sm */
+/* ch_shang */
 
 position: absolute;
 left: 0%;
@@ -9299,12 +7643,1772 @@ bottom: 0%;
 
 
 
-/* 叠 */
+/* 上 */
 
 position: absolute;
-left: 0.57%;
-right: 0.39%;
-top: 4%;
-bottom: 4.25%;
+left: 6.4%;
+right: 6.37%;
+top: 13%;
+bottom: 12.92%;
 
 background: #000000;
+
+
+/* area_char2 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 500px;
+
+
+
+/* ch_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 五 */
+
+position: absolute;
+left: 4.4%;
+right: 4.53%;
+top: 15.8%;
+bottom: 15.94%;
+
+background: #000000;
+
+
+/* layout_vertjzp4 */
+
+box-sizing: border-box;
+
+position: relative;
+width: 1000px;
+height: 1000px;
+left: 6331px;
+top: 7955px;
+
+border: 1px solid #000000;
+
+
+/* leftHandGroup4 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: 793px;
+
+
+
+/* area_hui_small_bottom_4 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 994px;
+
+
+
+/* hs_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+width: 252.46px;
+height: 177.38px;
+left: 3.84px;
+top: 25.86px;
+
+background: #000000;
+border: 4px solid #000000;
+
+
+/* area_hui_small_top_4 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 793px;
+
+
+
+/* hs_qi */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0.61%;
+top: 0%;
+bottom: -0.27%;
+
+background: #000000;
+border: 6px solid #000000;
+
+
+/* area_hui_4 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: 849px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_left_4 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: 849px;
+
+border: 1px solid #000000;
+
+
+/* l_da */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+width: 351.73px;
+height: 321.78px;
+left: 0px;
+top: 12px;
+
+background: #000000;
+
+
+/* leftHandGroup3 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: 442px;
+
+
+
+/* area_hui_small_bottom_3 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 643px;
+
+
+
+/* hs_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+width: 252.46px;
+height: 177.38px;
+left: 3.84px;
+top: 25.86px;
+
+background: #000000;
+border: 4px solid #000000;
+
+
+/* area_hui_small_top_3 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 442px;
+
+
+
+/* hs_qi */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0.61%;
+top: 0%;
+bottom: -0.27%;
+
+background: #000000;
+border: 6px solid #000000;
+
+
+/* area_hui_3 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: 498px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_left_3 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: 498px;
+
+border: 1px solid #000000;
+
+
+/* l_da */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+width: 351.73px;
+height: 321.78px;
+left: 0px;
+top: 12px;
+
+background: #000000;
+
+
+/* leftHandGroup2 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: 93px;
+
+
+
+/* area_hui_small_bottom_2 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 294px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_small_top_2 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: 93px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_2 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: 149px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_left_2 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: 149px;
+
+border: 1px solid #000000;
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* leftHandGroup1 */
+
+position: absolute;
+width: 690px;
+height: 401px;
+left: 155px;
+top: -258px;
+
+
+
+/* area_hui_small_bottom_1 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: -57px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_small_top_1 */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 500px;
+top: -258px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_hui_1 */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 500px;
+top: -202px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_left_1 */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 155px;
+top: -202px;
+
+border: 1px solid #000000;
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_char1 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: -204px;
+
+
+
+/* ch_shang */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 上 */
+
+position: absolute;
+left: 6.4%;
+right: 6.37%;
+top: 13%;
+bottom: 12.92%;
+
+background: #000000;
+
+
+/* area_char2 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 146px;
+
+
+
+/* ch_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 五 */
+
+position: absolute;
+left: 4.4%;
+right: 4.53%;
+top: 15.8%;
+bottom: 15.94%;
+
+background: #000000;
+
+
+/* area_char3 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 496px;
+
+
+
+/* ch_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 五 */
+
+position: absolute;
+left: 4.4%;
+right: 4.53%;
+top: 15.8%;
+bottom: 15.94%;
+
+background: #000000;
+
+
+/* area_char4 */
+
+position: absolute;
+width: 350px;
+height: 350px;
+left: 325px;
+top: 846px;
+
+
+
+/* ch_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 五 */
+
+position: absolute;
+left: 4.4%;
+right: 4.53%;
+top: 15.8%;
+bottom: 15.94%;
+
+background: #000000;
+
+
+/* layout_cuo_left */
+
+box-sizing: border-box;
+
+position: relative;
+width: 500px;
+height: 1000px;
+left: 13533px;
+top: 330px;
+
+background: #FFFFFF;
+border: 1px solid #000000;
+
+
+/* area_right */
+
+position: absolute;
+width: 660px;
+height: 660px;
+left: 240px;
+top: 190px;
+
+
+
+/* r_cuo */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 早 */
+
+position: absolute;
+width: 1132.8px;
+height: 1350.1px;
+left: -49px;
+top: -338px;
+
+background: #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 148px;
+top: 662px;
+
+
+
+/* s_san */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+width: 319px;
+height: 260px;
+left: 49px;
+top: 80px;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 103px;
+height: 420px;
+left: 42px;
+top: 662px;
+
+
+
+/* lm_zhu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 洚 */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 4.89%;
+bottom: 1.49%;
+
+background: #000000;
+
+
+/* area_hui_small_bottom */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 349px;
+top: 462px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui_small_top */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 349px;
+top: 261px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 349px;
+top: 317px;
+
+
+
+/* h_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 一二三四五六七八九十 十一 十二 十三 */
+
+position: absolute;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
+
+background: #000000;
+
+
+/* area_left */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 4px;
+top: 317px;
+
+border: 1px solid #000000;
+
+
+/* l_zhong */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+left: 8.7%;
+right: 8.35%;
+top: -3.77%;
+bottom: -4.05%;
+
+background: #000000;
+
+
+/* layout_cuo_right */
+
+box-sizing: border-box;
+
+position: relative;
+width: 1000px;
+height: 1000px;
+left: 14033px;
+top: 330px;
+
+border: 1px solid #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 408px;
+top: 662px;
+
+
+
+/* s_san */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+width: 319px;
+height: 260px;
+left: 49px;
+top: 80px;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 103px;
+height: 420px;
+left: 302px;
+top: 662px;
+
+
+
+/* lm_zhu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 洚 */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 4.89%;
+bottom: 1.49%;
+
+background: #000000;
+
+
+/* area_hui_small_bottom */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 609px;
+top: 462px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui_small_top */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 609px;
+top: 261px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 609px;
+top: 317px;
+
+
+
+/* h_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 一二三四五六七八九十 十一 十二 十三 */
+
+position: absolute;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
+
+background: #000000;
+
+
+/* area_left */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 264px;
+top: 317px;
+
+border: 1px solid #000000;
+
+
+/* l_zhong */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+left: 8.7%;
+right: 8.35%;
+top: -3.77%;
+bottom: -4.05%;
+
+background: #000000;
+
+
+/* layout_cuo_v3_left */
+
+box-sizing: border-box;
+
+position: relative;
+width: 500px;
+height: 1000px;
+left: 13528px;
+top: 3487px;
+
+background: #FFFFFF;
+border: 1px solid #000000;
+
+
+/* area_right */
+
+position: absolute;
+width: 660px;
+height: 660px;
+left: 240px;
+top: 190px;
+
+
+
+/* r_cuo */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 早 */
+
+position: absolute;
+width: 1132.8px;
+height: 1350.1px;
+left: -49px;
+top: -338px;
+
+background: #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 148px;
+top: 842px;
+
+
+
+/* s_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+left: -4.29%;
+right: -4.13%;
+top: 9.29%;
+bottom: 9.45%;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 103px;
+height: 420px;
+left: 42px;
+top: 842px;
+
+
+
+/* lm_zhu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 洚 */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 4.89%;
+bottom: 1.49%;
+
+background: #000000;
+
+
+/* area_left_mod1 */
+
+position: absolute;
+width: 165px;
+height: 165px;
+left: 250px;
+top: 710px;
+
+
+
+/* lm_chuo */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 绰注 */
+
+position: absolute;
+left: 20.47%;
+right: -24.19%;
+top: -26.05%;
+bottom: -2.33%;
+
+background: #000000;
+
+
+/* area_hui_small_bottom */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 349px;
+top: 462px;
+
+
+
+/* hs_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+width: 252.46px;
+height: 177.38px;
+left: 3.84px;
+top: 25.86px;
+
+background: #000000;
+border: 4px solid #000000;
+
+
+/* area_hui_small_top */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 349px;
+top: 261px;
+
+
+
+/* hs_qi */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0.61%;
+top: 0%;
+bottom: -0.27%;
+
+background: #000000;
+border: 6px solid #000000;
+
+
+/* area_hui */
+
+position: absolute;
+visibility: hidden;
+width: 345px;
+height: 345px;
+left: 349px;
+top: 317px;
+
+
+
+/* area_left */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 4px;
+top: 317px;
+
+border: 1px solid #000000;
+
+
+/* l_da */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+width: 351.73px;
+height: 321.78px;
+left: 0px;
+top: 12px;
+
+background: #000000;
+
+
+/* layout_cuo_v3_right */
+
+box-sizing: border-box;
+
+position: relative;
+width: 1000px;
+height: 1000px;
+left: 14028px;
+top: 3487px;
+
+border: 1px solid #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 448px;
+top: 842px;
+
+
+
+/* s_san */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+width: 319px;
+height: 260px;
+left: 49px;
+top: 80px;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 103px;
+height: 420px;
+left: 342px;
+top: 792px;
+
+
+
+/* lm_zhu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 洚 */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 4.89%;
+bottom: 1.49%;
+
+background: #000000;
+
+
+/* area_left_mod1 */
+
+position: absolute;
+width: 165px;
+height: 165px;
+left: 550px;
+top: 710px;
+
+
+
+/* lm_chuo */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 绰注 */
+
+position: absolute;
+left: 20.47%;
+right: -24.19%;
+top: -26.05%;
+bottom: -2.33%;
+
+background: #000000;
+
+
+/* area_hui_small_bottom */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 649px;
+top: 462px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui_small_top */
+
+position: absolute;
+width: 260px;
+height: 200px;
+left: 649px;
+top: 261px;
+
+
+
+/* empty */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Union */
+
+position: absolute;
+left: 0%;
+right: -1.41%;
+top: -1.41%;
+bottom: -1.41%;
+
+
+
+/* area_hui */
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 649px;
+top: 317px;
+
+
+
+/* h_si */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 一二三四五六七八九十 十一 十二 十三 */
+
+position: absolute;
+left: 2.32%;
+right: 0.11%;
+top: 15.94%;
+bottom: 15.5%;
+
+background: #000000;
+
+
+/* area_left */
+
+box-sizing: border-box;
+
+position: absolute;
+width: 345px;
+height: 345px;
+left: 304px;
+top: 317px;
+
+border: 1px solid #000000;
+
+
+/* l_zhong */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 大中食 */
+
+position: absolute;
+left: 8.7%;
+right: 8.35%;
+top: -3.77%;
+bottom: -4.05%;
+
+background: #000000;
+
+
+/* layout_cuo_v2_left */
+
+box-sizing: border-box;
+
+position: relative;
+width: 500px;
+height: 1000px;
+left: 13533px;
+top: 1817px;
+
+background: #FFFFFF;
+border: 1px solid #000000;
+
+
+/* area_right */
+
+position: absolute;
+width: 660px;
+height: 660px;
+left: 240px;
+top: 190px;
+
+
+
+/* r_cuo */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 早 */
+
+position: absolute;
+width: 1132.8px;
+height: 1350.1px;
+left: -49px;
+top: -338px;
+
+background: #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 218px;
+top: 482px;
+
+
+
+/* s_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+left: -4.29%;
+right: -4.13%;
+top: 9.29%;
+bottom: 9.45%;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 104px;
+height: 425px;
+left: 111px;
+top: 482px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_left_mod1 */
+
+position: absolute;
+width: 165px;
+height: 165px;
+left: 320px;
+top: 349px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* layout_cuo_v2_right */
+
+box-sizing: border-box;
+
+position: relative;
+width: 1000px;
+height: 1000px;
+left: 14033px;
+top: 1817px;
+
+border: 1px solid #000000;
+
+
+/* area_string */
+
+position: absolute;
+width: 400px;
+height: 400px;
+left: 388px;
+top: 482px;
+
+
+
+/* s_wu */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* 二三五六七八九十 */
+
+position: absolute;
+left: -4.29%;
+right: -4.13%;
+top: 9.29%;
+bottom: 9.45%;
+
+background: #000000;
+
+
+/* area_left_mod2 */
+
+position: absolute;
+width: 103px;
+height: 420px;
+left: 285px;
+top: 482px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* area_left_mod1 */
+
+position: absolute;
+width: 165px;
+height: 165px;
+left: 490px;
+top: 349px;
+
+
+
+/* blank */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+

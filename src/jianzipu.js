@@ -21,10 +21,26 @@ for (let key in charMap) {
 
 // k3 => ["k", "3"], etc
 function getKeyArray(str) {
-  str = str.replaceAll("分", ".")
+  // str = str.replaceAll("分", ".")
   str = str.replaceAll(".", "..")
 
   let uberBabel = babelfish.sort(((a, b) => b.translation.length - a.translation.length))
+
+  // case: literal array using one of the vertjzp layouts
+  if (str[0] == ":" && str.includes(",")) {
+    return str
+      .split(/(\[|\]|,|:)/).filter(e => e != "" && e != ",")
+      .map(k => {
+        if (k == ":") return k
+        if (k == "[") return k
+        if (k == "]") return k
+        let matches = uberBabel.filter(e => e.translation == k)
+        if (matches.length > 0) {
+          return matches[0].key
+        }
+        return k
+      })
+  }
 
   let idx = 0
   let ctr = 0
@@ -112,7 +128,7 @@ function getKeyArray(str) {
 // filter: array of layouts to limit
 function findOptimalLayout(keys, filter = []) {
   let results = []
-  let maxMatchCount = 0
+  // let maxMatchCount = 0
   for (let layout in jzpMap) {
     let result = {
       layout: layout,
@@ -138,13 +154,13 @@ function findOptimalLayout(keys, filter = []) {
           }
         }
       }
-      if (!match) {
-        result.nomatches.push(area)
-      }
+      // if (!match) {
+      //   result.nomatches.push(area)
+      // }
     }
-    result.matchCount = result.matches.filter(m => m.areas.length > 0).length
-    result.areasWithoutKeys = result.nomatches.length
-    maxMatchCount = Math.max(maxMatchCount, result.matchCount)
+    // result.matchCount = result.matches.filter(m => m.areas.length > 0).length
+    // result.areasWithoutKeys = result.nomatches.length
+    // maxMatchCount = Math.max(maxMatchCount, result.matchCount)
 
     // let r = result
 
@@ -211,6 +227,9 @@ function findOptimalLayout(keys, filter = []) {
       }
     })
     result.keysWithoutAreas = keysWithoutAreas
+
+    const usedAreas = result.matches.map(m => m.useArea).filter(e => e != undefined)
+    result.areasWithoutKeys = Object.keys(jzpMap[layout].areas).filter(a => !usedAreas.includes(a)).length
 
     results.push(result)
   }
@@ -366,6 +385,8 @@ export function convert(para) {
     .replaceAll("｜", "|")
     .replaceAll("【", "[")
     .replaceAll("】", "]")
+    .replaceAll("“", "\"")
+    .replaceAll("”", "\"")
 
   // check for v1 parenetheses indictaor
   if (para.includes("(") && para.includes(")")) {
@@ -380,9 +401,28 @@ export function convert(para) {
     for (var i=0;i<words.length;i++) {
       // words[i] = getCharacter(words[i], false)
       const keys = getKeyArray(words[i])
+      // console.log("keyArray", words[i], keys)
 
+      // case: ::
+      // if (keys[0] == ":" && keys[1] == ":") {
+      //   const { layout, data } = findOptimalLayout(keys, ["vertjzp1", "vertjzp2", "vertjzp3", "vertjzp4"])
+        
+      //   console.log("layout", words[i], layout, data)
+      //   words[i] = getUnicode(layout, data).unicodes
+      // }
+      // case: # or :
+      if (keys[0] == "#" || keys[0] == ":") {
+        const { layout, data } = findOptimalLayout(keys, ["vertjzp1", "vertjzp2", "vertjzp3", "vertjzp4"]) //["char1", "char2", "char3", "char4"])
+        
+        // console.log("layout", words[i], layout, data, findOptimalLayout(keys, ["vertjzp1", "vertjzp2", "vertjzp3", "vertjzp4"]))
+        words[i] = getUnicode(layout, data).unicodes
+      }
+      // case "char" => render char as is
+      else if (keys[0]=="\"" && keys[keys.length-1]=="\"") {
+        words[i] = words[i].slice(1, -1)
+      }
       // case: chords, split left and right side
-      if (CHORD_KEYS.some(e => keys.includes(e))) {
+      else if (CHORD_KEYS.some(e => keys.includes(e))) {
         const separatorIdx = keys.indexOf("|") == -1 ? keys.length : keys.indexOf("|")
         // left side
         let left = keys.slice(0, separatorIdx)
@@ -397,20 +437,6 @@ export function convert(para) {
         // combine
         words[i] = leftUnicodes + rightUnicodes
       }
-      // case: ::
-      else if (keys[0] == ":" && keys[1] == ":") {
-        const { layout, data } = findOptimalLayout(keys, ["vertjzp1", "vertjzp2", "vertjzp3", "vertjzp4"])
-        
-        // console.log("layout", words[i], layout, data)
-        words[i] = getUnicode(layout, data).unicodes
-      }
-      // case: # or :
-      else if (keys[0] == "#" || keys[0] == ":") {
-        const { layout, data } = findOptimalLayout(keys, ["char1", "char2", "char3", "char4"])
-        
-        // console.log("layout", words[i], layout, data)
-        words[i] = getUnicode(layout, data).unicodes
-      }
       // case: normal jianzipu
       else {
         const { layout, data } = findOptimalLayout(keys)
@@ -419,8 +445,9 @@ export function convert(para) {
       }
 
     }
-    // lines[j] = words.join('　') // note: this is the ideographic space, not the regular space. String.fromCharCode(12288)
-    lines[j] = words.join(' ') 
+    // lines[j] = words.join('　') // ideographic space, not the regular space. String.fromCharCode(12288)
+    // lines[j] = words.join(' ')  // regular space
+    lines[j] = words.join(String.fromCharCode(8203)) // zero width space
   }
   lines = lines.join('\n')
   return lines

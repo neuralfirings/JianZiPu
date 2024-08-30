@@ -1,10 +1,12 @@
 {
   "name": "jianzipu",
   "version": "2.0.0",
-  "source": "src/jianzipu.js",  
+  "source": "src/jianzipu.js",
   "main": "dist/jianzipu.js",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "targets": {
     "frontend": {
       "source": "src/index.html",
