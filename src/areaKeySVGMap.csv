@@ -19,6 +19,7 @@ area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,11,h_shiyi,0,,十一;十一
 area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,12,h_shier,0,,十二;十二;shí èr
 area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13,h_shisan,0,,十三;十三;shí sān
 area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,外,h_wai,0,,外;wai;13+
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,就,h_jiu4,0,,jiu
 area_right,n,r_pi,0,layout_bo;layout_bo_chuo;layout_bo_rt,劈;劈;pī
 area_right,h,r_tuo,0,layout_tuo;layout_tuo_chuo;layout_tuo_rt,托;托;tuō
 area_right,j,r_mo,0,layout_mo;layout_mo_chuo;layout_mo_rt,抹;抹;mǒ
@@ -149,3 +150,5 @@ area_char;area_char1;area_char2;area_char3;area_char4,半扶,ch_banfu_sm,0,,bf;b
 area_char;area_char1;area_char2;area_char3;area_char4,全扶,ch_quanfu_sm,0,,qf;quanfu
 area_char;area_char1;area_char2;area_char3;area_char4,V,ch_yan_sm,0,,yan;掩
 area_char;area_char1;area_char2;area_char3;area_char4,圆搂,ch_yuanlou_sm,0,,yl;yanlou;圓摟
+area_char;area_char1;area_char2;area_char3;area_char4,就,ch_jiu4_sm,0,,jiu
+area_topmod,fy,n_fanyin,0,,泛音;fanyin
