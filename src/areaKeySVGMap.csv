@@ -1,154 +1,158 @@
 ﻿area,keys,filename,width,layouts,translations
-area_left;area_left_1;area_left_2;area_left_3;area_left_4,s,l_ming,0,,名;名;míng
-area_left;area_left_1;area_left_2;area_left_3;area_left_4,d,l_zhong,0,,中;中;zhōng
-area_left;area_left_1;area_left_2;area_left_3;area_left_4,f,l_shi,0,,食;食;shí
-area_left;area_left_1;area_left_2;area_left_3;area_left_4,v,l_da,0,,大;大;dà
-area_left;area_left_1;area_left_2;area_left_3;area_left_4,x,l_gui,0,,跪;跪;guì
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,0,h_open,0,,散;散;sàn
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,1,h_yi,0,,一;一;yī
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,2,h_er,0,,二;二;èr
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,3,h_san,0,,三;三;sān
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,4,h_si,0,,四;四;sì
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,5,h_wu,0,,五;五;wǔ
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,6,h_liu,0,,六;六;liù
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,7,h_qi,0,,七;七;qī
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,8,h_ba,0,,八;八;bā
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,9,h_jiu,0,,九;九;jiǔ
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,10,h_shi,0,,十;十;shí
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,11,h_shiyi,0,,十一;十一;shí yī
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,12,h_shier,0,,十二;十二;shí èr
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13,h_shisan,0,,十三;十三;shí sān
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,外,h_wai,0,,外;wai;13+
-area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,就,h_jiu4,0,,jiu
-area_right,n,r_pi,0,layout_bo;layout_bo_chuo;layout_bo_rt,劈;劈;pī
-area_right,h,r_tuo,0,layout_tuo;layout_tuo_chuo;layout_tuo_rt,托;托;tuō
-area_right,j,r_mo,0,layout_mo;layout_mo_chuo;layout_mo_rt,抹;抹;mǒ
-area_right,u,r_tiao,0,layout_tiao;layout_tiao_chuo;layout_tiao_rt,挑;挑;tiǎo
-area_right,k,r_gou,0,layout_gou;layout_gou_chuo;layout_gou_rt,勾;勾;gōu
-area_right,i,r_ti,0,layout_ti;layout_ti_chuo;layout_ti_rt,剔;剔;tì
-area_right,l,r_da,0,layout_gou;layout_gou_chuo;layout_gou_rt,打;打;dǎ
-area_right,o,r_zhai,0,layout_ti;layout_ti_chuo;layout_ti_rt,摘;摘;zhāi
-area_right,ju,r_motiao,0,layout_mo;layout_mo_chuo;layout_mo_rt,抹挑;抹挑;mó tiǎo;uj
-area_right,ki,r_gouti,0,layout_gouti;layout_gouti_chuo;layout_gouti_rt,勾剔;勾剔;gōu tī;ik
-area_right,lo,r_dazhai,0,layout_dazhai;layout_dazhai_chuo;layout_dazhai_rt,打摘;打摘;dǎ zhāi;ol
-area_right,c,r_qiaqi,0,layout_bo;layout_bo_chuo;layout_bo_rt,掐起;掐起;qiā qǐ
-area_right,V,r_yan,0,layout_mo;layout_mo_chuo;layout_mo_rt,
-area_right,U,r_li,0,layout_li,
-area_right,半轮,r_banlun,0,layout_mo;layout_mo_chuo;layout_mo_rt,半轮;半輪;bàn lún;banlun
-area_right,轮,r_lun,0,layout_mo;layout_mo_chuo;layout_mo_rt,轮;輪;lún;lun
-area_right,C,r_cuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,撮;撮;cuō;cuo
-area_right,DC,r_dacuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,大撮;大撮;dà cuō;dacuo
-area_right,FC,r_fancuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,反撮;反撮;fǎn cuō;fancuo
-area_right,BL,r_bola,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,拨剌;撥剌;bō là;bola
-area_right,B,r_bo,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,拨;撥;bō:bo
-area_right,L,r_la,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,剌;剌;là;la
-area_right,TTT,r_santan,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,三弹;三彈;sān dàn
-area_right,TT,r_shuangtan,0,layout_cuo_left;layout_cuo_right;layout_cuo_v2_left;layout_cuo_v2_right;layout_cuo_v3_left;layout_cuo_v3_right,双弹;雙彈;shuāng tán
-area_string;area_string_2;area_string_top;area_string_bottom,S1,s_yi,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S2,s_er,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S3,s_san,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S4,s_si,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S5,s_wu,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S6,s_liu,0,,
-area_string;area_string_2;area_string_top;area_string_bottom,S7,s_qi,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,1.,hs_yi,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,2.,hs_er,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,3.,hs_san,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,4.,hs_si,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,5.,hs_wu,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,6.,hs_liu,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,7.,hs_qi,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,8.,hs_ba,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,9.,hs_jiu,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,10.,hs_shi,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,11.,hs_shiyi,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,12.,hs_shier,0,,
-area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,13.,hs_shisan,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.1,hs_yi,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.2,hs_er,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.3,hs_san,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.4,hs_si,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.5,hs_ban,0,,半;半;bàn
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.6,hs_liu,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.7,hs_qi,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.8,hs_ba,0,,
-area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.9,hs_jiu,0,,
-area_left_mod1;area_left_mod1_2,/,lm_chuo,0,,绰;綽;chuò
-area_left_mod1;area_left_mod1_2,>,lm_ji,0,,急;急;jí
-area_left_mod2;area_left_mod2_2,\,lm_zhu,0,,|注;注;zhù
-area_char,上,ch_shang,0,,上;上;shàng;shang
-area_char,下,ch_xia,0,,下;下;xià;xia
-area_char,1,ch_yi,0,,一;一;yī
-area_char,2,ch_er,0,,二;二;èr
-area_char,3,ch_san,0,,三;三;sān
-area_char,4,ch_si,0,,四;四;sì
-area_char,5,ch_wu,0,,五;五;wǔ
-area_char,6,ch_liu,0,,六;六;liù
-area_char,7,ch_qi,0,,七;七;qī
-area_char,8,ch_ba,0,,八;八;bā
-area_char,9,ch_jiu,0,,九;九;jiǔ
-area_char,10,ch_shi,0,,十;十;shí
-area_char,0,ch_open,0,,散;san
-area_char,如,ch_ru,0,,如;如;rú;ru
-area_char,外,ch_wai,0,,wai
-area_char,.5,ch_ban,0,,半;ban
-area_char;area_char1;area_char2;area_char3;area_char4,11,ch_shiyi,0,,十一;十一;shí yī
-area_char;area_char1;area_char2;area_char3;area_char4,12,ch_shier,0,,十二;十二;shí èr
-area_char;area_char1;area_char2;area_char3;area_char4,13,ch_shisan,0,,十三;十三;shí sān
-area_char1;area_char2;area_char3;area_char4,上,ch_shang_sm,0,,上;上;shàng;shang
-area_char1;area_char2;area_char3;area_char4,下,ch_xia_sm,0,,下;下;xià;xia
-area_char1;area_char2;area_char3;area_char4,1,ch_yi_sm,0,,
-area_char1;area_char2;area_char3;area_char4,2,ch_er_sm,0,,
-area_char1;area_char2;area_char3;area_char4,3,ch_san_sm,0,,
-area_char1;area_char2;area_char3;area_char4,4,ch_si_sm,0,,
-area_char1;area_char2;area_char3;area_char4,5,ch_wu_sm,0,,
-area_char1;area_char2;area_char3;area_char4,6,ch_liu_sm,0,,
-area_char1;area_char2;area_char3;area_char4,7,ch_qi_sm,0,,
-area_char1;area_char2;area_char3;area_char4,8,ch_ba_sm,0,,
-area_char1;area_char2;area_char3;area_char4,9,ch_jiu_sm,0,,
-area_char1;area_char2;area_char3;area_char4,10,ch_shi_sm,0,,
-area_char1;area_char2;area_char3;area_char4,0,ch_open_sm,0,,散;san
-area_char1;area_char2;area_char3;area_char4,如,ch_ru_sm,0,,如;如;rú;ru
-area_char1;area_char2;area_char3;area_char4,外,ch_wai_sm,0,,
-area_char1;area_char2;area_char3;area_char4,.5,ch_ban_sm,0,,半;ban
-area_char;area_char1;area_char2;area_char3;area_char4,滚,ch_gun_sm,0,,滚;滾;gǔn;gun
-area_char;area_char1;area_char2;area_char3;area_char4,沸,ch_fu_sm,0,,沸;沸;fú;fu
-area_char;area_char1;area_char2;area_char3;area_char4,至,ch_zhi4_sm,0,,至;至;zhì;zhi4
-area_char;area_char1;area_char2;area_char3;area_char4,退,ch_tui,0,,退;退;tuì;tui
-area_char;area_char1;area_char2;area_char3;area_char4,进,ch_jin,0,,进;进;jìn;jin
-area_char;area_char1;area_char2;area_char3;area_char4,分开,ch_fenkai,0,,分开;分开;fēnkāi;fenkai
-area_char;area_char1;area_char2;area_char3;area_char4,吟,ch_yin,0,,吟;吟;yín;yin
-area_char;area_char1;area_char2;area_char3;area_char4,猱,ch_nao,0,,猱;猱;náo;nao
-area_char;area_char1;area_char2;area_char3;area_char4,小吟,ch_xiaoyin,0,,小吟;小吟;xiǎo yín;xiaoyin
-area_char;area_char1;area_char2;area_char3;area_char4,泛起,ch_fanqi,0,,泛起;泛起;fàn qǐ;fanqi
-area_char;area_char1;area_char2;area_char3;area_char4,泛止,ch_fanzhi,0,,泛止;泛止;fàn zhǐ;fanzhi
-area_char,轮,ch_lun,0,,轮;轮;lún;lun
-area_char1;area_char2;area_char3;area_char4,轮,ch_lun_sm,0,,轮;轮;lún;lun
-area_char;area_char1;area_char2;area_char3;area_char4,半轮,ch_banlun_sm,0,,半轮;半輪;bàn lún;banlun
-area_char;area_char1;area_char2;area_char3;area_char4,復,ch_fu,0,,復;復;fù;fu4
-area_char;area_char1;area_char2;area_char3;area_char4,撞,ch_zhuang,0,,撞;撞;zhuàng;zhuang
-area_char;area_char1;area_char2;area_char3;area_char4,起,ch_qi3,0,,起;起;qǐ;qi3
-area_char;area_char1;area_char2;area_char3;area_char4,泛,ch_fan,0,,泛;泛;fàn;fan
-area_char;area_char1;area_char2;area_char3;area_char4,止,ch_zhi,0,,止;止;zhǐ;zhi
-area_char;area_char1;area_char2;area_char3;area_char4,带起,ch_daiqi,0,,带起;带起;dài qǐ;daiqi
-area_char;area_char1;area_char2;area_char3;area_char4,对起,ch_duiqi,0,,对起;对起;duì qǐ;duiqi
-area_char;area_char1;area_char2;area_char3;area_char4,抓起,ch_zhuaqi,0,,抓起;抓起;zhūa qǐ;zhuaqi
-area_char;area_char1;area_char2;area_char3;area_char4,撇起,ch_pieqi,0,,撇起;撇起;piē qǐ;pieqi
-area_char;area_char1;area_char2;area_char3;area_char4,大息,ch_daxi,0,,大息;大息;dà xī;daxi
-area_char;area_char1;area_char2;area_char3;area_char4,少息,ch_shaoxi,0,,少息;少息;shǎo xī;shaoxi
-area_char;area_char1;area_char2;area_char3;area_char4,定吟,ch_dingyin,0,,定吟;定吟;dìng yín;dingyin
-area_char;area_char1;area_char2;area_char3;area_char4,细吟,ch_xiyin,0,,细吟;細吟;xì yín;xiyin
-area_char;area_char1;area_char2;area_char3;area_char4,长吟,ch_changyin,0,,长吟;長吟;cháng yín;changyin
-area_char;area_char1;area_char2;area_char3;area_char4,应合,ch_yinghe,0,,应合;應合;yìng hé;yinghe
-area_char;area_char1;area_char2;area_char3;area_char4,打圆,ch_dayuan,0,,打圆;打圓;dǎ yuán;dayuan
-area_char;area_char1;area_char2;area_char3;area_char4,*,placeholder,0,,
-area_char;area_char1;area_char2;area_char3;area_char4,背璅,ch_baisuo_sm,0,,背璅;bài suǒ;baisuo;bs
-area_char;area_char1;area_char2;area_char3;area_char4,短璅,ch_duansuo_sm,0,,短璅;duǎn suǒ;duansuo;ds
-area_char;area_char1;area_char2;area_char3;area_char4,长璅,ch_changsuo_sm,0,,長璅;cháng suǒ;changsuo;cs
-area_char;area_char1;area_char2;area_char3;area_char4,叠蠲,ch_diejuan_sm,0,,疊蠲;dié juān;diejuan;dj
-area_char;area_char1;area_char2;area_char3;area_char4,半扶,ch_banfu_sm,0,,bf;banfu
-area_char;area_char1;area_char2;area_char3;area_char4,全扶,ch_quanfu_sm,0,,qf;quanfu
-area_char;area_char1;area_char2;area_char3;area_char4,V,ch_yan_sm,0,,yan;掩
-area_char;area_char1;area_char2;area_char3;area_char4,圆搂,ch_yuanlou_sm,0,,yl;yanlou;圓摟
-area_char;area_char1;area_char2;area_char3;area_char4,就,ch_jiu4_sm,0,,jiu
-area_topmod,fy,n_fanyin,0,,泛音;fanyin
+area_left;area_left_1;area_left_2;area_left;area_left_1;area_left_3;area_left;area_left_1;area_left_4,s,md_ming,0,,名;名;míng
+area_left;area_left_1;area_left_2;area_left;area_left_1;area_left_3;area_left;area_left_1;area_left_4,d,md_zhong,0,,中;中;zhōng
+area_left;area_left_1;area_left_2;area_left;area_left_1;area_left_3;area_left;area_left_1;area_left_4,f,md_shi,0,,食;食;shí
+area_left;area_left_1;area_left_2;area_left;area_left_1;area_left_3;area_left;area_left_1;area_left_4,v,md_da,0,,大;大;dà
+area_left;area_left_1;area_left_2;area_left;area_left_1;area_left_3;area_left;area_left_1;area_left_4,x,md_gui,0,,跪;跪;guì
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,0,md_san,0,,散;散;sàn;san
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,1,md_1,0,,一;一;yī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,2,md_2,0,,二;二;èr
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,3,md_3,0,,三;三;sān
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,4,md_4,0,,四;四;sì
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,5,md_5,0,,五;五;wǔ
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,6,md_6,0,,六;六;liù
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,7,md_7,0,,七;七;qī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,8,md_8,0,,八;八;bā
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,9,md_9,0,,九;九;jiǔ
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,10,md_10,0,,十;十;shí
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,11,md_11,0,,十一;十一;shí yī
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,12,md_12,0,,十二;十二;shí èr
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13,md_13,0,,十三;十三;shí sān
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,13+,md_wai,0,,外;wai;13+
+area_hui;area_hui_1;area_hui_2;area_hui_3;area_hui_4,就,md_jiu,0,,jiu
+area_right,u,lg_tiao,0,layout_tiao;layout_tiao2;layout_tiao3,挑;挑;tiǎo
+area_right,k,lg_gou,0,layout_gou;layout_gou2;layout_gou3,勾;勾;gōu
+area_right,n,lg_pi,0,layout_nc;layout_nc2;layout_nc3,劈;劈;pī
+area_right,c,lg_qiaqi,0,layout_nc;layout_nc2;layout_nc3,掐起;掐起;qiā qǐ;qiaqi
+area_right,h,lg_tuo,0,layout_tiao;layout_tiao2;layout_tiao3,托;托;tuō
+area_right,l,lg_da,0,layout_gou;layout_gou2;layout_gou3,打;打;dǎ
+area_right,i,lg_ti,0,layout_io;layout_io2;layout_io3,剔;剔;tì
+area_right,o,lg_zhai,0,layout_io;layout_io2;layout_io3,摘;摘;zhāi
+area_right,j,lg_mo,0,layout_mo;layout_mo2;layout_mo3,抹;抹;mǒ
+area_right,V,lg_yan,0,layout_mo;layout_mo2;layout_mo3,烟;yan
+area_right,轮,lg_lun,0,layout_mo;layout_mo2;layout_mo3,轮;轮;lún;lun
+area_right,半轮,lg_banlun,0,layout_mo;layout_mo2;layout_mo3,半轮;半輪;bàn lún;banlun
+area_right,ju,lg_motiao,0,layout_mo;layout_mo2;layout_mo3,抹挑;抹挑;mó tiǎo;uj
+area_right,ki,lg_gouti,0,layout_loki;layout_loki2;layout_loki3,勾剔;勾剔;gōu tī;ik
+area_right,lo,lg_dazhai,0,layout_loki;layout_loki2;layout_loki3,打摘;打摘;dǎ zhāi;ol
+area_right,U,lg_li,0,layout_li;layout_li2;layout_li3,li
+area_chord,C,xl_cuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,撮;撮;cuō;cuo
+area_chord,DC,xl_dacuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,大撮;大撮;dà cuō;dacuo
+area_chord,FC,xl_fancuo,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,反撮;反撮;fǎn cuō;fancuo
+area_chord,TT,xl_tt,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,双弹;雙彈;shuāng tán
+area_chord,TTT,xl_ttt,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,三弹;三彈;sān dàn
+area_chord,B,xl_bo,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,拨;撥;bō:bo
+area_chord,L,xl_la,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,剌;剌;là;la
+area_chord,BL,xl_bola,0,layout_cuo_left;layout_cuo_right;layout_cuo_left2;layout_cuo_right2;layout_cuo_left3;layout_cuo_right3,拨剌;撥剌;bō là;bola
+area_string;area_string_top;area_string_bottom,S1,md_1,0,,
+area_string;area_string_top;area_string_bottom,S2,md_2,0,,
+area_string;area_string_top;area_string_bottom,S3,md_3,0,,
+area_string;area_string_top;area_string_bottom,S4,md_4,0,,
+area_string;area_string_top;area_string_bottom,S5,md_5,0,,
+area_string;area_string_top;area_string_bottom,S6,md_6,0,,
+area_string;area_string_top;area_string_bottom,S7,md_7,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,1.,sm_1,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,2.,sm_2,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,3.,sm_3,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,4.,sm_4,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,5.,sm_5,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,6.,sm_6,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,7.,sm_7,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,8.,sm_8,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,9.,sm_9,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,10.,sm_10,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,11.,sm_11,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,12.,sm_12,0,,
+area_hui_small_top;area_hui_small_top_1;area_hui_small_top_2;area_hui_small_top_3;area_hui_small_top_4,13.,sm_wai,0,,外;wai;13+
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.1,sm_1,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.2,sm_2,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.3,sm_3,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.4,sm_4,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.5,sm_ban,0,,ban
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.6,sm_6,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.7,sm_7,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.8,sm_8,0,,
+;area_hui_small_bottom;area_hui_small_bottom_1;area_hui_small_bottom_2;area_hui_small_bottom_3;area_hui_small_bottom_4,.9,sm_9,0,,
+area_mod1,/,mod_chuo,0,,绰;綽;chuò
+area_mod2,\,mod_zhu,0,,|注;注;zhù
+area_mod1,>,mod_ji,0,,急;急;jí
+area_mod3,fy,mod_fanyin,0,,泛音;fanyin
+area_char1;area_char2;area_char3;area_char4,1,md_1,0,,一;一;yī
+area_char1;area_char2;area_char3;area_char4,2,md_2,0,,二;二;èr
+area_char1;area_char2;area_char3;area_char4,3,md_3,0,,三;三;sān
+area_char1;area_char2;area_char3;area_char4,4,md_4,0,,四;四;sì
+area_char1;area_char2;area_char3;area_char4,5,md_5,0,,五;五;wǔ
+area_char1;area_char2;area_char3;area_char4,6,md_6,0,,六;六;liù
+area_char1;area_char2;area_char3;area_char4,7,md_7,0,,七;七;qī
+area_char1;area_char2;area_char3;area_char4,8,md_8,0,,八;八;bā
+area_char1;area_char2;area_char3;area_char4,9,md_9,0,,九;九;jiǔ
+area_char1;area_char2;area_char3;area_char4,10,md_10,0,,十;十;shí
+area_char1;area_char2;area_char3;area_char4,11,md_11,0,,十一;十一;shí yī
+area_char1;area_char2;area_char3;area_char4,12,md_12,0,,十二;十二;shí èr
+area_char1;area_char2;area_char3;area_char4,13,md_13,0,,十三;十三;shí sān
+area_char1;area_char2;area_char3;area_char4,1.,md_1,0,,
+area_char1;area_char2;area_char3;area_char4,2.,md_2,0,,
+area_char1;area_char2;area_char3;area_char4,3.,md_3,0,,
+area_char1;area_char2;area_char3;area_char4,4.,md_4,0,,
+area_char1;area_char2;area_char3;area_char4,5.,md_5,0,,
+area_char1;area_char2;area_char3;area_char4,6.,md_6,0,,
+area_char1;area_char2;area_char3;area_char4,7.,md_7,0,,
+area_char1;area_char2;area_char3;area_char4,8.,md_8,0,,
+area_char1;area_char2;area_char3;area_char4,9.,md_9,0,,
+area_char1;area_char2;area_char3;area_char4,10.,md_10,0,,
+area_char1;area_char2;area_char3;area_char4,11.,md_11,0,,
+area_char1;area_char2;area_char3;area_char4,12.,md_12,0,,
+area_char1;area_char2;area_char3;area_char4,13.,md_wai,0,,外;wai;13+
+area_char1;area_char2;area_char3;area_char4,13+,md_wai,0,,外;wai;13+
+area_char1;area_char2;area_char3;area_char4,.1,md_1,0,,
+area_char1;area_char2;area_char3;area_char4,.2,md_2,0,,
+area_char1;area_char2;area_char3;area_char4,.3,md_3,0,,
+area_char1;area_char2;area_char3;area_char4,.4,md_4,0,,
+area_char1;area_char2;area_char3;area_char4,.5,md_ban,0,,
+area_char1;area_char2;area_char3;area_char4,.6,md_6,0,,
+area_char1;area_char2;area_char3;area_char4,.7,md_7,0,,
+area_char1;area_char2;area_char3;area_char4,.8,md_8,0,,
+area_char1;area_char2;area_char3;area_char4,.9,md_9,0,,
+area_char1;area_char2;area_char3;area_char4,0,md_san2,0,,散;散;sàn;san
+area_char1;area_char2;area_char3;area_char4,*,md_placeholder,0,,
+area_char1;area_char2;area_char3;area_char4,就,md_jiu2,0,,jiu
+area_char1;area_char2;area_char3;area_char4,上,md_shang,0,,上;上;shàng;shang
+area_char1;area_char2;area_char3;area_char4,下,md_xia,0,,下;下;xià;xia
+area_char1;area_char2;area_char3;area_char4,退,md_tui,0,,退;退;tui
+area_char1;area_char2;area_char3;area_char4,如,md_ru,0,,ru
+area_char1;area_char2;area_char3;area_char4,V,md_yan,0,,烟;yan
+area_char1;area_char2;area_char3;area_char4,进,md_jin,0,,进;进;jìn;jin
+area_char1;area_char2;area_char3;area_char4,分开,md_fenkai,0,,分开;分开;fēnkāi;fenkai
+area_char1;area_char2;area_char3;area_char4,轮,md_lun,0,,轮;轮;lún;lun
+area_char1;area_char2;area_char3;area_char4,半轮,md_banlun,0,,半轮;半輪;bàn lún;banlun
+area_char1;area_char2;area_char3;area_char4,v,md_da,0,,da;大
+area_char1;area_char2;area_char3;area_char4,少,md_shao,0,,shao
+area_char1;area_char2;area_char3;area_char4,息,md_xi,0,,xi
+area_char1;area_char2;area_char3;area_char4,泛,md_fan,0,,泛;泛;fàn;fan
+area_char1;area_char2;area_char3;area_char4,起,md_qi,0,,起;起;qǐ;qi
+area_char1;area_char2;area_char3;area_char4,止,md_zhi,0,,止;止;zhǐ;zhi
+area_char1;area_char2;area_char3;area_char4,带,md_dai,0,,带;带;dài;dai
+area_char1;area_char2;area_char3;area_char4,对,md_dui,0,,对;对;duì;dui
+area_char1;area_char2;area_char3;area_char4,抓,md_zhua,0,,抓;抓;zhūa;zhua
+area_char1;area_char2;area_char3;area_char4,撇,md_pie,0,,撇;撇;piē;pie
+area_char1;area_char2;area_char3;area_char4,吟,md_yin,0,,yin
+area_char1;area_char2;area_char3;area_char4,定,md_ding,0,,ding
+area_char1;area_char2;area_char3;area_char4,细,md_xi4,0,,細;xi4
+area_char1;area_char2;area_char3;area_char4,长,md_chang,0,,長;chang
+area_char1;area_char2;area_char3;area_char4,小,md_xiao,0,,xiao
+area_char1;area_char2;area_char3;area_char4,復,md_fu,0,,復;復;fù;fu4;fu
+area_char1;area_char2;area_char3;area_char4,应合,md_yinghe,0,,应合;應合;yìng hé;yinghe
+area_char1;area_char2;area_char3;area_char4,猱,md_nao,0,,猱;猱;náo;nao
+area_char1;area_char2;area_char3;area_char4,撞,md_zhuang,0,,撞;撞;zhuàng;zhuang
+area_char1;area_char2;area_char3;area_char4,璅,md_suo,0,,璅;suǒ;suo
+area_char1;area_char2;area_char3;area_char4,短,md_duan,0,,duan
+area_char1;area_char2;area_char3;area_char4,长,md_chang,0,,chang
+area_char1;area_char2;area_char3;area_char4,背,md_bai,0,,bai
+area_char1;area_char2;area_char3;area_char4,滚,md_gun,0,,滚;滾;gǔn;gun
+area_char1;area_char2;area_char3;area_char4,沸,md_fu2,0,,沸;沸;fú;fu2
+area_char1;area_char2;area_char3;area_char4,至,md_zhi4,0,,至;至;zhì;zhi4
+area_char1;area_char2;area_char3;area_char4,半扶,md_banfu,0,,bf;banfu
+area_char1;area_char2;area_char3;area_char4,全扶,md_quanfu,0,,qf;quanfu
+area_char1;area_char2;area_char3;area_char4,叠蠲,md_diejuan,0,,疊蠲;dié juān;diejuan;dj
+area_char1;area_char2;area_char3;area_char4,打圆,md_dayuan,0,,打圆;打圓;dǎ yuán;dayuan
+area_char1;area_char2;area_char3;area_char4,圆搂,md_yuanlou,0,,yuanlou

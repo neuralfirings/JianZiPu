@@ -242,9 +242,9 @@ function findOptimalLayout(keys, filter = []) {
   results.sort((a, b) => a.areasWithoutKeys - b.areasWithoutKeys)
   results = results.filter(r => r.areasWithoutKeys == results[0].areasWithoutKeys)
 
-  const winnerMap = results[0].matches.map(e => { return {key: e.key, area: e.useArea, options: e.areas} })
+  const winnerMap = results[0]?.matches.map(e => { return {key: e.key, area: e.useArea, options: e.areas} })
   return {
-    layout: results[0].layout,
+    layout: results[0]?.layout,
     data: winnerMap,
     winnerMapStringified: JSON.stringify(winnerMap),
     options: results
@@ -253,15 +253,15 @@ function findOptimalLayout(keys, filter = []) {
 
 // ex: [{"key":"s","area":"left"},{"key":"7.","area":"hui…"k","area":"right"},{"key":"S3","area":"string"}]
 function getUnicode(layout, obj, includeSpacer = true) {
-  const unicodeArr = obj.map(o => {
+  const unicodeArr = obj?.map(o => {
     return jzpMap[layout].areas[o.area]?.components.filter(c => c.keys.includes(o.key))[0].unicode
   }).filter(e => e != undefined)
   // const unicodes = unicodeArr.join("")
   if (includeSpacer == true) {
-    unicodeArr.push(jzpMap[layout].advanceUnicode)
+    unicodeArr?.push(jzpMap[layout].advanceUnicode)
   }
 
-  const unicodes = unicodeArr.map(u => String.fromCharCode(u)).join("")
+  const unicodes = unicodeArr?.map(u => String.fromCharCode(u)).join("")
   return {unicodes, unicodeArr}
 }
 
@@ -426,13 +426,16 @@ export function convert(para) {
         const separatorIdx = keys.indexOf("|") == -1 ? keys.length : keys.indexOf("|")
         // left side
         let left = keys.slice(0, separatorIdx)
-        let { layout: layoutLeft, data: dataLeft } = findOptimalLayout(left, ["cuo_left", "cuo_v2_left", "cuo_v3_left"])
+        let { layout: layoutLeft, data: dataLeft } = findOptimalLayout(left, ["cuo_left", "cuo_left2", "cuo_left3"])
         let leftUnicodes = getUnicode(layoutLeft, dataLeft).unicodes
 
         // right side
         let right = keys.slice(separatorIdx+1)
-        let { layout: layoutRight, data: dataRight } = findOptimalLayout(right, ["cuo_right", "cuo_v2_right", "cuo_v3_right"])
+        let { layout: layoutRight, data: dataRight } = findOptimalLayout(right, ["cuo_right", "cuo_right2", "cuo_right3"])
         let rightUnicodes = getUnicode(layoutRight, dataRight).unicodes
+
+
+        // console.log("layout", words[i], layoutLeft, layoutRight)
         
         // combine
         words[i] = leftUnicodes + rightUnicodes
