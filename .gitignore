@@ -10,3 +10,5 @@ src/backups/
 src/*.sfd
 src/*.ttf
 src/*.otf
+src/demo/*.ttf
+src/demo/*.otf
