@@ -1,8 +1,0 @@
-@font-face {
-  font-family: JianZiPu;
-  src: url("./JianZiPu.otf") format("opentype");
-}
-.jzp-font {
-  font-family: JianZiPu, "adobe-kaiti-std", "Kaiti SC", "Ma Shan Zheng", monospace;
-  font-size: 3rem;
-}

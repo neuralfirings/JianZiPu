@@ -1,101 +1,136 @@
-# JianZiPu Font
+This document goes into detail on how to compile the font, the engineering behond it all. 
 
-JianZiPu is a way to write notation for Guqin (古琴) music. This document will cover how to use this font, and how to contribute to its design. 
+For usage, please visit the [JianZiPu Font Website](https://guqintabs.com/jianzipu). 
 
-Demo & Documentation: https://neuralfirings.github.io/jianzipu/
+The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.
 
-The rest of this document goes into the font compiling, and font input compiler. 
+The JianZiPu font uses a glyph layering system where each musical notation character is built by combining multiple component glyphs that stack and position themselves relative to each other. So each character is made of a series of glyphs, similar to how an English word is made of a series of letters.
 
-## Usage on Websites / JavaScript Packages
+![example](s7k5.png)
 
-```
-<script type="module">
-	import { convert, getCharacter } from './dist/jianzipu.js'
-	convert("s7ju5")
-	convert("s7ju5 :shang,6,7 #jin")
-	getCharacter("s6ju5")
-</script>
-```
+The rest of this document discusses how to compile the font.
 
-To use the Javascript: 
-* `convert(string)` -- converts the string of multiple characters to JianZiPu unicodes. A "character" is usually composed of multiple unicode glyphs, they will probably show up in most font as a box. When rendered with the JianZiPu.otf font, it'll show up as JianZiPu. You use spaces to separate characters. 
-* `getCharacter(string)` -- converts one character at a time.
+Design of the glyphs is hosted on [this Figma project](https://www.figma.com/design/CC89RmepV34CVP9bKWu48b/JianZiPuComponents?node-id=0-925&t=rNcq1aDc8xLvfPj2-1).
 
-To render JianZiPu on your website:
+# Section 1. Create Base Font with Input Characters
 
-* `jzp` class: anything embedded in `[[double brackets]]` will be in JianZiPu string using the JZP font; anything in `[[[triple brackets]]]` will be converted to a JianZiPu charater using the JZP font
-* `jzp-font` class: anything here will use the JianZiPu font
+## 1.1. Extract Input Characters from Source Font
 
-## Usage as a Font
+run this script to remove all characters from the font except the ones needed for input in the areaKeySVGMap.csv
+also add essential control characters and whitespace a-z, A-Z, 0-9
 
-To use the font, install `/dist/JianZiPu.otf` file. You will still need a compiler since the font itself uses unicodes in the 58000 range (per its html entity).
+1. Open source font (TW-Kai)
+2. Run: `src/scripts/fontForgeCreateBase.py` -- run inside FontForge (script might take a while to run)
+  a. dependency on `src/input/areaKeySVGMap.csv` for getting common, latin, han character set to keep
+3. Encoding > Reencode > Glyph Order
+4. Run: `src/scripts/fontForgeExportGlyphInfo.py` --> create `src/output/fontforgeGlyphInfo.csv`
+5. Open new Font Forge blank file and run `src/sciprt/fontForgeImportGlyphInfo.py`
+6. Copy/paste all the characters from the old Font Forge
+7. Update Meta Data
+-  Font Info > 
+  - PS Names: Update
+  - General, 800 Ascent + 200 Desc
+  - OS/2 > Metrics use 1100 Ascent, 500 Desc, 100 Line Gap
+		- NOTE: make sure "is offset" is unchecked!
+    - Typo Desc is negative
+    - HHead Desc is negative
+	- OS/2 > Charsets
+		- Unicode Ranges:
+			- Basic Latin
+			- CJK Symbols and Punctuations
+			- CJK Compatibility
+			- Private Use Area
+		- MS Code Pages
+			- 1252, Latin-1
+			- 936, Simplified Chinese
+			- 950, Traditional Chinese
+8. Space: set width to 1000
+7. Save As font as base font for use before importing any unicode (JianZiPu.base.sfd)
 
-You can access the compiler here: https://neuralfirings.github.io/jianzipu/ 
+## 1.2. Rename Chinese Characters for ease of coding
+1. Open `src/output/fontforgeGlyphInfo.csv` 
+  - add column new_glyph_name and rename manually (ex: ch_8 for 八) -- see rename conventions below
+  - Save As: `input/fontforgeGlyphRename.csv` -- NOTE: reference old fontforgeGlyphRename.csv for consistency
+2. Run: `src/scripts/fontForgeGlyphRename.py`
+3. Save font as base font for use before importing any unicode (JianZiPu.base.sfd)
 
-You type in the string (e.g., `3ks(7)`), and then copy/paste the compiled characters into whatever you want (I've tested with Microsoft Word), and make sure it's rendered using the JianZiPu.otf font (see .otf in the dist folder.)
+Naming Conventions:
 
-## Technical Documentation: How the Font is Made
+- numbers: 七 -> ch_7
+- basic left and right hands: 勾 -> ch_k 
+  - applicable: s d f v , n h j u k i l o U
+- others: 圆 -> ch_yuan
+- traditional: 圓 -> ch_yuan_trad
+- dups, add pinyin tone: 至 -> ch_zhi4; 止 -> ch_zhi3
 
-This is the part where we go into the nitty gritty of how this font works, and how you can contribute in this project. 
+# Section 2. Import PUA Glyphs
 
-**1. The Art** 
+## 2.1. Figma: Export Glyphs to SVG
 
-[Figma](https://www.figma.com/design/CC89RmepV34CVP9bKWu48b/JianZiPuComponents-(v2)?node-id=0-925&t=nnXDKFURenKOGjYz-1) -- this contains the actual character and character component art. 
+1. Figma > Glyphs Page
+2. Copy glyph, everything in GLYPH
+  a. Highlight all symbols
+    i. Detach (cmd + opt + B)
+    ii. Outline Stroke (Opt + Cmd + O)
+    iii. (note: ensure fill is unchecked as part of export )
+    iv. Left panel > search for "slice"
+    v. Copy all and export as SVG (+ 1x SVG, some might export as jpg and get exluded but for this step)
+  b. rename exported files and remove "_slice" (ex: foo_slice.svg >> foo.svg)
+3. Repeat for GLYPH_HUI_DECIMALS (expected output is 130, 13 x 10)
+4. Copy svg to to `src/components/` folder
+5. Rename _slice.svg -> .svg
+6. Remove -1.svg (dups due to symbol within symbols in Figma)
 
-* Glyph/Area Components: This page has the individual components that make up the font. The glyphs here export to SVGs which goes into compiling the font.
-* Layouts: This page has a series of layouts. Each layout is composed of a set of areas arranged in slightly differnet ways. Each area can include glyphs. The layout used is selected using the JavaScript IME. 
+## 2.2. Import SVG into FontForge
 
-**2. Area/Key Map & Translator**
+1. Open file from above (JianZiPu.base.sfd)
+2. Save As working font (JianZiPu.sfd)
+3. Run: `src/scripts/fontForgeAddJZPGlyphs.py` -- run inside FontForge
 
-* `src/areaKeySVGMap.csv` contains which glyphs map to which areas, also contains which key triggers that glyph to render. 
-* `src/keyTranslation.csv` contains how to translate certain letters or characters to the key that's used. 
+# Section 3. Make Feature Rules
 
-One todo is combining these two into one file. 
+## 3.1. Figma Position Info
 
-**3. Compiler (Javascript)**
+1. From Figma, export LAYOUT as css into `input/figma.css`
+2. Run `cd src/scripts`
+2. Run `node ./scripts.cjs --compile -w` to create `src/output/layout_area_positions.json` dictionary
 
-* `src/jianzipu.js` contains the compiling instructions. Basically it parses a string ":shang,7 #fu4 s7k5 名7勾5 (etc)" and converts it into the right unicodes. It does this by figuring out which layout to use, then which glyphs to use given those layouts. 
+## 3.2. Create Feature File (manual)
 
+File: `src/input/fontForgeFeatures.fea` (reference `src/input/areaKeySVGMap.csv`)
 
-## Font Compiling Instructions
+1. Areas: @area_xxx = [md_xxx etc]
+	a. add @area_wildcard = [@area_foo @area_bar blank] 
+2. Lookups: common to jzp, lat to jzp, han to jzp (ex sub j for lg_tiao)
+	a. in calt, keep `sub underscore by blank;`
+	b. in calt, add all the translation lookups
+3. Positions:
+	a. go through each sequence in the layout
+	b. do one substitution at a time
+	c. some edge cases: 77 7z7 7>7
+	d. JZP_POSITION_MEGA_SECTION covers common non-vert jzp, gou, tiao, etc.
 
-1. Figma: Export Glyphs to SVG
-	* Figma > Glyphs Page
-	* Copy glyph symbols, paste into new page 
-	* Highlight all Symbols
-		* Detach (cmd + opt + B)
-		* Outline Stroke (Opt + Cmd + O)
-		* (note: ensure fill is unchecked as part of export )
-		* Left panel > search for "slice"
-		* Copy all and export as SVG
-	* rename exported files and remove "_slice" (ex: foo_slice.svg >> foo.svg)
-2. Figma: Export Area Definitions to TXT
-	* Figma > Layouts
-	* Select what you want to export > Copy/Paste as > Copy as code > CSS (all layers)
-	* Paste in `/src/figmaAreaDefinitions.txt`
-	* `node ./src/scripts.cjs --compile --write`
-3. CSV: Map characters to areas
-	* Open charMap.csv
-	* Add characters for each area
-	* `node ./src/scripts.cjs --compile --write`
-4. FontForge: Create the font
-	* Open `/src/JianZiPu.blank.sfd` in FontForge, save as new version (ex: JianZiPu.sfd) (also update the font version Edit > Font Info)
-	* Modify `/src/fontForgeScript.py` > set HOME_PATH and FILE_NAME
-	* Copy script from fontForgeScript.py
-	* In FontForge, open Python console (Cmd + .) > paste in fontForgeScript.py > run
-	* Generate Font > select Open Type, save as .otf file (make sure Options > Open Type is checked)
-5. Layout rules
-	* Modify `/src/jianzipu.js` file if rules need to be modified
-6. Key Translations
-	* Modify `src/keyTranslations.csv` if translation rules need to be modified/added
-	* Can use https://tableconvert.com/excel-to-json to convert this to JSON for babel.json (TODO: script this later)
-7. Test with `src/index.html`
-8. Build with `parcel build`
+## 3.3. Create feature filed with positions filled in (and other)
 
-## Credits/License
+Run `cd src/scripts`
+Run `node ./scripts.cjs --add-positions -w` (this creates an output file with positions filled in)
 
-Code is licensed under [The MIT License](https://opensource.org/licenses/MIT). 
+- # layout: layout_foo => set state to that layout
+- @area_blah' <> => will fill in with positions based on the current state layout
+- replace JZP_POSITION_MEGA_SECTION with different jzp layouts (e.g., gou, loki, etc.)
 
-Font is licensed under [Open Font License](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL).
+## 3.4. Import Features into FontForge
 
-Font is adapted from the beautiful [Ma Shan Zheng](https://fonts.google.com/specimen/Ma+Shan+Zheng) font.
+Run `src/scripts/fontForgeRefreshFeatures.py` (or FontForge > Script Menu > JZP > Import Features)
+
+## 3.5. Export font and test in metrics to validate
+1. File > Generate Fonts > .ttf and/or .otf  (make sure Options > True Type is checked)
+
+- validate in HTML
+- validate in Word
+
+---
+
+The font is licensed under SIL Open Font License 1.1
+The code is licensed under MIT License.
+The font is derived from TW-Kai font.

@@ -1,783 +1,1499 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>      
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:image" content="https://xttzxfjcvenoossepgci.supabase.co/storage/v1/object/public/jianzipu/ogimage.jpg">
+
+  <title>JianZiPu Font (v3)</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=M+PLUS+1+Code:wght@100..700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
+  
+  <style>
+    @font-face {
+      font-family: 'JianZiPu';
+      src: url('./JianZiPu.ttf'); 
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap; /* avoids invisible text in Safari */
+    }
+    @font-face {
+      font-family: 'KaiTi';
+      src: url('./TW-Kai-98.ttf');
+    }
+    body {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
+    }
+    .table {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
+    }
+    text {
+      background-color: #eee;
+      color: #000;
+      padding: 5px;
+      border-radius: 5px;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code',  monospace;
+      font-size: 0.8rem;
+    }
+    .alert-tip text {
+      background-color: #fff;
+    }
+    txs {
+      display: block;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
+      font-size: 0.7rem;
+      /* background-color: #eee;
+      padding: 3px;
+      margin: 2px;
+      border-radius: 5px; */
+    }
+    jzp {
+      font-size: 2.5rem;
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+    }
+    text r {
+      font-weight: bold;
+    }
+    r {
+      color: rgb(180, 44, 44);
+    }
+    h3 {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #222;
+    }
+    .jzp {
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+      padding-right: 3rem; /* to prevent characters from being cut off */
+    }
+    .text-entry {
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    .jzp-entry {
+      font-family: 'JianZiPu', 'KaiTi', 'Arial',sans-serif;
+      font-size: 3rem;
+      height: 100%;
+    }
+    .jzp-example {
+      font-family: 'JianZiPu', 'KaiTi', 'Arial',sans-serif;
+      font-size: 3rem;
+      height: 6rem;
+      position: relative;
+      overflow: auto;     /* Hide anything past the box */
+      white-space: nowrap;  /* Keep text in one line */
+      /* padding-right: 1.5em; */
+      /* border-bottom: solid 1px rgb(222, 226, 230); */
+      /* border-radius: 6px; */
+      padding: 10px 1.5em 10px 10px;
+      /* margin-bottom: 10px; */
+      -webkit-mask-image: linear-gradient(
+        to right,
+        black calc(100% - 1em),
+        transparent 100%
+      );
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-size: 100% 100%;
+
+      mask-image: linear-gradient(
+        to right,
+        black calc(100% - 1em),
+        transparent 100%
+      );
+      mask-repeat: no-repeat;
+      mask-size: 100% 100%;
+    }
+    .jzp-example-container {
+      background-color: #eee;
+      position: relative;
+      border-radius: 0px;
+    }
+    .jzp-example-container input {
+      border-radius: 50px;
+    }
+    .lat-entry, .text-entry {
+      font-family: "Roboto Mono", "M PLUS 1 Code",  monospace;
+      font-size: 1.2rem;
+      height: 100%;
+    }
+
+    label {
+      font-weight: 500;
+      text-transform: capitalize;
+      display: block;
+    }
+    .container {
+      margin-top: 20px;
+    }
+    .row {
+      margin: 20px 0;
+    }
+    .col-md-6 {
+      margin-bottom: 40px;
+    }
+    .alert-tip {
+      border-radius: 0px;
+      border-right: 0px;
+      border-left: solid 5px #000;
+      border-top: 0px;
+      border-bottom: 0px;
+      background-color: #e2e3e5;
+    }
+
+    /* Floating download button */
+    .floating-download-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .floating-download-btn:hover {
+      /* transform: translateY(-2px); */
+      /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); */
+    }
+
+    .btn-primary {
+      background-color: #000;
+      border-color: #000;
+      border-radius: 3px;
+    }
+
+    .btn-primary:hover {
+      background-color: #000;
+      border-color: #000;
+      border-radius: 5px;
+    }
+
+    .btn-download-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 10px 20px;
+    }
+    .download-bar {
+      background-color: #353535;
+      text-align: center;
+      padding: 10px 0;
+    }
+    .download-bar a {
+      color: #fff;
+    }
+    .text-entry-examples {
+      font-size: 0.8em
+    }
+    .loading {
+      position:fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+  </style>
+  
+  <!-- MailerLite Universal -->
+  <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1128028');
+  </script>
+  <!-- End MailerLite Universal -->
+</head>
+<body>
+  <div class="loading">
+    Loading fonts...
+    <div class="spinner-border" role="status" style="margin: 20px 0">
+      <span class="visually-hidden">Loading fonts...</span>
+    </div>
+  </div>
+
+  <div style="background: #EEE">
+    <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
+      <h1>JianZiPu Font (v3) <small style="font-size:12px"><a href="/jianzipu/v2/index.html">looking for v2?</a></small></h1>
+      
+      <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
+
+      <small class="text-muted">Remember: Use the spacebar to advance between characters for proper notation spacing!</small>
+
+      <div class="alert alert-secondary jzp-example-container" style="background: #FAFAFA">
+        <small>Type here to preview text</small>
+        <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <div class="text-entry-examples">
+          <span>See example in </span>
+          <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七半急勾五 就打七 散勾三 勾三 泛音中九挑六 大五六掩五 名九掐起 撮散三｜名六，五 大七历四三 ：大八五半轮七 ：上五一 ：进 ");''>中文</a>
+          <span> or </span>
+          <a href="javascript:void(0)" onClick='fillIn(this, "s7.5>k5 jiul7 0k3 k3 fyd9u6 v5.6V5 s9c C03|s6,5 v7U43 :v8.5banlun7 :shang51 :jin ")''>ASCII</a>
+        </div>
+        <hr />
+        <div class="jzp jzp-example"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sticky-top download-bar" style="margin-top: 0px">
+    <a class="ml-onclick-form" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">
+      Download JianZiPu Font
+    </a>
+    <!-- <button class="ml-onclick-form btn btn-primary" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">Download JianZiPu Font</button> -->
+  </div>
+  <div class="container">   
+    <p>The JianZiPu font uses a <strong>glyph layering system</strong> where each musical notation character is built by combining multiple component glyphs that stack and position themselves relative to each other. So each character is made of a series of glyphs, similar to how an English word is made of a series of letters.</p>
     
-    <title>JianZiPu Font</title>
+    <div class="alert alert-tip"><strong>Why the spacebar is essential:</strong> Each space character acts as a <em>positioning anchor</em> that tells the font where to place the next set of layered components. Without spaces, the glyph components would overlap or misalign, resulting in unreadable notation. The spacebar essentially advances the "cursor" to the next character position, ensuring proper spacing and alignment of the layered musical symbols.</div>
+    
+    <div class="alert alert-tip"><strong>Sibelius/MuseScore Users:</strong> In these music notation programs, the "space" advances lyrics to the next note. If you are using JianZiAPu as lyrics, this messes up with formatting. In this case use <text>+</text> after a character to give the character some width. Ex: <text>勾七+</text> or <text>k7+</text> will display correctly in these programs as <jzp>k7</jzp>, then use spacebar to advance to the next note. <text>：泛起+名九挑六</text> or <text>:fanqi+s9u6</text> will be processed as one word <jzp>:fanqi+名九挑六</jzp> in these programs and thus both these will be attached to one note.</div>
+   
+    <h3>1. Basic Layout</h3>
+    
+    <p>For left hand...</p>
+    <ul>
+      <li><text>名</text> or <text>s</text> → <jzp>s</jzp>Ex: <text><r>名</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>s</r>9k5 </jzp></li>
+      <li><text>中</text> or <text>d</text> → <jzp>d</jzp>Ex: <text><r>中</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>d</r>9k5</jzp></li>
+      <li><text>食</text> or <text>f</text> → <jzp>f</jzp>Ex: <text><r>食</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>f</r>9k5</jzp></li>
+      <li><text>大</text> or <text>v</text> → <jzp>v</jzp>Ex: <text><r>大</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>v</r>9k5</jzp></li>
+      <li><text>跪</text> or <text>x</text> → <jzp>x</jzp>Ex: <text><r>跪</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>x</r>9k5</jzp></li>
+    </ul>
+    <p>For right hand...</p>
+    <ul>
+      <li><text>劈</text> or <text>n</text> → <jzp>n</jzp>Ex: <text>名九<r>劈</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>n</r>5</jzp></li>
+      <li><text>托</text> or <text>h</text> → <jzp>h</jzp>Ex: <text>名九<r>托</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>h</r>5</jzp></li>
+      <li><text>抹</text> or <text>j</text> → <jzp>j</jzp>Ex: <text>名九<r>抹</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>j</r>5</jzp></li>
+      <li><text>挑</text> or <text>u</text> → <jzp>u</jzp>Ex: <text>名九<r>挑</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>u</r>5</jzp></li>
+      <li><text>勾</text> or <text>k</text> → <jzp>k</jzp>Ex: <text>名九<r>勾</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>k</r>5</jzp></li>
+      <li><text>剔</text> or <text>i</text> → <jzp>i</jzp>Ex: <text>名九<r>剔</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>i</r>5</jzp></li>
+      <li><text>打</text> or <text>l</text> → <jzp>l</jzp>Ex: <text>名九<r>打</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>l</r>5</jzp></li>
+      <li><text>摘</text> or <text>o</text> → <jzp>o</jzp>Ex: <text>名九<r>摘</r>五</text> or <text>s9<r>s</r>5</text> → <jzp>s9<r>o</r>5</jzp></li>
+      <li><text>历</text> or <text>U</text> → <jzp>U</jzp>This takes two strings. Ex: <text>名九<r>历</r>五四</text> or <text>s9<r>U</r>54</text> → <jzp>s9<r>U</r>54</jzp></li>
+    </ul>
 
-		<!-- Favicon -->
-		<link rel="icon" href="favicon.ico" />
+    <p>For numbers in hui position and string... well, just use numbers! Which numbers? Like <text>五</text> or <text>5</text>. You can also use <text>外</text> or <text>13+</text> for the <jzp>:wai</jzp> character, as well as <text>散</text> and <text>0</text> for the <jzp>:san</jzp> character.</p>
 
-    <!-- Bootstrap --> 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
-		<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+    <ul>
+      <li><text>名<r>九</r>勾五</text> or <text>s<r>9</r>k5</text> → <jzp>名<r>九</r>勾五</jzp></li>
+      <li><text>名<r>外</r>勾五</text> or <text>s<r>13+</r>k5</text> → <jzp>名<r>外</r>勾五</jzp></li>
+      <li><text><r>散</r>勾五</text> or <text><r>0</r>k5</text> → <jzp><r>散</r>勾五</jzp></li>
+    </ul>
 
-    <!-- JianZiPu -->
-		<script type="module">
-			import { convert } from './jianzipu.js'
-    	$(document).ready(function() {
-// 				$(".jianzipu-input").val(`v64n5 v64h5 v64u5 v64k5 v64i5 v64l5 v64o5 Cv64,5|v64,5 C5|5
-// v64/n5 v64/h5 v64/u5 v64/k5 v64/i5 v64/l5 v64/o5 Cv64,/5|v64,5 C/5|/4
-// v64>n5 v64>h5 v64>u5 v64>k5 v64>i5 v64>l5 v64>o5 Cv64,>5|v64,5 C>5|>4`)
-// 				let sh = $(".jianzipu-input").val()
-// 				$('.jianzipu-output-character').val(convert(sh))
 
-    		$(".jianzipu-input").on("keyup", function() {
-    			let sh = $(this).val()
-    			$('.jianzipu-output-character').val(convert(sh)) 
-    		})
 
-				$(".v1convert").on("click", function() {
-					let v2 = v1tov2($(".jianzipu-input").val())
-					$(".jianzipu-input").val(v2)
-    			$('.jianzipu-output-character').val(convert(v2)) 
-				})
-    	})
-		</script>
+    <div class="alert alert-tip">
+      <strong>Note!</strong> Mixing and matching (e.g., <text>勾3</text> or <text>k三</text>) is not always supported, the text might render on Chrome but not in Word. 
+    </div>
+    
+    <p>Try it out below! You can type in both text boxes, and both will update. The Text textbox just shows you what you are typing.</p>
 
-    <style>
-    	label {
-    		font-weight: bold;
-    		display: block;
-    	}
-			.xl {
-				font-size: 3rem;
-				line-height: 1rem;
-			}
-			.table td {
-				vertical-align: middle;
-			}
-    </style>
-  </head>
-  <body>
-		<!-- <nav class="nav"></nav>   -->
-		<div class="container-fluid" id="content">
-			
-			<h1>JianZiPu Font (v2) <small style="font-size: 12px"><a href="/jianzipu/v1">looking for v1?</a></small></h1>
+    <div class="alert alert-secondary jzp-example-container">
+      <small>Type here to preview text</small>
+      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />      
+      <div class="text-entry-examples">
+        <span>See example in </span>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名八勾三 中外挑五 大九抹挑七 ");''>中文</a>
+        <span> or </span>
+        <a href="javascript:void(0)" onClick='fillIn(this, "s8k3 d13+u5 v9ju7 ")''>ASCII</a>
+      </div>
+      <hr />
+      <div class="jzp jzp-example"></div>
+    </div>
 
-			<div class="row jzp">
-				<div class="col" style="margin-bottom: 20px">
-					<h4>Basic Layout</h4>
-					<img src="./SingleEx.png" height="200px"/>
-					<p>Write basic JianZiPu using ASCII or Chinese. 
-						Use <code>s</code>, <code>d</code>, <code>f</code>, <code>v</code> (or <code>名</code>, <code>中</code>,  <code>食</code>, <code>大</code>) for left hand.
-						Use <code>n</code>, <code>h</code>, <code>j</code>, <code>u</code>, <code>k</code>, <code>i</code>, <code>l</code>, <code>o</code> (or <code>劈</code>, <code>托</code>, <code>抹</code>, <code>挑</code>, <code>勾</code>, <code>剔</code>, <code>打</code>, <code>摘</code>) for right hand.
-					</p>
-					<p>Ex: <code>s75k3</code>, <code>名七五勾3</code>, or <code>名七半勾3</code> will render [[[s75k3]]]</p>
-					<p>Ex: <code>0U43</code> or <code>散历四三</code> will render [[[0U43]]]</p>
-				</div>
-				<div class="col" style="margin-bottom: 20px">
-					<h4>Chord Layout</h4>
-					<img src="./CuoEx.png" height="200px"/>
-					<p>Write chord characters by prefacing with a chord  (ex: <code>C</code> or <code>撮</code>, <code>BL</code> or <code>拨剌,</code> etc) then separate the left and right side with a <code>|</code>.</p>
-					<p>Ex: <code>C2|4</code> or <code>撮二｜四</code> will render as [[[C2|4]]]</p>
-					<p>Ex: <code>Ls76|v765</code> or <code>剌名76｜大七65</code> will render as [[[Ls76|v765]]]</p>
-				</div>
-				<div class="col" style="margin-bottom: 20px">
-					<h4>Vertical Layout</h4>
-					<img src="./VertEx.png" height="200px"/>					
-					<p>Characters prefaced with <code>:</code> will write each character vertically, except when a subset of characters are surrounded by brackets <code>[</code> and <code>]</code></p>
-					<p>Ex: <code>:[s9]lun7</code> or <code>：【名九】轮七</code> will render [[[:[s9]lun7]]]</p>
-					<p>Ex: <code>:shang79</code> or <code>：上七九</code> will render [[[：上七九]]]</p>
-				</div>
-			</div>
+    <h3>2. Numbers and Decimals</h3>
+    <p>If you are using ASCII, you can note a decimal by just writing 7.5, 7.6, etc.</p>
+    <p>If you are using Chinese, the font will treat the numbers different depending on if they are preceded by a left hand glyph or not. For example, if two numbers are follows a left hand, then that gets converted to decimals (s76 => s7.6), can put comma between (s7,6)</p>
+    <ul>
+      <li><text>名七六</text> and <text>s76</text> → 7.6 hui (no string) <jzp>s76</jzp></li>
+      <li><text>名七,六</text> and <text>s7,6</text> → 7 hui, string 6 <jzp>s7,6</jzp></li>
+      <li><text>名七六六</text> and <text>s766</text> → 7.6 hui, string 6 <jzp>s766</jzp></li>
+      <li><text>名十一</text> and <text>s766</text> → 7.6 hui, string 6 <jzp>s766</jzp></li>
+      <li><text>历七六</text> and <text>U76</text> → string 7, string 6 <jzp>U76</jzp> Here 76 is not converted into 7.6 since it's not preceded by a left hand glyph</li>
+    </ul>
+    <p>For Chinese, you can also use 点 and 徽 to indicate decimals For example, <text>名七点九</text> gives <jzp>名七点九</jzp>.</p>
+    <p>Here are some crazy examples:</p>
+    <ul>
+      <li><text>名十</text> gives <jzp>名十</jzp></li>
+      <li><text>名十二</text> gives <jzp>名十二</jzp> In the code this is represented as 10.2</li>
+      <li><text>名十二徽</text> gives <jzp>名十二徽</jzp> In the code this is represented as 12, though I don't know if visually it's all that different from 10.2 above.</li>
+      <li><text>名十，二</text> gives <jzp>名十，二</jzp> </li>
+      <li><text>名十二二</text> gives <jzp>名十二二</jzp></li>
+      <li><text>名十二二二</text> gives <jzp>名十二二二</jzp></li>
+    </ul>
 
-			<div class="row">
-				<div class="col">
-					<br />
-					<h3>Try it</h3>
-				</div>
-			</div>
+    <p>Anything that results in ".5" hui will be rendered with the <jzp>:ban</jzp> character.</p>
 
-			<div class="row">
-				<div class="col-md-6">
-					<label>Input</label>
-					<pre><textarea class="jianzipu-input form-control" rows="9" placeholder="ex: s67k5 名六七勾五 名67勾5"></textarea></pre>
-					<a href="javascript:void(0)" class="v1convert">Convert from V1</a>
-					<br/>
-				</div>
-				<div class="col-md-6">
-					<label>Compiled Character (rendered with <a href="./JianZiPu.otf">JianZiPu Font</a>)</label>
-					<textarea class="jzp-font jianzipu-output-character form-control" rows="3" style="font-size: 3rem; padding-right: 3rem; display: inline-block;"></textarea>
-				</div>
-			</div>
+    <ul>
+      <li><text>中<r>八半</r>勾五</text> gives <jzp>中<r>八半</r>勾五</jzp></li>
+      <li><text>中<r>八五</r>勾五</text> also gives <jzp>中<r>八五</r>勾五</jzp></li>
+      <li><text>d<r>8.5</r>k5</text> also also gives <jzp>d<r>8.5</r>k5</li>
+      <li><text>d<r>85</r>k5</text> also also also gives <jzp>d<r>85</r>k5</jzp> Do you see the difference? There's no period between 8 and 5, but the font still treats it as a decimal.</li>
+    </ul>
 
-			<hr />
+    <p>Anything that's after the 13th hui will be rendered with the <jzp>:wai</jzp> character. You can use <text>13+</text> or <text>外</text> for the <jzp>:wai</jzp> character.</p>
+    <ul>
+      <li><text>名<r>外</r>挑六挑六</text> and <text>s<r>13+</r>u6</text> gives <jzp>名<r>外</r>挑六</jzp></li>
+      <li><text>名<r>十三二</r>挑六</text> and <text>s<r>132</r>u6</text> gives <jzp>名<r>十三二</r>挑六</jzp></li>
+      <li><text>名<r>十三二</r>挑六</text> and <text>s<r>132</r>u6</text> gives <jzp>名<r>十三二</r>挑六</jzp></li>
+    </ul>
 
-			<div class="row">
-				<div class="col">
-					<br />
-					<h3>Examples</h3>
-				</div>
-			</div>
-			<div class="row" style="margin-right: 1.5rem">
-				<div class="col-md-6">
-					<label>Input Example (Alphabet)</label>
-					s7ju5 s7>k5 jiul75 0k3 k3 fyd9u6 v56V5 s9c C03|s65 v7U43 :[v85]banlun7 :shang,5,1 :jin<br /><br />
-					<label>Input Example (Chinese)</label>
-					名七抹挑五 名七半急勾五 就打七 散勾三 勾三 泛音中九挑六 大五六掩五 名九掐起 撮散三|名六五 大七历四三 ：【大八五】半轮七  ：上五一 :进
-					<br/>
-					<br/>
-				</div>
-				<div class="col-md-6 jzp">
-					<label>Compiled Character (JianZiPu Font)</label>
-					<div style="font-size: 3rem;">
-					[[[名七抹挑五 名七半急勾五 就打七 散勾三 勾三 泛音中九挑六 大五六掩五 名九掐起 撮散三|名六五 大七历四三 ：【大八五】半轮七  ：上五一 :进]]] 
-					</div>
-				</div>
-			</div>
-			
-			<hr />
+    <p>You can use <text>散</text> or <text>0</text> to indicate an open string as in <text><r>0</r>k5</text> or <text><r>散</r>勾五</text> → <jzp><r>散</r>勾五</jzp></p>
 
-			<div class="row">
-				<div class="col">
-					<br />
-					<h3>Documentation</h3>
-				</div>
-			</div>
+    
+    <p>You can use <text>就</text> or <text>jiu</text> to indicate a repeat from the previous character as in <text><r>jiu</r>k5</text> or <text><r>就</r>勾五</text> → <jzp><r>就</r>勾五</jzp></p>
 
-			<div class="row">
-				<div class="col-md-2"></div>
-				<div class="col-md-8">
-					<label>Keyboard Map (Basic Glyphs)</label>
-					<img src="./keyboard.png" width="100%"/>
-					<br /><br />
-				</div>
-				<div class="col-md-2"></div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					<h4>1: Left Hand</h4>
-					<label>1a: Left Hand Finger</label>
-					<table class="table table-sm">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>s</td>
-								<td>名</td>
-								<td>míng</td>
-								<td class="jzp">[[[s]]]</td>
-						</tr>
-						<tr>
-								<td>d</td>
-								<td>中</td>
-								<td>zhōng</td>
-								<td class="jzp">[[[d]]]</td>
-						</tr>
-						<tr>
-								<td>f</td>
-								<td>食</td>
-								<td>shí</td>
-								<td class="jzp">[[[f]]]</td>
-						</tr>
-						<tr>
-								<td>v</td>
-								<td>大</td>
-								<td>dà</td>
-								<td class="jzp">[[[v]]]</td>
-						</tr>
-						<tr>
-								<td>x</td>
-								<td>跪</td>
-								<td>guì</td>
-								<td class="jzp">[[[x]]]</td>
-						</tr>
-					</table>
 
-					<label>1b: Speed mods & mods related to 韵 production</label>
-					<table class="table table-sm">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>/</td>
-								<td>绰</td>
-								<td>chuò</td>
-								<td class="jzp">[[[/]]]</td>
-						</tr>
-						<tr>
-								<td>&gt;</td>
-								<td>急</td>
-								<td>jí</td>
-								<td class="jzp">[[[>]]]</td>
-						</tr>
-						<tr>
-								<td>\</td>
-								<td>注</td>
-								<td>zhù</td>
-								<td class="jzp">[[[\]]]</td>
-						</tr>
-					</table>
+    <div class="alert alert-secondary jzp-example-container">
+      <small>Type here to preview text 
+      </small>
+      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <div class="text-entry-examples">
+        <span>See example in </span>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五 名7.5 名十二 名十二二 名十二徽 ");''>中文</a>
+        <span> or </span>
+        <a href="javascript:void(0)" onClick='fillIn(this, "s75 s7,5 s755 s7.5 s12 s122 s12.2 ")''>ASCII</a>
+      </div>
+      <hr />
+      <div class="jzp jzp-example"></div>
+    </div>
 
-					<label>1c: Left Hand Techniques</label>
-					<table class="table table-sm">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>V</td>
-								<td>掩</td>
-								<td>yǎn</td>
-								<td class="jzp">[[[V]]]</td>
-						</tr>
-						<tr>
-								<td>c</td>
-								<td>掐起</td>
-								<td>qiā qǐ</td>
-								<td class="jzp">[[[c]]]</td>
-						</tr>
-						<tr>
-								<td>fy</td>
-								<td>泛音</td>
-								<td>fàn yīn</td>
-								<td class="jzp">[[[fy]]]</td>
-						</tr>
-					</table>	
+    <h3>3. Basic Modifiers</h3>
+    <p>There are a lot of modifiers in the font, but there a few that is positioned in funny places around a JianZiPu character. I'll show it with a <jzp>名九勾六</jzp> character</p>
+    <ul>
+      <li><text><r>泛音</r>名九勾六</text> or <text><r>fy</r>s9k6</text> → <jzp><r>泛音</r>名九勾六</jzp></li>
+      <li><text>名九<r>急</r>勾六</text> or <text>s8<r>></r>k6</text> → <jzp>名九<r>急</r>勾六</jzp></li>
+      <li><text>名九<r>绰</r>勾六</text> or <text>s8<r>/</r>k6</text> → <jzp>名九<r>绰</r>勾六</jzp></li>
+      <li><text>名九<r>注</r>勾六</text> or <text>s8<r>\</r>k6</text> → <jzp>名九<r>注</r>勾六</jzp></li>
+      <li><text>名九<r>绰注</r>勾六</text> or <text>s8<r>/\</r>k6</text> → <jzp>名九<r>绰注</r>勾六</jzp></li>
+    </ul>
 
-					<u>For use in Vertical Layout only</u><br />
-					<small>
-						preface these with <code>:</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
-					</small>
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-							<td>:daiqi</td>
-							<td>:带起</td>
-							<td>dài qǐ</td>
-							<td>[[[:带起]]]</td>
-						</tr>
-						<tr>
-							<td>:duiqi</td>
-							<td>:对起</td>
-							<td>duì qǐ</td>
-							<td>[[[:对起]]]</td>
-						</tr>
-						<tr>
-							<td>:zhuaqi</td>
-							<td>:抓起</td>
-							<td>zhuā qǐ</td>
-							<td>[[[:抓起]]]</td>
-						</tr>
-						<tr>
-							<td>:pieqi</td>
-							<td>:撇起</td>
-							<td>piē qǐ</td>
-							<td>[[[:撇起]]]</td>
-						</tr>
-					</table>
+    <div class="alert alert-secondary jzp-example-container">
+      <small>Type here to preview text 
+      </small>
+      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <div class="text-entry-examples">
+        <span>See example in </span>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "泛音名九勾六 ");''>中文</a>
+        <span> or </span>
+        <a href="javascript:void(0)" onClick='fillIn(this, "fys9k6 fanyins9k6 ")''>ASCII</a>
+      </div>
+      <hr />
+      <div class="jzp jzp-example"></div>
+    </div>
 
-					<label>1d: Left Hand Vibratos and Slides</label>
-					<u>For use in Vertical Layout only</u><br />
-					<small>
-						preface these with <code>:</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
-					</small>
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-							<td>:tui</td>
-							<td>:退</td>
-							<td>tuì</td>
-							<td>[[[:退]]]</td>
-						</tr>
-						<tr>
-								<td>:jin</td>
-								<td>:进</td>
-								<td>jìn</td>
-								<td>[[[:进]]]</td>
-						</tr>
-						<tr>
-								<td>:fu4</td>
-								<td>:復</td>
-								<td>fù</td>
-								<td>[[[:復]]]</td>
-						</tr>
-						<tr>
-								<td>:zhuang</td>
-								<td>:撞</td>
-								<td>zhuàng</td>
-								<td>[[[:撞]]]</td>
-						</tr>
-						<tr>
-								<td>:yin</td>
-								<td>:吟</td>
-								<td>yín</td>
-								<td>[[[:吟]]]</td>
-						</tr>
-						<tr>
-								<td>:nao</td>
-								<td>:猱</td>
-								<td>náo</td>
-								<td>[[[:猱]]]</td>
-						</tr>
-						<tr>
-								<td>:changyin</td>
-								<td>:长吟</td>
-								<td>cháng yín</td>
-								<td>[[[:长吟]]]</td>
-						</tr>
-						<tr>
-								<td>:xiyin</td>
-								<td>:细吟</td>
-								<td>xì yín</td>
-								<td>[[[:细吟]]]</td>
-						</tr>
-						<tr>
-								<td>:dingyin</td>
-								<td>:定吟</td>
-								<td>dìng yín</td>
-								<td>[[[:定吟]]]</td>
-						</tr>
-						<tr>
-								<td>:xiaoyin</td>
-								<td>:小吟</td>
-								<td>xǐao yín</td>
-								<td>[[[:小吟]]]</td>
-						</tr>
-						<tr>
-								<td>:fenkai</td>
-								<td>:分开</td>
-								<td>fēnkāi</td>
-								<td>[[[:分开]]]</td>
-						</tr>
-						<tr>
-							<td>:yinghe</td>
-							<td>:应合</td>
-							<td>yìng hé</td>
-							<td>[[[:应合]]]</td>
-						</tr>
-					</table>
+    <h3>4. Chords</h3>
 
-				</div>
-				<div class="col-md-6">
-					<h4>2: Right Hand</h4>
-					<label>2a: Basic Right Hand</label>
-					<table class="table table-sm">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>n</td>
-								<td>劈</td>
-								<td>pī</td>
-								<td class="jzp">[[[n]]]</td>
-						</tr>
-						<tr>
-								<td>h</td>
-								<td>托</td>
-								<td>tuō</td>
-								<td class="jzp">[[[h]]]</td>
-						</tr>
-						<tr>
-								<td>j</td>
-								<td>抹</td>
-								<td>mǒ</td>
-								<td class="jzp">[[[j]]]</td>
-						</tr>
-						<tr>
-								<td>u</td>
-								<td>挑</td>
-								<td>tiǎo</td>
-								<td class="jzp">[[[u]]]</td>
-						</tr>
-						<tr>
-								<td>k</td>
-								<td>勾</td>
-								<td>gōu</td>
-								<td class="jzp">[[[k]]]</td>
-						</tr>
-						<tr>
-								<td>i</td>
-								<td>剔</td>
-								<td>tì</td>
-								<td class="jzp">[[[i]]]</td>
-						</tr>
-						<tr>
-								<td>l</td>
-								<td>打</td>
-								<td>dǎ</td>
-								<td class="jzp">[[[l]]]</td>
-						</tr>
-						<tr>
-								<td>o</td>
-								<td>摘</td>
-								<td>zhāi</td>
-								<td class="jzp">[[[o]]]</td>
-						</tr>
-						<tr>
-								<td>ju</td>
-								<td>抹挑</td>
-								<td>mó tiǎo</td>
-								<td class="jzp">[[[ju]]]</td>
-						</tr>
-						<tr>
-								<td>ki</td>
-								<td>勾剔</td>
-								<td>gōu tī</td>
-								<td class="jzp">[[[ki]]]</td>
-						</tr>
-						<tr>
-								<td>lo</td>
-								<td>打摘</td>
-								<td>dǎ zhāi</td>
-								<td class="jzp">[[[lo]]]</td>
-						</tr>
-						<tr>
-								<td>U</td>
-								<td>历</td>
-								<td>lì</td>
-								<td class="jzp">[[[U]]]</td>
-						</tr>
-					</table>
+    <p>For the purpose of the font, a chord is anything where there's something on the left and right side, and generally takes up more space.</p>
+  
+    <p>Ex: <jzp>Cs9,6|3</jzp> or <jzp>B6|5</jzp> or <jzp>TT6|5</jzp></p>
 
-					<label>2b: Chords</label>
-					<p>These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a <code>|</code>.</p>
-					<p>ex: <code>Cs9k3|05</code> or <code>撮名九勾三｜散五</code>	will make <span class="jzp">[[[Cs9k3|05]]]</span>
-					</p>
-					</p>
-					<table class="table table-sm">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>C</td>
-								<td>撮</td>
-								<td>cuō</td>
-								<td class="jzp">[[[C]]]</td>
-						</tr>
-						<tr>
-								<td>DC</td>
-								<td>大撮</td>
-								<td>dà cuō</td>
-								<td class="jzp">[[[DC]]]</td>
-						</tr>
-						<tr>
-								<td>FC</td>
-								<td>反撮</td>
-								<td>fǎn cuō</td>
-								<td class="jzp">[[[FC]]]</td>
-						</tr>
-						<tr>
-								<td>B</td>
-								<td>拨</td>
-								<td>bō</td>
-								<td class="jzp">[[[B]]]</td>
-						</tr>
-						<tr>
-								<td>L</td>
-								<td>剌</td>
-								<td>là</td>
-								<td class="jzp">[[[L]]]</td>
-						</tr>
-						<tr>
-								<td>BL</td>
-								<td>拨剌</td>
-								<td>bō là</td>
-								<td class="jzp">[[[BL]]]</td>
-						</tr>
-						<tr>
-								<td>TT</td>
-								<td>双弹</td>
-								<td>shuāng tán</td>
-								<td class="jzp">[[[TT]]]</td>
-						</tr>
-						<tr>
-								<td>TTT</td>
-								<td>三弹</td>
-								<td>sān tán</td>
-								<td class="jzp">[[[TTT]]]</td>
-						</tr>
-					</table>
+    <p>You start with a "chord" indicator, <text>撮</text> or <text>C</text>, and use the <text>|</text> to separate the left and right side.</p>
 
-					<label>2c: Other Right Hand Strum Techniques</label>
+    <ul>
+      <li><text>撮大九，六｜散三</text> or <text>Cv9,6|03</text> → <jzp>Cv9,6|03</jzp> Note you'll need to use a comma between the hui and the string, otherwise...</li>
+      <li><text>撮大九六｜散三</text> or <text>Cv96|03</text> → <jzp>撮大九六｜散三</jzp>.. you get this. And yes, the system is smart enough not to interpret 03 as 0.3.</li>
+    </ul>
 
-					<u>For use in Vertical Layout only</u><br />
-					<small>
-						preface these with <code>:</code> and best use Chinese characters to avoid ambiguity with homonym pinyins
-					</small>
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-									<th width="25%">ASCII</th>
-									<th width="25%">中文</th>
-									<th width="25%">拼音</th>
-									<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-								<td>:lun</td>
-								<td>:轮</td>
-								<td>lún</td>
-								<td>[[[:lun]]]</td>
-						</tr>
-						<tr>
-								<td>:banlun</td>
-								<td>:半轮</td>
-								<td>bàn lún</td>
-								<td>[[[:banlun]]]</td>
-						</tr>
-						<tr>
-							<td>:dayuan</td>
-							<td>:打圆</td>
-							<td>dǎ yuán</td>
-							<td>[[[:打圆]]]</td>
-						</tr>
-						<tr>
-							<td>:gun</td>
-							<td>:滚</td>
-							<td>gǔn</td>
-							<td>[[[:滚]]]</td>
-						</tr>
-						<tr>
-							<td>:fu2</td>
-							<td>:沸</td>
-							<td>fú</td>
-							<td>[[[:沸]]]</td>
-						</tr>
-						<tr>
-							<td>:baisuo</td>
-							<td>:背璅</td>
-							<td>bài suǒ</td>
-							<td>[[[:背璅]]]</td>
-						</tr>
-						<tr>
-							<td>:duansuo</td>
-							<td>:短璅</td>
-							<td>duǎn suǒ</td>
-							<td>[[[:短璅]]]</td>
-						</tr>
-						<tr>
-							<td>:changsuo</td>
-							<td>:长璅</td>
-							<td>cháng suǒ</td>
-							<td>[[[:长璅]]]</td>
-						</tr>
-						<tr>
-							<td>:diejuan, :dj</td>
-							<td>:叠蠲</td>
-							<td>dié juan</td>
-							<td>[[[:叠蠲]]]</td>
-						</tr>
-						<tr>
-							<td>:yuanlou</td>
-							<td>:圆搂</td>
-							<td>yuán lǒu</td>
-							<td>[[[:圆搂]]]</td>
-						</tr>
-					</table>
+    <p>You can see the complete list of chords in the <a href="#glossary">glossary</a> below.</p>
 
-				</div>
-			</div>
-			<div class="row">
-				<div class="col">
-					<h4>3. General Symbols (Vertical Layout Only)</h4>
-					<p>Preface with <code>:</code> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
-					
-					<u>3a: Related to Score: TBD</u><br /><br />
+    <p>Here's a few "chords" for you to try out.</p>
 
-					<u>3b: Related to Notes</u><br/>
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-							<td>:fan</td>
-							<td>:泛</td>
-							<td>fàn</td>
-							<td>[[[:泛]]]</td>
-						</tr>
-						<tr>
-							<td>:zhi</td>
-							<td>:止</td>
-							<td>zhǐ</td>
-							<td>[[[:止]]]</td>
-						</tr>
-						<tr>
-							<td>:qi3</td>
-							<td>:起</td>
-							<td>qǐ</td>
-							<td>[[[:起]]]</td>
-						</tr>
-						<tr>
-							<td>:fanqi</td>
-							<td>:泛起</td>
-							<td>fàn qǐ</td>
-							<td>[[[:泛起]]]</td>
-						</tr>
-						<tr>
-							<td>:fanzhi</td>
-							<td>:泛止</td>
-							<td>fàn zhǐ</td>
-							<td>[[[:泛止]]]</td>
-						</tr>
-						<tr>
-							<td>:ru</td>
-							<td>:如</Td>
-							<td>rú</td>
-							<td>[[[:如]]]</td>
-						</tr>
-					</table>
+    <div class="alert alert-secondary jzp-example-container">
+      <small>Type here to preview text 
+      </small>
+      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <div class="text-entry-examples">
+        <span>See example in </span>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "撮大九，六｜散四 拨剌大九注六｜散五 ");''>中文</a>
+        <span> or </span>
+        <a href="javascript:void(0)" onClick='fillIn(this, "Cv9,6|04 BLv9\\6|05 ")''>ASCII</a>
+      </div>
+      <hr />
+      <div class="jzp jzp-example"></div>
+    </div>
 
-					<u>3c: Related to String & Hui Number</u><br />
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-							<td>:1..:10</td>
-							<td>:一..:十</td>
-							<td></td>
-							<td>[[[:3]]] [[[:5]]] [[[:8]]]</td>
-							<tr>
-								<td>:wai</td>
-								<td>:外</td>
-								<td>wài</td>
-								<td>[[[:外]]]</td>
-							</tr>
-							<tr>
-								<td>:san, :0</td>
-								<td>:散</td>
-								<td>sǎn</td>
-								<td>[[[:san]]]</td>
-							</tr>
-							<tr>
-								<td>:ban</td>
-								<td>:半</td>
-								<td>bàn</td>
-								<td>[[[:ban]]]</td>
-							</tr>
-							<tr>
-								<td>:jiu</td>
-								<td>:就</td>
-								<td>jiù</td>
-								<td>[[[:jiu]]]</td>
-							</tr>
-							<tr>
-								<td>:shang</td>
-								<td>:上</td>
-								<td>shàng</td>
-								<td>[[[:shang]]]</td>
-							</tr>
-							<tr>
-								<td>:xia</td>
-								<td>:下</td>
-								<td>xìa</td>
-								<td>[[[:xia]]]</td>
-							</tr>
-							<tr>
-								<td>:zhi4</td>
-								<td>:至</td>
-								<td>zhì</td>
-								<td>[[[:zhi4]]]</td>
-							</tr>
-						</thead>
-					</table>
+    <!-- <div class="row" style="margin-bottom: 3rem">
+      <div class="col-md-6">
+        <label>JianZiPu</label>
+        <textarea class="jzp-entry jzp form-control" data-text-group="chords">撮大九，六｜散四 拨剌大九注六｜散五
+Cv9,6|02 BLv9\6|02
+        </textarea>
+      </div>
+      <div class="col-md-6">
+        <label>Text</label>
+        <textarea class="lat-entry form-control" data-text-group="chords"></textarea>
+      </div>
+    </div> -->
 
-					<u>3d: related to position： TBD</u><br />
-					<br />
 
-					<u>3e: related to expression</u><br />
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-							<td>:daxi</td>
-							<td>:大息</td>
-							<td>dà xī</td>
-							<td>[[[:大息]]]</td>
-						</tr>
-						<tr>
-							<td>:shaoxi</td>
-							<td>:少息</td>
-							<td>shǎo xī</td>
-							<td>[[[:少息]]]</td>
-						</tr>
-					</table>
+    <h3>5. Vertical Texts</h3>
+    <p>Vertical texts are just a string of characters, and will be rendered vertically. You start with a vertical indicator, <text>：</text>. While the characters here have ASCII equivalents, you sholud probably use Chinese characters to avoid ambiguity with homonym pinyins. Also in general, it is more robust with Chinese characters.</p>
+    <ul>
+      <li><text>：上七九</text> or <text>:shang79</text> → <jzp>:shang79</jzp></li>
+      <li><text>：下六二</text> or <text>:xia62</text> → <jzp>:xia62</jzp></li>
+      <li><text>：分开</text> or <text>:fenkai</text> → <jzp>:fenkai</jzp> this is actually one character I squished together.</li>
+      <li><text>：泛止 ：泛起</text> or <text>:fanzhi :fanqi</text> → <jzp>:fanzhi :fanqi</jzp></li>
+      <li><text>：滚沸</text>or <text>:gunfu</text> → <jzp>:gunfu</jzp></li>
+    </ul>
+    <p>Please reference the <a href="#glossary">glossary</a> below for the complete list. There are quite a bit.</p>
 
-					<u>Placeholder for Future/Unknown Characters</u><br />
-					<table class="table table-sm jzp">
-						<thead>
-							<tr>
-								<th width="25%">ASCII</th>
-								<th width="25%">中文</th>
-								<th width="25%">拼音</th>
-								<th width="25%">output</th>
-							</tr>
-						</thead>
-						<tr>
-							<td>:*</td>
-							<td></td>
-							<td></td>
-							<td>[[[:*]]]</td>
-						</tr>
-				</table>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col">
-					<hr />
-					<p><a href="https://guqin.nyl.io/contact.html">Contact me</a> if you want more characters or glyphs added to the font, or if you want to collaborate. </p>
-					<p>Code open source on <a href="https://github.com/neuralfirings/JianZiPu">https://github.com/neuralfirings/JianZiPu</a></p>
-				</div>
-			</div>
-			<br />
-			<br />
-			<br />
-		</div>
-  </body>
+    <p>You can also embed some left handed glyphs with hui positions.</p>
+    <ul>
+      <li><text>：大八五轮七</text> or <text>:v8.5lun7</text> → <jzp>：大八五轮七</jzp></li>
+      <li><text>：大八五七</text> or <text>:v8.57</text> → <jzp>：大八五七</jzp></li>
+      <li><text>：大八五</text> or <text>:v8.5</text> → <jzp>：大八五</jzp> Note that <text>八五</text> is interpreted as 8.5</li>
+      <li><text>：大八,五</text> or <text>:v8,5</text> → <jzp>：大八,五</jzp> If you don't want <text>八五</text> to be interpreted as 8.5, then you can use a comma <text>八，五</text></li>
+    </ul>
+
+    <p>Here are some examples to try out.</p>
+
+    <div class="alert alert-secondary jzp-example-container">
+      <small>Type here to preview text 
+      </small>
+      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <div class="text-entry-examples">
+        <span>See example in </span>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "：上六四 ：下七九 ：滚沸 ：泛止 ：泛起 ：名九，半轮六 ：名九半轮六  ");''>中文</a>
+        <span> or </span>
+        <a href="javascript:void(0)" onClick='fillIn(this, ":shang64 :xia79 :gunfu :fanzhi :fanqi :s9banlun6 :s9.5lun6 ")''>ASCII</a>
+      </div>
+      <hr />
+      <div class="jzp jzp-example"></div>
+    </div>
+
+    <!-- <div class="row" style="margin-bottom: 3rem">
+      <div class="col-md-6">
+        <label>JianZiPu</label>
+        <textarea class="jzp-entry jzp form-control" data-text-group="verts">：上六四 ：下七九 ：滚沸 ：泛止 ：泛起 ：名九，半轮六 ：名九半轮六 
+:shang64 :xia79 :gunfu :fanzhi :fanqi :s9banlun6 </textarea>
+      </div>
+      <div class="col-md-6">
+        <label>Text</label>
+        <textarea class="lat-entry form-control" data-text-group="verts"></textarea>
+      </div>
+    </div> -->
+
+    <a name="glossary"></a>
+    <h3>6. Glossary</h3>
+    <div class="row">
+      <div class="col-md-2"></div>
+      <div class="col-md-8">
+        <label>Keyboard Map (Basic Glyphs)</label>
+        <img src="./keyboard.png" width="100%"/>
+        <br /><br />
+      </div>
+      <div class="col-md-2"></div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <h4>1: Left Hand</h4>
+        <label>1a: Left Hand Finger</label>
+        <table class="table table-sm" >
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">Usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>s</td>
+              <td>名</td>
+              <td>míng</td>
+              <td>
+                <jzp><r>s</r>9k3</jzp>
+                <txs><r>名</r>九勾三</txs>
+                <txs><r>s</r>9k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>d</td>
+              <td>中</td>
+              <td>zhōng</td>
+              <td>
+                <jzp><r>d</r>9k3</jzp>
+                <txs><r>中</r>九勾三</txs>
+                <txs><r>d</r>9k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>f</td>
+              <td>食</td>
+              <td>shí</td>
+              <td>
+                <jzp><r>f</r>9k3</jzp>
+                <txs><r>食</r>九勾三</txs>
+                <txs><r>f</r>9k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>v</td>
+              <td>大</td>
+              <td>dà</td>
+              <td>
+                <jzp><r>v</r>9k3</jzp>
+                <txs><r>大</r>九勾三</txs>
+                <txs><r>v</r>9k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>x</td>
+              <td>跪</td>
+              <td>guì</td>
+              <td>
+                <jzp><r>x</r>5.4k3</jzp>
+                <txs><r>跪</r>五四勾三</txs>
+                <txs><r>x</r>5.4k3</txs>
+              </td>
+          </tr>
+        </table>
+    
+        <label>1b: Speed mods & mods related to 韵 production</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>/</td>
+              <td>绰</td>
+              <td>chuò</td>
+              <!-- <td><jzp>/</jzp></td> -->
+              <td>
+                <jzp>s9<r>/</r>k3</jzp>
+                <txs>名九<r>绰</r>勾三</txs>
+                <txs>s9<r>/</r>k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>&gt;</td>
+              <td>急</td>
+              <td>jí</td>
+              <!-- <td><jzp>></jzp></td> -->
+              <td>
+                <jzp>s9<r>></r>k3</jzp>
+                <txs>名九<r>急</r>勾三</txs>
+                <txs>s9<r>></r>k3</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>\</td>
+              <td>注</td>
+              <td>zhù</td>
+              <!-- <td><jzp>\</jzp></td> -->
+              <td>
+                <jzp>s9<r>\</r>k3</jzp>
+                <txs>名九<r>注</r>勾三</txs>
+                <txs>s9<r>/r>k3</txs>
+              </td>
+          </tr>
+        </table>
+    
+        <label>1c: Left Hand Techniques</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>V</td>
+              <td>掩</td>
+              <td>yǎn</td>
+              <!-- <td><jzp>V</jzp></td> -->
+              <td>
+                <jzp>s9<r>V</r>6</jzp>
+                <txs>名九<r>掩</r>六</txs>
+                <txs>s9<r>V</r>6</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>c</td>
+              <td>掐起</td>
+              <td>qiā qǐ</td>
+              <!-- <td><jzp>c</jzp></td> -->
+              <td>
+                <jzp>s8<r>c</r></jzp>
+                <txs>名八<r>掐起</r></txs>
+                <txs>s8<r>c</r></txs>
+              </td>
+          </tr>
+          <tr>
+              <td>fy</td>
+              <td>泛音</td>
+              <td>fàn yīn</td>
+              <!-- <td><jzp>fy</jzp></td> -->
+              <td>
+                <jzp><r>泛音</r>名九挑六</jzp>
+                <txs><r>泛音</r>名九挑六</txs>
+                <txs><r>fy</r>s9u6</txs>
+              </td>
+          </tr>
+        </table>	
+    
+        <label>1d: Special Cases</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>0</td>
+              <td>散</td>
+              <td>sǎn</td>
+              <!-- <td><jzp>V</jzp></td> -->
+              <td>
+                <jzp><r>0</r>k5</jzp>
+                <txs><r>散</r>勾五</txs>
+                <txs><r>0</r>k5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>jiu</td>
+              <td>就</td>
+              <td>jiù</td>
+              <!-- <td><jzp>V</jzp></td> -->
+              <td>
+                <jzp><r>jiu</r>l5</jzp>
+                <txs><r>就</r>勾五</txs>
+                <txs><r>jiu</r>k5</txs>
+              </td>
+          </tr>
+        </table>	
+    
+        <u>For use in Vertical Layout only</u><br />
+        <small>
+          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
+        </small>
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">usage</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>:daiqi</td>
+            <td>:带起</td>
+            <td>dài qǐ</td>
+            <td><jzp>:带起</jzp></td>
+          </tr>
+          <tr>
+            <td>:duiqi</td>
+            <td>:对起</td>
+            <td>duì qǐ</td>
+            <td><jzp>:对起</jzp></td>
+          </tr>
+          <tr>
+            <td>:zhuaqi</td>
+            <td>:抓起</td>
+            <td>zhuā qǐ</td>
+            <td><jzp>:抓起</jzp></td>
+          </tr>
+          <tr>
+            <td>:pieqi</td>
+            <td>:撇起</td>
+            <td>piē qǐ</td>
+            <td><jzp>:撇起</jzp></td>
+          </tr>
+        </table>
+    
+        <label>1d: Left Hand Vibratos and Slides</label>
+        <u>For use in Vertical Layout only</u><br />
+        <small>
+          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
+        </small>
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">Usage</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>:tui</td>
+            <td>:退</td>
+            <td>tuì</td>
+            <td><jzp>:退</jzp></td>
+          </tr>
+          <tr>
+              <td>:jin</td>
+              <td>:进</td>
+              <td>jìn</td>
+              <td><jzp>:进</jzp></td>
+          </tr>
+          <tr>
+              <td>:fu4</td>
+              <td>:復</td>
+              <td>fù</td>
+              <td><jzp>:復</jzp></td>
+          </tr>
+          <tr>
+              <td>:zhuang</td>
+              <td>:撞</td>
+              <td>zhuàng</td>
+              <td><jzp>:撞</jzp></td>
+          </tr>
+          <tr>
+              <td>:yin</td>
+              <td>:吟</td>
+              <td>yín</td>
+              <td><jzp>:吟</jzp></td>
+          </tr>
+          <tr>
+              <td>:nao</td>
+              <td>:猱</td>
+              <td>náo</td>
+              <td><jzp>:猱</jzp></td>
+          </tr>
+          <tr>
+              <td>:changyin</td>
+              <td>:长吟</td>
+              <td>cháng yín</td>
+              <td><jzp>:长吟</jzp></td>
+          </tr>
+          <tr>
+              <td>:xiyin</td>
+              <td>:细吟</td>
+              <td>xì yín</td>
+              <td><jzp>:细吟</jzp></td>
+          </tr>
+          <tr>
+              <td>:dingyin</td>
+              <td>:定吟</td>
+              <td>dìng yín</td>
+              <td><jzp>:定吟</jzp></td>
+          </tr>
+          <tr>
+              <td>:xiaoyin</td>
+              <td>:小吟</td>
+              <td>xǐao yín</td>
+              <td><jzp>:小吟</jzp></td>
+          </tr>
+          <tr>
+              <td>:fenkai</td>
+              <td>:分开</td>
+              <td>fēnkāi</td>
+              <td><jzp>:分开</jzp></td>
+          </tr>
+          <tr>
+            <td>:yinghe</td>
+            <td>:应合</td>
+            <td>yìng hé</td>
+            <td><jzp>:应合</jzp></td>
+          </tr>
+        </table>
+    
+      </div>
+      <div class="col">
+        <h4>2: Right Hand</h4>
+        <label>2a: Basic Right Hand</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">Usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>n</td>
+              <td>劈</td>
+              <td>pī</td>
+              <!-- <td><jzp>n</jzp></td> -->
+              <td>
+                <jzp>散<r>劈</r>五</jzp>
+                <txs>散<r>劈</r>五</txs>
+                <txs>0<r>n</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>h</td>
+              <td>托</td>
+              <td>tuō</td>
+              <!-- <td><jzp>h</jzp></td> -->
+              <td>
+                <jzp>散<r>托</r>五</jzp>
+                <txs>散<r>托</r>五</txs>
+                <txs>0<r>h</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>j</td>
+              <td>抹</td>
+              <td>mǒ</td>
+              <!-- <td><jzp>j</jzp></td> -->
+              <td>
+                <jzp>散<r>抹</r>五</jzp>
+                <txs>散<r>抹</r>五</txs>
+                <txs>0<r>j</r>5</txs>
+              </td>
+              
+          </tr>
+          <tr>
+              <td>u</td>
+              <td>挑</td>
+              <td>tiǎo</td>
+              <!-- <td><jzp>u</jzp></td> -->
+              <td>
+                <jzp>散<r>挑</r>五</jzp>
+                <txs>散<r>挑</r>五</txs>
+                <txs>0<r>u</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>k</td>
+              <td>勾</td>
+              <td>gōu</td>
+              <!-- <td><jzp>k</jzp></td> -->
+              <td>
+                <jzp>散<r>勾</r>五</jzp>
+                <txs>散<r>勾</r>五</txs>
+                <txs>0<r>k</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>i</td>
+              <td>剔</td>
+              <td>tì</td>
+              <!-- <td><jzp>i</jzp></td> -->
+              <td>
+                <jzp>散<r>剔</r>五</jzp>
+                <txs>散<r>剔</r>五</txs>
+                <txs>0<r>i</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>l</td>
+              <td>打</td>
+              <td>dǎ</td>
+              <!-- <td><jzp>l</jzp></td> -->
+              <td>
+                <jzp>散<r>打</r>五</jzp>
+                <txs>散<r>打</r>五</txs>
+                <txs>0<r>l</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>o</td>
+              <td>摘</td>
+              <td>zhāi</td>
+              <!-- <td><jzp>o</jzp></td>   -->
+              <td>
+                <jzp>散<r>摘</r>五</jzp>
+                <txs>散<r>摘</r>五</txs>
+                <txs>0<r>o</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>ju</td>
+              <td>抹挑</td>
+              <td>mó tiǎo</td>
+              <!-- <td><jzp>ju</jzp></td> -->
+              <td>
+                <jzp>散<r>抹挑</r>五</jzp>
+                <txs>散<r>抹挑</r>五</txs>
+                <txs>0<r>ju</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>ki</td>
+              <td>勾剔</td>
+              <td>gōu tī</td>
+              <!-- <td><jzp>ki</jzp></td> -->
+              <td>
+                <jzp>散<r>勾剔</r>五</jzp>
+                <txs>散<r>勾剔</r>五</txs>
+                <txs>0<r>ki</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>lo</td>
+              <td>打摘</td>
+              <td>dǎ zhāi</td>
+              <!-- <td><jzp>lo</jzp></td> -->
+              <td>
+                <jzp>散<r>打摘</r>五</jzp>
+                <txs>散<r>打摘</r>五</txs>
+                <txs>0<r>lo</r>5</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>U</td>
+              <td>历</td>
+              <td>lì</td>
+              <!-- <td><jzp>U</jzp></td> -->
+              <td>
+                <jzp>散<r>历</r>六五</jzp>
+                <txs>散<r>历</r>六五</txs>
+                <txs>0<r>U</r>65</txs>
+              </td>
+          </tr>
+        </table>
+    
+        <label>2b: Chords</label>
+        <p>These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a <text>|</text>.</p>
+        <p>ex: <text>Cs9,3|05</text> or <text>撮名九,三｜散五</text>	will make <span><jzp>Cs9,3|05</jzp></span>
+        </p>
+        </p>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">Usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>C</td>
+              <td>撮</td>
+              <td>cuō</td>
+              <!-- <td><jzp>C</jzp></td> -->
+              <td>
+                <jzp><r>撮</r>中八，七<r>｜</r>散五</jzp>
+                <txs><r>撮</r>中八，七<r>｜</r>散五</txs>
+                <txs><r>C</r>d8,7<r>|</r>05</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>DC</td>
+              <td>大撮</td>
+              <td>dà cuō</td>
+              <!-- <td><jzp>DC</jzp></td> -->
+              <td>
+                <jzp><r>大撮</r>中八，七<r>｜</r>散二</jzp>
+                <txs><r>大撮</r>中八，七<r>｜</r>散二</txs>
+                <txs><r>DC</r>d8,7<r>|</r>02</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>FC</td>
+              <td>反撮</td>
+              <td>fǎn cuō</td>
+              <!-- <td><jzp>FC</jzp></td> -->
+              <td>
+                <jzp><r>反撮</r>中八，七<r>｜</r>散二</jzp>
+                <txs><r>反撮</r>中八，七<r>｜</r>散二</txs>
+                <txs><r>FC</r>d8,7<r>|</r>02</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>B</td>
+              <td>拨</td>
+              <td>bō</td>
+              <!-- <td><jzp>B</jzp></td> -->
+              <td>
+                <jzp><r>拨</r>中七，七<r>｜</r>散六</jzp>
+                <txs><r>拨</r>中七，七<r>｜</r>散六</txs>
+                <txs><r>B</r>d7,7<r>|</r>06</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>L</td>
+              <td>剌</td>
+              <td>là</td>
+              <!-- <td><jzp>L</jzp></td> -->
+              <td>
+                <jzp><r>剌</r>中七，七<r>｜</r>散六</jzp>
+                <txs><r>剌</r>中七，七<r>｜</r>散六</txs>
+                <txs><r>L</r>d7,7<r>|</r>06</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>BL</td>
+              <td>拨剌</td>
+              <td>bō là</td>
+              <!-- <td><jzp>BL</jzp></td> -->
+              <td>
+                <jzp><r>拨剌</r>中七，七<r>｜</r>散六</jzp>
+                <txs><r>拨剌</r>中七，七<r>｜</r>散六</txs>
+                <txs><r>BL</r>d7,7<r>|</r>06</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>TT</td>
+              <td>双弹</td>
+              <td>shuāng tán</td>
+              <!-- <td><jzp>TT</jzp></td> -->
+              <td>
+                <jzp><r>双弹</r>中七，七<r>｜</r>散六</jzp>
+                <txs><r>双弹</r>中七，七<r>｜</r>散六</txs>
+                <txs><r>TT</r>d7,7<r>|</r>06</txs>
+              </td>
+          </tr>
+          <tr>
+              <td>TTT</td>
+              <td>三弹</td>
+              <td>sān tán</td>
+              <!-- <td><jzp>TTT</jzp></td> -->
+              <td>
+                <jzp><r>三弹</r>中七，七<r>｜</r>散六</jzp>
+                <txs><r>三弹</r>中七，七<r>｜</r>散六</txs>
+                <txs><r>TTT</r>d7,7<r>|</r>06</txs>
+              </td>
+          </tr>
+        </table>
+    
+        <label>2c: Other Right Hand Strum Techniques</label>
+    
+        <u>For use in Vertical Layout only</u><br />
+        <small>
+          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
+        </small>
+        <table class="table ">
+          <thead>
+            <tr>
+                <th width="25%">ASCII</th>
+                <th width="25%">中文</th>
+                <th width="25%">拼音</th>
+                <th width="25%">Usage</th>
+            </tr>
+          </thead>
+          <tr>
+              <td>:lun</td>
+              <td>:轮</td>
+              <td>lún</td>
+              <td><jzp>:lun</jzp></td>
+          </tr>
+          <tr>
+              <td>:banlun</td>
+              <td>:半轮</td>
+              <td>bàn lún</td>
+              <td><jzp>:banlun</jzp></td>
+          </tr>
+          <tr>
+            <td>:dayuan</td>
+            <td>:打圆</td>
+            <td>dǎ yuán</td>
+            <td><jzp>:打圆</jzp></td>
+          </tr>
+          <tr>
+            <td>:gun</td>
+            <td>:滚</td>
+            <td>gǔn</td>
+            <td><jzp>:滚</jzp></td>
+          </tr>
+          <tr>
+            <td>:fu2</td>
+            <td>:沸</td>
+            <td>fú</td>
+            <td><jzp>:沸</jzp></td>
+          </tr>
+          <tr>
+            <td>:baisuo</td>
+            <td>:背璅</td>
+            <td>bài suǒ</td>
+            <td><jzp>:背璅</jzp></td>
+          </tr>
+          <tr>
+            <td>:duansuo</td>
+            <td>:短璅</td>
+            <td>duǎn suǒ</td>
+            <td><jzp>:短璅</jzp></td>
+          </tr>
+          <tr>
+            <td>:changsuo</td>
+            <td>:长璅</td>
+            <td>cháng suǒ</td>
+            <td><jzp>:长璅</jzp></td>
+          </tr>
+          <tr>
+            <td>:diejuan, :dj</td>
+            <td>:叠蠲</td>
+            <td>dié juan</td>
+            <td><jzp>:叠蠲</jzp></td>
+          </tr>
+          <tr>
+            <td>:yuanlou</td>
+            <td>:圆搂</td>
+            <td>yuán lǒu</td>
+            <td><jzp>:圆搂</jzp></td>
+          </tr>
+        </table>
+    
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <h4>3. General Symbols (Vertical Layout Only)</h4>
+        <p>Preface with <text>:</text> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+        
+        <u>3a: Related to Score: TBD</u><br /><br />
+    
+        <u>3b: Related to Notes</u><br/>
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">output</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>:fan</td>
+            <td>:泛</td>
+            <td>fàn</td>
+            <td><jzp>:泛</jzp></td>
+          </tr>
+          <tr>
+            <td>:zhi</td>
+            <td>:止</td>
+            <td>zhǐ</td>
+            <td><jzp>:止</jzp></td>
+          </tr>
+          <tr>
+            <td>:qi3</td>
+            <td>:起</td>
+            <td>qǐ</td>
+            <td><jzp>:起</jzp></td>
+          </tr>
+          <tr>
+            <td>:fanqi</td>
+            <td>:泛起</td>
+            <td>fàn qǐ</td>
+            <td><jzp>:泛起</jzp></td>
+          </tr>
+          <tr>
+            <td>:fanzhi</td>
+            <td>:泛止</td>
+            <td>fàn zhǐ</td>
+            <td><jzp>:泛止</jzp></td>
+          </tr>
+          <tr>
+            <td>:ru</td>
+            <td>:如</Td>
+            <td>rú</td>
+            <td><jzp>:如</jzp></td>
+          </tr>
+        </table>
+    
+        <u>3c: Related to String & Hui Number</u><br />
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">output</th>
+            </tr>
+            <td>:1..:10</td>
+            <td>:一..:十</td>
+            <td></td>
+            <td><jzp>:3</jzp> <jzp>:5</jzp> <jzp>:8</jzp></td>
+            <tr>
+              <td>:wai</td>
+              <td>:外</td>
+              <td>wài</td>
+              <td><jzp>:外</jzp></td>
+            </tr>
+            <tr>
+              <td>:san, :0</td>
+              <td>:散</td>
+              <td>sǎn</td>
+              <td><jzp>:san</jzp></td>
+            </tr>
+            <tr>
+              <td>:ban</td>
+              <td>:半</td>
+              <td>bàn</td>
+              <td><jzp>:ban</jzp></td>
+            </tr>
+            <tr>
+              <td>:jiu</td>
+              <td>:就</td>
+              <td>jiù</td>
+              <td><jzp>:jiu</jzp></td>
+            </tr>
+            <tr>
+              <td>:shang</td>
+              <td>:上</td>
+              <td>shàng</td>
+              <td><jzp>:shang</jzp></td>
+            </tr>
+            <tr>
+              <td>:xia</td>
+              <td>:下</td>
+              <td>xìa</td>
+              <td><jzp>:xia</jzp></td>
+            </tr>
+            <tr>
+              <td>:zhi4</td>
+              <td>:至</td>
+              <td>zhì</td>
+              <td><jzp>:zhi4</jzp></td>
+            </tr>
+          </thead>
+        </table>
+    
+        <u>3d: related to position： TBD</u><br />
+        <br />
+    
+        <u>3e: related to expression</u><br />
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">output</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>:daxi</td>
+            <td>:大息</td>
+            <td>dà xī</td>
+            <td><jzp>:大息</jzp></td>
+          </tr>
+          <tr>
+            <td>:shaoxi</td>
+            <td>:少息</td>
+            <td>shǎo xī</td>
+            <td><jzp>:少息</jzp></td>
+          </tr>
+        </table>
+    
+        <u>Placeholder for Future/Unknown Characters</u><br />
+        <table class="table ">
+          <thead>
+            <tr>
+              <th width="25%">ASCII</th>
+              <th width="25%">中文</th>
+              <th width="25%">拼音</th>
+              <th width="25%">output</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>:*</td>
+            <td></td>
+            <td></td>
+            <td><jzp>:*</jzp></td>
+          </tr>
+      </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <hr />
+        <p><a href="/contact">Contact me</a> if you want more characters or glyphs added to the font, have questions, feedback, or if you want to collaborate.</p>
+      </div>
+    </div>
+
+  </div>
+  <script>
+
+    // Font loading detection and loading indicator management
+    document.addEventListener("DOMContentLoaded", () => {
+      const loadingElement = document.querySelector('.loading');
+      
+      // Function to hide loading indicator
+      function hideLoading() {
+        if (loadingElement) {
+          loadingElement.classList.add('hidden');
+          // Remove from DOM after animation completes
+          setTimeout(() => {
+            if (loadingElement.parentNode) {
+              loadingElement.parentNode.removeChild(loadingElement);
+            }
+          }, 300);
+        }
+      }
+      
+      // Check if Font Loading API is supported
+      if ('fonts' in document) {
+        // Wait for all fonts to be loaded
+        document.fonts.ready.then(() => {
+          // Additional check to ensure JianZiPu font is actually loaded
+          const testElement = document.createElement('span');
+          testElement.style.fontFamily = 'JianZiPu, Arial, sans-serif';
+          testElement.style.fontSize = '16px';
+          testElement.style.position = 'absolute';
+          testElement.style.visibility = 'hidden';
+          testElement.textContent = '名'; // Test character
+          document.body.appendChild(testElement);
+          
+          // Check if the font is actually loaded by measuring text width
+          const fallbackWidth = testElement.offsetWidth;
+          testElement.style.fontFamily = 'Arial, sans-serif';
+          const fallbackWidth2 = testElement.offsetWidth;
+          
+          // If widths are different, the font loaded successfully
+          if (fallbackWidth !== fallbackWidth2) {
+            document.body.removeChild(testElement);
+            hideLoading();
+          } else {
+            // Font not loaded yet, wait a bit more
+            setTimeout(() => {
+              document.body.removeChild(testElement);
+              hideLoading();
+            }, 1000);
+          }
+        }).catch(() => {
+          // Fallback if fonts.ready fails
+          setTimeout(hideLoading, 2000);
+        });
+      } else {
+        // Fallback for browsers without Font Loading API
+        setTimeout(hideLoading, 2000);
+      }
+      
+      // Fallback timeout to ensure loading indicator doesn't stay forever
+      setTimeout(hideLoading, 5000);
+    });
+    // jzp-example-container fillInDefault
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".fillInDefault").forEach(btn => {
+        btn.click();
+      });
+    });
+
+    function fillIn(btn, text) {
+      const txtEntry = btn.closest(".jzp-example-container").querySelector(".text-entry")
+      txtEntry.value = text;
+      updateTargets(txtEntry);
+    }
+
+    function updateTargets(input) {
+      const inputValue = input.value;
+      const target = input.closest(".jzp-example-container").querySelector(".jzp-example")//getAttribute("data-jzp-class");
+      target.textContent = inputValue;
+    }
+
+    // Attach listeners and update on load
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".text-entry").forEach(input => {
+        // Update once on load
+        updateTargets(input);
+
+        // Keep updating when the user types
+        input.addEventListener("input", () => updateTargets(input));
+      });
+    });
+
+
+    // Function to update textareas pairs (.jzp-entry & .latin-entry) in real time
+    function updateFromSource(source, target) {
+      target.value = source.value;
+    }
+
+    // Function to get the target textarea for a given source
+    function getTargetTextarea(source) {
+      const group = source.getAttribute('data-text-group');
+      const isJzp = source.classList.contains('jzp-entry');
+      const targetClass = isJzp ? '.lat-entry' : '.jzp-entry';
+      return document.querySelector(`${targetClass}[data-text-group="${group}"]`);
+    }
+
+    // Function to add event listeners to a textarea
+    function addEventListeners(textarea) {
+      textarea.addEventListener('input', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+      textarea.addEventListener('paste', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+      textarea.addEventListener('keyup', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+    }
+
+    // Add event listeners to all textareas
+    document.querySelectorAll('.jzp-entry, .lat-entry').forEach(addEventListeners);
+
+        // Initialize all textareas with existing content
+    document.querySelectorAll('.jzp-entry').forEach(jzpTextarea => {
+      const target = getTargetTextarea(jzpTextarea);
+      if (target) updateFromSource(jzpTextarea, target);
+    });
+
+    // Apply the function to all jzp elements on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('jzp').forEach(function(element) {
+        if (element.innerHTML.at(-1) !== ' ') {
+          element.innerHTML = element.innerHTML + ' '; 
+        }
+      });
+    });
+  </script>
+  <script>
+    // Safari -- removes <r> tags from <jzp> -- causes formatting issues
+    (function () {
+      const ua = navigator.userAgent;
+      const isWebKit = /AppleWebKit/.test(ua);
+      const isChromiumFamily = /(Chrome|Chromium|Edg|OPR|Brave|CriOS|EdgiOS)/.test(ua);
+      const isiOS = /iP(ad|hone|od)/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+      const isDesktopSafari = /Safari/.test(ua) && !isChromiumFamily;
+      const isSafariEngine = isWebKit && (isiOS || isDesktopSafari);
+    
+      if (isSafariEngine) {
+        function stripR() {
+          document.querySelectorAll("jzp").forEach(el => {
+            el.innerHTML = el.innerHTML
+              .replaceAll("<r>", "")
+              .replaceAll("</r>", "");
+          });
+        }
+    
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", stripR, { once: true });
+        } else {
+          stripR();
+        }
+      }
+    })();
+    </script>
+    
+</body>
 </html>

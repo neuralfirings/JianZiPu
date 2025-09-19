@@ -6,3 +6,4 @@ node_modules/
 .parcel-cache/
 dev/
 web/
+src/backups/
