@@ -115,7 +115,7 @@ File: `src/input/fontForgeFeatures.fea` (reference `src/input/areaKeySVGMap.csv`
 Run `cd src/scripts`
 Run `node ./scripts.cjs --add-positions -w` (this creates an output file with positions filled in)
 
-- # layout: layout_foo => set state to that layout
+- look for string # layout: layout_foo => and set state to that layout
 - @area_blah' <> => will fill in with positions based on the current state layout
 - replace JZP_POSITION_MEGA_SECTION with different jzp layouts (e.g., gou, loki, etc.)
 
