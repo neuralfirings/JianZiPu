@@ -1,6 +1,6 @@
 This document goes into detail on how to compile the font, the engineering behond it all. 
 
-For usage, please visit the [JianZiPu Font Website](https://guqintabs.com/jianzipu). 
+For demo and info on how to use this font, please visit the [JianZiPu Font Website](https://guqintabs.com/jianzipu). 
 
 The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.
 
