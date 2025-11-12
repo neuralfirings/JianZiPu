@@ -30,6 +30,7 @@
       font-weight: 400;
       font-style: normal;
       font-display: swap; /* avoids invisible text in Safari */
+      font-feature-settings: "kern", "liga"; /* required on Firefox */
     }
     @font-face {
       font-family: 'KaiTi';
@@ -98,30 +99,11 @@
     .jzp-example {
       font-family: 'JianZiPu', 'KaiTi', 'Arial',sans-serif;
       font-size: 3rem;
-      height: 6rem;
+      min-height: 6rem;
       position: relative;
-      overflow: auto;     /* Hide anything past the box */
-      white-space: nowrap;  /* Keep text in one line */
-      /* padding-right: 1.5em; */
-      /* border-bottom: solid 1px rgb(222, 226, 230); */
-      /* border-radius: 6px; */
+      overflow: visible;    
+      white-space: pre-wrap; 
       padding: 10px 1.5em 10px 10px;
-      /* margin-bottom: 10px; */
-      -webkit-mask-image: linear-gradient(
-        to right,
-        black calc(100% - 1em),
-        transparent 100%
-      );
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-size: 100% 100%;
-
-      mask-image: linear-gradient(
-        to right,
-        black calc(100% - 1em),
-        transparent 100%
-      );
-      mask-repeat: no-repeat;
-      mask-size: 100% 100%;
     }
     .jzp-example-container {
       background-color: #eee;
@@ -246,7 +228,11 @@
 
   <div style="background: #EEE">
     <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
-      <h1>JianZiPu Font (v3) <small style="font-size:12px"><a href="/jianzipu/v2/index.html">looking for v2?</a></small></h1>
+      <div>
+        <h1 style="float: left">JianZiPu Font (v3)</h1>
+        <small style="font-size:12px; float: right"><a href="/jianzipu/v2/index.html">looking for v2?</a></small>
+      </div>
+      <div style="clear: both"></div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
 
@@ -262,7 +248,7 @@
           <a href="javascript:void(0)" onClick='fillIn(this, "s7.5>k5 jiul7 0k3 k3 fyd9u6 v5.6V5 s9c C03|s6,5 v7U43 :v8.5banlun7 :shang51 :jin ")''>ASCII</a>
         </div>
         <hr />
-        <div class="jzp jzp-example"></div>
+        <div class="jzp jzp-example" contenteditable></div>
       </div>
     </div>
   </div>
@@ -328,7 +314,7 @@
         <a href="javascript:void(0)" onClick='fillIn(this, "s8k3 d13+u5 v9ju7 ")''>ASCII</a>
       </div>
       <hr />
-      <div class="jzp jzp-example"></div>
+      <div class="jzp jzp-example" contenteditable></div>
     </div>
 
     <h3>2. Numbers and Decimals</h3>
@@ -385,7 +371,7 @@
         <a href="javascript:void(0)" onClick='fillIn(this, "s75 s7,5 s755 s7.5 s12 s122 s12.2 ")''>ASCII</a>
       </div>
       <hr />
-      <div class="jzp jzp-example"></div>
+      <div class="jzp jzp-example" contenteditable></div>
     </div>
 
     <h3>3. Basic Modifiers</h3>
@@ -409,7 +395,7 @@
         <a href="javascript:void(0)" onClick='fillIn(this, "fys9k6 fanyins9k6 ")''>ASCII</a>
       </div>
       <hr />
-      <div class="jzp jzp-example"></div>
+      <div class="jzp jzp-example" contenteditable></div>
     </div>
 
     <h3>4. Chords</h3>
@@ -440,7 +426,7 @@
         <a href="javascript:void(0)" onClick='fillIn(this, "Cv9,6|04 BLv9\\6|05 ")''>ASCII</a>
       </div>
       <hr />
-      <div class="jzp jzp-example"></div>
+      <div class="jzp jzp-example" contenteditable></div>
     </div>
 
     <!-- <div class="row" style="margin-bottom: 3rem">
@@ -489,7 +475,7 @@ Cv9,6|02 BLv9\6|02
         <a href="javascript:void(0)" onClick='fillIn(this, ":shang64 :xia79 :gunfu :fanzhi :fanqi :s9banlun6 :s9.5lun6 ")''>ASCII</a>
       </div>
       <hr />
-      <div class="jzp jzp-example"></div>
+      <div class="jzp jzp-example" contenteditable></div>
     </div>
 
     <!-- <div class="row" style="margin-bottom: 3rem">

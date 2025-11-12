@@ -372,12 +372,7 @@ else if (args.includes("--add-positions")) {
     .filter(d => d.new_glyph_name != "" && d.unicode_value >= 12290 && d.unicode_value <= 65372)
     .map(d => ({ch: d.unicode_char, name: d.new_glyph_name}))
 
-  console.log("c2gDict", c2gDict)
-  
-  // const c2gDict = [
-  //   {"ch":"一","name":"ch_1"},{"ch":"七","name":"ch_7"},{"ch":"三","name":"ch_3"},{"ch":"上","name":"ch_shang"},{"ch":"下","name":"ch_xia"},{"ch":"中","name":"ch_d"},{"ch":"九","name":"ch_9"},{"ch":"二","name":"ch_2"},{"ch":"五","name":"ch_5"},{"ch":"全","name":"ch_quan"},{"ch":"八","name":"ch_8"},{"ch":"六","name":"ch_6"},{"ch":"分","name":"ch_fen"},{"ch":"剌","name":"ch_la"},{"ch":"剔","name":"ch_i"},{"ch":"劈","name":"ch_n"},{"ch":"勾","name":"ch_k"},{"ch":"十","name":"ch_10"},{"ch":"半","name":"ch_ban"},{"ch":"双","name":"ch_shuang"},{"ch":"反","name":"ch_fan3"},{"ch":"叠","name":"ch_die"},{"ch":"合","name":"ch_he"},{"ch":"名","name":"ch_s"},{"ch":"吟","name":"ch_yin2"},{"ch":"四","name":"ch_4"},{"ch":"圆","name":"ch_yuan"},{"ch":"圓","name":"ch_yuan_trad"},{"ch":"外","name":"ch_wai"},{"ch":"大","name":"ch_v"},{"ch":"如","name":"ch_ru"},{"ch":"定","name":"ch_ding"},{"ch":"对","name":"ch_dui"},{"ch":"對","name":"ch_dui_trad"},{"ch":"小","name":"ch_xiao"},{"ch":"少","name":"ch_shao"},{"ch":"就","name":"ch_jiu"},{"ch":"带","name":"ch_dai"},{"ch":"帶","name":"ch_dai_trad"},{"ch":"应","name":"ch_ying"},{"ch":"开","name":"ch_kai"},{"ch":"弹","name":"ch_dan"},{"ch":"彈","name":"ch_dan_trad"},{"ch":"復","name":"ch_fu4"},{"ch":"急","name":"ch_ji"},{"ch":"息","name":"ch_xi1"},{"ch":"應","name":"ch_ying_trad"},{"ch":"打","name":"ch_l"},{"ch":"托","name":"ch_h"},{"ch":"扶","name":"ch_fu2"},{"ch":"抓","name":"ch_zhua"},{"ch":"抹","name":"ch_j"},{"ch":"拨","name":"ch_bo"},{"ch":"挑","name":"ch_u"},{"ch":"掐","name":"ch_qia"},{"ch":"掩","name":"ch_yan"},{"ch":"搂","name":"ch_lou"},{"ch":"摘","name":"ch_o"},{"ch":"摟","name":"ch_lou_trad"},{"ch":"撇","name":"ch_pie"},{"ch":"撞","name":"ch_zhuang"},{"ch":"撥","name":"ch_bo_trad"},{"ch":"撮","name":"ch_cuo"},{"ch":"散","name":"ch_san"},{"ch":"沸","name":"ch_fei"},{"ch":"泛","name":"ch_fan4"},{"ch":"注","name":"ch_zhu"},{"ch":"滚","name":"ch_gun"},{"ch":"滾","name":"ch_gun_trad"},{"ch":"猱","name":"ch_nao"},{"ch":"璅","name":"ch_suo"},{"ch":"疊","name":"ch_die_trad"},{"ch":"短","name":"ch_duan"},{"ch":"細","name":"ch_xi4_trad"},{"ch":"綽","name":"ch_chuo_trad"},{"ch":"细","name":"ch_xi4"},{"ch":"绰","name":"ch_chuo"},{"ch":"背","name":"ch_bei"},{"ch":"至","name":"ch_zhi4"},{"ch":"蠲","name":"ch_juan"},{"ch":"註","name":"ch_zhu_trad"},{"ch":"起","name":"ch_qi"},{"ch":"跪","name":"ch_x"},{"ch":"輪","name":"ch_lun_trad"},{"ch":"轮","name":"ch_lun"},{"ch":"进","name":"ch_jin"},{"ch":"退","name":"ch_tui"},{"ch":"進","name":"ch_jin_trad"},{"ch":"長","name":"ch_zhang_trad"},{"ch":"长","name":"ch_zhang"},{"ch":"開","name":"ch_kai_trad"},{"ch":"雙","name":"ch_shuang_trad"},{"ch":"音","name":"ch_yin1"},{"ch":"食","name":"ch_f"}
-  // ]
-
+  // console.log("c2gDict", c2gDict)
   c2gDict.forEach(d => {
     input = input.replaceAll(d.ch, d.name)
   })
@@ -389,7 +384,7 @@ else if (args.includes("--add-positions")) {
 
   input = input.replace(jzpPositionTemplate, jzpPositions.join(""))
   
-  // add positions
+// add positions
   const feaArr = input.split("\n");
   let currLayout = null
   feaArr.forEach((line, i) => {
@@ -400,32 +395,43 @@ else if (args.includes("--add-positions")) {
     else if (line.trim().startsWith("#")) {
       return 
     }
-    if (currLayout == null)
-      return
+    // if (currLayout == null)
+    //   return
 
-    positions.forEach((layout) => {
-      // console.log("match?", currLayout == layout.layout, currLayout, layout.layout)
-      if (layout.layout != currLayout) return
-      // console.log("Found layout:", layout)
-      layout.areas.forEach((area) => {
-        const words = line.split(' ')
-        // console.log("words", words)
-        words.forEach((word, wIdx) => {
-          if (word.split('__')[0].split("'")[0] == '@' + area.area 
-            && word.at(-1) == "'" 
-            && words[wIdx+1].startsWith("<>"))
-          {
-            words[wIdx + 1] = words[wIdx + 1].replace("<>", `<${area.x} ${area.yd} 0 0>`)
-            // console.log("- Adding position info:", word, words[wIdx + 1])
-          }
+    if (currLayout != null) {
+      positions.forEach((layout) => {
+        // console.log("match?", currLayout == layout.layout, currLayout, layout.layout)
+        if (layout.layout != currLayout) return
+        // console.log("Found layout:", layout)
+        layout.areas.forEach((area) => {
+          const words = line.split(' ')
+          words.forEach((word, wIdx) => {
+            if (word.split('__')[0].split("'")[0] == '@' + area.area 
+              && word.at(-1) == "'" 
+              && words[wIdx+1].startsWith("<>"))
+            {
+              words[wIdx + 1] = words[wIdx + 1].replace("<>", `<${area.x} ${area.yd} 0 0>`)
+            }
+          })
+          line = words.join(' ')
         })
-        line = words.join(' ')
-        // if (truncateAfterDoubleUnderscore(line).includes(`${area.area}' <>`)) {
-        //   console.log("Replacing:", `${area.area}' <>`, `${area.area}' <${area.x} ${area.yd} 0 0>`)
-        //   line = line.replaceAll(`${area.area}' <>`, `${area.area}' <${area.x} ${area.yd} 0 0>`)
-        // }
       })
-    })
+    }
+
+    // replace @area_foo[3->0] with 4 lines going from @area_foo @area_foo @area_foo to nothing
+    if (line.includes("[") && line.includes("->") && line.includes("]")) {
+      const wordToReplace = line.split(" ").filter(w => w.includes('['))[0]
+      const [area, temp] = wordToReplace.split("[")
+      const [max, temp2] = temp.split("->")
+      const [min, temp3] = temp2.split("]")
+      console.log("wordToReplace", wordToReplace, area, max, min)
+
+      const newLines = []
+      for (let i = Number(max); i >= Number(min); i--) {
+        newLines.push(line.replace(`${wordToReplace} `, `${area} `.repeat(i)))
+      }
+      line = newLines.join("\n")
+    }
     feaArr[i] = line
   });
 

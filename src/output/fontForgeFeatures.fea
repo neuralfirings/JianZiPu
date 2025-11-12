@@ -82,6 +82,10 @@ languagesystem latn dflt;
   @area_right__loki = [ lg_dazhai lg_gouti ]; 
   @area_right__li = [ lg_li ];
   @area_chord__cuo = [ xl_cuo xl_dacuo xl_fancuo xl_tt xl_ttt xl_bo xl_la xl_bola ]; 
+
+  # special characters
+  @new_word_char = [ numbersign blank_colon ]; # indicator of new word, this will advance a space and position subsequent glyphs to left of the cursor
+  @space_char = [ space advance ]; # space characters, advances 1000 pt
 # end
 
 # lookups
@@ -220,32 +224,7 @@ languagesystem latn dflt;
       sub C        by xl_cuo;
       sub B        by xl_bo;
       sub L        by xl_la;
-    } l2j_single;
-
-    # v3ch_colon two step so works with Safari which can't handle a b' c' -> d, only a b c' -> d
-    lookup l2j_char_deci_liga_part1 {
-      sub @area_left md_11 md_1' by md_11.1;  sub @area_left md_12 md_1' by md_12.1;  sub @area_left md_13 md_1' by md_13.1;  sub @area_left md_wai md_1' by md_13.1;  sub @area_left md_1 md_1' by md_1.1;  sub @area_left md_2 md_1' by md_2.1;  sub @area_left md_3 md_1' by md_3.1;  sub @area_left md_4 md_1' by md_4.1;  sub @area_left md_5 md_1' by md_5.1;  sub @area_left md_6 md_1' by md_6.1;  sub @area_left md_7 md_1' by md_7.1;  sub @area_left md_8 md_1' by md_8.1;  sub @area_left md_9 md_1' by md_9.1;  sub @area_left md_10 md_1' by md_10.1; 
-      sub @area_left md_11 md_2' by md_11.2;  sub @area_left md_12 md_2' by md_12.2;  sub @area_left md_13 md_2' by md_13.2;  sub @area_left md_wai md_2' by md_13.2;  sub @area_left md_1 md_2' by md_1.2;  sub @area_left md_2 md_2' by md_2.2;  sub @area_left md_3 md_2' by md_3.2;  sub @area_left md_4 md_2' by md_4.2;  sub @area_left md_5 md_2' by md_5.2;  sub @area_left md_6 md_2' by md_6.2;  sub @area_left md_7 md_2' by md_7.2;  sub @area_left md_8 md_2' by md_8.2;  sub @area_left md_9 md_2' by md_9.2;  sub @area_left md_10 md_2' by md_10.2; 
-      sub @area_left md_11 md_3' by md_11.3;  sub @area_left md_12 md_3' by md_12.3;  sub @area_left md_13 md_3' by md_13.3;  sub @area_left md_wai md_3' by md_13.3;  sub @area_left md_1 md_3' by md_1.3;  sub @area_left md_2 md_3' by md_2.3;  sub @area_left md_3 md_3' by md_3.3;  sub @area_left md_4 md_3' by md_4.3;  sub @area_left md_5 md_3' by md_5.3;  sub @area_left md_6 md_3' by md_6.3;  sub @area_left md_7 md_3' by md_7.3;  sub @area_left md_8 md_3' by md_8.3;  sub @area_left md_9 md_3' by md_9.3;  sub @area_left md_10 md_3' by md_10.3; 
-      sub @area_left md_11 md_4' by md_11.4;  sub @area_left md_12 md_4' by md_12.4;  sub @area_left md_13 md_4' by md_13.4;  sub @area_left md_wai md_4' by md_13.4;  sub @area_left md_1 md_4' by md_1.4;  sub @area_left md_2 md_4' by md_2.4;  sub @area_left md_3 md_4' by md_3.4;  sub @area_left md_4 md_4' by md_4.4;  sub @area_left md_5 md_4' by md_5.4;  sub @area_left md_6 md_4' by md_6.4;  sub @area_left md_7 md_4' by md_7.4;  sub @area_left md_8 md_4' by md_8.4;  sub @area_left md_9 md_4' by md_9.4;  sub @area_left md_10 md_4' by md_10.4; 
-      sub @area_left md_11 md_5' by md_11.5;  sub @area_left md_12 md_5' by md_12.5;  sub @area_left md_13 md_5' by md_13.5;  sub @area_left md_wai md_5' by md_13.5;  sub @area_left md_1 md_5' by md_1.5;  sub @area_left md_2 md_5' by md_2.5;  sub @area_left md_3 md_5' by md_3.5;  sub @area_left md_4 md_5' by md_4.5;  sub @area_left md_5 md_5' by md_5.5;  sub @area_left md_6 md_5' by md_6.5;  sub @area_left md_7 md_5' by md_7.5;  sub @area_left md_8 md_5' by md_8.5;  sub @area_left md_9 md_5' by md_9.5;  sub @area_left md_10 md_5' by md_10.5; 
-      sub @area_left md_11 md_6' by md_11.6;  sub @area_left md_12 md_6' by md_12.6;  sub @area_left md_13 md_6' by md_13.6;  sub @area_left md_wai md_6' by md_13.6;  sub @area_left md_1 md_6' by md_1.6;  sub @area_left md_2 md_6' by md_2.6;  sub @area_left md_3 md_6' by md_3.6;  sub @area_left md_4 md_6' by md_4.6;  sub @area_left md_5 md_6' by md_5.6;  sub @area_left md_6 md_6' by md_6.6;  sub @area_left md_7 md_6' by md_7.6;  sub @area_left md_8 md_6' by md_8.6;  sub @area_left md_9 md_6' by md_9.6;  sub @area_left md_10 md_6' by md_10.6; 
-      sub @area_left md_11 md_7' by md_11.7;  sub @area_left md_12 md_7' by md_12.7;  sub @area_left md_13 md_7' by md_13.7;  sub @area_left md_wai md_7' by md_13.7;  sub @area_left md_1 md_7' by md_1.7;  sub @area_left md_2 md_7' by md_2.7;  sub @area_left md_3 md_7' by md_3.7;  sub @area_left md_4 md_7' by md_4.7;  sub @area_left md_5 md_7' by md_5.7;  sub @area_left md_6 md_7' by md_6.7;  sub @area_left md_7 md_7' by md_7.7;  sub @area_left md_8 md_7' by md_8.7;  sub @area_left md_9 md_7' by md_9.7;  sub @area_left md_10 md_7' by md_10.7; 
-      sub @area_left md_11 md_8' by md_11.8;  sub @area_left md_12 md_8' by md_12.8;  sub @area_left md_13 md_8' by md_13.8;  sub @area_left md_wai md_8' by md_13.8;  sub @area_left md_1 md_8' by md_1.8;  sub @area_left md_2 md_8' by md_2.8;  sub @area_left md_3 md_8' by md_3.8;  sub @area_left md_4 md_8' by md_4.8;  sub @area_left md_5 md_8' by md_5.8;  sub @area_left md_6 md_8' by md_6.8;  sub @area_left md_7 md_8' by md_7.8;  sub @area_left md_8 md_8' by md_8.8;  sub @area_left md_9 md_8' by md_9.8;  sub @area_left md_10 md_8' by md_10.8; 
-      sub @area_left md_11 md_9' by md_11.9;  sub @area_left md_12 md_9' by md_12.9;  sub @area_left md_13 md_9' by md_13.9;  sub @area_left md_wai md_9' by md_13.9;  sub @area_left md_1 md_9' by md_1.9;  sub @area_left md_2 md_9' by md_2.9;  sub @area_left md_3 md_9' by md_3.9;  sub @area_left md_4 md_9' by md_4.9;  sub @area_left md_5 md_9' by md_5.9;  sub @area_left md_6 md_9' by md_6.9;  sub @area_left md_7 md_9' by md_7.9;  sub @area_left md_8 md_9' by md_8.9;  sub @area_left md_9 md_9' by md_9.9;  sub @area_left md_10 md_9' by md_10.9; 
-    } l2j_char_deci_liga_part1;
-
-    lookup l2j_char_deci_liga_part2 {
-      sub md_11 md_11.1 by md_11.1;  sub md_12 md_12.1 by md_12.1;  sub md_13 md_13.1 by md_13.1;  sub md_wai md_13.1 by md_13.1;  sub md_1 md_1.1 by md_1.1;  sub md_2 md_2.1 by md_2.1;  sub md_3 md_3.1 by md_3.1;  sub md_4 md_4.1 by md_4.1;  sub md_5 md_5.1 by md_5.1;  sub md_6 md_6.1 by md_6.1;  sub md_7 md_7.1 by md_7.1;  sub md_8 md_8.1 by md_8.1;  sub md_9 md_9.1 by md_9.1;  sub md_10 md_10.1 by md_10.1; 
-      sub md_11 md_11.2 by md_11.2;  sub md_12 md_12.2 by md_12.2;  sub md_13 md_13.2 by md_13.2;  sub md_wai md_13.2 by md_13.2;  sub md_1 md_1.2 by md_1.2;  sub md_2 md_2.2 by md_2.2;  sub md_3 md_3.2 by md_3.2;  sub md_4 md_4.2 by md_4.2;  sub md_5 md_5.2 by md_5.2;  sub md_6 md_6.2 by md_6.2;  sub md_7 md_7.2 by md_7.2;  sub md_8 md_8.2 by md_8.2;  sub md_9 md_9.2 by md_9.2;  sub md_10 md_10.2 by md_10.2; 
-      sub md_11 md_11.3 by md_11.3;  sub md_12 md_12.3 by md_12.3;  sub md_13 md_13.3 by md_13.3;  sub md_wai md_13.3 by md_13.3;  sub md_1 md_1.3 by md_1.3;  sub md_2 md_2.3 by md_2.3;  sub md_3 md_3.3 by md_3.3;  sub md_4 md_4.3 by md_4.3;  sub md_5 md_5.3 by md_5.3;  sub md_6 md_6.3 by md_6.3;  sub md_7 md_7.3 by md_7.3;  sub md_8 md_8.3 by md_8.3;  sub md_9 md_9.3 by md_9.3;  sub md_10 md_10.3 by md_10.3; 
-      sub md_11 md_11.4 by md_11.4;  sub md_12 md_12.4 by md_12.4;  sub md_13 md_13.4 by md_13.4;  sub md_wai md_13.4 by md_13.4;  sub md_1 md_1.4 by md_1.4;  sub md_2 md_2.4 by md_2.4;  sub md_3 md_3.4 by md_3.4;  sub md_4 md_4.4 by md_4.4;  sub md_5 md_5.4 by md_5.4;  sub md_6 md_6.4 by md_6.4;  sub md_7 md_7.4 by md_7.4;  sub md_8 md_8.4 by md_8.4;  sub md_9 md_9.4 by md_9.4;  sub md_10 md_10.4 by md_10.4; 
-      sub md_11 md_11.5 by md_11.5;  sub md_12 md_12.5 by md_12.5;  sub md_13 md_13.5 by md_13.5;  sub md_wai md_13.5 by md_13.5;  sub md_1 md_1.5 by md_1.5;  sub md_2 md_2.5 by md_2.5;  sub md_3 md_3.5 by md_3.5;  sub md_4 md_4.5 by md_4.5;  sub md_5 md_5.5 by md_5.5;  sub md_6 md_6.5 by md_6.5;  sub md_7 md_7.5 by md_7.5;  sub md_8 md_8.5 by md_8.5;  sub md_9 md_9.5 by md_9.5;  sub md_10 md_10.5 by md_10.5; 
-      sub md_11 md_11.6 by md_11.6;  sub md_12 md_12.6 by md_12.6;  sub md_13 md_13.6 by md_13.6;  sub md_wai md_13.6 by md_13.6;  sub md_1 md_1.6 by md_1.6;  sub md_2 md_2.6 by md_2.6;  sub md_3 md_3.6 by md_3.6;  sub md_4 md_4.6 by md_4.6;  sub md_5 md_5.6 by md_5.6;  sub md_6 md_6.6 by md_6.6;  sub md_7 md_7.6 by md_7.6;  sub md_8 md_8.6 by md_8.6;  sub md_9 md_9.6 by md_9.6;  sub md_10 md_10.6 by md_10.6; 
-      sub md_11 md_11.7 by md_11.7;  sub md_12 md_12.7 by md_12.7;  sub md_13 md_13.7 by md_13.7;  sub md_wai md_13.7 by md_13.7;  sub md_1 md_1.7 by md_1.7;  sub md_2 md_2.7 by md_2.7;  sub md_3 md_3.7 by md_3.7;  sub md_4 md_4.7 by md_4.7;  sub md_5 md_5.7 by md_5.7;  sub md_6 md_6.7 by md_6.7;  sub md_7 md_7.7 by md_7.7;  sub md_8 md_8.7 by md_8.7;  sub md_9 md_9.7 by md_9.7;  sub md_10 md_10.7 by md_10.7; 
-      sub md_11 md_11.8 by md_11.8;  sub md_12 md_12.8 by md_12.8;  sub md_13 md_13.8 by md_13.8;  sub md_wai md_13.8 by md_13.8;  sub md_1 md_1.8 by md_1.8;  sub md_2 md_2.8 by md_2.8;  sub md_3 md_3.8 by md_3.8;  sub md_4 md_4.8 by md_4.8;  sub md_5 md_5.8 by md_5.8;  sub md_6 md_6.8 by md_6.8;  sub md_7 md_7.8 by md_7.8;  sub md_8 md_8.8 by md_8.8;  sub md_9 md_9.8 by md_9.8;  sub md_10 md_10.8 by md_10.8; 
-      sub md_11 md_11.9 by md_11.9;  sub md_12 md_12.9 by md_12.9;  sub md_13 md_13.9 by md_13.9;  sub md_wai md_13.9 by md_13.9;  sub md_1 md_1.9 by md_1.9;  sub md_2 md_2.9 by md_2.9;  sub md_3 md_3.9 by md_3.9;  sub md_4 md_4.9 by md_4.9;  sub md_5 md_5.9 by md_5.9;  sub md_6 md_6.9 by md_6.9;  sub md_7 md_7.9 by md_7.9;  sub md_8 md_8.9 by md_8.9;  sub md_9 md_9.9 by md_9.9;  sub md_10 md_10.9 by md_10.9; 
-    } l2j_char_deci_liga_part2;    
+    } l2j_single;  
   # end
 
   # Chinese to jzp char
@@ -466,24 +445,69 @@ languagesystem latn dflt;
       sub ch_gun_trad by md_gun;
       sub ch_li_trad by lg_li;
     } c2j_trad_single;
-    lookup c2j_char_comma_numbers { # this way, ch_sch_7,ch_5 is interpreted as s75
-      sub comma md_1 by md_1;
-      sub comma md_2 by md_2;
-      sub comma md_3 by md_3;
-      sub comma md_4 by md_4;
-      sub comma md_5 by md_5;
-      sub comma md_6 by md_6;
-      sub comma md_7 by md_7;
-      sub comma md_8 by md_8;
-      sub comma md_9 by md_9;
+  # end
+
+
+  # Number lookups
+    # v3ch_colon two step so works with Safari which can't handle a b' c' -> d, only a b c' -> d
+    lookup char_deci_liga_part1 {
+      sub @area_left md_11 md_1' by md_11.1;  sub @area_left md_12 md_1' by md_12.1;  sub @area_left md_13 md_1' by md_13.1;  sub @area_left md_wai md_1' by md_13.1;  sub @area_left md_1 md_1' by md_1.1;  sub @area_left md_2 md_1' by md_2.1;  sub @area_left md_3 md_1' by md_3.1;  sub @area_left md_4 md_1' by md_4.1;  sub @area_left md_5 md_1' by md_5.1;  sub @area_left md_6 md_1' by md_6.1;  sub @area_left md_7 md_1' by md_7.1;  sub @area_left md_8 md_1' by md_8.1;  sub @area_left md_9 md_1' by md_9.1;  sub @area_left md_10 md_1' by md_10.1; 
+      sub @area_left md_11 md_2' by md_11.2;  sub @area_left md_12 md_2' by md_12.2;  sub @area_left md_13 md_2' by md_13.2;  sub @area_left md_wai md_2' by md_13.2;  sub @area_left md_1 md_2' by md_1.2;  sub @area_left md_2 md_2' by md_2.2;  sub @area_left md_3 md_2' by md_3.2;  sub @area_left md_4 md_2' by md_4.2;  sub @area_left md_5 md_2' by md_5.2;  sub @area_left md_6 md_2' by md_6.2;  sub @area_left md_7 md_2' by md_7.2;  sub @area_left md_8 md_2' by md_8.2;  sub @area_left md_9 md_2' by md_9.2;  sub @area_left md_10 md_2' by md_10.2; 
+      sub @area_left md_11 md_3' by md_11.3;  sub @area_left md_12 md_3' by md_12.3;  sub @area_left md_13 md_3' by md_13.3;  sub @area_left md_wai md_3' by md_13.3;  sub @area_left md_1 md_3' by md_1.3;  sub @area_left md_2 md_3' by md_2.3;  sub @area_left md_3 md_3' by md_3.3;  sub @area_left md_4 md_3' by md_4.3;  sub @area_left md_5 md_3' by md_5.3;  sub @area_left md_6 md_3' by md_6.3;  sub @area_left md_7 md_3' by md_7.3;  sub @area_left md_8 md_3' by md_8.3;  sub @area_left md_9 md_3' by md_9.3;  sub @area_left md_10 md_3' by md_10.3; 
+      sub @area_left md_11 md_4' by md_11.4;  sub @area_left md_12 md_4' by md_12.4;  sub @area_left md_13 md_4' by md_13.4;  sub @area_left md_wai md_4' by md_13.4;  sub @area_left md_1 md_4' by md_1.4;  sub @area_left md_2 md_4' by md_2.4;  sub @area_left md_3 md_4' by md_3.4;  sub @area_left md_4 md_4' by md_4.4;  sub @area_left md_5 md_4' by md_5.4;  sub @area_left md_6 md_4' by md_6.4;  sub @area_left md_7 md_4' by md_7.4;  sub @area_left md_8 md_4' by md_8.4;  sub @area_left md_9 md_4' by md_9.4;  sub @area_left md_10 md_4' by md_10.4; 
+      sub @area_left md_11 md_5' by md_11.5;  sub @area_left md_12 md_5' by md_12.5;  sub @area_left md_13 md_5' by md_13.5;  sub @area_left md_wai md_5' by md_13.5;  sub @area_left md_1 md_5' by md_1.5;  sub @area_left md_2 md_5' by md_2.5;  sub @area_left md_3 md_5' by md_3.5;  sub @area_left md_4 md_5' by md_4.5;  sub @area_left md_5 md_5' by md_5.5;  sub @area_left md_6 md_5' by md_6.5;  sub @area_left md_7 md_5' by md_7.5;  sub @area_left md_8 md_5' by md_8.5;  sub @area_left md_9 md_5' by md_9.5;  sub @area_left md_10 md_5' by md_10.5; 
+      sub @area_left md_11 md_6' by md_11.6;  sub @area_left md_12 md_6' by md_12.6;  sub @area_left md_13 md_6' by md_13.6;  sub @area_left md_wai md_6' by md_13.6;  sub @area_left md_1 md_6' by md_1.6;  sub @area_left md_2 md_6' by md_2.6;  sub @area_left md_3 md_6' by md_3.6;  sub @area_left md_4 md_6' by md_4.6;  sub @area_left md_5 md_6' by md_5.6;  sub @area_left md_6 md_6' by md_6.6;  sub @area_left md_7 md_6' by md_7.6;  sub @area_left md_8 md_6' by md_8.6;  sub @area_left md_9 md_6' by md_9.6;  sub @area_left md_10 md_6' by md_10.6; 
+      sub @area_left md_11 md_7' by md_11.7;  sub @area_left md_12 md_7' by md_12.7;  sub @area_left md_13 md_7' by md_13.7;  sub @area_left md_wai md_7' by md_13.7;  sub @area_left md_1 md_7' by md_1.7;  sub @area_left md_2 md_7' by md_2.7;  sub @area_left md_3 md_7' by md_3.7;  sub @area_left md_4 md_7' by md_4.7;  sub @area_left md_5 md_7' by md_5.7;  sub @area_left md_6 md_7' by md_6.7;  sub @area_left md_7 md_7' by md_7.7;  sub @area_left md_8 md_7' by md_8.7;  sub @area_left md_9 md_7' by md_9.7;  sub @area_left md_10 md_7' by md_10.7; 
+      sub @area_left md_11 md_8' by md_11.8;  sub @area_left md_12 md_8' by md_12.8;  sub @area_left md_13 md_8' by md_13.8;  sub @area_left md_wai md_8' by md_13.8;  sub @area_left md_1 md_8' by md_1.8;  sub @area_left md_2 md_8' by md_2.8;  sub @area_left md_3 md_8' by md_3.8;  sub @area_left md_4 md_8' by md_4.8;  sub @area_left md_5 md_8' by md_5.8;  sub @area_left md_6 md_8' by md_6.8;  sub @area_left md_7 md_8' by md_7.8;  sub @area_left md_8 md_8' by md_8.8;  sub @area_left md_9 md_8' by md_9.8;  sub @area_left md_10 md_8' by md_10.8; 
+      sub @area_left md_11 md_9' by md_11.9;  sub @area_left md_12 md_9' by md_12.9;  sub @area_left md_13 md_9' by md_13.9;  sub @area_left md_wai md_9' by md_13.9;  sub @area_left md_1 md_9' by md_1.9;  sub @area_left md_2 md_9' by md_2.9;  sub @area_left md_3 md_9' by md_3.9;  sub @area_left md_4 md_9' by md_4.9;  sub @area_left md_5 md_9' by md_5.9;  sub @area_left md_6 md_9' by md_6.9;  sub @area_left md_7 md_9' by md_7.9;  sub @area_left md_8 md_9' by md_8.9;  sub @area_left md_9 md_9' by md_9.9;  sub @area_left md_10 md_9' by md_10.9; 
+    } char_deci_liga_part1;
+
+    lookup char_deci_liga_part2 {
+      sub md_11 md_11.1 by md_11.1;  sub md_12 md_12.1 by md_12.1;  sub md_13 md_13.1 by md_13.1;  sub md_wai md_13.1 by md_13.1;  sub md_1 md_1.1 by md_1.1;  sub md_2 md_2.1 by md_2.1;  sub md_3 md_3.1 by md_3.1;  sub md_4 md_4.1 by md_4.1;  sub md_5 md_5.1 by md_5.1;  sub md_6 md_6.1 by md_6.1;  sub md_7 md_7.1 by md_7.1;  sub md_8 md_8.1 by md_8.1;  sub md_9 md_9.1 by md_9.1;  sub md_10 md_10.1 by md_10.1; 
+      sub md_11 md_11.2 by md_11.2;  sub md_12 md_12.2 by md_12.2;  sub md_13 md_13.2 by md_13.2;  sub md_wai md_13.2 by md_13.2;  sub md_1 md_1.2 by md_1.2;  sub md_2 md_2.2 by md_2.2;  sub md_3 md_3.2 by md_3.2;  sub md_4 md_4.2 by md_4.2;  sub md_5 md_5.2 by md_5.2;  sub md_6 md_6.2 by md_6.2;  sub md_7 md_7.2 by md_7.2;  sub md_8 md_8.2 by md_8.2;  sub md_9 md_9.2 by md_9.2;  sub md_10 md_10.2 by md_10.2; 
+      sub md_11 md_11.3 by md_11.3;  sub md_12 md_12.3 by md_12.3;  sub md_13 md_13.3 by md_13.3;  sub md_wai md_13.3 by md_13.3;  sub md_1 md_1.3 by md_1.3;  sub md_2 md_2.3 by md_2.3;  sub md_3 md_3.3 by md_3.3;  sub md_4 md_4.3 by md_4.3;  sub md_5 md_5.3 by md_5.3;  sub md_6 md_6.3 by md_6.3;  sub md_7 md_7.3 by md_7.3;  sub md_8 md_8.3 by md_8.3;  sub md_9 md_9.3 by md_9.3;  sub md_10 md_10.3 by md_10.3; 
+      sub md_11 md_11.4 by md_11.4;  sub md_12 md_12.4 by md_12.4;  sub md_13 md_13.4 by md_13.4;  sub md_wai md_13.4 by md_13.4;  sub md_1 md_1.4 by md_1.4;  sub md_2 md_2.4 by md_2.4;  sub md_3 md_3.4 by md_3.4;  sub md_4 md_4.4 by md_4.4;  sub md_5 md_5.4 by md_5.4;  sub md_6 md_6.4 by md_6.4;  sub md_7 md_7.4 by md_7.4;  sub md_8 md_8.4 by md_8.4;  sub md_9 md_9.4 by md_9.4;  sub md_10 md_10.4 by md_10.4; 
+      sub md_11 md_11.5 by md_11.5;  sub md_12 md_12.5 by md_12.5;  sub md_13 md_13.5 by md_13.5;  sub md_wai md_13.5 by md_13.5;  sub md_1 md_1.5 by md_1.5;  sub md_2 md_2.5 by md_2.5;  sub md_3 md_3.5 by md_3.5;  sub md_4 md_4.5 by md_4.5;  sub md_5 md_5.5 by md_5.5;  sub md_6 md_6.5 by md_6.5;  sub md_7 md_7.5 by md_7.5;  sub md_8 md_8.5 by md_8.5;  sub md_9 md_9.5 by md_9.5;  sub md_10 md_10.5 by md_10.5; 
+      sub md_11 md_11.6 by md_11.6;  sub md_12 md_12.6 by md_12.6;  sub md_13 md_13.6 by md_13.6;  sub md_wai md_13.6 by md_13.6;  sub md_1 md_1.6 by md_1.6;  sub md_2 md_2.6 by md_2.6;  sub md_3 md_3.6 by md_3.6;  sub md_4 md_4.6 by md_4.6;  sub md_5 md_5.6 by md_5.6;  sub md_6 md_6.6 by md_6.6;  sub md_7 md_7.6 by md_7.6;  sub md_8 md_8.6 by md_8.6;  sub md_9 md_9.6 by md_9.6;  sub md_10 md_10.6 by md_10.6; 
+      sub md_11 md_11.7 by md_11.7;  sub md_12 md_12.7 by md_12.7;  sub md_13 md_13.7 by md_13.7;  sub md_wai md_13.7 by md_13.7;  sub md_1 md_1.7 by md_1.7;  sub md_2 md_2.7 by md_2.7;  sub md_3 md_3.7 by md_3.7;  sub md_4 md_4.7 by md_4.7;  sub md_5 md_5.7 by md_5.7;  sub md_6 md_6.7 by md_6.7;  sub md_7 md_7.7 by md_7.7;  sub md_8 md_8.7 by md_8.7;  sub md_9 md_9.7 by md_9.7;  sub md_10 md_10.7 by md_10.7; 
+      sub md_11 md_11.8 by md_11.8;  sub md_12 md_12.8 by md_12.8;  sub md_13 md_13.8 by md_13.8;  sub md_wai md_13.8 by md_13.8;  sub md_1 md_1.8 by md_1.8;  sub md_2 md_2.8 by md_2.8;  sub md_3 md_3.8 by md_3.8;  sub md_4 md_4.8 by md_4.8;  sub md_5 md_5.8 by md_5.8;  sub md_6 md_6.8 by md_6.8;  sub md_7 md_7.8 by md_7.8;  sub md_8 md_8.8 by md_8.8;  sub md_9 md_9.8 by md_9.8;  sub md_10 md_10.8 by md_10.8; 
+      sub md_11 md_11.9 by md_11.9;  sub md_12 md_12.9 by md_12.9;  sub md_13 md_13.9 by md_13.9;  sub md_wai md_13.9 by md_13.9;  sub md_1 md_1.9 by md_1.9;  sub md_2 md_2.9 by md_2.9;  sub md_3 md_3.9 by md_3.9;  sub md_4 md_4.9 by md_4.9;  sub md_5 md_5.9 by md_5.9;  sub md_6 md_6.9 by md_6.9;  sub md_7 md_7.9 by md_7.9;  sub md_8 md_8.9 by md_8.9;  sub md_9 md_9.9 by md_9.9;  sub md_10 md_10.9 by md_10.9; 
+    } char_deci_liga_part2;  
+    lookup hui_and_commas { # this way, ch_sch_7,ch_5 is interpreted as s75, note: also subs s8,8
+      # following line is basically: sub @area_hui comma by @area_hui; 
+      # need to spell it out or it doesn't work, so breaking apart @area_hui into it's components
+      sub md_san comma by md_san; sub md_1 comma by md_1; sub md_2 comma by md_2; sub md_3 comma by md_3; sub md_4 comma by md_4; sub md_5 comma by md_5; sub md_6 comma by md_6; sub md_7 comma by md_7; sub md_8 comma by md_8; sub md_9 comma by md_9; sub md_10 comma by md_10; sub md_11 comma by md_11; sub md_12 comma by md_12; sub md_13 comma by md_13; sub md_wai comma by md_wai; sub md_jiu comma by md_jiu; sub md_1.blank comma by md_1.blank; sub md_1.1 comma by md_1.1; sub md_1.2 comma by md_1.2; sub md_1.3 comma by md_1.3; sub md_1.4 comma by md_1.4; sub md_1.5 comma by md_1.5; sub md_1.6 comma by md_1.6; sub md_1.7 comma by md_1.7; sub md_1.8 comma by md_1.8; sub md_1.9 comma by md_1.9; sub md_2.blank comma by md_2.blank; sub md_2.1 comma by md_2.1; sub md_2.2 comma by md_2.2; sub md_2.3 comma by md_2.3; sub md_2.4 comma by md_2.4; sub md_2.5 comma by md_2.5; sub md_2.6 comma by md_2.6; sub md_2.7 comma by md_2.7; sub md_2.8 comma by md_2.8; sub md_2.9 comma by md_2.9; sub md_3.blank comma by md_3.blank; sub md_3.1 comma by md_3.1; sub md_3.2 comma by md_3.2; sub md_3.3 comma by md_3.3; sub md_3.4 comma by md_3.4; sub md_3.5 comma by md_3.5; sub md_3.6 comma by md_3.6; sub md_3.7 comma by md_3.7; sub md_3.8 comma by md_3.8; sub md_3.9 comma by md_3.9; sub md_4.blank comma by md_4.blank; sub md_4.1 comma by md_4.1; sub md_4.2 comma by md_4.2; sub md_4.3 comma by md_4.3; sub md_4.4 comma by md_4.4; sub md_4.5 comma by md_4.5; sub md_4.6 comma by md_4.6; sub md_4.7 comma by md_4.7; sub md_4.8 comma by md_4.8; sub md_4.9 comma by md_4.9; sub md_5.blank comma by md_5.blank; sub md_5.1 comma by md_5.1; sub md_5.2 comma by md_5.2; sub md_5.3 comma by md_5.3; sub md_5.4 comma by md_5.4; sub md_5.5 comma by md_5.5; sub md_5.6 comma by md_5.6; sub md_5.7 comma by md_5.7; sub md_5.8 comma by md_5.8; sub md_5.9 comma by md_5.9; sub md_6.blank comma by md_6.blank; sub md_6.1 comma by md_6.1; sub md_6.2 comma by md_6.2; sub md_6.3 comma by md_6.3; sub md_6.4 comma by md_6.4; sub md_6.5 comma by md_6.5; sub md_6.6 comma by md_6.6; sub md_6.7 comma by md_6.7; sub md_6.8 comma by md_6.8; sub md_6.9 comma by md_6.9; sub md_7.blank comma by md_7.blank; sub md_7.1 comma by md_7.1; sub md_7.2 comma by md_7.2; sub md_7.3 comma by md_7.3; sub md_7.4 comma by md_7.4; sub md_7.5 comma by md_7.5; sub md_7.6 comma by md_7.6; sub md_7.7 comma by md_7.7; sub md_7.8 comma by md_7.8; sub md_7.9 comma by md_7.9; sub md_8.blank comma by md_8.blank; sub md_8.1 comma by md_8.1; sub md_8.2 comma by md_8.2; sub md_8.3 comma by md_8.3; sub md_8.4 comma by md_8.4; sub md_8.5 comma by md_8.5; sub md_8.6 comma by md_8.6; sub md_8.7 comma by md_8.7; sub md_8.8 comma by md_8.8; sub md_8.9 comma by md_8.9; sub md_9.blank comma by md_9.blank; sub md_9.1 comma by md_9.1; sub md_9.2 comma by md_9.2; sub md_9.3 comma by md_9.3; sub md_9.4 comma by md_9.4; sub md_9.5 comma by md_9.5; sub md_9.6 comma by md_9.6; sub md_9.7 comma by md_9.7; sub md_9.8 comma by md_9.8; sub md_9.9 comma by md_9.9; sub md_10.blank comma by md_10.blank; sub md_10.1 comma by md_10.1; sub md_10.2 comma by md_10.2; sub md_10.3 comma by md_10.3; sub md_10.4 comma by md_10.4; sub md_10.5 comma by md_10.5; sub md_10.6 comma by md_10.6; sub md_10.7 comma by md_10.7; sub md_10.8 comma by md_10.8; sub md_10.9 comma by md_10.9; sub md_11.blank comma by md_11.blank; sub md_11.1 comma by md_11.1; sub md_11.2 comma by md_11.2; sub md_11.3 comma by md_11.3; sub md_11.4 comma by md_11.4; sub md_11.5 comma by md_11.5; sub md_11.6 comma by md_11.6; sub md_11.7 comma by md_11.7; sub md_11.8 comma by md_11.8; sub md_11.9 comma by md_11.9; sub md_12.blank comma by md_12.blank; sub md_12.1 comma by md_12.1; sub md_12.2 comma by md_12.2; sub md_12.3 comma by md_12.3; sub md_12.4 comma by md_12.4; sub md_12.5 comma by md_12.5; sub md_12.6 comma by md_12.6; sub md_12.7 comma by md_12.7; sub md_12.8 comma by md_12.8; sub md_12.9 comma by md_12.9; sub md_13.blank comma by md_13.blank; sub md_13.1 comma by md_13.1; sub md_13.2 comma by md_13.2; sub md_13.3 comma by md_13.3; sub md_13.4 comma by md_13.4; sub md_13.5 comma by md_13.5; sub md_13.6 comma by md_13.6; sub md_13.7 comma by md_13.7; sub md_13.8 comma by md_13.8; sub md_13.9 comma by md_13.9; sub blank comma by blank;
+      # sub comma md_1 by md_1;
+      # sub comma md_2 by md_2;
+      # sub comma md_3 by md_3;
+      # sub comma md_4 by md_4;
+      # sub comma md_5 by md_5;
+      # sub comma md_6 by md_6;
+      # sub comma md_7 by md_7;
+      # sub comma md_8 by md_8;
+      # sub comma md_9 by md_9;
       sub comma md_banlun by md_banlun; # special case for :ch_sch_9ch_commach_banch_lunch_6 otherwise it would get s9.5 (wrong) instead of s9 (right)
       sub comma lg_banlun by lg_banlun; # special case for ch_sch_9ch_commach_banch_lunch_6 otherwise it would get s9.5 (wrong) instead of s9 (right)
-    } c2j_char_comma_numbers;
+    } hui_and_commas;
   # end
 # end
 
 # this makes substititions
 feature liga {
+  # for showing correctly in font pickers
+  # sub J' i a n Z i P u by J;
+  sub J lg_ti' a lg_pi Z lg_ti P lg_tiao by i;
+  sub J i a lg_pi' Z lg_ti P lg_tiao by n;
+  sub J i a n Z lg_ti' P lg_tiao by i;
+  sub J i a n Z i P lg_tiao' by u;
+  # sub J i a' n Z i P u by a;
+  # sub J i a n' Z i P u by n;
+  # sub J i a n Z' i P u by Z;
+  # sub J i a n Z i' P u by i;
+  # sub J i a n Z i P' u by P;
+  # sub J i a n Z i P u' by u;
+
+  # some special symbols
   sub underscore by blank;
   sub bar by blank_bar;
   sub colon by blank_colon;
@@ -496,7 +520,7 @@ feature liga {
 
   # common inputs
   lookup s2j_lat_ch_period_liga; # 7ch_dian6
-  lookup s2j_liga; # 7.6
+  lookup s2j_liga; # 7.6  
   lookup s2j_single; # > / 
 
   # chinese input
@@ -508,18 +532,23 @@ feature liga {
   lookup c2j_char_deci_liga_part2;  # only when preceded by area_left:       -> 11.2      
   lookup c2j_char_deci_liga_part3;  # only when preceded by area_left:                     ch_10ch_1 -> 10+10.1 （now we take care of this)
   lookup c2j_char_deci_liga_part4;  # only when preceded by area_left:                          -> 10.1    
-  lookup c2j_char_comma_numbers;    # 7,5 -> 7 5 (interpreted as two separate numbers, hui + string)
-                                    # also special case for :ch_sch_9ch_commach_banch_lunch_6 otherwise it would get s9.5 (wrong) instead of s9 (right)
   lookup c2j_char_liga;
   lookup c2j_trad_liga;
   lookup c2j_char_single;
   lookup c2j_trad_single;
 
+  
   # latin input
   lookup l2j_liga;
   lookup l2j_single;
-  lookup l2j_char_deci_liga_part1;
-  lookup l2j_char_deci_liga_part2;
+
+  # numbers (md_1, md_2, etc. related lookups)
+  lookup hui_and_commas; # old lookup name: c2j_char_comma_numbers;    
+                         # 7,5 -> 7 5 (interpreted as two separate numbers, hui + string)
+                         # also special case for :ch_sch_9ch_commach_banch_lunch_6 otherwise it would get s9.5 (wrong) instead of s9 (right)
+  lookup char_deci_liga_part1;
+  lookup char_deci_liga_part2;
+
 
   # undo convert when in vert mode
     # md_jiu/md_san (left aligned)--> md_jiu2/md_san2 (center aligned) 
@@ -534,10 +563,16 @@ feature liga {
     sub blank_colon @area_wild @area_to_md_for_vert_from' by @area_to_md_for_vert_to;
     sub blank_colon @area_to_md_for_vert_from' by @area_to_md_for_vert_to;
   # end
+
+  sub comma by NULL; # hack/hammer: removes all commas, something used in v2 to delinate vert characters
+  # sub blank_colon @area_wild[7->0] comma' by NULL; # ideally this would be used but sadly doesn't work
 } liga;
 
+
+
 # this positions glyphs according to the layout
-feature kern {
+lookup jzp_glyph_positioning {
+# feature kern {
   # verts
     # layout: layout_vertjzp2
     # BIG HACK! special case, otherwise :ch_vch_xi1 would be processed as ch_v left hand and get positioned accordingly
@@ -1432,4 +1467,46 @@ feature kern {
       pos @area_hui' <500 318 0 0>; # so that 1-7 can get layout_blank3 --> @area_string, then fall back to hui position for 8+
     # test: 5 9
   # end
+
+  # longest: fy C s 8 5 5 | s 9 5 5 
+} jzp_glyph_positioning;
+# } kern;
+
+
+feature kern {
+  lookup jzp_glyph_positioning;
+
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild @area_wild' <-1000 0 0 0>;
+  pos numbersign @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild @area_wild' <-1000 0 0 0>;
+  pos blank_colon @area_wild' <-1000 0 0 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @area_wild @space_char' <0 0 -1000 0>;
+  pos @new_word_char @space_char' <0 0 -1000 0>;
 } kern;

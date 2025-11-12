@@ -44,7 +44,9 @@ also add essential control characters and whitespace a-z, A-Z, 0-9
 			- 1252, Latin-1
 			- 936, Simplified Chinese
 			- 950, Traditional Chinese
-8. Space: set width to 1000
+8. Make some adjustments to default char set
+- space: set width to 1000
+- numbersign: set width to 1000, make blank
 7. Save As font as base font for use before importing any unicode (JianZiPu.base.sfd)
 
 ## 1.2. Rename Chinese Characters for ease of coding
