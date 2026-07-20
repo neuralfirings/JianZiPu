@@ -9,15 +9,12 @@ page named config.FIGMA_PAGE_NAME (default "main") — other pages (drafts,
 archive, WIP) are ignored entirely, even if they contain nodes that would
 otherwise look like glyphs or layouts.
 
-  python -m jzpbuild.figma                    # fetch everything into builder/generated_inputs
-  python -m jzpbuild.figma --browser-data-only # just refresh positions.js/svg_data.js from what's on disk
+  python -m jzpbuild.figma                    # fetch everything into builder/inputs
 
 Fetched artifacts:
-  builder/generated_inputs/svg/<glyph>.svg   component SVGs (API-rendered, bounds-corrected)
-  builder/generated_inputs/positions.json    layout/area geometry
-  builder/generated_inputs/meta.json         figma file version, for cache invalidation
-  builder/generated_inputs/positions.js      positions.json mirrored for tools/positions_checker.html
-  builder/generated_inputs/svg_data.js       svg/*.svg mirrored for tools/positions_checker.html
+  builder/inputs/svg/<glyph>.svg   component SVGs (API-rendered, bounds-corrected)
+  builder/inputs/layouts.json      layout/area geometry
+  builder/inputs/meta.json         figma file version, for cache invalidation
 
 Bounds correction: Figma's image-render endpoint crops each exported SVG's
 canvas to the tight bounding box of its rendered ink (node["absoluteRenderBounds"]),
@@ -145,10 +142,10 @@ def _box(b: dict | None) -> dict | None:
 
 
 def collect(document) -> tuple[dict[str, str], dict, dict]:
-    """Return (glyph name -> node id, glyph name -> frame/render geometry, positions dict)."""
+    """Return (glyph name -> node id, glyph name -> frame/render geometry, layouts dict)."""
     glyph_ids: dict[str, str] = {}
     glyph_geom: dict[str, dict] = {}
-    positions: dict[str, dict] = {}
+    layouts: dict[str, dict] = {}
 
     def visit(node, parents):
         gname = glyph_node_name(node)
@@ -164,7 +161,7 @@ def collect(document) -> tuple[dict[str, str], dict, dict]:
         name = node.get("name", "").strip()
         if name.startswith("layout_") and node.get("absoluteBoundingBox"):
             box = node["absoluteBoundingBox"]
-            layout = positions.setdefault(name, {"width": round(box["width"])})
+            layout = layouts.setdefault(name, {"width": round(box["width"])})
             for child in find_areas(node):
                 cname = child.get("name", "").strip()
                 cbox = child["absoluteBoundingBox"]
@@ -179,7 +176,7 @@ def collect(document) -> tuple[dict[str, str], dict, dict]:
                 }
 
     walk(document, visit)
-    return glyph_ids, glyph_geom, positions
+    return glyph_ids, glyph_geom, layouts
 
 
 def restore_frame_bounds(svg_bytes: bytes, geom: dict | None) -> bytes:
@@ -213,30 +210,8 @@ def restore_frame_bounds(svg_bytes: bytes, geom: dict | None) -> bytes:
     return ET.tostring(root, encoding="unicode").encode()
 
 
-def write_browser_data() -> None:
-    """Mirror positions.json and every SVG in COMPONENTS_DIR into .js files
-    tools/positions_checker.html loads via <script src> (see config.py's
-    POSITIONS_JS/SVG_DATA_JS for why: fetch()/XHR can't load file:// sibling
-    files in Chromium, but a script tag can).
-
-    Written by fetch() after every download; also safe to call standalone
-    (--browser-data-only) to refresh these for SVGs placed by hand rather
-    than via --figma_pull, or if positions.json was hand-edited.
-    """
-    positions = json.loads(config.POSITIONS_JSON.read_text())
-    config.POSITIONS_JS.write_text(
-        "window.JZP_POSITIONS = " + json.dumps(positions) + ";\n")
-
-    svg_data = {p.stem: p.read_text() for p in sorted(config.COMPONENTS_DIR.glob("*.svg"))}
-    config.SVG_DATA_JS.write_text(
-        "window.JZP_SVG_DATA = " + json.dumps(svg_data) + ";\n")
-
-    print(f"  wrote {config.POSITIONS_JS.name} and {config.SVG_DATA_JS.name} "
-          f"({len(svg_data)} SVGs) for tools/positions_checker.html")
-
-
 def fetch(force=False) -> None:
-    config.GENERATED_INPUTS_DIR.mkdir(exist_ok=True)
+    config.INPUTS_DIR.mkdir(exist_ok=True)
     config.COMPONENTS_DIR.mkdir(exist_ok=True)
 
     doc = get(f"/v1/files/{config.FIGMA_FILE_KEY}")
@@ -247,11 +222,11 @@ def fetch(force=False) -> None:
             return
 
     page = find_page(doc["document"], config.FIGMA_PAGE_NAME)
-    glyph_ids, glyph_geom, positions = collect(page)
+    glyph_ids, glyph_geom, layouts = collect(page)
     print(f"found {len(glyph_ids)} glyph components, "
-          f"{len(positions)} layouts on page {config.FIGMA_PAGE_NAME!r}")
+          f"{len(layouts)} layouts on page {config.FIGMA_PAGE_NAME!r}")
 
-    config.POSITIONS_JSON.write_text(json.dumps(positions, indent=1))
+    config.LAYOUTS_JSON.write_text(json.dumps(layouts, indent=1))
 
     ids = list(glyph_ids.values())
     id_to_name = {v: k for k, v in glyph_ids.items()}
@@ -278,13 +253,9 @@ def fetch(force=False) -> None:
         print(f"  downloaded {min(i + 50, len(ids))}/{len(ids)} SVGs")
     print(f"  restored frame bounds on {corrected} glyph(s) with out-of-frame bleed")
 
-    write_browser_data()
     config.META_JSON.write_text(json.dumps({"version": version}))
-    print(f"cached figma version {version} in {config.GENERATED_INPUTS_DIR}")
+    print(f"cached figma version {version} in {config.INPUTS_DIR}")
 
 
 if __name__ == "__main__":
-    if "--browser-data-only" in sys.argv:
-        write_browser_data()
-    else:
-        fetch(force="--force" in sys.argv)
+    fetch(force="--force" in sys.argv)

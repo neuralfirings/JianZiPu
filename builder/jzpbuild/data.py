@@ -1,10 +1,10 @@
 """Loaders for the human-maintained data files.
 
-builder/glyphAreas.csv is the master mapping table: one row per component
-glyph, with the input spellings (ASCII, latin, Chinese) and the layout
-area(s) the glyph belongs to. builder/glyphRename.csv maps unicode
-characters to their glyph names in the font (Han characters get readable
-ch_* names).
+builder/inputs/components.csv is the master mapping table: one row per
+component glyph, with the input spellings (ASCII, latin, Chinese) and the
+layout area(s) the glyph belongs to. builder/inputs/glyphRename.csv maps
+unicode characters to their glyph names in the font (Han characters get
+readable ch_* names).
 """
 
 import csv
@@ -34,9 +34,9 @@ AREA_COLUMNS = [
 ]
 
 
-def load_area_map() -> list[GlyphRow]:
+def load_components() -> list[GlyphRow]:
     rows = []
-    with open(config.AREA_KEY_CSV, newline="", encoding="utf-8-sig") as f:
+    with open(config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
         for rec in csv.DictReader(f):
             rows.append(GlyphRow(
                 glyph_name=rec["glyph_name"].strip(),
@@ -60,3 +60,29 @@ def load_char_to_glyph_name_rows() -> list[tuple[str, str]]:
 def load_char_to_glyph_name() -> dict[str, str]:
     """unicode char -> renamed glyph name in the font (e.g. '七' -> 'ch_7')."""
     return dict(load_char_to_glyph_name_rows())
+
+
+def referenced_chars(rows: list[GlyphRow]) -> set[str]:
+    """Every character used anywhere in components.csv's simplified/traditional
+    columns, including individual characters inside multi-char spellings
+    (e.g. both 应 and 合 from md_yinghe's 应合)."""
+    chars: set[str] = set()
+    for r in rows:
+        chars.update(r.simplified)
+        chars.update(r.traditional)
+    return chars
+
+
+def resolve_char_to_glyph_name(rows: list[GlyphRow]) -> dict[str, str]:
+    """char -> glyph name, for every character referenced in components.csv.
+
+    glyphRename.csv rows are overrides (readable ch_* names); any referenced
+    character with no override row still gets a valid name, matching
+    fontTools' own default naming for an un-renamed glyph (uniXXXX).
+    """
+    overrides = load_char_to_glyph_name()
+    c2g = dict(overrides)
+    for ch in referenced_chars(rows):
+        if ch not in c2g:
+            c2g[ch] = f"uni{ord(ch):04X}"
+    return c2g

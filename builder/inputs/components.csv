@@ -1,0 +1,92 @@
+﻿ID,keys,filename,glyph_name,area_char,area_chord,area_fy,area_left,area_hui,area_hui_deci,area_mod_jc,area_mod_zhu,area_right,area_string,common,latin,latin_alt,simplified,traditional,pinyin
+1,s,md_ming,md_ming,,,,area_left,,,,,,,,s,,名,,míng
+2,d,md_zhong,md_zhong,,,,area_left,,,,,,,,d,,中,,zhōng
+3,f,md_shi,md_shi,,,,area_left,,,,,,,,f,,食,,shí
+4,v,md_da,md_da,,,,area_left,,,,,,,,v,,大,,dà
+5,x,md_gui,md_gui,,,,area_left,,,,,,,,x,,跪,,guì
+6,0,md_san,md_san,area_char,,,,area_hui,,,,,,0,,,散,,sàn
+7,1,md_1,md_1,area_char,,,,area_hui,,,,,area_string,1,,,一,,yī
+8,2,md_2,md_2,area_char,,,,area_hui,,,,,area_string,2,,,二,,èr
+9,3,md_3,md_3,area_char,,,,area_hui,,,,,area_string,3,,,三,,sān
+10,4,md_4,md_4,area_char,,,,area_hui,,,,,area_string,4,,,四,,sì
+11,5,md_5,md_5,area_char,,,,area_hui,,,,,area_string,5,,,五,,wǔ
+12,6,md_6,md_6,area_char,,,,area_hui,,,,,area_string,6,,,六,,liù
+13,7,md_7,md_7,area_char,,,,area_hui,,,,,area_string,7,,,七,,qī
+14,8,md_8,md_8,area_char,,,,area_hui,,,,,,8,,,八,,bā
+15,9,md_9,md_9,area_char,,,,area_hui,,,,,,9,,,九,,jiǔ
+16,10,md_10,md_10,area_char,,,,area_hui,,,,,,10,,,十,,shí
+17,11,md_11,md_11,area_char,,,,area_hui,,,,,,11,,,十一,,shí yī
+18,12,md_12,md_12,area_char,,,,area_hui,,,,,,12,,,十二,,shí èr
+19,13,md_13,md_13,area_char,,,,area_hui,,,,,,13,,,十三,,shí sān
+20,13+,md_wai,md_wai,area_char,,,,area_hui,,,,,,13+,wai,,外,,wài
+21,就,md_jiu,md_jiu,,,,,area_hui,,,,,,,jiu,,就,,jiù
+22,u,lg_tiao,lg_tiao,,,,,,,,,area_right,,,u,,挑,,tiāo
+23,k,lg_gou,lg_gou,,,,,,,,,area_right,,,k,,勾,,gōu
+24,n,lg_pi,lg_pi,,,,,,,,,area_right,,,n,,劈,,pī
+25,c,lg_qiaqi,lg_qiaqi,,,,,,,,,area_right,,,c,,掐起,,qiā qǐ
+26,h,lg_tuo,lg_tuo,,,,,,,,,area_right,,,h,,托,,tuō
+27,l,lg_da,lg_da,,,,,,,,,area_right,,,l,,打,,dǎ
+28,i,lg_ti,lg_ti,,,,,,,,,area_right,,,i,,剔,,tī
+29,o,lg_zhai,lg_zhai,,,,,,,,,area_right,,,o,,摘,,zhāi
+30,j,lg_mo,lg_mo,,,,,,,,,area_right,,,j,,抹,,mǒ
+31,V,lg_yan,lg_yan,,,,,,,,,area_right,,,V,,掩,,yǎn
+32,轮,lg_lun,lg_lun,,,,,,,,,area_right,,,lun,,轮,輪,lún
+33,半轮,lg_banlun,lg_banlun,,,,,,,,,area_right,,,banlun,bl,半轮,半輪,bàn lún
+34,ju,lg_motiao,lg_motiao,,,,,,,,,area_right,,,ju,,抹挑,,mǒ tiāo
+35,ki,lg_gouti,lg_gouti,,,,,,,,,area_right,,,ki,,勾剔,,gōu tī
+36,lo,lg_dazhai,lg_dazhai,,,,,,,,,area_right,,,lo,,打摘,,dǎ zhāi
+37,U,lg_li,lg_li,,,,,,,,,area_right,,,U,,历,歴,lì
+38,C,xl_cuo,xl_cuo,,area_chord,,,,,,,,,,C,,撮,,cuō
+39,DC,xl_dacuo,xl_dacuo,,area_chord,,,,,,,,,,DC,,大撮,,dà cuō
+40,FC,xl_fancuo,xl_fancuo,,area_chord,,,,,,,,,,FC,,反撮,,fǎn cuō
+41,TT,xl_tt,xl_tt,,area_chord,,,,,,,,,,TT,,双弹,雙彈,shuāng dàn
+42,TTT,xl_ttt,xl_ttt,,area_chord,,,,,,,,,,TTT,,三弹,三彈,sān dàn
+43,B,xl_bo,xl_bo,,area_chord,,,,,,,,,,B,,拨,撥,bō
+44,L,xl_la,xl_la,,area_chord,,,,,,,,,,L,,剌,剌, là
+45,BL,xl_bola,xl_bola,,area_chord,,,,,,,,,,BL,,拨剌,撥剌,bō là
+75,/,mod_chuo,mod_chuo,,,,,,,area_mod_jc,,,,/,,,绰,綽,chuò
+76,\,mod_zhu,mod_zhu,,,,,,,,area_mod_zhu,,,\,,,注,註,zhù
+77,>,mod_ji,mod_ji,,,,,,,area_mod_jc,,,,>,,,急,,jí
+78,fy,mod_fanyin,mod_fanyin,,,area_fy,,,,,,,,,fanyin,fy,泛音,泛音, fànyīn
+110,0.5,md_ban,md_ban,area_char,,,,,,,,,,,ban,,半,,bàn
+115,0,md_san2,md_san2,area_char,,,,,,,,,,,san,,散,,sàn
+116,*,md_placeholder,md_placeholder,area_char,,,,,,,,,,*,,,,,
+117,就,md_jiu2,md_jiu2,area_char,,,,,,,,,,,jiu,,就,,jiù
+118,上,md_shang,md_shang,area_char,,,,,,,,,,,shang,,上,,shàng
+119,下,md_xia,md_xia,area_char,,,,,,,,,,,xia,,下,,xià
+120,退,md_tui,md_tui,area_char,,,,,,,,,,,tui,,退,,tuì
+121,如,md_ru,md_ru,area_char,,,,,,,,,,,ru,,如,,rú
+122,V,md_yan,md_yan,area_char,,,,,,,,,,,V,,掩,,yǎn
+123,进,md_jin,md_jin,area_char,,,,,,,,,,,jin,,进,進,jìn
+124,分开,md_fenkai,md_fenkai,area_char,,,,,,,,,,,fenkai,,分开,分開,fēnkāi
+125,轮,md_lun,md_lun,area_char,,,,,,,,,,,lun,,轮,輪,lún
+126,半轮,md_banlun,md_banlun,area_char,,,,,,,,,,,banlun,,半轮,半輪,bàn lún
+128,少,md_shao,md_shao,area_char,,,,,,,,,,,shao,,少,,shǎo
+129,息,md_xi,md_xi,area_char,,,,,,,,,,,xi,,息,,xī
+130,泛,md_fan,md_fan,area_char,,,,,,,,,,,fan,,泛,,fàn
+131,起,md_qi,md_qi,area_char,,,,,,,,,,,qi,,起,,qǐ
+132,止,md_zhi,md_zhi,area_char,,,,,,,,,,,zhi,,止,,zhì
+133,带,md_dai,md_dai,area_char,,,,,,,,,,,dai,,带,帶,dài
+134,对,md_dui,md_dui,area_char,,,,,,,,,,,dui,,对,對,duì
+135,抓,md_zhua,md_zhua,area_char,,,,,,,,,,,zhua,,抓,,zhuā
+136,撇,md_pie,md_pie,area_char,,,,,,,,,,,pie,,撇,,piē
+137,吟,md_yin,md_yin,area_char,,,,,,,,,,,yin,,吟,,yín
+138,定,md_ding,md_ding,area_char,,,,,,,,,,,ding,,定,,dìng
+139,细,md_xi4,md_xi4,area_char,,,,,,,,,,,xi4,,细,細,xì
+140,长,md_chang,md_chang,area_char,,,,,,,,,,,zhang,,长,長,zhǎng
+141,小,md_xiao,md_xiao,area_char,,,,,,,,,,,xiao,,小,,xiǎo
+142,復,md_fu,md_fu,area_char,,,,,,,,,,,fu4,,復,,fù
+143,应合,md_yinghe,md_yinghe,area_char,,,,,,,,,,,yinghe,,应合,應合,yīng hé
+144,猱,md_nao,md_nao,area_char,,,,,,,,,,,nao,,猱,,náo
+145,撞,md_zhuang,md_zhuang,area_char,,,,,,,,,,,zhuang,,撞,,zhuàng
+146,璅,md_suo,md_suo,area_char,,,,,,,,,,,suo,,璅,,suǒ
+147,短,md_duan,md_duan,area_char,,,,,,,,,,,duan,,短,,duǎn
+148,背,md_bai,md_bai,area_char,,,,,,,,,,,bei,,背,,bèi
+149,滚,md_gun,md_gun,area_char,,,,,,,,,,,gun,,滚,滾,gǔn
+150,沸,md_fu2,md_fu2,area_char,,,,,,,,,,,fu,,沸,,fèi
+151,至,md_zhi4,md_zhi4,area_char,,,,,,,,,,,zhi4,,至,,zhì
+152,半扶,md_banfu,md_banfu,area_char,,,,,,,,,,,banfu,bf,半扶,,bàn fú
+153,全扶,md_quanfu,md_quanfu,area_char,,,,,,,,,,,quanfu,qf,全扶,,quán fú
+154,叠蠲,md_diejuan,md_diejuan,area_char,,,,,,,,,,,diejuan,dj,叠蠲,疊蠲,dié juān
+155,打圆,md_dayuan,md_dayuan,area_char,,,,,,,,,,,dayuan,,打圆,打圓,dǎ yuán
+156,圆搂,md_yuanlou,md_yuanlou,area_char,,,,,,,,,,,yanlou,yl,圆搂,圓摟,yuán lǒu

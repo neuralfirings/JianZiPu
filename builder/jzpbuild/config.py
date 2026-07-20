@@ -9,34 +9,30 @@ from pathlib import Path
 BUILDER_DIR = Path(__file__).resolve().parent.parent
 
 # ---------------------------------------------------------------------------
-# human-maintained input files — used by: data.py, features.py
-# (all now live under builder/, no legacy src/input/ fallback)
+# input files — used by: data.py, features.py, glyphs.py, genfea.py, figma.py
+#
+# One folder (builder/inputs/) for everything the build reads: both the
+# human-maintained sources (components.csv, glyphRename.csv, edge_cases.fea)
+# and the Figma-fetched artifacts (svg/, layouts.json, meta.json — tracked
+# in git, refreshed via --figma_pull, no fallback to some other copy). Every
+# path below is also individually overridable from the CLI (see build.py's
+# --input-* flags) — these are just the defaults.
+#
+# Naming note: COMPONENTS_CSV (the glyph/area/spelling catalog) and
+# COMPONENTS_DIR (the svg/ folder of drawn component glyphs) are deliberately
+# two different things sharing the word "component" — one's metadata, one's
+# artwork. Distinguished by suffix (_CSV vs _DIR); don't conflate them.
 
-AREA_KEY_CSV = BUILDER_DIR / "inputs/glyphAreas.csv"                 # data.py
-GLYPH_RENAME_CSV = BUILDER_DIR / "inputs/glyphRename.csv"            # data.py
-EDGE_CASES_FEA = BUILDER_DIR / "inputs/edge_cases.fea"                # features.py
+INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, figma.py, build.py
 
-# Browser-tool mirror of AREA_KEY_CSV (see toolsdata.py) — same <script src>
-# trick as POSITIONS_JS/SVG_DATA_JS below, colocated with its source.
-GLYPH_AREAS_JS = BUILDER_DIR / "inputs/glyphAreas.js"
+COMPONENTS_CSV = INPUTS_DIR / "components.csv"               # data.py
+GLYPH_RENAME_CSV = INPUTS_DIR / "glyphRename.csv"            # data.py
+EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 
-# ---------------------------------------------------------------------------
-# generated build artifacts (Figma-fetched, tracked in git) — the only
-# source read at build time, no fallback to some other copy
-
-GENERATED_INPUTS_DIR = BUILDER_DIR / "generated_inputs"          # glyphs.py, genfea.py, figma.py, build.py
-COMPONENTS_DIR = GENERATED_INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
-META_JSON = GENERATED_INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
-POSITIONS_JSON = GENERATED_INPUTS_DIR / "positions.json"         # genfea.py, figma.py — layout/area geometry
-FEA_OUT_DEFAULT = GENERATED_INPUTS_DIR / "fontForgeFeatures.fea" # build.py — default --fea-out inspection copy
-
-# Browser-tool convenience copies (figma.py) — tools/positions_checker.html
-# runs over file://, where fetch()/XHR can't load local sibling files but a
-# <script src> tag can (verified: Chromium blocks the former, allows the
-# latter), so positions.json/svg/*.svg get mirrored into .js files that just
-# assign to a global instead of being fetched as data.
-POSITIONS_JS = GENERATED_INPUTS_DIR / "positions.js"
-SVG_DATA_JS = GENERATED_INPUTS_DIR / "svg_data.js"
+COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
+META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
+LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
+FEA_OUT_DEFAULT = INPUTS_DIR / "fontForgeFeatures.fea" # build.py — default --fea-out inspection copy
 
 # ---------------------------------------------------------------------------
 # Figma access — used by: figma.py

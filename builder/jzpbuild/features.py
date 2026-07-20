@@ -2,13 +2,15 @@
 
 The goal is semantic equivalence with the previously hand-maintained
 src/input/fontForgeFeatures.fea: every glyph class and substitution rule is
-derived from glyphAreas.csv, glyphRename.csv, and algorithmic
+derived from components.csv, glyphRename.csv, and algorithmic
 hui/decimal matrices. Hand-written disambiguation rules live in
 src/input/edge_cases.fea and are included verbatim.
 """
 
 from . import config
-from .data import GlyphRow, load_area_map, load_char_to_glyph_name, load_char_to_glyph_name_rows
+from .data import (
+    GlyphRow, load_components, load_char_to_glyph_name_rows, resolve_char_to_glyph_name,
+)
 from .validate import validate_or_raise
 
 # ---------------------------------------------------------------------------
@@ -65,7 +67,7 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
     char_glyphs = area_glyphs(rows, "area_char")
     vert_pairs = [(r.glyph_name, r.vert_variant) for r in rows if r.vert_variant]
     lines = [
-        "# base classes (generated from glyphAreas.csv)",
+        "# base classes (generated from components.csv)",
         f"  @area_fy = [ {' '.join(area_glyphs(rows, 'area_fy'))} ];",
         f"  @area_left = [ {' '.join(area_glyphs(rows, 'area_left'))} ];",
         f"  @area_hui = [ {' '.join(hui)} ];",
@@ -240,7 +242,9 @@ def gen_c2j_char_left(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
     lines = ["lookup c2j_char_left { # this way, 名七五 is interpreted as s7.5"]
     for r in rows:
         if r.in_area("area_left") and r.simplified:
-            lines.append(f"  sub {c2g[r.simplified]} by {r.glyph_name};")
+            lines.append(
+                f"  sub {c2g[r.simplified]} by {r.glyph_name}; "
+                f"# {c2g[r.simplified]}={r.simplified}")
     lines.append("} c2j_char_left;")
     return lines
 
@@ -343,10 +347,14 @@ def gen_c2j_liga(rows: list[GlyphRow], c2g: dict[str, str], col: str, name: str)
     # 十一/十二/十三 must still ligate to md_11/12/13 ahead of single 十
     if col == "simplified":
         for key in ("十一", "十三", "十二"):
-            lines.append(f"  sub {' '.join(c2g[c] for c in key)} by {entries.pop(key)};")
+            names = " ".join(c2g[c] for c in key)
+            note = " ".join(f"{c2g[c]}={c}" for c in key)
+            lines.append(f"  sub {names} by {entries.pop(key)}; # {note}")
     for key, glyph in entries.items():
         if len(key) > 1 and key not in CH_NUMERIC:
-            lines.append(f"  sub {' '.join(c2g[c] for c in key)} by {glyph};")
+            names = " ".join(c2g[c] for c in key)
+            note = " ".join(f"{c2g[c]}={c}" for c in key)
+            lines.append(f"  sub {names} by {glyph}; # {note}")
     lines.append(f"}} {name};")
     return lines
 
@@ -358,7 +366,7 @@ def gen_c2j_single(rows: list[GlyphRow], c2g: dict[str, str], col: str, name: st
     lines = [f"lookup {name} {{"]
     for key, glyph in entries.items():
         if len(key) == 1 and key not in left_keys:
-            lines.append(f"  sub {c2g[key]} by {glyph};")
+            lines.append(f"  sub {c2g[key]} by {glyph}; # {c2g[key]}={key}")
     lines.append(f"}} {name};")
     return lines
 
@@ -484,9 +492,9 @@ def gen_liga_feature() -> list[str]:
 
 
 def gen_gsub() -> list[str]:
-    rows = load_area_map()
+    rows = load_components()
     validate_or_raise(rows, load_char_to_glyph_name_rows())
-    c2g = load_char_to_glyph_name()
+    c2g = resolve_char_to_glyph_name(rows)
     edge_cases = config.EDGE_CASES_FEA.read_text().splitlines()
 
     sections = [

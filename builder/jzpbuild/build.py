@@ -38,6 +38,18 @@ def build(out_path=None, fea_out=None, verbose=False):
     return font
 
 
+# CLI flag -> config.py attribute it overrides, for the individual input
+# files/dirs a build reads. Kept as one table so the --input-* flags, their
+# --help text, and the config attributes they patch can't drift apart.
+INPUT_OVERRIDES = [
+    ("input_components", "COMPONENTS_CSV", "components.csv"),
+    ("input_glyph_rename", "GLYPH_RENAME_CSV", "glyphRename.csv"),
+    ("input_edge_cases", "EDGE_CASES_FEA", "edge_cases.fea"),
+    ("input_layouts", "LAYOUTS_JSON", "layouts.json"),
+    ("input_svg_dir", "COMPONENTS_DIR", "svg/ directory"),
+]
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="jzpbuild",
                                 description="Build the JianZiPu font")
@@ -48,11 +60,20 @@ def main(argv=None):
     p.add_argument("--fea-only", action="store_true",
                    help="only generate the feature file, don't build the font")
     p.add_argument("--figma_pull", action="store_true",
-                   help="fetch SVGs + positions from Figma first (needs FIGMA_TOKEN)")
+                   help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
+    for flag, attr, desc in INPUT_OVERRIDES:
+        p.add_argument(f"--{flag.replace('_', '-')}", type=str, default=None,
+                       help=f"override the {desc} input path "
+                            f"(default {getattr(config, attr)})")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
     from pathlib import Path
+    for flag, attr, _ in INPUT_OVERRIDES:
+        val = getattr(args, flag)
+        if val is not None:
+            setattr(config, attr, Path(val))
+
     if args.figma_pull:
         from .figma import fetch
         fetch()

@@ -3,7 +3,7 @@
 Each composed JZP word is laid out by contextual single-position rules: a rule
 matches the sequence of area classes that make up a word shape and moves the
 marked glyph to its area's x/y for the active layout. Layout geometry comes
-from layout_area_positions.json (derived from Figma).
+from layouts.json (derived from Figma).
 
 Rules are plain token lists: "@area_left'" positions the left-hand glyph
 (trailing apostrophe = marked), "@area_left" is context. The marked token's
@@ -236,11 +236,11 @@ def token_area(token: str) -> str:
     return token.rstrip("'").lstrip("@").split("__")[0]
 
 
-def fill_rule(rule: Rule, layout: str, positions: dict,
+def fill_rule(rule: Rule, layout: str, layouts: dict,
               overrides: dict[str, str] | None = None) -> str:
-    areas = positions.get(layout)
+    areas = layouts.get(layout)
     if areas is None:
-        raise FillError(f"no positions for layout {layout}")
+        raise FillError(f"no geometry for layout {layout}")
     parts = ["pos"]
     for token in rule:
         if token.endswith("'"):
@@ -255,43 +255,43 @@ def fill_rule(rule: Rule, layout: str, positions: dict,
 
 
 def emit_block(lines: list[str], layout: str, rules: list[Rule],
-               positions: dict, comment: str | None = None,
+               layouts: dict, comment: str | None = None,
                overrides: dict[str, str] | None = None) -> None:
     lines.append(f"  # layout: {layout}" + (f" — {comment}" if comment else ""))
     for r in rules:
-        lines.append("  " + fill_rule(r, layout, positions, overrides))
+        lines.append("  " + fill_rule(r, layout, layouts, overrides))
 
 
-def gen_gpos(positions: dict) -> list[str]:
+def gen_gpos(layouts: dict) -> list[str]:
     lines = ["lookup jzp_glyph_positioning {"]
 
     # vertical stacks. Special case first: ':大息' would otherwise be read as
     # 大 = left hand and positioned by a word layout.
     emit_block(lines, "layout_vertjzp2",
-               [["@area_char_colon", "md_da'", "md_xi'"]], positions,
+               [["@area_char_colon", "md_da'", "md_xi'"]], layouts,
                comment="special case :大息",
                overrides={"md_da": "area_char1", "md_xi": "area_char2"})
     for n in (4, 3, 2, 1):
-        emit_block(lines, f"layout_vertjzp{n}", vert_rules(n), positions)
+        emit_block(lines, f"layout_vertjzp{n}", vert_rules(n), layouts)
 
     # 历 (li) — takes two strings
-    emit_block(lines, "layout_li2", word_layout_rules("li", jc=True, strings="li"), positions)
-    emit_block(lines, "layout_li", word_layout_rules("li", jc=False, strings="li"), positions)
-    emit_block(lines, "layout_li3", no_left_layout_rules("li", jc=False), positions)
+    emit_block(lines, "layout_li2", word_layout_rules("li", jc=True, strings="li"), layouts)
+    emit_block(lines, "layout_li", word_layout_rules("li", jc=False, strings="li"), layouts)
+    emit_block(lines, "layout_li3", no_left_layout_rules("li", jc=False), layouts)
 
     # 撮 chords: left segment then right segment
     for anchor in ("@area_chord__cuo", "@area_cuo_bar"):
         for layout, rules in cuo_rules(anchor):
-            emit_block(lines, layout, rules, positions)
+            emit_block(lines, layout, rules, layouts)
 
     # the six standard right-hand techniques
     for right in config.RIGHT_KEYS:
-        emit_block(lines, f"layout_{right}2", word_layout_rules(right, jc=True), positions)
-        emit_block(lines, f"layout_{right}", word_layout_rules(right, jc=False), positions)
-        emit_block(lines, f"layout_{right}3", no_left_layout_rules(right), positions)
+        emit_block(lines, f"layout_{right}2", word_layout_rules(right, jc=True), layouts)
+        emit_block(lines, f"layout_{right}", word_layout_rules(right, jc=False), layouts)
+        emit_block(lines, f"layout_{right}3", no_left_layout_rules(right), layouts)
 
     # blanks (no right hand)
-    emit_block(lines, "layout_blank2", word_layout_rules(None, jc=True), positions)
+    emit_block(lines, "layout_blank2", word_layout_rules(None, jc=True), layouts)
 
     blank_rules = word_layout_rules(None, jc=False)
     # the bare-hui cases need explicit zhu/string context (7z7, 77) and a
@@ -302,12 +302,12 @@ def gen_gpos(positions: dict) -> list[str]:
         ["@area_hui'", "@area_string"],
     ]
     # insert after the left' rules (2 fy-groups of 3, then 2 left rules... )
-    emit_block(lines, "layout_blank", blank_rules[:8] + extra + blank_rules[8:], positions)
+    emit_block(lines, "layout_blank", blank_rules[:8] + extra + blank_rules[8:], layouts)
 
-    emit_block(lines, "layout_blank3", no_left_layout_rules(None), positions)
+    emit_block(lines, "layout_blank3", no_left_layout_rules(None), layouts)
 
     # final fallback: hui position for 8+ when nothing else matched
-    emit_block(lines, "layout_blank", [["@area_hui'"]], positions,
+    emit_block(lines, "layout_blank", [["@area_hui'"]], layouts,
                comment="hui fallback for 8-13 after string rules")
 
     lines.append("} jzp_glyph_positioning;")

@@ -8,12 +8,16 @@ from fontTools.ttLib import TTFont, newTable
 from fontTools.subset import Subsetter, Options
 
 from . import config
-from .data import load_char_to_glyph_name
+from .data import load_char_to_glyph_name, load_components, referenced_chars
 
 
 def build_base() -> TTFont:
     renames = load_char_to_glyph_name()
-    keep = config.BASE_KEEP_CODEPOINTS + [ord(ch) for ch in renames]
+    # keep-list covers both explicit overrides and any character referenced
+    # in components.csv with no override row (it'll keep fontTools' default
+    # uniXXXX name — see resolve_char_to_glyph_name in data.py)
+    all_chars = set(renames) | referenced_chars(load_components())
+    keep = config.BASE_KEEP_CODEPOINTS + [ord(ch) for ch in all_chars]
 
     font = TTFont(config.SOURCE_FONT)
     options = Options(notdef_outline=True, glyph_names=True,

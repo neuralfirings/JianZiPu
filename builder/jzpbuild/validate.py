@@ -9,7 +9,7 @@ any lookups are generated.
 
 from collections import defaultdict
 
-from .data import GlyphRow
+from .data import GlyphRow, resolve_char_to_glyph_name
 
 
 class ValidationError(Exception):
@@ -53,7 +53,7 @@ def _check_spelling_namespace(rows: list[GlyphRow], label: str, keyfn) -> list[s
         if len(uniq) == 2 and _is_known_vert_pair(uniq[0], uniq[1], rows):
             continue  # expected: horizontal glyph + its linked vert_variant
         errors.append(
-            f"glyphAreas.csv: {label} spelling {key!r} is claimed by multiple "
+            f"components.csv: {label} spelling {key!r} is claimed by multiple "
             f"glyphs ({', '.join(uniq)}) — pick a unique key per glyph, or if "
             f"this is really a horizontal/vert-mode pair, link them with "
             f"vert_variant instead of duplicating the spelling")
@@ -82,6 +82,20 @@ def validate(rows: list[GlyphRow], raw_rename_rows: list[tuple[str, str]]) -> li
             f"characters ({', '.join(sorted(set(chars)))}) — each character "
             f"needs its own unique ch_* name, or they will silently collide "
             f"onto a single glyph")
+
+    # merged namespace: overrides + auto-derived (uniXXXX) fallback names.
+    # Auto-derived names can't collide with each other (one codepoint -> one
+    # deterministic name) but a hand-picked override could accidentally reuse
+    # another character's auto-derived name, or another override's name.
+    already_reported = set(_dupe_groups(target_pairs))
+    resolved_pairs = [(name, char) for char, name in resolve_char_to_glyph_name(rows).items()]
+    for target, chars in _dupe_groups(resolved_pairs).items():
+        if target in already_reported:
+            continue  # already reported above
+        errors.append(
+            f"resolved glyph name {target!r} is reused for multiple "
+            f"characters ({', '.join(sorted(set(chars)))}) — pick a distinct "
+            f"glyphRename.csv override for one of them")
 
     return errors
 
