@@ -12,6 +12,27 @@ The rest of this document discusses how to compile the font.
 
 Design of the glyphs is hosted on [this Figma project](https://www.figma.com/design/CC89RmepV34CVP9bKWu48b/JianZiPuComponents?node-id=0-925&t=rNcq1aDc8xLvfPj2-1).
 
+# Building the font
+
+The font is built by a Python pipeline in `builder/` — one command, no
+FontForge, no hand-edited feature files:
+
+```bash
+cd builder
+pip install -e .                # once
+python3 -m jzpbuild             # build src/JianZiPu.ttf
+python3 -m jzpbuild --fetch     # pull latest SVGs + positions from Figma first (needs FIGMA_TOKEN)
+```
+
+See `builder/README.md` for the architecture, what to edit for each kind of
+change, and how the build is verified (a HarfBuzz shaping regression test
+against the released font).
+
+---
+
+**Everything below documents the LEGACY manual pipeline** (FontForge +
+`scripts.cjs`), kept for reference only. It is superseded by `builder/`.
+
 # Section 1. Create Base Font with Input Characters
 
 ## 1.1. Extract Input Characters from Source Font

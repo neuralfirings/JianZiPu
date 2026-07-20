@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JianZiPu builder tools</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .page { padding: 24px; max-width: 700px; }
+  .cards { display: grid; gap: 14px; margin-top: 20px; }
+  .card {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover { border-color: var(--accent); background: #f7fafe; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; color: var(--accent); }
+  .card p { margin: 0; font-size: 13px; color: var(--gray-dark); line-height: 1.5; }
+  .card code { font-size: 12px; background: #f2f2f2; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="tools-nav">
+  <span class="current">JianZiPu builder tools</span>
+</div>
+
+<div class="page">
+  <h1>JianZiPu builder tools</h1>
+  <div class="hint">Self-contained, offline HTML tools — no server or build tooling needed.</div>
+
+  <div class="cards">
+    <a class="card" href="font_tester.html">
+      <h2>Font tester →</h2>
+      <p>Live-test a built <code>.ttf</code> in the browser: type JianZiPu input,
+      see it shape and render immediately. Example chips across basic words,
+      decimals, modifiers, chords, vertical words, and Chinese input.</p>
+    </a>
+
+    <a class="card" href="positions_checker.html">
+      <h2>Positions checker →</h2>
+      <p>Load a <code>positions.json</code> + component SVGs, preview how
+      glyphs sit in each layout area using the font's exact placement rule,
+      then drag/resize areas and export a corrected
+      <code>positions.json</code> — no Figma access needed.</p>
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

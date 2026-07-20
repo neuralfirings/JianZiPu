@@ -12,3 +12,11 @@ src/*.ttf
 src/*.otf
 src/demo/*.ttf
 src/demo/*.otf
+__pycache__/
+*.egg-info/
+.gstack/
+
+# builder/ (Python font pipeline)
+builder/cache/
+builder/JianZiPu.ttf
+builder/src_font/*.ttf
