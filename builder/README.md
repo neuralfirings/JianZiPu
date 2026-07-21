@@ -481,6 +481,28 @@ the `area_char{1..4}` entries in `layouts.json`. Any glyph tagged
    it; see the shaping-test discussion above on what that test does and
    doesn't verify).
 
+**Known limitation: `:` immediately after Han text can silently drop out of
+vertical mode.** The trigger is `sub colon by blank_colon;` (`features.py`),
+and `vert_rules()`/`@area_to_md_for_vert` only fire when that `blank_colon`
+glyph sits in the *same shaping run* as the glyphs after it. `:` (U+003A) is
+Unicode "Common" script, so when it directly follows Chinese text (e.g.
+`名九淌上 :shang34`), browsers' per-script text-itemization (splitting a text
+node into separate shaping runs for `hani` vs `latn`/`Common`, independent of
+which font is used — this happens even though everything renders through
+one `@font-face`) can fold that `:` into the *preceding* Han run instead of
+the following Latin one. The stranded word then shapes with plain
+(non-vertical) positioning instead of the intended centered variant — no
+error, just the wrong layout, and it only shows up when a colon-triggered
+word directly abuts prior Han text with nothing else between them. Confirmed
+with `hb-shape`: shaping `:名九淌上 :shang34` as one buffer positions the
+second word correctly (`md_shang@-675,510` etc.), but shaping `shang34` in
+isolation (simulating the stranded-colon run split) gives completely
+different offsets (`md_shang@0,0`, `md_3@500,318`, ...). This is a
+consequence of the colon being a script-neutral character, not a bug in
+`gpos.py`/`features.py` — no `.fea` change fixes it, since the split happens
+on raw input codepoints before GSUB ever runs. Workaround: don't chain a
+`:`-triggered word directly after Han-script notation in the same run.
+
 ### Case 2: add a new SVG for `area_jc` (a third 急/绰-style marker)
 
 `area_jc` (CSV column `area_mod_jc`) currently has two members — `mod_chuo`
@@ -595,9 +617,11 @@ JSON routes:
   `{ok, returncode, stdout, stderr}`.
 - `POST /api/save` — writes request-body values straight to their
   `config.py` default path (`layouts` → `inputs/layouts.json`,
-  `components` → `inputs/components.csv`) — the "Save Configs" button, so a
-  build afterward (which only ever reads what's on disk) picks up in-browser
-  edits without a manual download-then-move-the-file step.
+  `components` → `inputs/components.csv`, `svgs` → one file per entry,
+  `inputs/svg/<glyph_name>.svg`, overwriting existing files of the same
+  name) — the "Save Configs" button, so a build afterward (which only ever
+  reads what's on disk) picks up in-browser edits without a manual
+  download-then-move-the-file step.
 
 ## Helpful Tools
 
@@ -626,13 +650,12 @@ A **File-menu-style bar** sits in the top toolbar, alongside Help/Build
 Font — three dropdowns (click to open, click anywhere else to close):
 - **Import ▾** — `layouts.json`, `components.csv`, `svgs` — each loads from
   disk and replaces what's currently loaded in the browser.
-- **Save ▾** — `layouts.json` and `components.csv` each POST their current
-  in-memory state to `/api/save`, overwriting the real files under
-  `builder/inputs/` (needs the dev server; without it you just get a "no
-  dev server running" alert); **Save All** does both in one request, one
-  combined confirmation. `svgs` is a placeholder alert — importing an SVG
-  already drops it straight into the real `svg/` folder, so there's nothing
-  separate to "save" for it yet.
+- **Save ▾** — `layouts.json`, `components.csv`, and `svgs` each POST their
+  current in-memory state to `/api/save`, overwriting the real files under
+  `builder/inputs/` (`svgs` writes one file per loaded SVG, to
+  `inputs/svg/<glyph_name>.svg` — needs the dev server; without it you just
+  get a "no dev server running" alert); **Save All** does all three in one
+  request, one combined confirmation.
 - **Export ▾** — downloads `layouts.json` (recomputing its `yd` field from
   `y`/`h` on the way out — `yd` is the baseline-flipped offset the font's
   GPOS rules actually use, so it's kept in sync automatically rather than
@@ -640,16 +663,38 @@ Font — three dropdowns (click to open, click anywhere else to close):
   SVG, zipped client-side by a small dependency-free stored/no-compression
   ZIP writer — no external library, keeps the tool self-contained) to your
   Downloads folder, independent of any server.
+- **Edit ▾** — Undo/Redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z` or `Ctrl+Y`);
+  most edits (drags, area/layout add/delete, glyph assignment, CSV field
+  edits) are one undo step each, snapshot-based (see `historyStack`/
+  `redoStack` in the script).
 
-The **left panel** is just the **Layouts** list (plus Add/Duplicate/Delete)
-— everything else that used to live there moved to a **Tools panel** on the
-right, which (like the left panel and the bottom panel) is resizable by
-dragging its edge. Tools holds **Preview** (the "exact font placement"
-checkbox, **Test random components**, **Clear Components**) and **Areas**
-(the click-a-canvas-area editor: name/x/y/w/h/svg fields). **Test random
-components** fills every area of the current layout with a random glyph
-from its `components.csv` candidates (re-rolls on every click, useful for
-spot-checking fit across many shapes), with two rules layered on top of
+The toolbar spans the full page width (a sibling of the side/canvas/tools
+row, not nested inside it) and also holds a **&minus; / percentage / + /
+reset** zoom control group just left of Help — mouse wheel over the canvas
+zooms too, and dragging on empty canvas pans. Area name labels on the
+canvas boost their own font size as you zoom out (countering the shrink
+from the canvas-wide `transform: scale()`), so they stay legible instead of
+vanishing at low zoom.
+
+The **left panel** has the **Layouts** list (plus Add/Duplicate/Delete),
+plus a **Layouts (Double Sided)** section below it — a dedicated left/right
+picker for the six cuo layouts (`layout_cuo_left`/`right` and their `2`/`3`
+variants) that lets you mix and match any left variant with any right
+variant (e.g. preview `layout_cuo_left3` paired with `layout_cuo_right`),
+overriding the fixed `left`↔`right`, `left2`↔`right2`, `left3`↔`right3`
+pairing described below. Picking one from each column previews that custom
+pairing; picking only one side falls back to the normal fixed pair; picking
+any other (non-cuo) layout from the main Layouts list clears both picks —
+the two pickers and the main list all drive the same underlying
+selection, they're just different ways to set it.
+Everything else that used to live in the left panel moved to a **Tools
+panel** on the right, which (like the left panel and the bottom panel) is
+resizable by dragging its edge. Tools holds **Preview** (the "exact font
+placement" checkbox, **Test random components**, **Clear Components**) and
+**Areas** (the click-a-canvas-area editor: name/x/y/w/h/svg fields). **Test
+random components** fills every area of the current layout with a random
+glyph from its `components.csv` candidates (re-rolls on every click, useful
+for spot-checking fit across many shapes), with two rules layered on top of
 plain per-area randomness:
 - `area_right` only ever gets a glyph from the *current layout's*
   `RIGHT_SELECTORS` family (e.g. `layout_gou3` only ever picks
@@ -707,14 +752,19 @@ chip again unassigns it (toggle). For `area_right`, chips outside the
 current layout's `RIGHT_SELECTORS` family are shown but grayed out and
 unclickable (not hidden — makes clear *why* e.g. `lg_pi` can't go in
 `layout_gou3`'s `area_right`), same restriction "Test random components"
-applies. Add another glyph via "Add Existing SVG", which opens a modal
-listing every loaded SVG as a click-to-select chip (multi-select,
-already-assigned ones shown pre-highlighted) — "Add selected" adds them all
-to the current area (creating a minimal CSV row for any that don't have one
-yet), "Cancel" discards the selection. The modal also has an "Upload SVG"
-button — since this is a static offline tool with no server to receive a
-real upload, it just alerts a reminder to drop the file into the SVG folder
-directly. Clicking a candidate chip both toggles its assignment to the
+applies. Add another glyph via "Add New SVG", which opens a modal listing
+every loaded SVG as a click-to-select chip (multi-select, already-assigned
+ones shown pre-highlighted) — "Add selected" adds them all to the current
+area (creating a minimal CSV row for any that don't have one yet),
+"Cancel" discards the selection. The modal's own "Upload SVG" button reads
+one or more `.svg` files straight into memory (`registerSvg()` — no
+dev-server round trip needed for this step); if an uploaded file's name
+collides with one already loaded, you're prompted with a suggested rename
+(`foo` → `foo_2`, `foo_2` → `foo_3`, ...) before it's added — re-prompting
+until you pick a free name or cancel (which skips just that file). Either
+way, a newly uploaded SVG only exists in memory until you use **Save ▾ >
+svgs** (or Save All) to write it to `builder/inputs/svg/`. Clicking a
+candidate chip both toggles its assignment to the
 currently-selected area in the main canvas *and* opens an inspector panel on
 the right showing every area that glyph belongs to across the whole CSV
 (editable checkboxes — this is where you'd add/remove other area

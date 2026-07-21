@@ -23,10 +23,13 @@ Small JSON routes on top of static file serving:
                        {ok, returncode, stdout, stderr}
   POST /api/save   -> writes JSON body values straight to their config.py
                        default paths ({layouts: <json text>, components:
-                       <csv text>}, any/all optional) — the "Save Configs"
-                       button, so Build Font (which only ever reads what's on
-                       disk) picks up in-browser edits without a manual
-                       download-then-move-the-file step.
+                       <csv text>, svgs: {glyph_name: svg_text, ...}}, any/all
+                       optional) — the "Save Configs" button, so Build Font
+                       (which only ever reads what's on disk) picks up
+                       in-browser edits without a manual download-then-move
+                       step. `svgs` writes each entry to
+                       inputs/svg/<glyph_name>.svg, overwriting existing files
+                       of the same name.
 
 --figma_pull and --output aren't wired up here — this is a "Build Font"
 button for the common case, not a full CLI proxy.
@@ -108,6 +111,15 @@ class Handler(SimpleHTTPRequestHandler):
                 if key in payload:
                     path.write_text(payload[key])
                     saved[key] = str(path)
+            svgs = payload.get("svgs")
+            if isinstance(svgs, dict):
+                written = []
+                for name, text in svgs.items():
+                    if not name or "/" in name or "\\" in name or ".." in name:
+                        continue
+                    (config.COMPONENTS_DIR / f"{name}.svg").write_text(text)
+                    written.append(name)
+                saved["svgs"] = f"{len(written)} file(s) -> {config.COMPONENTS_DIR}"
             self._send_json(200, {"ok": True, "saved": saved})
             return
 

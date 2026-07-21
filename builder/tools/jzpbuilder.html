@@ -17,6 +17,9 @@
   #toolbar { padding: 8px 12px; border-bottom: 1px solid #ddd; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   #toolbar .spacer { flex: 1; }
   #fileinfoBar { padding: 4px 12px; border-bottom: 1px solid #eee; }
+  .zoomGroup { display: flex; align-items: center; gap: 4px; }
+  .zoomGroup button { padding: 4px 8px; }
+  .zoomGroup #zoomIndicator { display: inline-block; width: 40px; text-align: center; }
 
   /* ---- File > Import/Save/Export menu bar ---- */
   .menuBar { display: flex; gap: 2px; }
@@ -43,13 +46,17 @@
   select, input[type=number], input[type=text] { width: 100%; padding: 3px 6px; }
   .row { display: flex; gap: 6px; margin: 4px 0; align-items: center; }
   .row label { width: 20px; color: #888; }
-  #layoutList div { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
-  #layoutList div.sel { background: var(--sel); color: #fff; }
+  #layoutList div, .subList div { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
+  #layoutList div.sel, .subList div.sel { background: var(--sel); color: #fff; }
+  .dualCol { display: flex; gap: 10px; }
+  .dualCol > div { flex: 1; min-width: 0; }
+  .dualCol .hint { margin-bottom: 2px; }
+  .subList div { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #frame { position: relative; background: #fff; box-shadow: 0 2px 12px #0002; }
   #frame .gridline { position: absolute; background: #eee; pointer-events: none; }
   .area { position: absolute; border: 1.5px solid var(--area); cursor: move; }
   .area.sel { border-color: var(--sel); background: #0b74de11; z-index: 5; }
-  .area .tag { position: absolute; top: -18px; left: 0; font-size: 10px; background: var(--area); color: #fff; padding: 0 4px; white-space: nowrap; }
+  .area .tag { position: absolute; top: -18px; left: 0; font-size: calc(10px * var(--tagFontScale, 1)); background: var(--area); color: #fff; padding: 0 4px; white-space: nowrap; }
   .area.sel .tag { background: var(--sel); }
   .area .handle { position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px; background: var(--sel); border-radius: 2px; cursor: nwse-resize; display: none; }
   .area.sel .handle { display: block; }
@@ -152,6 +159,56 @@
   <span class="current">Font Builder</span>
 </div>
 
+<div id="toolbar">
+  <b id="title">JianZiPu Font Builder</b>
+  <div class="menuBar">
+    <div class="menuItem">
+      <button class="menuBtn" id="menuImportBtn">Import ▾</button>
+      <div class="menuDropdown" id="menuImportDropdown">
+        <button id="loadJson">layouts.json</button>
+        <button id="loadCsv">components.csv</button>
+        <button id="loadSvgs">svgs</button>
+      </div>
+    </div>
+    <div class="menuItem">
+      <button class="menuBtn" id="menuSaveBtn">Save ▾</button>
+      <div class="menuDropdown" id="menuSaveDropdown">
+        <button id="saveJson">layouts.json</button>
+        <button id="saveCsv">components.csv</button>
+        <button id="saveSvgs">svgs</button>
+        <div class="menuSep"></div>
+        <button id="saveAll">Save All</button>
+        <div class="hint">writes to <code>builder/inputs/</code></div>
+      </div>
+    </div>
+    <div class="menuItem">
+      <button class="menuBtn" id="menuExportBtn">Export ▾</button>
+      <div class="menuDropdown" id="menuExportDropdown">
+        <button id="download">layouts.json</button>
+        <button id="downloadCsv">components.csv</button>
+        <button id="downloadSvgsZip">svgs.zip</button>
+      </div>
+    </div>
+    <div class="menuItem">
+      <button class="menuBtn" id="menuEditBtn">Edit ▾</button>
+      <div class="menuDropdown" id="menuEditDropdown">
+        <button id="undoBtn" title="Ctrl/Cmd+Z" disabled>↶ Undo</button>
+        <button id="redoBtn" title="Ctrl/Cmd+Shift+Z or Ctrl+Y" disabled>↷ Redo</button>
+      </div>
+    </div>
+  </div>
+  <span class="hint" id="status">no layout loaded — load a layouts JSON or add a layout</span>
+  <span class="spacer"></span>
+  <span class="zoomGroup">
+    <button id="zoomOutBtn" title="Zoom out">&minus;</button>
+    <span class="hint" id="zoomIndicator">100%</span>
+    <button id="zoomInBtn" title="Zoom in">+</button>
+    <button id="zoomResetBtn" title="Reset zoom">reset</button>
+  </span>
+  <button id="openHelpModal">Help</button>
+  <button id="openBuildModal">Build Font</button>
+</div>
+
 <div class="app">
 <div id="side">
   <h3>Layouts</h3>
@@ -161,58 +218,22 @@
     <button id="dupLayout">Duplicate</button>
     <button id="delLayout">Delete</button>
   </div>
+
+  <h3>Layouts (Double Sided)</h3>
+  <div class="dualCol">
+    <div>
+      <div class="hint">Left Side</div>
+      <div id="cuoLeftList" class="subList"></div>
+    </div>
+    <div>
+      <div class="hint">Right Side</div>
+      <div id="cuoRightList" class="subList"></div>
+    </div>
+  </div>
 </div>
 
 <div id="sideResizer"></div>
 <div id="main">
-  <div id="toolbar">
-    <b id="title">JianZiPu Font Builder</b>
-    <div class="menuBar">
-      <div class="menuItem">
-        <button class="menuBtn" id="menuImportBtn">Import ▾</button>
-        <div class="menuDropdown" id="menuImportDropdown">
-          <button id="loadJson">layouts.json</button>
-          <button id="loadCsv">components.csv</button>
-          <button id="loadSvgs">svgs</button>
-        </div>
-      </div>
-      <div class="menuItem">
-        <button class="menuBtn" id="menuSaveBtn">Save ▾</button>
-        <div class="menuDropdown" id="menuSaveDropdown">
-          <button id="saveJson">layouts.json</button>
-          <button id="saveCsv">components.csv</button>
-          <button id="saveSvgs">svgs</button>
-          <div class="menuSep"></div>
-          <button id="saveAll">Save All</button>
-          <div class="hint">writes to <code>builder/inputs/</code></div>
-        </div>
-      </div>
-      <div class="menuItem">
-        <button class="menuBtn" id="menuExportBtn">Export ▾</button>
-        <div class="menuDropdown" id="menuExportDropdown">
-          <button id="download">layouts.json</button>
-          <button id="downloadCsv">components.csv</button>
-          <button id="downloadSvgsZip">svgs.zip</button>
-        </div>
-      </div>
-      <div class="menuItem">
-        <button class="menuBtn" id="menuEditBtn">Edit ▾</button>
-        <div class="menuDropdown" id="menuEditDropdown">
-          <button id="undoBtn" title="Ctrl/Cmd+Z" disabled>↶ Undo</button>
-          <button id="redoBtn" title="Ctrl/Cmd+Shift+Z or Ctrl+Y" disabled>↷ Redo</button>
-          <div class="menuSep"></div>
-          <button id="zoomInBtn">🔍+ Zoom in</button>
-          <button id="zoomOutBtn">🔍- Zoom out</button>
-          <button id="zoomResetBtn">Reset zoom</button>
-        </div>
-      </div>
-    </div>
-    <span class="hint" id="status">no layout loaded — load a layouts JSON or add a layout</span>
-    <span class="spacer"></span>
-    <span class="hint" id="zoomIndicator">100%</span>
-    <button id="openHelpModal">Help</button>
-    <button id="openBuildModal">Build Font</button>
-  </div>
   <div class="hint" id="fileinfoBar"><span id="fileinfo"></span></div>
   <div id="canvaswrap"><div id="viewport"><div id="frame"></div></div></div>
 </div>
@@ -245,7 +266,7 @@
     <div id="bottomPanelHeader">click an area above to see candidate components</div>
     <div id="candidateList"></div>
     <div id="addCandidateRow">
-      <button id="addExistingSvgBtn">Add Existing SVG</button>
+      <button id="addExistingSvgBtn">Add New SVG</button>
     </div>
   </div>
   <div id="glyphInspector" style="display:none">
@@ -262,13 +283,19 @@
     <div class="row"><label style="width:70px">latin_alt</label><input type="text" id="ins_latin_alt"></div>
     <div class="row"><label style="width:70px">simplified</label><input type="text" id="ins_simplified"></div>
     <div class="row"><label style="width:70px">traditional</label><input type="text" id="ins_traditional"></div>
+    <div class="hint" id="inspectorError" style="color:#c0392b"></div>
+    <div class="row"><button id="inspectorUpdate">Update</button><button id="inspectorCancel">Cancel</button>
+      <span class="hint" id="inspectorUpdated" style="color:#2e7d32"></span></div>
     <div class="hint" id="inspectorVertVariant"></div>
   </div>
 </div>
 
 <div id="svgPickerOverlay">
   <div id="svgPickerModal">
-    <h4>Add existing SVG<button id="svgPickerClose">&times; close</button></h4>
+    <h4>Add new SVG<button id="svgPickerClose">&times; close</button></h4>
+    <div class="hint">To add a brand new SVG, either click <b>Upload SVG</b> below (adds it to memory —
+      then use Save ▾ &gt; svgs to write it to disk), or drop the file straight into
+      <code>builder/inputs/svg</code> and refresh this page.</div>
     <div class="hint" id="svgPickerHint">click one or more SVGs to select, then Add</div>
     <div id="svgPickerList"></div>
     <div class="row" style="justify-content: space-between">
@@ -300,14 +327,12 @@
         <code>components.csv</code>, or SVGs from disk to replace what's
         currently loaded in the browser. On page open, this happens
         automatically from <code>builder/inputs/</code>.</li>
-      <li><b>Save ▾</b> — <code>layouts.json</code> and
-        <code>components.csv</code> each write your in-browser edits
-        (position/area changes, CSV edits) straight back to the real files
-        under <code>builder/inputs/</code>; <b>Save All</b> does both in one
-        request. Needs the Dev Server running (see below) — without it
-        you'll get a "no dev server running" message. <code>svgs</code> is a
-        placeholder here since importing an SVG already drops it into the
-        real folder directly.</li>
+      <li><b>Save ▾</b> — <code>layouts.json</code>, <code>components.csv</code>,
+        and <code>svgs</code> each write your in-browser edits straight back to
+        the real files under <code>builder/inputs/</code> (svgs to one file per
+        glyph, <code>inputs/svg/&lt;glyph_name&gt;.svg</code>); <b>Save All</b>
+        does all three in one request. Needs the Dev Server running (see
+        below) — without it you'll get a "no dev server running" message.</li>
       <li><b>Export ▾</b> — downloads <code>layouts.json</code> (with its
         <code>yd</code> field recomputed from <code>y</code>/<code>h</code>
         — <code>yd</code> is the baseline-flipped offset the font's GPOS
@@ -318,6 +343,18 @@
         <code>builder/inputs/</code>
         yourself afterward.</li>
     </ul>
+
+    <h5>Undo/Redo &amp; zoom (toolbar)</h5>
+    <p>
+      <b>Edit ▾</b> has Undo/Redo (also <code>Ctrl/Cmd+Z</code>,
+      <code>Ctrl/Cmd+Shift+Z</code> or <code>Ctrl+Y</code>) — most edits
+      (drags, area/layout add/delete, glyph assignment, CSV field edits) are
+      one undo step each. The <b>&minus; / percentage / + / reset</b> group
+      next to Help zooms the canvas (mouse wheel over it works too); drag on
+      empty canvas to pan. Area name labels grow their source font size when
+      you zoom out, so they stay readable instead of shrinking away to
+      nothing.
+    </p>
 
     <h5>Layouts (left panel) &amp; Areas (canvas)</h5>
     <p>
@@ -331,6 +368,18 @@
       one 撮 chord, so selecting either one also shows the other as a
       dashed, read-only preview 500 units to the right — that's what the
       real font renders side by side.
+    </p>
+    <p>
+      The <b>Layouts (Double Sided)</b> section below it is a dedicated
+      left/right picker for those same six cuo layouts, so you can mix and
+      match any left variant with any right variant (e.g. preview
+      <code>layout_cuo_left3</code> paired with <code>layout_cuo_right</code>)
+      instead of only ever seeing the fixed <code>left</code>↔<code>right</code>,
+      <code>left2</code>↔<code>right2</code>, <code>left3</code>↔<code>right3</code>
+      pairing. Pick one from each column to preview a custom pairing; picking
+      just one side falls back to that layout's normal fixed pair. Selecting
+      any other (non-cuo) layout from the main Layouts list clears both
+      picks.
     </p>
 
     <h5>Tools (right panel)</h5>
@@ -361,7 +410,16 @@
       valid there. Clicking a chip also opens an inspector on the right
       where you can edit that glyph's area memberships and spellings
       directly — those edits live in the in-memory CSV until you
-      Save/Export it.
+      Save/Export it. Use <b>Add New SVG</b> to bring in another glyph: it
+      opens a modal listing every already-loaded SVG as a click-to-select
+      chip (multi-select, already-assigned ones pre-highlighted) — "Add
+      selected" adds them all to the current area (creating a minimal CSV
+      row for any that don't have one yet). The modal's own <b>Upload
+      SVG</b> button reads a file straight into memory (no dev-server round
+      trip); if its name collides with one already loaded, you're prompted
+      to rename it (e.g. <code>foo</code> → <code>foo_2</code>) before it's
+      added. Either way, nothing reaches disk until you use <b>Save ▾ &gt;
+      svgs</b> (or Save All).
     </p>
 
     <h5>Build Font</h5>
@@ -460,6 +518,46 @@ const CUO_PAIRS = {
   layout_cuo_left3: "layout_cuo_right3", layout_cuo_right3: "layout_cuo_left3",
 };
 const CUO_PAIR_OFFSET = 500;
+
+// Double-sided picker (side panel): lets you mix and match any left variant
+// with any right variant, overriding CUO_PAIRS' fixed 1:1 pairing below.
+const CUO_LEFT_OPTIONS = ["layout_cuo_left", "layout_cuo_left2", "layout_cuo_left3"];
+const CUO_RIGHT_OPTIONS = ["layout_cuo_right", "layout_cuo_right2", "layout_cuo_right3"];
+let cuoLeftSel = null, cuoRightSel = null;
+
+function pairLayoutFor(layoutName) {
+  if (cuoLeftSel && cuoRightSel) {
+    if (layoutName === cuoLeftSel) return cuoRightSel;
+    if (layoutName === cuoRightSel) return cuoLeftSel;
+  }
+  return CUO_PAIRS[layoutName];
+}
+
+// shared entry point for every way curLayout can change: picking a plain
+// layout clears any double-sided picks (they're mutually exclusive), while
+// picking a cuo left/right variant records it as that side's pick too, so
+// the double-sided panel and the main list always agree on selection state
+function selectLayout(name) {
+  curLayout = name; curArea = null;
+  if (CUO_LEFT_OPTIONS.includes(name)) cuoLeftSel = name;
+  else if (CUO_RIGHT_OPTIONS.includes(name)) cuoRightSel = name;
+  else { cuoLeftSel = null; cuoRightSel = null; }
+  renderAll();
+}
+
+function selectCuoLeft(name) {
+  cuoLeftSel = cuoLeftSel === name ? null : name;
+  curLayout = cuoLeftSel || cuoRightSel || null;
+  curArea = null;
+  renderAll();
+}
+
+function selectCuoRight(name) {
+  cuoRightSel = cuoRightSel === name ? null : name;
+  curLayout = cuoRightSel || cuoLeftSel || null;
+  curArea = null;
+  renderAll();
+}
 
 // ---- components.csv: parsed rows, area <-> CSV-column mapping, selection --
 
@@ -938,17 +1036,62 @@ $("helpOverlay").addEventListener("pointerdown", e => {
 
 // ---- rendering -----------------------------------------------------------
 
-function renderAll() { renderLayoutList(); renderCanvas(); renderAreaPanel(); renderBottomPanel(); }
+function renderAll() { renderLayoutList(); renderCuoDoubleSided(); renderCanvas(); renderAreaPanel(); renderBottomPanel(); }
+
+// clicking a combined "layout_cuo"/"layout_cuo2"/"layout_cuo3" entry loads
+// both sides of that pair at once (same effect as picking both sides in the
+// double-sided panel below)
+function selectCuoPair(left, right) {
+  cuoLeftSel = left; cuoRightSel = right;
+  curLayout = left; curArea = null;
+  renderAll();
+}
 
 function renderLayoutList() {
   const el = $("layoutList");
   el.innerHTML = "";
+  const handled = new Set();
   for (const name of Object.keys(model)) {
+    if (handled.has(name)) continue;
+    const pairName = CUO_PAIRS[name];
+    if (pairName && model[pairName]) {
+      handled.add(name); handled.add(pairName);
+      const left = CUO_LEFT_OPTIONS.includes(name) ? name : pairName;
+      const right = left === name ? pairName : name;
+      const label = left.replace(/^layout_cuo_left/, "layout_cuo");
+      const d = document.createElement("div");
+      d.textContent = label;
+      d.className = (curLayout === left || curLayout === right) ? "sel" : "";
+      d.onclick = () => selectCuoPair(left, right);
+      el.appendChild(d);
+      continue;
+    }
     const d = document.createElement("div");
     d.textContent = name;
     d.className = name === curLayout ? "sel" : "";
-    d.onclick = () => { curLayout = name; curArea = null; renderAll(); };
+    d.onclick = () => selectLayout(name);
     el.appendChild(d);
+  }
+}
+
+function renderCuoDoubleSided() {
+  const leftEl = $("cuoLeftList"), rightEl = $("cuoRightList");
+  leftEl.innerHTML = ""; rightEl.innerHTML = "";
+  for (const name of CUO_LEFT_OPTIONS) {
+    if (!model[name]) continue;
+    const d = document.createElement("div");
+    d.textContent = name.replace(/^layout_cuo_/, "");
+    d.className = name === cuoLeftSel ? "sel" : "";
+    d.onclick = () => selectCuoLeft(name);
+    leftEl.appendChild(d);
+  }
+  for (const name of CUO_RIGHT_OPTIONS) {
+    if (!model[name]) continue;
+    const d = document.createElement("div");
+    d.textContent = name.replace(/^layout_cuo_/, "");
+    d.className = name === cuoRightSel ? "sel" : "";
+    d.onclick = () => selectCuoRight(name);
+    rightEl.appendChild(d);
   }
 }
 
@@ -980,7 +1123,7 @@ function makeGlyphNode(a, gname, offsetX) {
 
 function renderCanvas() {
   frame.innerHTML = "";
-  const pairLayout = CUO_PAIRS[curLayout];
+  const pairLayout = pairLayoutFor(curLayout);
   const showPair = !!(pairLayout && model[pairLayout]);
   const totalWidth = showPair ? FRAME + CUO_PAIR_OFFSET : FRAME;
   frame.style.width = totalWidth * SCALE + "px";
@@ -1145,6 +1288,8 @@ function toggleGlyph(name) {
 
 function renderInspector() {
   const el = $("glyphInspector");
+  clearTimeout(inspectorUpdatedTimer);
+  $("inspectorUpdated").textContent = "";
   if (!selectedGlyph) { el.style.display = "none"; return; }
   const row = csvByName[selectedGlyph];
   el.style.display = "";
@@ -1172,17 +1317,103 @@ function renderInspector() {
   }
   $("inspectorVertVariant").textContent = row && row.vert_variant
     ? `vert_variant: ${row.vert_variant} (read-only)` : "";
+  validateInspectorFields();
+}
+
+// ---- inspector spelling-namespace validation --------------------------
+// mirrors builder/jzpbuild/validate.py: latin/latin_alt/multi-letter common
+// share one input-spelling namespace, simplified and traditional are each
+// their own namespace. A glyph and its linked vert_variant are allowed to
+// share a spelling (that's the intentional horizontal/vert-mode pattern).
+
+function latinKeysForRow(row) {
+  const keys = [];
+  if (row.latin) keys.push(row.latin);
+  if (row.latin_alt) keys.push(row.latin_alt);
+  if (row.common && row.common.length > 1 && /^[A-Za-z]+$/.test(row.common)) keys.push(row.common);
+  return keys;
+}
+
+function isKnownVertPair(g1, g2) {
+  if (g1 === g2) return true;
+  return csvRows.some(r => r.vert_variant &&
+    ((r.glyph_name === g1 && r.vert_variant === g2) ||
+     (r.glyph_name === g2 && r.vert_variant === g1)));
+}
+
+// errors for the given glyph if its fields were set to `staged` values,
+// checked against every OTHER row's current (already-saved) values
+function findDuplicateErrors(glyphName, staged) {
+  const errors = [];
+  const others = csvRows.filter(r => r.glyph_name !== glyphName);
+
+  for (const key of latinKeysForRow(staged)) {
+    for (const other of others) {
+      if (latinKeysForRow(other).includes(key) && !isKnownVertPair(glyphName, other.glyph_name)) {
+        errors.push(`latin/common spelling "${key}" is already used by ${other.glyph_name}`);
+      }
+    }
+  }
+  if (staged.simplified) {
+    for (const other of others) {
+      if (other.simplified === staged.simplified && !isKnownVertPair(glyphName, other.glyph_name)) {
+        errors.push(`simplified "${staged.simplified}" is already used by ${other.glyph_name}`);
+      }
+    }
+  }
+  if (staged.traditional) {
+    for (const other of others) {
+      if (other.traditional === staged.traditional && !isKnownVertPair(glyphName, other.glyph_name)) {
+        errors.push(`traditional "${staged.traditional}" is already used by ${other.glyph_name}`);
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
+
+function stagedInspectorFields() {
+  const staged = {};
+  for (const field of EDIT_FIELDS) staged[field] = $("ins_" + field).value.trim();
+  return staged;
+}
+
+function validateInspectorFields() {
+  const errEl = $("inspectorError"), updateBtn = $("inspectorUpdate"), cancelBtn = $("inspectorCancel");
+  if (!selectedGlyph || !csvByName[selectedGlyph]) {
+    errEl.textContent = "";
+    updateBtn.disabled = true; cancelBtn.disabled = true;
+    return;
+  }
+  const errors = findDuplicateErrors(selectedGlyph, stagedInspectorFields());
+  errEl.textContent = errors.join(" | ");
+  updateBtn.disabled = errors.length > 0;
+  cancelBtn.disabled = false;
 }
 
 for (const field of EDIT_FIELDS) {
-  const el = $("ins_" + field);
-  el.oninput = () => {
-    if (selectedGlyph && csvByName[selectedGlyph]) {
-      csvByName[selectedGlyph][field] = el.value;
-    }
-  };
-  trackContinuousEdit(el);
+  $("ins_" + field).oninput = validateInspectorFields;
 }
+
+let inspectorUpdatedTimer = null;
+function flashInspectorUpdated() {
+  const el = $("inspectorUpdated");
+  clearTimeout(inspectorUpdatedTimer);
+  el.textContent = "Updated";
+  inspectorUpdatedTimer = setTimeout(() => { el.textContent = ""; }, 2000);
+}
+
+$("inspectorUpdate").onclick = () => {
+  const row = selectedGlyph && csvByName[selectedGlyph];
+  if (!row) return;
+  const staged = stagedInspectorFields();
+  if (findDuplicateErrors(selectedGlyph, staged).length) return; // guarded by disabled state
+  recordUndo();
+  for (const field of EDIT_FIELDS) row[field] = staged[field];
+  renderInspector();
+  renderBottomPanel();
+  flashInspectorUpdated();
+};
+$("inspectorCancel").onclick = () => { renderInspector(); };
 $("closeInspector").onclick = () => { selectedGlyph = null; renderInspector(); renderBottomPanel(); };
 
 $("downloadInspectorSvg").onclick = () => {
@@ -1271,7 +1502,41 @@ $("svgPickerAdd").onclick = () => {
   closeSvgPicker();
   renderBottomPanel();
 };
-$("svgPickerUpload").onclick = () => alert("add to svg folder directly");
+// suggests "foo_2" for a conflicting "foo" (or "foo_3" for a conflicting
+// "foo_2"), then keeps re-prompting until the user picks a name that's free
+// or cancels (in which case that file is skipped, not uploaded)
+function promptUniqueSvgName(baseName) {
+  let name = baseName;
+  while (svgs[name] !== undefined) {
+    const m = name.match(/^(.*)_(\d+)$/);
+    const suggested = m ? `${m[1]}_${+m[2] + 1}` : `${name}_2`;
+    const entered = prompt(`"${name}.svg" already exists — enter a different name:`, suggested);
+    if (entered === null) return null;
+    name = entered.trim().replace(/\.svg$/, "");
+    if (!name) return null;
+  }
+  return name;
+}
+
+async function uploadSvgFiles(files) {
+  let added = 0;
+  for (const f of files) {
+    if (!f.name.endsWith(".svg")) continue;
+    const base = f.name.replace(/\.svg$/, "");
+    const name = promptUniqueSvgName(base);
+    if (name === null) continue;
+    registerSvg(name, await f.text());
+    added++;
+  }
+  fillSvgSelect();
+  renderSvgPickerList();
+  if (added) {
+    $("fileinfo").textContent =
+      `added ${added} new SVG(s) to memory — use Save ▾ > svgs to write them to disk`;
+  }
+}
+
+$("svgPickerUpload").onclick = () => pickFiles(".svg", true, uploadSvgFiles);
 
 $("loadCsv").onclick = () => pickFiles(".csv", false, f => f[0] && f[0].text().then(loadCsvText));
 $("downloadCsv").onclick = () => {
@@ -1361,24 +1626,29 @@ $("delArea").onclick = () => {
 
 $("addLayout").onclick = () => {
   const name = prompt("layout name", "layout_new");
-  if (!name || model[name]) return;
+  if (!name) return;
+  if (model[name]) return alert(`layout "${name}" already exists — pick a different name`);
   recordUndo();
   model[name] = {width: 1000};
+  cuoLeftSel = null; cuoRightSel = null;
   curLayout = name; curArea = null; renderAll();
 };
 $("dupLayout").onclick = () => {
   if (!curLayout) return;
   const name = prompt("duplicate as", curLayout + "_copy");
-  if (!name || model[name]) return;
+  if (!name) return;
+  if (model[name]) return alert(`layout "${name}" already exists — pick a different name`);
   recordUndo();
   model[name] = JSON.parse(JSON.stringify(model[curLayout]));
   assign[name] = {...(assign[curLayout] || {})};
+  cuoLeftSel = null; cuoRightSel = null;
   curLayout = name; renderAll();
 };
 $("delLayout").onclick = () => {
   if (curLayout && confirm("delete " + curLayout + "?")) {
     recordUndo();
     delete model[curLayout];
+    cuoLeftSel = null; cuoRightSel = null;
     curLayout = Object.keys(model)[0] || null; curArea = null; renderAll();
   }
 };
@@ -1519,6 +1789,7 @@ async function saveAll() {
     const data = await postSave({
       layouts: buildPositionsExport(),
       components: stringifyCsv(csvHeader, csvRows),
+      svgs,
     });
     if (data.ok) alert("saved:\n" + Object.values(data.saved).join("\n"));
     else alert(`save failed: ${data.error || "unknown error"}`);
@@ -1529,10 +1800,17 @@ async function saveAll() {
 
 $("saveJson").onclick = () => saveConfigFile("layouts", buildPositionsExport(), "layouts.json");
 $("saveCsv").onclick = () => saveConfigFile("components", stringifyCsv(csvHeader, csvRows), "components.csv");
-$("saveSvgs").onclick = () => alert(
-  "Not needed — importing SVGs already adds them straight to the actual " +
-  "svg folder. A dedicated save action isn't needed here; to be implemented " +
-  "later if that changes.");
+$("saveSvgs").onclick = async () => {
+  const names = Object.keys(svgs);
+  if (!names.length) return alert("no SVGs loaded");
+  try {
+    const data = await postSave({svgs});
+    if (data.ok) alert(`saved ${names.length} SVG(s) to ${data.saved.svgs || "disk"}`);
+    else alert(`save failed: ${data.error || "unknown error"}`);
+  } catch (e) {
+    alert("no dev server running — start it with `python -m jzpbuild.devserver` to save files");
+  }
+};
 $("saveAll").onclick = saveAll;
 
 // ---- canvas pan/zoom -------------------------------------------------
@@ -1547,6 +1825,10 @@ let panX = 0, panY = 0, zoomLevel = 1;
 function applyViewTransform() {
   $("viewport").style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
   $("zoomIndicator").textContent = Math.round(zoomLevel * 100) + "%";
+  // area labels are a fixed 10px in source, which the scale() above shrinks
+  // right along with everything else — boost the source size when zoomed
+  // out so the on-screen label stays legible instead of vanishing
+  document.documentElement.style.setProperty("--tagFontScale", String(1 / Math.min(zoomLevel, 1)));
 }
 
 function setZoom(z) {
