@@ -1,0 +1,146 @@
+languagesystem DFLT dflt;
+languagesystem hani dflt;
+languagesystem latn dflt;
+
+# Base classes
+@area_fy = [ mod_fanyin ];
+@area_left = [md_ming md_zhong md_shi md_da md_gui]; 
+@area_hui = [md_san md_1 md_2 md_3 md_4 md_5 md_6 md_7 md_8 md_9 md_10 md_11 md_12 md_13 md_wai md_jiu];
+@area_hui_a = [sm_1 sm_2 sm_3 sm_4 sm_5 sm_6 sm_7 sm_8 sm_9 sm_10 sm_11 sm_12 sm_wai]; 
+@area_hui_b = [sm_1 sm_2 sm_3 sm_4 sm_ban sm_6 sm_7 sm_8 sm_9]; 
+@area_mod_jc = [mod_chuo mod_ji]; 
+@area_mod_zhu = [mod_zhu]; 
+@area_right_all = [ lg_tiao lg_gou lg_pi lg_qiaqi lg_tuo lg_da lg_ti lg_zhai lg_mo lg_yan lg_lun lg_banlun lg_motiao lg_gouti lg_dazhai lg_li];
+@area_string = [md_1 md_2 md_3 md_4 md_5 md_6 md_7];
+
+# area selectors
+@area_right_ki = [lg_gou lg_ti]; 
+
+
+# --- Variant classes (index-aligned with bases)
+@layout_gou3_area_right  = [ lg_gou ];
+@layout_gou3_area_string = [ md_1 md_2 md_3 md_4 md_5 md_6 md_7 ];
+
+@layout_ti_area_right  = [ lg_ti];
+@layout_ti_area_string = [ md_1 md_2 md_3 md_4 md_5 md_6 md_7 ];
+
+# lookup lig_test { sub d s by s; } lig_test;
+
+# latin to jzp glyphs
+lookup l2j_fy { 
+  sub f y by mod_fanyin;
+  sub f a n y i n by mod_fanyin;
+} l2j_fy;
+lookup l2j_left {
+  sub [ s d f v x ] by @area_left;
+} l2j_left;
+lookup l2j_hui_deci_left {
+  sub one zero period by sm_10;
+  sub one one period by sm_11; 
+  sub one two period by sm_12; 
+  sub one three period by sm_wai;
+  sub one period by sm_1;
+  sub two period by sm_2;
+  sub three period by sm_3;
+  sub four period by sm_4;
+  sub five period by sm_5;
+  sub six period by sm_6;
+  sub seven period by sm_7;
+  sub eight period by sm_8;
+  sub nine period by sm_9;
+} l2j_hui_deci_left;
+lookup l2j_hui_deci_right {
+  sub @area_hui_deci one' by sm_1;
+  sub @area_hui_deci two' by sm_2;
+  sub @area_hui_deci three' by sm_3;
+  sub @area_hui_deci four' by sm_4;
+  sub @area_hui_deci five' by sm_ban;
+  sub @area_hui_deci six' by sm_6;
+  sub @area_hui_deci seven' by sm_7;
+  sub @area_hui_deci eight' by sm_8;
+  sub @area_hui_deci nine' by sm_9;
+} l2j_hui_deci_right;
+lookup l2j_hui_liga {
+  # NOTE: covers @area_string
+  sub one zero by md_10;
+  sub one one by md_11;
+  sub one two by md_12;
+  sub one three  by md_13;
+  sub w a i by md_wai;
+  sub j i u by md_jiu;
+} l2j_hui_liga;
+lookup l2j_hui {
+  sub [  zero one two three four five six seven eight nine ]
+    by [ md_san md_1 md_2 md_3 md_4 md_5 md_6 md_7 md_8 md_9 ];
+} l2j_hui;
+# lookup l2j_hui { 
+#   # NOTE: covers @area_string
+#   sub [ zero one two three four five six seven eight nine md_10 md_11 md_12 md_13 md_wai md_jiu ] by @area_hui;
+# } l2j_hui;
+lookup l2j_mod_jc {
+  sub [ slash ] by mod_chuo;
+  sub [ greater ] by mod_ji;
+} l2j_mod_jc;
+lookup l2j_mod_zhu {
+  sub [ backslash ] by mod_zhu;
+} l2j_mod_zhu;
+lookup l2j_right_liga {
+  sub l u n by lg_lun;
+  sub b l by lg_banlun;
+  sub b a n l u n by lg_banlun;
+  sub j u by lg_motiao;
+  sub k i by lg_gouti;
+  sub l o by lg_dazhai;
+} l2j_right_liga;
+lookup l2j_right_all { 
+  sub [ u k n c h l i o j V lg_lun lg_banlun lg_motiao lg_gouti lg_dazhai U ] by @area_right_all;
+} l2j_right_all;
+
+
+feature calt {
+  # latin to jzp char
+  lookup l2j_fy;
+  lookup l2j_left;
+  lookup l2j_hui_deci_left; # liga
+  lookup l2j_hui_deci_right; # liga
+  lookup l2j_hui_liga;
+  lookup l2j_hui;
+  lookup l2j_mod_jc;
+  lookup l2j_mod_zhu;
+  lookup l2j_right_liga;
+  lookup l2j_right_all;
+
+
+  # === position glyphs ===
+  # pos @area_right_ki' <150 -30 0 0> @area_string' <300 100 0 0>; #k5
+
+  # layout: gou
+  # tests: s8k5 s8 sk 8k sk5 8k5 k5 s8.5k5 s13k5 s9.k5
+  pos @area_hui_deci' <520 640 0 0>   @area_hui_deci' <520 420 0 0> @area_right_ki; # 8k
+  pos @area_hui_deci' <520 640 0 0>   @area_right_ki; # 8k
+  # pos @area_hui'      <500 450 0 0>   @area_right_ki; # 8k
+  pos @area_hui'      <500 450 0 0>   @area_right_ki; # 8k
+  pos @area_left'     <150 450 0 0>   @area_right_ki; #sk
+  pos @area_left'     <150 450 0 0>   @area_hui @area_right_ki; #sk8k
+  pos @area_left'     <150 450 0 0>   @area_hui_deci @area_hui_deci @area_right_ki; #sk8k
+  pos @area_left'     <150 450 0 0>   @area_hui_deci @area_right_ki; #sk8k
+  pos @area_left @area_right_ki' <170 -30 0 0>  @area_string' <300 -70 0 0>; #sk5 # START HERE, CHANGE TO GOU3
+  pos @area_hui @area_right_ki' <170 -30 0 0>  @area_string' <300 -70 0 0>; #8k5 # START HERE, CHANGE TO GOU3
+  pos @area_hui_deci @area_right_ki' <170 -30 0 0>  @area_string' <300 -70 0 0>; #8.k5 # START HERE, CHANGE TO GOU3
+
+  # layout: gou3
+  # tests: k5
+  pos @area_right_ki' <170 -30 0 0>   @area_string' <300 100 0 0>; #k5
+  pos @area_right_ki' <170 -30 0 0>; # k
+
+  # defaults
+  pos @area_left' <150 320 0 0>;
+  pos @area_left @area_hui' <500 320 0 0>;
+  pos @area_left @area_hui_deci' <500 510 0 0> @area_hui_deci' <500 290 0 0>;
+  pos @area_left @area_hui_deci' <500 510 0 0>;
+  pos @area_hui_deci' <500 510 0 0> @area_hui_deci' <500 290 0 0>;
+  pos @area_hui_deci' <500 510 0 0>;
+  pos @area_string' <325 125 0 0>;
+  pos @area_hui' <500 320 0 0>;
+} calt;
+
