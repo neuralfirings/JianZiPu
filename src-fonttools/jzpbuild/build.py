@@ -11,12 +11,13 @@ from .genfea import generate
 from .glyphs import add_component_glyphs
 
 
-def build(out_path=None, fea_out=None, verbose=False):
+def build(out_path=None, fea_out=None, verbose=False, dynamic_pos=False,
+          dynamic_pos_only=False):
     out_path = out_path or config.OUTPUT_FONT
     vlog = print if verbose else (lambda *a: None)
 
     print("generating feature file ...")
-    fea_text = generate()
+    fea_text = generate(dynamic_pos=dynamic_pos, dynamic_pos_only=dynamic_pos_only)
     if fea_out:
         fea_out.write_text(fea_text)
         print(f"  wrote {fea_out}")
@@ -61,6 +62,18 @@ def main(argv=None):
                    help="only generate the feature file, don't build the font")
     p.add_argument("--figma_pull", action="store_true",
                    help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
+    p.add_argument("--dynamic_pos", action="store_true",
+                   help="use the experimental mark-attachment GPOS prototype "
+                        "for the gou/io/li right-hand families (proof of "
+                        "concept, see dynamic_positioning/README.md)")
+    p.add_argument("--dynamic_pos_only", action="store_true",
+                   help="like --dynamic_pos, but additionally zero out every "
+                        "classic-positioned shape dynamic_positioning doesn't "
+                        "cover (other right-hand families, vertical-mode "
+                        "words, cuo chords) so they render visibly broken "
+                        "instead of silently working via classic -- a test "
+                        "build for checking dynamic_positioning's actual "
+                        "coverage without classic quietly filling the gaps")
     for flag, attr, desc in INPUT_OVERRIDES:
         p.add_argument(f"--{flag.replace('_', '-')}", type=str, default=None,
                        help=f"override the {desc} input path "
@@ -79,7 +92,7 @@ def main(argv=None):
         fetch()
     fea_out = Path(args.fea_out) if args.fea_out else None
     if args.fea_only:
-        text = generate()
+        text = generate(dynamic_pos=args.dynamic_pos, dynamic_pos_only=args.dynamic_pos_only)
         if fea_out:
             fea_out.write_text(text)
             print(f"wrote {fea_out}")
@@ -88,7 +101,8 @@ def main(argv=None):
         return 0
 
     build(out_path=Path(args.output) if args.output else None,
-          fea_out=fea_out, verbose=args.verbose)
+          fea_out=fea_out, verbose=args.verbose, dynamic_pos=args.dynamic_pos,
+          dynamic_pos_only=args.dynamic_pos_only)
     return 0
 
 

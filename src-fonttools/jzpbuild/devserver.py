@@ -31,6 +31,32 @@ Small JSON routes on top of static file serving:
                        inputs/svg/<glyph_name>.svg, overwriting existing files
                        of the same name.
 
+  GET  /api/dynamic/data    -> the full contents of
+                       config.DYNAMIC_LAYOUTS_JSON (dynamic_positioning's own
+                       area_sizes/layouts data) parsed as JSON — for
+                       tools/jzpbuilder-dynamic.html.
+  POST /api/dynamic/save    -> writes the JSON body straight to
+                       config.DYNAMIC_LAYOUTS_JSON (same shape as the GET
+                       above).
+  POST /api/dynamic/resolve -> body: {area_sizes, center_x, center_y, layout,
+                       present, signifier}. Resolves absolute (x, y) for
+                       `layout` (one geometry.LAYOUTS-shaped dict, `areas` is
+                       filled in from `area_sizes`) using the REAL
+                       dynamic_positioning.anchors.AnchorEngine +
+                       dynamic_positioning.chain.resolve — this is
+                       jzpbuilder-dynamic.html's only way to compute box
+                       positions, so the preview can never drift from what an
+                       actual font build produces. Returns
+                       {ok, resolved: {area: [x, y]}, chosen: {area: {axis:
+                       base_or_null}}} on success (`chosen` identifies, per
+                       resolved area/axis, which relationship candidate
+                       chain.py picked — lets the frontend grey out any
+                       other declared candidates for the same (elem, axis)),
+                       or {ok: false, error} (still HTTP 200) if resolution
+                       fails for this present/signifier combination (missing
+                       gap override, cyclic dependency, etc.) — a real
+                       possibility while editing, not a server error.
+
 --figma_pull and --output aren't wired up here — this is a "Build Font"
 button for the common case, not a full CLI proxy.
 """
@@ -77,6 +103,9 @@ class Handler(SimpleHTTPRequestHandler):
                 "output_path": str(config.OUTPUT_FONT),
             })
             return
+        if self.path == "/api/dynamic/data":
+            self._send_json(200, json.loads(config.DYNAMIC_LAYOUTS_JSON.read_text()))
+            return
         super().do_GET()
 
     # POST /api/build body -> --input-* CLI flag, mirrors build.py's
@@ -121,6 +150,55 @@ class Handler(SimpleHTTPRequestHandler):
                     written.append(name)
                 saved["svgs"] = f"{len(written)} file(s) -> {config.COMPONENTS_DIR}"
             self._send_json(200, {"ok": True, "saved": saved})
+            return
+
+        if self.path == "/api/dynamic/save":
+            try:
+                payload = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                self._send_json(400, {"ok": False, "error": "invalid JSON body"})
+                return
+            config.DYNAMIC_LAYOUTS_JSON.write_text(json.dumps(payload, indent=2))
+            self._send_json(200, {"ok": True, "saved": str(config.DYNAMIC_LAYOUTS_JSON)})
+            return
+
+        if self.path == "/api/dynamic/resolve":
+            try:
+                payload = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                self._send_json(400, {"ok": False, "error": "invalid JSON body"})
+                return
+            from dynamic_positioning import anchors, chain, geometry
+
+            layout = dict(payload.get("layout") or {})
+            layout["areas"] = {k: tuple(v) for k, v in (payload.get("area_sizes") or {}).items()}
+            present = payload.get("present") or {}
+            signifier = payload.get("signifier")
+
+            prev_center = (geometry.CENTER_X, geometry.CENTER_Y)
+            geometry.CENTER_X = payload.get("center_x", prev_center[0])
+            geometry.CENTER_Y = payload.get("center_y", prev_center[1])
+            try:
+                engine = anchors.AnchorEngine(layout)
+                flat_optional = set(engine.flat_optional)
+                always_present = engine.declared_elems - flat_optional
+                to_resolve = {e for e in flat_optional if present.get(e)} | always_present
+                chosen = chain._choose_relationships(engine, present, to_resolve)
+                resolved = chain.resolve(engine, present, signifier)
+            except (KeyError, ValueError) as e:
+                self._send_json(200, {"ok": False, "error": str(e)})
+                return
+            finally:
+                geometry.CENTER_X, geometry.CENTER_Y = prev_center
+
+            self._send_json(200, {
+                "ok": True,
+                "resolved": {elem: list(xy) for elem, xy in resolved.items()},
+                "chosen": {
+                    elem: {axis: rel.get("base") for axis, rel in by_axis.items()}
+                    for elem, by_axis in chosen.items()
+                },
+            })
             return
 
         if self.path == "/api/build":

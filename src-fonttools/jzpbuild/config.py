@@ -34,6 +34,11 @@ META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file
 LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
 FEA_OUT_DEFAULT = INPUTS_DIR / "fontForgeFeatures.fea" # build.py — default --fea-out inspection copy
 
+# dynamic_positioning/'s own layout data (area sizes + relationship graphs,
+# see geometry.py) — separate from LAYOUTS_JSON above, which belongs to the
+# classic Figma-driven pipeline. Edited by tools/jzpbuilder-dynamic.html.
+DYNAMIC_LAYOUTS_JSON = BUILDER_DIR / "dynamic_positioning" / "layouts_data.json"  # geometry.py, devserver.py
+
 # ---------------------------------------------------------------------------
 # Figma access — used by: figma.py
 
@@ -92,7 +97,7 @@ OS2 = {
 # widths of the zero-ink control glyphs (from the current font)
 CONTROL_GLYPHS = {  # name -> (codepoint, advance width)  — used by: base.py
     "blank": (0x58001, 0),
-    "blank_bar": (0x58002, 500),
+    "blank_bar": (0x58002, 1000),
     "blank_colon": (0x58003, 1000),
     "advance": (0x58004, 1000),
     "half_advance": (0x58005, 500),
