@@ -9,11 +9,19 @@
   body { display: flex; flex-direction: column; height: 100vh; }
   .app { flex: 1; display: flex; overflow: hidden; min-height: 0; }
   #side { width: 200px; flex: none; border-right: 1px solid #ddd; padding: 12px; overflow-y: auto; }
+  #sideResizer, #toolsResizer { width: 6px; flex: none; cursor: col-resize; background: transparent; }
+  #sideResizer:hover, #sideResizer.active,
+  #toolsResizer:hover, #toolsResizer.active { background: var(--sel); }
   #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
   #toolsPanel { width: 340px; flex: none; border-left: 1px solid #ddd; padding: 12px; overflow-y: auto; }
   #toolbar { padding: 8px 12px; border-bottom: 1px solid #ddd; display: flex; gap: 8px; align-items: center; }
   #toolbar .spacer { flex: 1; }
-  #canvaswrap { flex: 1; overflow: auto; background: #f6f6f6; display: grid; place-items: center; }
+  .zoomGroup { display: flex; align-items: center; gap: 4px; }
+  .zoomGroup button { padding: 4px 8px; }
+  .zoomGroup #zoomIndicator { display: inline-block; width: 40px; text-align: center; }
+  #canvaswrap { flex: 1; overflow: hidden; background: #f6f6f6; display: grid; place-items: center; cursor: grab; touch-action: none; }
+  #canvaswrap.panning { cursor: grabbing; }
+  #viewport { transform-origin: 50% 50%; }
   #frame { position: relative; background: #fff; box-shadow: 0 2px 12px #0002; }
   h3 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #666; }
   h3:first-child { margin-top: 0; }
@@ -25,7 +33,7 @@
   #layoutList div.sel { background: var(--sel); color: #fff; }
 
   .area { position: absolute; border: 1.5px solid var(--area); }
-  .area .tag { position: absolute; top: -18px; left: 0; font-size: 10px; background: var(--area); color: #fff; padding: 0 4px; white-space: nowrap; pointer-events: none; }
+  .area .tag { position: absolute; top: -18px; left: 0; font-size: calc(10px * var(--tagFontScale, 1)); background: var(--area); color: #fff; padding: 0 4px; white-space: nowrap; pointer-events: none; }
   .area.dragging { opacity: .85; z-index: 6; }
   .edge { position: absolute; background: transparent; }
   .edge.top, .edge.bottom { left: 0; right: 0; height: 10px; cursor: pointer; }
@@ -51,7 +59,9 @@
   }
   .gapLabel.active { background: var(--sel); color: #fff; }
 
-  #relPanel { border-bottom: 1px solid #ddd; padding: 8px 12px; background: #f7fafe; flex: none; }
+  #relPanel { padding: 8px 12px; background: #f7fafe; flex: none; height: 220px; overflow-y: auto; }
+  #relPanelResizer { height: 6px; flex: none; cursor: row-resize; background: transparent; border-top: 1px solid #ddd; }
+  #relPanelResizer:hover, #relPanelResizer.active { background: var(--sel); }
   .relAxisPanel {
     flex: 1 1 320px; min-width: 280px; border: 1px solid #dde3ee; border-radius: 6px;
     padding: 8px 10px; background: #fff;
@@ -177,6 +187,12 @@
   <strong id="layoutTitle">–</strong>
   <span class="spacer"></span>
   <span id="status" class="hint"></span>
+  <span class="zoomGroup">
+    <button id="zoomOutBtn" title="Zoom out">&minus;</button>
+    <span class="hint" id="zoomIndicator">100%</span>
+    <button id="zoomInBtn" title="Zoom in">+</button>
+    <button id="zoomResetBtn" title="Reset zoom">reset</button>
+  </span>
   <button id="saveBtn">Save</button>
 </div>
 
@@ -189,6 +205,7 @@
     reimplementation.</p>
   </div>
 
+  <div id="sideResizer"></div>
   <div id="main">
     <div id="relPanel" style="display:none">
       <div class="relPanelHeader">
@@ -202,9 +219,11 @@
         <div id="relPanelY" class="relAxisPanel"></div>
       </div>
     </div>
-    <div id="canvaswrap"><div id="frame"></div></div>
+    <div id="relPanelResizer" style="display:none" title="drag to resize"></div>
+    <div id="canvaswrap"><div id="viewport"><div id="frame"></div></div></div>
     <div id="errBar" class="err" style="padding: 0 12px;"></div>
 
+    <div id="bottomResizer"></div>
     <div id="bottomPanel">
       <div id="candidatesSection">
         <div id="bottomPanelHeader">
@@ -236,6 +255,7 @@
     </div>
   </div>
 
+  <div id="toolsResizer"></div>
   <div id="toolsPanel">
     <h3>Preview</h3>
     <div class="row"><input type="checkbox" id="exactPlacement" style="width:auto">
@@ -585,8 +605,8 @@ function startResizeDrag(ev, area) {
 
   function move(e) {
     const dxScreen = e.clientX - startX, dyScreen = e.clientY - startY;
-    const newW = Math.max(10, origW + dxScreen / frame.scale);
-    const newH = Math.max(10, origH - dyScreen / frame.scale);
+    const newW = Math.max(10, origW + dxScreen / (frame.scale * zoomLevel));
+    const newH = Math.max(10, origH - dyScreen / (frame.scale * zoomLevel));
     const newBoxW = newW * frame.scale, newBoxH = newH * frame.scale;
     div.style.width = newBoxW + 'px';
     div.style.height = newBoxH + 'px';
@@ -1320,8 +1340,10 @@ function activeBucketIndex(layout, rel, buckets) {
 
 function renderRelPanel() {
   const panel = document.getElementById('relPanel');
-  if (!editingElem) { panel.style.display = 'none'; return; }
+  const resizer = document.getElementById('relPanelResizer');
+  if (!editingElem) { panel.style.display = 'none'; resizer.style.display = 'none'; return; }
   panel.style.display = '';
+  resizer.style.display = '';
   document.getElementById('relElemLabel').textContent = editingElem;
   renderAxisPanel('x');
   renderAxisPanel('y');
@@ -1558,8 +1580,8 @@ function startAreaDrag(ev, area) {
 
   function move(e) {
     const dxScreen = e.clientX - drag.startX, dyScreen = e.clientY - drag.startY;
-    const dx = dxScreen / frame.scale;
-    const dy = -dyScreen / frame.scale; // screen Y-down vs font Y-up
+    const dx = dxScreen / (frame.scale * zoomLevel);
+    const dy = -dyScreen / (frame.scale * zoomLevel); // screen Y-down vs font Y-up
     const nx = draggableAxes.includes('x') ? drag.origX + dx : origX;
     const ny = draggableAxes.includes('y') ? drag.origY + dy : origY;
     const [w, h] = state.area_sizes[area];
@@ -2295,6 +2317,106 @@ document.getElementById('saveBtn').onclick = async () => {
   dirty = false;
   setStatus(res.ok ? 'saved' : ('save failed: ' + (res.error || '')));
 };
+
+// ---- canvas pan/zoom -------------------------------------------------
+// mirrors jzpbuilder.html: wheel zooms (centered on #viewport, which is
+// transform-origin: center), dragging empty canvas pans by translating
+// #viewport. A drag that never moves past a small threshold still counts
+// as the old "click empty canvas to deselect" behavior.
+
+const ZOOM_MIN = 0.5, ZOOM_MAX = 2, ZOOM_STEP = 1.2, PAN_CLICK_THRESHOLD = 3;
+let panX = 0, panY = 0, zoomLevel = 1;
+
+function applyViewTransform() {
+  document.getElementById('viewport').style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+  document.getElementById('zoomIndicator').textContent = Math.round(zoomLevel * 100) + '%';
+  document.documentElement.style.setProperty('--tagFontScale', String(1 / Math.min(zoomLevel, 1)));
+}
+
+function setZoom(z) {
+  zoomLevel = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  applyViewTransform();
+}
+
+function resetView() { panX = 0; panY = 0; setZoom(1); }
+
+document.getElementById('canvaswrap').addEventListener('wheel', e => {
+  e.preventDefault();
+  setZoom(zoomLevel * (e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP));
+}, { passive: false });
+
+document.getElementById('zoomInBtn').onclick = () => setZoom(zoomLevel * ZOOM_STEP);
+document.getElementById('zoomOutBtn').onclick = () => setZoom(zoomLevel / ZOOM_STEP);
+document.getElementById('zoomResetBtn').onclick = resetView;
+
+let panDrag = null;
+document.getElementById('canvaswrap').addEventListener('pointerdown', e => {
+  const canvaswrap = document.getElementById('canvaswrap');
+  const viewport = document.getElementById('viewport');
+  const frameEl = document.getElementById('frame');
+  if (e.target !== frameEl && e.target !== canvaswrap && e.target !== viewport) return;
+  panDrag = { sx: e.clientX, sy: e.clientY, ox: panX, oy: panY, moved: false };
+  canvaswrap.classList.add('panning');
+  e.preventDefault();
+  window.onpointermove = ev => {
+    if (!panDrag) return;
+    const dx = ev.clientX - panDrag.sx, dy = ev.clientY - panDrag.sy;
+    if (Math.abs(dx) > PAN_CLICK_THRESHOLD || Math.abs(dy) > PAN_CLICK_THRESHOLD) panDrag.moved = true;
+    panX = panDrag.ox + dx; panY = panDrag.oy + dy;
+    applyViewTransform();
+  };
+  window.onpointerup = () => {
+    canvaswrap.classList.remove('panning');
+    if (panDrag && !panDrag.moved) { selArea = null; renderCanvas(); renderBottomPanel(); renderSelAreaPanel(); }
+    panDrag = null;
+    window.onpointermove = null; window.onpointerup = null;
+  };
+});
+
+applyViewTransform();
+
+// ---- panel resizing (drag #sideResizer / #toolsResizer / #bottomResizer) --
+
+function setupResizer(handle, getStart, setSize, min, max, axis, invert) {
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const start = getStart();
+    const startCoord = axis === 'x' ? e.clientX : e.clientY;
+    handle.classList.add('active');
+    function onMove(ev) {
+      const raw = (axis === 'x' ? ev.clientX : ev.clientY) - startCoord;
+      const d = invert ? -raw : raw;
+      setSize(Math.max(min, Math.min(max, start + d)));
+    }
+    function onUp() {
+      handle.classList.remove('active');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}
+
+setupResizer(document.getElementById('sideResizer'),
+  () => document.getElementById('side').getBoundingClientRect().width,
+  w => { document.getElementById('side').style.width = w + 'px'; },
+  150, 600, 'x', false);
+
+setupResizer(document.getElementById('toolsResizer'),
+  () => document.getElementById('toolsPanel').getBoundingClientRect().width,
+  w => { document.getElementById('toolsPanel').style.width = w + 'px'; },
+  240, 700, 'x', true);
+
+setupResizer(document.getElementById('bottomResizer'),
+  () => document.getElementById('bottomPanel').getBoundingClientRect().height,
+  h => { document.getElementById('bottomPanel').style.height = h + 'px'; },
+  120, 600, 'y', true);
+
+setupResizer(document.getElementById('relPanelResizer'),
+  () => document.getElementById('relPanel').getBoundingClientRect().height,
+  h => { document.getElementById('relPanel').style.height = h + 'px'; },
+  60, 600, 'y', false);
 
 load();
 </script>

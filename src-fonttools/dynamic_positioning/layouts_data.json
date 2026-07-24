@@ -417,7 +417,7 @@
           "axis": "x",
           "elem": "zhu",
           "base": "string",
-          "gap": -5
+          "gap": -20
         },
         {
           "axis": "y",
@@ -430,7 +430,7 @@
           "elem": "fy",
           "base": "chord",
           "base_edge": "top",
-          "gap": -300
+          "gap": -200
         },
         {
           "axis": "y",
@@ -470,19 +470,19 @@
           "axis": "y",
           "elem": "jc",
           "base": "hui",
-          "gap": 10
+          "gap": 0
         },
         {
           "axis": "y",
           "elem": "string",
           "base": "jc",
-          "gap": 10
+          "gap": 0
         },
         {
           "axis": "y",
           "elem": "zhu",
           "base": "string",
-          "gap": 10
+          "gap": 456
         },
         {
           "axis": "y",
@@ -553,7 +553,7 @@
           "axis": "x",
           "elem": "bar",
           "base": null,
-          "gap": 500
+          "gap": 0
         },
         {
           "axis": "x",
