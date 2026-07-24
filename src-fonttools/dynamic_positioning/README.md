@@ -51,17 +51,36 @@ declarative data instead of authored per Figma layout.
 
 ## Structure
 
-- `geometry.py` — pure data. `RELATIONSHIPS`: the spatial-adjacency graph
-  for the standard fy/left/hui/jc/zhu/right/string shape (one entry per
-  geometric constraint). `AREA_SIZES`: per-area box sizes. `LAYOUTS`: one
-  entry per distinct *topology* (see below) — this is what `build.py`
-  actually iterates to generate rules.
+- `geometry.py` — pure data, but not a Python literal: `AREA_SIZES`,
+  `CENTER_X`/`CENTER_Y`, and `LAYOUTS` are loaded at import time from
+  `dynamic_positioning/layouts_data.json` (`config.DYNAMIC_LAYOUTS_JSON`),
+  so `tools/jzpbuilder-dynamic.html` (see "Visual editor" below) can edit
+  and save this data without touching Python source. Each `LAYOUTS` entry's
+  `"areas"` is re-attached as the *same shared* `AREA_SIZES` dict object —
+  editing one area's size in the JSON/editor affects every topology that
+  references it. `anchors.py`/`chain.py`/`build.py`/`classes.py` don't care
+  that this is JSON-backed; they only ever read `layout["areas"]`,
+  `layout["relationships"]`, `layout["order"]`, `geometry.CENTER_Y`.
 - `signifiers.py` — ASCII-key ↔ glyph mapping, derived from
   `components.csv` (read-only, via `jzpbuild.data`) plus a small
   supplementary table for glyphs that live outside `components.csv`
   entirely (control glyphs like `blank_bar`). The finest-grained unit this
   module addresses — one step below `config.RIGHT_SELECTORS`' families
-  (e.g. `gou` → `k` for `lg_gou`, `l` for `lg_da`, independently).
+  (e.g. `gou` → `k` for `lg_gou`, `l` for `lg_da`, independently). Also
+  provides `AREA_TO_CSV_COLUMN` (dynamic-positioning area name →
+  `components.csv` area column, e.g. `hui` → `area_hui`, `jc` →
+  `area_mod_jc`) — the single source of truth `identity.py`, `build.py`,
+  and the JS editor all share for "which glyphs can occupy this area."
+- `identity.py` — for one `LAYOUTS` entry, scans its `relationships` for
+  every glyph name any gap override's `"base_signifiers"`/`"elem_signifiers"`
+  lists reference, attributing each to that relationship's own `base`/`elem`
+  **area** directly (no `components.csv` scan needed for this part) and
+  reporting exactly which glyphs of that area are referenced (plus whether a
+  catch-all applies) — see "Gap overrides can key off any area's glyph
+  identity" below. Shared by
+  `classes.py` (class generation) and `build.py` (rule branching) so the
+  two agree by construction on which areas get their own glyph-identity
+  classes.
 - `anchors.py` — `AnchorEngine`: a generic engine that resolves one
   `LAYOUTS` entry's relationships into coordinates. One instance per
   entry (see `build.py`'s `_ENGINES`). No hardcoded area names or
@@ -73,15 +92,21 @@ declarative data instead of authored per Figma layout.
   centered on `geometry.CENTER_Y` regardless of which optional elements
   are present.
 - `classes.py` — generates one FEA glyph class per (family, key)
-  signifier (e.g. `@area_right__gou__lg_gou` vs `@area_right__gou__lg_da`),
-  separate from `jzpbuild/features.py`'s shared per-*family* classes.
+  signifier for the **pivot** area (e.g. `@area_right__gou__lg_gou` vs
+  `@area_right__gou__lg_da`), separate from `jzpbuild/features.py`'s
+  shared per-*family* classes — plus, via `gen_area_glyph_classes()`, one
+  class per (layout, area, glyph) any *non-pivot* area's gap override
+  references, and a catch-all "every other glyph in this area" class when
+  a catch-all override is declared (see `identity.py` above).
 - `build.py` — drives everything off `geometry.LAYOUTS`: for each entry,
   for each key in its `selector.contains`, enumerates every optional-
-  element presence-combination, generates one literal `pos` rule per
-  (combination, positioned element) pair with the value computed by
-  `chain.py`, sorts most-specific-first, and adds the explicit "blocker"
-  rule that keeps `area_fy`'s positioning from leaking into words this
-  module doesn't cover.
+  element presence-combination, and — for each present non-pivot area
+  `identity.py` flags as glyph-identity-sensitive — further branches over
+  that area's declared glyph buckets (see below), generates one literal
+  `pos` rule per (combination, bucket-choice, positioned element) pair
+  with the value computed by `chain.py`, sorts most-specific-first, and
+  adds the explicit "blocker" rule that keeps `area_fy`'s positioning from
+  leaking into words this module doesn't cover.
 
 ## `geometry.LAYOUTS`: one entry per topology
 
@@ -165,15 +190,40 @@ relationship genuinely needs the other edge (`anchors.py::anchor()`).
 `base=None` means "no dependency" — `gap` is then the literal absolute
 default value directly, not a relative offset.
 
-`gap` shape: a plain number (same for every signifier), or an ordered
-list of `{"signifiers": [<key>, ...], "value": <number>}` overrides, with
-an optional trailing entry that omits `"signifiers"` as a catch-all. A
-specific signifier match always wins over the catch-all, regardless of
-declaration order (`anchors.resolve_gap`). **`"signifier"` is an ASCII
-key** (`"k"`, `"l"`, `"U"`, ...) from `signifiers.py`, not a glyph name —
-this is what lets `lg_gou` (`"k"`) and `lg_da` (`"l"`) get
-independently-tuned values instead of being forced to share one, unlike
-classic's own per-*family* (not per-glyph) granularity.
+`gap` shape: a plain number (same regardless of glyph identity), or an
+ordered list of override entries `{"base_signifiers": [...],
+"elem_signifiers": [...], "value": <number>}` (either or both signifier
+keys omittable), evaluated **first-match-wins in list order** — not "most
+specific wins": an entry with neither key is an unconditional catch-all
+and must be placed last by the author, nothing enforces that ordering
+(`anchors.resolve_gap`). **Signifier entries are literal `components.csv`
+`glyph_name` values** (`"lg_gou"`, `"lg_da"`, `"md_5"`, ...), not ASCII
+keys — `glyph_name` is unique per row by construction, unlike
+`keys`/`latin`, which can collide across areas (e.g. `"0"` means both
+`md_san` in `area_hui` and `md_san2` in `area_char`).
+
+`"base_signifiers"` matches the relationship's own `base` area's glyph;
+`"elem_signifiers"` matches its `elem` area's glyph — independent
+conditions, so one entry can constrain either side alone, or both at once
+for a genuine conjunction (e.g. "only when `hui` is `md_9` **and**
+`right` is `lg_gou`"). This is what lets `lg_gou` and `lg_da` get
+independently-tuned values instead of being forced to share one (classic's
+own per-*family*, not per-glyph, granularity) — and, since either key can
+name a glyph from any area the relationship touches, not just the pivot's,
+it's also what lets e.g. a `jc`↔`hui` relationship's gap vary by which
+specific `area_hui` glyph is present (via `base_signifiers`, since `hui`
+is that relationship's `base`). See "Gap overrides can key off any area's
+glyph identity" below for the general mechanism, and `resolve_gap`'s
+docstring for the exact matching rule.
+
+(This is a rename/split of an earlier flat `"signifiers"` field, which
+matched against every glyph present anywhere in the word regardless of
+which area it belonged to or which side of the relationship it was
+conceptually on — functionally equivalent for every override that existed
+under that scheme, since each one only ever referenced glyphs from
+strictly the base or strictly the elem side, but it couldn't express a
+conjunction across both, and "which side does this glyph belong to" was
+inferred by scanning `components.csv` rather than being explicit.)
 
 Most numeric gap values in `RELATIONSHIPS` are placeholders (an explicit
 decision to prioritize getting the engine's shape right over re-deriving
@@ -343,6 +393,184 @@ earlier version of this code did) produced a `FeatureLibError: Unexpected
 character: '|'` at compile time. Glyph names in this pipeline are always
 identifier-safe; ASCII keys aren't guaranteed to be.
 
+## Gap overrides can key off any area's glyph identity, not just the pivot
+
+Originally, `resolve_gap`/`chain.resolve` took a single `signifier: str` (the
+word's technique key) — so a relationship's gap could only ever vary by
+*which technique glyph* the word used, never by any other area's own
+identity. This was a real limitation: e.g. `jc`↔`hui`'s gap couldn't depend
+on which specific `area_hui` glyph (`md_5` vs `md_9` vs...) was actually
+present, because `hui`'s specific glyph was never threaded through the
+resolver at all — every non-pivot area collapsed to one generic
+`@area_{name}` FEA class regardless of which glyph occupied it.
+
+This is now generalized: `chain.resolve` takes `present_glyphs: dict[str,
+str]` — {area: glyph} for every area whose specific glyph identity is
+pinned down in one specific rule-generation variant of a word (the pivot's
+own area -> its own glyph, plus whichever other areas' specific glyphs are
+pinned down for that variant). Per relationship, `chain.resolve` looks up
+`present_glyphs.get(rel["base"])` and `present_glyphs.get(elem)` and passes
+both into `anchors.anchor`/`resolve_gap` as `base_glyph`/`elem_glyph` --
+`resolve_gap` then matches a gap-override entry's `base_signifiers` against
+`base_glyph` and its `elem_signifiers` against `elem_glyph`, independently
+(see the `gap` shape section above). This unifies technique-based overrides
+and any-other-area overrides under one mechanism, and additionally supports
+a genuine conjunction across both sides in a single entry (something a flat
+signifier-set match could never express).
+
+**Efficiency insight (why this doesn't blow up combinatorially):**
+`build.py` only branches, per identity-sensitive area, over the **distinct
+glyph names actually referenced by that layout's own gap overrides** (via
+`identity.area_glyph_buckets`) plus one grouped "every other glyph in this
+area" catch-all bucket (`classes.area_glyph_other_token`) — **not** one
+rule per literal glyph the area could ever contain (which could be ~20 for
+`area_hui`). The explicit-glyph classes and the "other" class are always a
+strict partition of the area's full glyph set (disjoint, covering
+everything), so there's no FEA rule-ordering ambiguity between them: a real
+shaped word matches exactly one, regardless of emission order. (Note that if
+all possible glyphs in the area are already explicitly covered by the overrides,
+the catch-all 'other' class would be empty. To prevent compiling empty classes,
+which `fontTools` rejects with a `FeatureLibError`, the compiler automatically
+skips generating the 'other' class and its corresponding rule branches in this case.)
+
+If an area's gap override has **no** catch-all entry, only the explicitly-
+listed glyphs get branched — a real word with that area present but
+occupied by some other, unlisted glyph will fail to resolve for that
+relationship at build time (a `KeyError`, same as any other missing gap
+coverage — see "Fully generic dependency-graph resolver" above). This is by
+design (an authoring gap to fix, not a silent fallback), same as this
+module's existing `string_top`/`string_bottom` catch-all-less overrides.
+
+`selector.contains` (which ASCII keys route a word to a `LAYOUTS` entry at
+all) was deliberately **not** converted to glyph names alongside this — it
+lives in a different, unambiguous domain (technique keys only, already
+1:1 with glyphs via `KEY_TO_GLYPH`, no cross-area collision risk the way
+raw `keys`/`latin` values have), and keeping it as short ASCII keys is
+significantly more readable for authors and for `tools/jzpbuilder-
+dynamic.html`'s UI than the equivalent glyph names would be.
+
+## Visual editor and JSON sidecar
+
+`dynamic_positioning/layouts_data.json` (loaded by `geometry.py`, see
+"Structure" above) is editable directly, but the intended workflow is
+`tools/jzpbuilder-dynamic.html` (served via `python3 -m
+jzpbuild.devserver`, alongside the classic pipeline's `jzpbuilder.html`).
+It renders one `LAYOUTS` entry's areas as boxes — positions always computed
+by POSTing the in-browser (possibly unsaved) editing state to the
+devserver's `/api/dynamic/resolve`, which calls the *real*
+`anchors.AnchorEngine`/`chain.resolve`, never a JS reimplementation — and
+supports: editing relationships via click-to-select edges (axis-constrained:
+left/right edges only pair with left/right, top/bottom only with top/bottom);
+dragging to reposition (back-computes the gap) or resize an area (shared
+`area_sizes`, so a resize in one layout's view affects every layout that
+references that area); per-layout drag-to-reorder + optional/pivot/visibility
+controls for `order`; a **leaves** list (below the order list) for areas the
+current layout's `relationships` reference but that have no `order` entry at
+all — e.g. `string_top`/`string_bottom`, or `chord_left`'s `zhu` — computed
+purely by diffing relationship-referenced areas against `order`, nothing in
+the JSON marks a leaf explicitly; drag one up into the order list to give it
+a real opt/pivot entry, or toggle its preview-only visibility with the eye
+icon (doesn't touch `resolve`/the build, purely what `renderCanvas` draws);
+and a **Relationship panel**, described in its own section below.
+
+Clicking an area opens the Relationship panel for every relationship this
+layout declares with that area as `elem` — across every axis and every
+candidate `base`, not just whichever one the resolver currently has active.
+It reopens the same way from clicking a measurement label on canvas, which
+additionally pre-selects that exact relationship.
+
+### The Relationship panel
+
+The panel is split into two independent side-by-side sections, **X axis**
+and **Y axis** (an area with declared relationships on only one axis — most
+leaves — only shows that one section). Each section is entirely
+self-contained: its own tab strip, its own rule editor, its own "matches
+rule N of M" status line. Switching the X tab never disturbs the Y
+selection or vice versa.
+
+- **Tabs** — one per candidate `base` on that axis (`root`/`fy`/`hui`/`left`
+  for `jc`'s Y axis, say), but only the ones actually reachable right now
+  are shown: `reachableTabs()` reuses `lastChosen[elem][axis]` — the exact
+  same value `findActiveRelationshipsForArea`'s dimension-line drawing
+  already keys off, not a JS re-derivation of chain.py's tie-break rules —
+  so only the literal base the resolver picked gets a tab; a
+  root/lower-priority candidate that's currently shadowed doesn't appear
+  (its rule set is still editable, just not surfaced as a tab, until it
+  becomes the actual winner). Re-opening the panel for the *same* area (a
+  drag's trailing click included — see below) leaves each axis's selected
+  tab alone; only switching to a different area, or clicking a specific
+  measurement label, changes the selection.
+- **Rules** render as `if [base chip(s)] and [elem chip(s)] then gap is [ ]`
+  — the closed chip box shows the actual selected glyphs' icons (or
+  `(any)` when that side is unconstrained); clicking it opens a checkbox
+  list to edit the rule's condition. A trailing bucket with neither side
+  constrained renders instead as `for all other cases, gap is: [ ]` — this
+  row is optional (`+ add catch-all (else)`) and removable, since some
+  relationships (`string_top`/`string_bottom`) intentionally have no
+  catch-all. `+ add rule` always inserts before a trailing catch-all, never
+  after (first-match-wins would make a rule appended after one unreachable).
+- **Preview / "active rule" highlighting** — whichever rule the *current*
+  preview glyphs actually resolve to (mirroring `anchors.resolve_gap`
+  exactly, computed in JS by `activeBucketIndex`) is outlined and badged
+  `ACTIVE`, with a status line underneath (`matches rule 2 of 4 → gap
+  -400`, or an explicit "no rule matches" for a leaf-style relationship
+  with no catch-all). **Clicking a rule row pins a matching glyph combo for
+  both sides**, making it the active one so its gap is immediately visible
+  on canvas — no more hunting down which chips to click by hand. Clicking
+  the same row again cycles to the *next* combo in that rule's base×elem
+  cross product (`comboAt`) rather than re-picking randomly, so repeated
+  clicks walk every legal combination on purpose. Clicking the catch-all
+  row does the equivalent for it specifically (`previewCatchAll`): since a
+  rule can be dodged through either side alone (an unconstrained side can
+  never be dodged), it brute-forces the base×elem cross product against
+  every earlier rule and cycles only through combos that actually reach
+  the catch-all — a no-op if every combo is already claimed above it.
+- There's no separate "preview as" selector anymore — clicking a glyph
+  chip directly *is* the preview control, for any area (pivot or not).
+
+### Single glyph-identity source of truth (`assign`)
+
+Every area's "what glyph is this right now" — for canvas rendering *and*
+for gap-rule matching *and* for what's sent to `/api/dynamic/resolve` as
+`area_glyphs` — is `assign` (the same dict the bottom candidate-list picker
+writes) for every non-pivot area, and additionally kept in sync with the
+Signifier dropdown's `signifierByLayout` for the pivot area specifically
+(`glyphForArea`/`pinGlyph`). This used to be two separate dicts
+(`assign` for rendering, a since-removed `areaGlyphByLayout` for matching)
+that could silently diverge — e.g. the bottom candidate list would update
+what's drawn without updating what the gap math keyed on, so a rule could
+look "active" while the canvas showed a different gap, or vice versa. Every
+code path that can set an area's glyph (candidate-list clicks, rule-row
+chip clicks, "Test random components", the Signifier dropdown) now goes
+through the same sync point, pivot included.
+
+`fillCurrentLayoutRandom` ("Test random components") and the bottom
+candidate list both source from `legalCandidatesForArea`, not raw
+`csvCandidatesForArea` — for the **pivot** area, `components.csv`'s
+`area_right`/`area_chord` column is shared across every layout with that
+kind of pivot, so an unrestricted pick could land on a technique glyph
+that belongs to a *different* layout entirely (e.g. `lg_fanqi` showing up
+as a "legal" `default_jzp` `right` candidate). `legalCandidatesForArea`
+intersects with the current layout's own `selector.contains` for the
+pivot; every other area is unaffected. `relSignifierCandidatesForArea`
+(the rule-editor chip source) goes through the same restriction.
+
+`/api/dynamic/resolve` requests aren't cancelled or sequenced — any editor
+action that changes preview state fires a fresh overlapping `fetch`, and
+nothing stopped an older, still-in-flight request's response from landing
+*after* a newer one's and silently overwriting `lastResolved` with stale
+data (visible as: the Relationship panel's status line shows the right
+number, but the canvas boxes don't reflect it). `resolveAndRender` now
+tags each call with a monotonic `resolveSeq` and discards a response if a
+newer call has since started.
+
+### Interactive Dimension Lines & Real-Time Updates
+* **Selected Element Dimension Lines:** Selecting an element shows red dimension lines (`stroke="#d93838"`) for all active relationships connecting to it (as either `elem` or `base`). 
+* **Margin Positioning & Staggering:** Dimension lines are drawn outside the white frame boundary (X-axis measurements sit at the bottom; Y-axis measurements sit to the left in the gray wrap area). If the selected element has multiple active relationships on the same axis, the lines are staggered sequentially (offset by `40px` per step) to stay side-by-side.
+* **Overlap Protection:** When adjacent labels are too close (such as when the gap distance is `0`), a collision resolver shifts the base name, element name, and gap value tags vertically/horizontally to ensure they never overlap or run together.
+* **Real-time Drag updates:** Dragging an area to reposition it computes the relative gap values and updates the model dynamically, redrawing the red dimension lines and numbers — and, if the Relationship panel is open on the relationship being dragged, its `gap:` input — in real time as you drag, not just on mouseup.
+* **Visibility-aware constraints:** Toggling an optional element off/on (using the eye icons in the order panel) recalculates active relationships based on the resolver's actual execution path (`lastChosen`), updating the shown dimension lines dynamically (e.g. linking `E` directly to `A` if `B, C, D` are hidden, or linking `E` to `D` when they are visible). The Relationship panel's tab visibility (above) reuses this exact same `lastChosen` data, so a tab and its dimension line agree on what's currently reachable by construction.
+
 ## cuo: current status (incomplete, read before relying on it)
 
 `chord_left` (`C`/`DC`/`FC`/`TT`) and `chord_right` (`|`) are early,
@@ -405,10 +633,12 @@ As of this session, `jzpbuild/genfea.py` imports `RIGHT_KEYS` from
 `geometry.RIGHT_KEYS` alone would silently no-op). Adding a family to
 `RIGHT_KEYS` now genuinely is close to a one-line change, plus:
 
-- A `{"signifiers": [...], "value": ...}` entry for that family's keys on
-  any `RELATIONSHIPS` row that's genuinely signifier-specific (currently
-  just `right`-attaches-to-`jc`) — missing this raises `KeyError` the
-  first time that signifier/combination is hit, not silently.
+- A `{"elem_signifiers": [...], "value": ...}` entry (glyph names, e.g.
+  `"lg_mo"`, not ASCII keys — `elem_signifiers` since `right` is that
+  relationship's `elem`) for that family's glyphs on any `RELATIONSHIPS`
+  row that's genuinely signifier-specific (currently
+  `right`-attaches-to-`jc`) — missing this raises `KeyError` the first
+  time that signifier/combination is hit, not silently.
 - `signifiers.keys_for(family)` already works for any family in
   `config.RIGHT_SELECTORS` with `area_right`-tagged `components.csv` rows
   — no separate registration needed there.

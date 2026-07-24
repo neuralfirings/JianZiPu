@@ -39,14 +39,21 @@ Small JSON routes on top of static file serving:
                        config.DYNAMIC_LAYOUTS_JSON (same shape as the GET
                        above).
   POST /api/dynamic/resolve -> body: {area_sizes, center_x, center_y, layout,
-                       present, signifier}. Resolves absolute (x, y) for
-                       `layout` (one geometry.LAYOUTS-shaped dict, `areas` is
-                       filled in from `area_sizes`) using the REAL
-                       dynamic_positioning.anchors.AnchorEngine +
-                       dynamic_positioning.chain.resolve — this is
+                       present, signifier_glyph, area_glyphs}. Resolves
+                       absolute (x, y) for `layout` (one geometry.LAYOUTS-
+                       shaped dict, `areas` is filled in from `area_sizes`)
+                       using the REAL dynamic_positioning.anchors.AnchorEngine
+                       + dynamic_positioning.chain.resolve — this is
                        jzpbuilder-dynamic.html's only way to compute box
                        positions, so the preview can never drift from what an
-                       actual font build produces. Returns
+                       actual font build produces. `signifier_glyph` is the
+                       pivot's own glyph (a legacy ASCII-key `signifier` is
+                       still accepted and resolved via signifiers.KEY_TO_GLYPH
+                       for backward compatibility); `area_glyphs` is an
+                       optional {area: glyph} map for previewing a specific
+                       glyph-identity bucket of any OTHER area's gap override
+                       (e.g. area_hui's md_5) — see
+                       dynamic_positioning/identity.py. Returns
                        {ok, resolved: {area: [x, y]}, chosen: {area: {axis:
                        base_or_null}}} on success (`chosen` identifies, per
                        resolved area/axis, which relationship candidate
@@ -104,7 +111,19 @@ class Handler(SimpleHTTPRequestHandler):
             })
             return
         if self.path == "/api/dynamic/data":
-            self._send_json(200, json.loads(config.DYNAMIC_LAYOUTS_JSON.read_text()))
+            from dynamic_positioning import signifiers
+            data = json.loads(config.DYNAMIC_LAYOUTS_JSON.read_text())
+            # key_to_glyph isn't part of the saved sidecar (it's derived from
+            # components.csv, not editable layout geometry) — merged in only
+            # for the response, so jzpbuilder-dynamic.html can restrict a
+            # layout's pivot-area candidates to its selector.contains keys.
+            data["key_to_glyph"] = signifiers.KEY_TO_GLYPH
+            # area -> components.csv area column, so jzpbuilder-dynamic.html
+            # can look up any area's own candidate glyphs (e.g. area_hui's
+            # md_5/md_9) for gap-override signifier chips, instead of
+            # hardcoding its own copy of this mapping.
+            data["area_to_csv_column"] = signifiers.AREA_TO_CSV_COLUMN
+            self._send_json(200, data)
             return
         super().do_GET()
 
@@ -168,23 +187,40 @@ class Handler(SimpleHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_json(400, {"ok": False, "error": "invalid JSON body"})
                 return
-            from dynamic_positioning import anchors, chain, geometry
+            from dynamic_positioning import anchors, chain, geometry, signifiers
 
             layout = dict(payload.get("layout") or {})
             layout["areas"] = {k: tuple(v) for k, v in (payload.get("area_sizes") or {}).items()}
             present = payload.get("present") or {}
-            signifier = payload.get("signifier")
+            # `signifier_glyph`: the pivot's own glyph (preferred -- what the
+            # frontend should send now). `signifier`: an ASCII key, kept for
+            # backward compatibility with the pre-generalization payload
+            # shape, resolved to a glyph the same way build.py does.
+            # `area_glyphs`: {area: glyph} for previewing a specific bucket
+            # of any other identity-sensitive area's gap override (e.g.
+            # area_hui's md_5) -- see dynamic_positioning/identity.py.
+            signifier_glyph = payload.get("signifier_glyph")
+            if not signifier_glyph and payload.get("signifier"):
+                signifier_glyph = signifiers.KEY_TO_GLYPH.get(payload["signifier"])
+            area_glyphs = payload.get("area_glyphs") or {}
 
             prev_center = (geometry.CENTER_X, geometry.CENTER_Y)
             geometry.CENTER_X = payload.get("center_x", prev_center[0])
             geometry.CENTER_Y = payload.get("center_y", prev_center[1])
             try:
                 engine = anchors.AnchorEngine(layout)
+                # {area: glyph} -- the pivot's own area gets signifier_glyph
+                # (a legacy caller might send an area_glyphs entry for the
+                # pivot area directly instead; signifier_glyph wins if both
+                # are present, since it's the more specific/intentional one).
+                present_glyphs = dict(area_glyphs)
+                if signifier_glyph:
+                    present_glyphs[engine.pivot] = signifier_glyph
                 flat_optional = set(engine.flat_optional)
                 always_present = engine.declared_elems - flat_optional
                 to_resolve = {e for e in flat_optional if present.get(e)} | always_present
                 chosen = chain._choose_relationships(engine, present, to_resolve)
-                resolved = chain.resolve(engine, present, signifier)
+                resolved = chain.resolve(engine, present, present_glyphs)
             except (KeyError, ValueError) as e:
                 self._send_json(200, {"ok": False, "error": str(e)})
                 return

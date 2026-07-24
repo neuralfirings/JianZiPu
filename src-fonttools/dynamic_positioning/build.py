@@ -44,7 +44,7 @@ import itertools
 
 from jzpbuild import config
 
-from . import anchors, chain, classes, geometry, signifiers
+from . import anchors, chain, classes, geometry, identity, signifiers
 
 _ENGINES = {layout["name"]: anchors.AnchorEngine(layout) for layout in geometry.LAYOUTS}
 
@@ -76,14 +76,34 @@ class _Rule:
         return "  pos " + " ".join(parts) + ";"
 
 
+def _identity_choices(present: dict[str, bool],
+                       buckets: dict[str, dict[str, object]]) -> list[dict[str, str | None]]:
+    """One dict per combination of concrete glyph-bucket choices for whichever
+    identity-sensitive areas (`buckets`, see identity.area_glyph_buckets) are
+    actually present in this combo. A value of `None` means "the catch-all
+    bucket" -- present_glyphs gets nothing added for that area, so
+    resolve_gap naturally falls through to the catch-all entry. Areas not
+    present, or with no bucket at all, aren't iterated -- their token stays
+    the generic `@area_{name}` (see _signifier_rules' `token()`)."""
+    axes = [(area, list(bucket["glyphs"]) + ([None] if bucket["catch_all"] else []))
+            for area, bucket in buckets.items() if present.get(area)]
+    if not axes:
+        return [{}]
+    return [dict(zip((a for a, _ in axes), combo))
+            for combo in itertools.product(*(opts for _, opts in axes))]
+
+
 def _signifier_rules(family: str, key: str) -> list[_Rule]:
     engine = _engine_for_key(key)
     rules: list[_Rule] = []
     right_token = classes.signifier_token(family, key)
+    right_glyph = signifiers.KEY_TO_GLYPH[key]
     flat_optional = engine.flat_optional
-
-    def token(area: str) -> str:
-        return right_token if area == engine.pivot else f"@area_{area}"
+    # Which non-pivot areas this layout's own gap overrides reference by
+    # glyph identity (e.g. area_hui's md_5/md_9) -- see identity.py. Areas
+    # not referenced here never branch below; `token()` stays generic for
+    # them exactly as before this feature existed.
+    buckets = identity.area_glyph_buckets({"relationships": engine.relationships})
 
     for combo in itertools.product((True, False), repeat=len(flat_optional)):
         present = dict(zip(flat_optional, combo))
@@ -93,62 +113,90 @@ def _signifier_rules(family: str, key: str) -> list[_Rule]:
         # nothing here assumes either) plus whichever optional elements
         # are present, all in engine.order's declared order.
         seq = [e["area"] for e in engine.order if not e["optional"] or present.get(e["area"])]
-        positions = chain.resolve(engine, present, key)
         pivot_i = seq.index(engine.pivot)
         before, after = seq[:pivot_i], seq[pivot_i + 1:]
 
-        # Elements BEFORE the pivot chain together (each attaches to
-        # whichever preceded it), with lookahead always ending in
-        # right_token -- that's the scoping mechanism (ensures these only
-        # ever match words that actually contain THIS signifier, not some
-        # other family's word that happens to share the same fy/left/hui/
-        # jc glyphs -- see module docstring).
-        for i, area in enumerate(before):
-            backtrack = [token(e) for e in before[:i]]
-            lookahead = [token(e) for e in before[i + 1:]] + [right_token]
-            x, y = positions[area]
-            rules.append(_Rule(backtrack, token(area), x, y, lookahead))
+        # For each present identity-sensitive area, branch over its
+        # declared glyph buckets (plus catch-all if any) -- e.g. if `hui`
+        # is present and its own glyph affects some gap, generate one full
+        # rule-set variant per hui glyph bucket, each requiring that
+        # bucket's specific class (disjoint from every other bucket for
+        # the same area -- see classes.area_glyph_token/
+        # area_glyph_other_token) instead of the generic `@area_hui`. No
+        # FEA rule-ordering concern between these variants: the classes
+        # partition the area's glyphs, so a real word only ever matches
+        # exactly one of them.
+        for identity_choice in _identity_choices(present, buckets):
+            present_glyphs = {engine.pivot: right_glyph}
+            present_glyphs.update({a: g for a, g in identity_choice.items() if g is not None})
 
-        # The pivot itself: backtrack is whatever preceded it in this
-        # combo; NO lookahead requirement. Its own value never depends on
-        # what (if anything) follows -- requiring something to follow
-        # would wrongly exclude the valid "nothing after the pivot at
-        # all" case (e.g. a bare right-hand glyph with no string).
-        pivot_backtrack = [token(e) for e in before]
-        x, y = positions[engine.pivot]
-        rules.append(_Rule(pivot_backtrack, right_token, x, y, []))
+            def token(area: str, _choice=identity_choice) -> str:
+                if area == engine.pivot:
+                    return right_token
+                if area in _choice:
+                    glyph = _choice[area]
+                    if glyph is None:
+                        return classes.area_glyph_other_token(engine.name, area)
+                    return classes.area_glyph_token(engine.name, area, glyph)
+                return f"@area_{area}"
 
-        # Elements AFTER the pivot (leaves: string, and anything future
-        # topologies add here) each independently attach right after
-        # whatever precedes them. Scoping already comes from right_token
-        # sitting in their backtrack (the pivot precedes them) -- no
-        # lookahead requirement needed on top of that, so each one is
-        # independent of whichever others do or don't follow it.
-        running_backtrack = pivot_backtrack + [right_token]
-        for area in after:
-            x, y = positions[area]
-            rules.append(_Rule(running_backtrack, token(area), x, y, []))
+            positions = chain.resolve(engine, present, present_glyphs)
 
-            # li's double-string case: string_top/string_bottom ride along
-            # in the SAME sequence slot "string" occupies (variants of the
-            # same leaf, deliberately not separate entries in `order` --
-            # see geometry.py). Emitted alongside (not instead of) the
-            # generic "string" rule above -- li words can use either.
-            # Their own paired backtrack/lookahead (string_bottom requires
-            # string_top immediately before it) is a real rule-matching
-            # coordination between the two, not a generic independent-leaf
-            # case, so it's special-cased here. Whether string_top/
-            # string_bottom actually show up in `positions` for THIS
-            # signifier at all IS the "is this signifier double-string"
-            # signal (see chain.resolve's docstring) -- no separate flag.
-            if area == "string" and "string_top" in positions and "string_bottom" in positions:
-                top_x, top_y = positions["string_top"]
-                bottom_x, bottom_y = positions["string_bottom"]
-                rules.append(_Rule(running_backtrack, "@area_string_top", top_x, top_y,
-                                    ["@area_string_bottom"]))
-                rules.append(_Rule(running_backtrack + ["@area_string_top"], "@area_string_bottom",
-                                    bottom_x, bottom_y, []))
-            running_backtrack = running_backtrack + [token(area)]
+            # Elements BEFORE the pivot chain together (each attaches to
+            # whichever preceded it), with lookahead always ending in
+            # right_token -- that's the scoping mechanism (ensures these
+            # only ever match words that actually contain THIS signifier,
+            # not some other family's word that happens to share the same
+            # fy/left/hui/jc glyphs -- see module docstring).
+            for i, area in enumerate(before):
+                backtrack = [token(e) for e in before[:i]]
+                lookahead = [token(e) for e in before[i + 1:]] + [right_token]
+                x, y = positions[area]
+                rules.append(_Rule(backtrack, token(area), x, y, lookahead))
+
+            # The pivot itself: backtrack is whatever preceded it in this
+            # combo; NO lookahead requirement. Its own value never depends
+            # on what (if anything) follows -- requiring something to
+            # follow would wrongly exclude the valid "nothing after the
+            # pivot at all" case (e.g. a bare right-hand glyph with no
+            # string).
+            pivot_backtrack = [token(e) for e in before]
+            x, y = positions[engine.pivot]
+            rules.append(_Rule(pivot_backtrack, right_token, x, y, []))
+
+            # Elements AFTER the pivot (leaves: string, and anything
+            # future topologies add here) each independently attach right
+            # after whatever precedes them. Scoping already comes from
+            # right_token sitting in their backtrack (the pivot precedes
+            # them) -- no lookahead requirement needed on top of that, so
+            # each one is independent of whichever others do or don't
+            # follow it.
+            running_backtrack = pivot_backtrack + [right_token]
+            for area in after:
+                x, y = positions[area]
+                rules.append(_Rule(running_backtrack, token(area), x, y, []))
+
+                # li's double-string case: string_top/string_bottom ride
+                # along in the SAME sequence slot "string" occupies
+                # (variants of the same leaf, deliberately not separate
+                # entries in `order` -- see geometry.py). Emitted alongside
+                # (not instead of) the generic "string" rule above -- li
+                # words can use either. Their own paired backtrack/
+                # lookahead (string_bottom requires string_top immediately
+                # before it) is a real rule-matching coordination between
+                # the two, not a generic independent-leaf case, so it's
+                # special-cased here. Whether string_top/string_bottom
+                # actually show up in `positions` for THIS signifier at
+                # all IS the "is this signifier double-string" signal (see
+                # chain.resolve's docstring) -- no separate flag.
+                if area == "string" and "string_top" in positions and "string_bottom" in positions:
+                    top_x, top_y = positions["string_top"]
+                    bottom_x, bottom_y = positions["string_bottom"]
+                    rules.append(_Rule(running_backtrack, "@area_string_top", top_x, top_y,
+                                        ["@area_string_bottom"]))
+                    rules.append(_Rule(running_backtrack + ["@area_string_top"], "@area_string_bottom",
+                                        bottom_x, bottom_y, []))
+                running_backtrack = running_backtrack + [token(area)]
 
     return rules
 
@@ -210,6 +258,7 @@ def gen_dynamic_gpos(layouts: dict, right_keys: tuple[str, ...] = geometry.RIGHT
 
     lines = ["# --- dynamic_positioning: per-signifier word positioning (literal, geometry-derived) ---"]
     lines += classes.gen_signifier_classes()
+    lines += classes.gen_area_glyph_classes()
     lines += class_lines
     lines.append("lookup dynamic_pos {")
     lines += [r.render() for r in rules]

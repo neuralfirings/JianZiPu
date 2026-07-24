@@ -22,26 +22,43 @@ _AXIS_INFO = {
 }
 
 
-def resolve_gap(gap, signifier: str | None) -> float:
-    """`gap` is either a plain number (same for every signifier), or an
-    ordered list of {"signifiers": [...], "value": N} overrides, optionally
-    ending in a catch-all entry with no "signifiers" key. A specific
-    signifier match always wins over the catch-all, regardless of
-    declaration order."""
+def resolve_gap(gap, base_glyph: str | None, elem_glyph: str | None) -> float:
+    """`gap` is either a plain number (same regardless of glyph identity), or
+    an ordered list of override entries, each shaped
+    {"base_signifiers": [...], "elem_signifiers": [...], "value": N} (either
+    or both keys omittable), evaluated FIRST-MATCH-WINS in list order (not
+    "most specific wins" -- authoring is responsible for ordering specific
+    entries before any catch-all, same as everywhere else in this codebase
+    that says "first-declared wins"). An entry matches if every signifier
+    key it declares is satisfied: `base_glyph in entry["base_signifiers"]`
+    (if that key is present) AND `elem_glyph in entry["elem_signifiers"]`
+    (if that key is present) -- so an entry can condition on the
+    relationship's `base` area's own glyph identity, its `elem` area's own
+    glyph identity, both at once (a genuine conjunction, e.g. "only when
+    base is md_9 AND elem is md_bar"), or neither (an unconditional
+    catch-all, matches regardless of base_glyph/elem_glyph -- put these
+    last in the list, nothing enforces the ordering for you).
+
+    `base_glyph`/`elem_glyph` are the literal glyph names (components.csv's
+    glyph_name column) actually present for the relationship's `base`/`elem`
+    areas in this specific word/rule variant, or None if that area's
+    identity isn't pinned down in this variant (e.g. axis has no base, or
+    the area isn't glyph-identity-sensitive here) -- an entry that declares
+    a signifier key for an unpinned side simply never matches."""
     if isinstance(gap, (int, float)):
         return gap
     if not isinstance(gap, list):
         raise TypeError(f"unrecognized gap shape: {gap!r}")
-    catch_all = None
     for entry in gap:
-        sigs = entry.get("signifiers")
-        if sigs is None:
-            catch_all = entry["value"]
-        elif signifier is not None and signifier in sigs:
-            return entry["value"]
-    if catch_all is not None:
-        return catch_all
-    raise KeyError(f"no gap override matches signifier={signifier!r} in {gap!r}")
+        base_sigs = entry.get("base_signifiers")
+        if base_sigs is not None and base_glyph not in base_sigs:
+            continue
+        elem_sigs = entry.get("elem_signifiers")
+        if elem_sigs is not None and elem_glyph not in elem_sigs:
+            continue
+        return entry["value"]
+    raise KeyError(
+        f"no gap override matches base_glyph={base_glyph!r} elem_glyph={elem_glyph!r} in {gap!r}")
 
 
 class AnchorEngine:
@@ -119,7 +136,7 @@ class AnchorEngine:
         info = _AXIS_INFO[axis]
         return self.areas[area][info["size_index"]] if edge == info["far_edge"] else 0
 
-    def anchor(self, rel: dict, signifier: str | None = None) -> float:
+    def anchor(self, rel: dict, base_glyph: str | None = None, elem_glyph: str | None = None) -> float:
         """The offset (along rel['axis']) from `base`'s own near-edge
         origin to `elem`'s own near-edge origin, such that `elem`'s
         `elem_edge` (default: the axis's FAR edge -- top for y, right for
@@ -129,22 +146,28 @@ class AnchorEngine:
         ("top"/"bottom" for y, "left"/"right" for x) if you want to write
         the default out instead of relying on it. Meaningless when
         rel['base'] is None -- use `default` on the root relationship
-        directly for that case (see chain.py)."""
+        directly for that case (see chain.py). `base_glyph`/`elem_glyph`
+        are this relationship's `base`/`elem` areas' own specific glyph in
+        the current word/rule variant, or None if unpinned -- see
+        resolve_gap."""
         axis = rel["axis"]
         info = _AXIS_INFO[axis]
         elem, base = rel["elem"], rel["base"]
         base_edge = rel.get("base_edge", info["near_edge"])
         elem_edge = rel.get("elem_edge", info["far_edge"])
         base_span = self.edge_span(axis, base, base_edge)
-        gap = resolve_gap(rel["gap"], signifier)
+        gap = resolve_gap(rel["gap"], base_glyph, elem_glyph)
         target_local = base_span + gap  # position of elem's chosen edge, in base's local coords
         elem_size = self.areas[elem][info["size_index"]]
         # convert from "elem's chosen edge position" to "elem's own
         # near-edge-origin position"
         return target_local - elem_size if elem_edge == info["far_edge"] else target_local
 
-    def default(self, axis: str, elem: str, signifier: str | None = None) -> float:
+    def default(self, axis: str, elem: str, elem_glyph: str | None = None) -> float:
         """elem's own near-edge-origin position along `axis` when it has no
-        base at all (root default) -- a literal absolute value, not an offset."""
+        base at all (root default) -- a literal absolute value, not an
+        offset. No `base_glyph` parameter -- a root relationship has no
+        base, so a "base_signifiers" entry on one would never match
+        anything; only `elem_signifiers` makes sense here."""
         rel = self.root_relationship(axis, elem)
-        return resolve_gap(rel["gap"], signifier)
+        return resolve_gap(rel["gap"], None, elem_glyph)

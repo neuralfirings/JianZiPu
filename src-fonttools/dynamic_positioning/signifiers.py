@@ -48,6 +48,26 @@ KEY_TO_GLYPH["|"] = "blank_bar"
 
 GLYPH_TO_KEY = {glyph: key for key, glyph in KEY_TO_GLYPH.items()}
 
+# dynamic_positioning area name -> components.csv area column. Used to look
+# up which glyphs live in a given LAYOUTS area (e.g. for gap overrides keyed
+# by that area's own glyph identity, see identity.py) and by
+# jzpbuild.devserver's /api/dynamic/data (so tools/jzpbuilder-dynamic.html
+# reads this same mapping instead of hardcoding its own copy). "bar" has no
+# entry -- it's a hardcoded control-glyph substitution (KEY_TO_GLYPH["|"]
+# above), not a components.csv row.
+AREA_TO_CSV_COLUMN = {
+    "fy": "area_fy",
+    "left": "area_left",
+    "hui": "area_hui",
+    "jc": "area_mod_jc",
+    "zhu": "area_mod_zhu",
+    "right": "area_right",
+    "string": "area_string",
+    "string_top": "area_string",
+    "string_bottom": "area_string",
+    "chord": "area_chord",
+}
+
 
 def keys_for(family: str) -> list[str]:
     """ASCII keys for every glyph in `family`, in config.RIGHT_SELECTORS order."""

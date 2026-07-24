@@ -83,14 +83,19 @@ def _choose_relationships(engine: "anchors.AnchorEngine", present: dict[str, boo
 
 
 def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
-            signifier: str) -> dict[str, tuple[float, float]]:
+            present_glyphs: dict[str, str]) -> dict[str, tuple[float, float]]:
     """Absolute (x, y) origin for every element this word resolves.
 
     `present`: presence flags for engine.optional_order's elements
     (missing/False = absent). Everything else engine.relationships
-    declares is resolved unconditionally. `signifier` is the specific
-    ASCII key (e.g. "k"), used to resolve any gap that varies by
-    signifier.
+    declares is resolved unconditionally. `present_glyphs` is {area: glyph}
+    for every area whose specific glyph identity is pinned down in this
+    word/rule variant (the pivot's own area -> its own glyph, plus
+    whichever other areas' specific glyph this variant pins down -- see
+    build.py's identity-sensitive-area branching); an area missing from
+    this dict is "unpinned" for this variant. Used to resolve any gap that
+    varies by a relationship's base and/or elem area's own glyph identity
+    (anchors.resolve_gap's base_signifiers/elem_signifiers).
     """
     flat_optional = set(engine.flat_optional)
     always_present = engine.declared_elems - flat_optional
@@ -99,23 +104,49 @@ def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
     chosen = _choose_relationships(engine, present, to_resolve)
 
     resolved: dict[str, dict[str, float]] = {}
+    # Elements that permanently failed to resolve (an always_present element
+    # whose own gap/candidate lookup raised KeyError -- "doesn't apply to
+    # this word", see module docstring). Tracked separately from `resolved`
+    # so a dependent of a failed base can be recognized as itself
+    # permanently unresolvable, rather than waiting forever for a base that
+    # will never show up in `resolved` -- that starvation used to surface as
+    # a misleading "cyclic dependency?" ValueError even though there was no
+    # cycle, just a base that legitimately opted out.
+    failed: set[str] = set()
     remaining = set(to_resolve)
     while remaining:
         progressed = False
         for elem in list(remaining):
             bases = {rel["base"] for rel in chosen[elem].values() if rel["base"] is not None}
+            if bases & failed:
+                # A dependency permanently failed -- this elem can never
+                # resolve either. Cascade the same always_present/optional
+                # distinction the KeyError handler below applies directly.
+                if elem in always_present:
+                    remaining.discard(elem)
+                    failed.add(elem)
+                    progressed = True
+                    continue
+                raise KeyError(
+                    f"elem={elem!r} in layout {engine.name!r} depends on "
+                    f"{bases & failed!r}, which failed to resolve for "
+                    f"present_glyphs={present_glyphs!r}")
             if not bases <= resolved.keys():
                 continue  # a dependency isn't resolved yet -- try again next pass
             try:
                 values = {}
+                elem_glyph = present_glyphs.get(elem)
                 for axis, rel in chosen[elem].items():
                     if rel["base"] is None:
-                        values[axis] = anchors.resolve_gap(rel["gap"], signifier)
+                        values[axis] = anchors.resolve_gap(rel["gap"], None, elem_glyph)
                     else:
-                        values[axis] = resolved[rel["base"]][axis] + engine.anchor(rel, signifier)
+                        base_glyph = present_glyphs.get(rel["base"])
+                        values[axis] = (resolved[rel["base"]][axis]
+                                         + engine.anchor(rel, base_glyph, elem_glyph))
             except KeyError:
                 if elem in always_present:
                     remaining.discard(elem)
+                    failed.add(elem)
                     progressed = True
                     continue
                 raise

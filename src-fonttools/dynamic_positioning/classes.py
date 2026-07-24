@@ -20,7 +20,7 @@ file, so reverting dynamic_positioning entirely is just "stop passing the
 flag," no code path here runs otherwise.
 """
 
-from . import geometry, signifiers
+from . import geometry, identity, signifiers
 
 
 def signifier_token(family: str, key: str) -> str:
@@ -42,4 +42,39 @@ def gen_signifier_classes() -> list[str]:
             family = signifiers.family_for_key(key) or layout["name"]
             glyph = signifiers.KEY_TO_GLYPH[key]
             lines.append(f"{signifier_token(family, key)} = [ {glyph} ];")
+    return lines
+
+
+def area_glyph_token(layout_name: str, area: str, glyph: str) -> str:
+    """FEA class name for one specific glyph within a non-pivot area (e.g.
+    area_hui's md_5) -- the generalization of signifier_token to any area a
+    gap override references, not just the pivot. Scoped by layout name (like
+    signifier_token is scoped by family) so two LAYOUTS entries referencing
+    the same area with different override subsets never collide. See
+    identity.py."""
+    return f"@area_{layout_name}__{area}__{glyph}"
+
+
+def area_glyph_other_token(layout_name: str, area: str) -> str:
+    """FEA class name for "every glyph in this area except the ones with
+    their own area_glyph_token" -- the catch-all counterpart, mirroring
+    build.py's existing @area_right_other pattern."""
+    return f"@area_{layout_name}__{area}__other"
+
+
+def gen_area_glyph_classes() -> list[str]:
+    """One class per (layout, area, glyph) any LAYOUTS entry's gap overrides
+    reference (identity.area_glyph_buckets), plus an "other" class per
+    (layout, area) that also declares a catch-all override -- see
+    identity.py."""
+    lines = []
+    for layout in geometry.LAYOUTS:
+        for area, bucket in identity.area_glyph_buckets(layout).items():
+            for glyph in bucket["glyphs"]:
+                token = area_glyph_token(layout["name"], area, glyph)
+                lines.append(f"{token} = [ {glyph} ];")
+            if bucket["catch_all"]:
+                other_glyphs = [g for g in identity.area_glyphs(area) if g not in bucket["glyphs"]]
+                other_token = area_glyph_other_token(layout["name"], area)
+                lines.append(f"{other_token} = [ {' '.join(other_glyphs)} ];")
     return lines

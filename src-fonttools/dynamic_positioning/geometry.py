@@ -55,17 +55,21 @@ only when a relationship genuinely needs the other edge (see anchors.py's
 `anchor()`). `base=None` means "no dependency" -- `gap` is then the literal absolute
 default value directly, not a relative offset.
 
-Gap shape: a plain number (same value regardless of which specific
-right-hand glyph/signifier is in play), OR an ordered list of
-`{"signifiers": [<glyph name>, ...], "value": <number>}` overrides, with
-an optional trailing entry that omits "signifiers" as a catch-all. A
-specific signifier match always wins over the catch-all, regardless of
-declaration order (see anchors.resolve_gap). "signifier" = an actual
-right-hand PUA glyph name from config.RIGHT_SELECTORS (e.g. "lg_gou",
-"lg_da"), the finest-grained unit this module can address -- this is what
-lets e.g. lg_gou and lg_da (both family "gou") get independently-tuned
+Gap shape: a plain number (same value regardless of glyph identity), OR an
+ordered list of override entries `{"base_signifiers": [...], "elem_signifiers":
+[...], "value": <number>}` (either or both signifier keys omittable),
+evaluated FIRST-MATCH-WINS in list order (see anchors.resolve_gap) -- put
+any catch-all (an entry with neither key) last yourself, nothing enforces
+that ordering. "signifier" = an actual glyph name (e.g. "lg_gou", "lg_da",
+"md_5"), the finest-grained unit this module can address.
+`"base_signifiers"` matches against the relationship's own `base` area's
+glyph, `"elem_signifiers"` against its `elem` area's glyph -- independent
+conditions, so an entry can name either one alone, or both together for a
+genuine conjunction ("only when base is md_9 AND elem is md_bar"). This is
+what lets e.g. lg_gou and lg_da (both family "gou") get independently-tuned
 values instead of being forced to share one, unlike the classic pipeline's
-own per-family (not per-glyph) granularity.
+own per-family (not per-glyph) granularity -- and what lets a relationship
+vary by either side's identity, or both at once.
 
 Many of the numeric gap values below are placeholders (per an explicit
 decision this round to prioritize getting the new engine's shape right

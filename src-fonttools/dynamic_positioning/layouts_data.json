@@ -130,7 +130,25 @@
           "axis": "x",
           "elem": "zhu",
           "base": "right",
-          "gap": -5
+          "gap": [
+            {
+              "value": 66,
+              "base_signifiers": [
+                "lg_gou",
+                "lg_da"
+              ]
+            },
+            {
+              "value": 32,
+              "base_signifiers": [
+                "lg_ti",
+                "lg_zhai"
+              ]
+            },
+            {
+              "value": 35
+            }
+          ]
         },
         {
           "axis": "y",
@@ -225,22 +243,22 @@
           "base_edge": "bottom",
           "gap": [
             {
-              "signifiers": [
-                "k",
-                "l"
+              "elem_signifiers": [
+                "lg_gou",
+                "lg_da"
               ],
               "value": 100
             },
             {
-              "signifiers": [
-                "i",
-                "o"
+              "elem_signifiers": [
+                "lg_ti",
+                "lg_zhai"
               ],
               "value": -50
             },
             {
-              "signifiers": [
-                "U"
+              "elem_signifiers": [
+                "lg_li"
               ],
               "value": 44
             }
@@ -251,7 +269,25 @@
           "elem": "zhu",
           "base": "right",
           "base_edge": "top",
-          "gap": -25
+          "gap": [
+            {
+              "value": -2,
+              "base_signifiers": [
+                "lg_gou",
+                "lg_da"
+              ]
+            },
+            {
+              "value": -30,
+              "base_signifiers": [
+                "lg_ti",
+                "lg_zhai"
+              ]
+            },
+            {
+              "value": -102
+            }
+          ]
         },
         {
           "axis": "y",
@@ -267,8 +303,8 @@
           "base_edge": "top",
           "gap": [
             {
-              "signifiers": [
-                "U"
+              "base_signifiers": [
+                "lg_li"
               ],
               "value": -70
             }
@@ -281,8 +317,8 @@
           "base_edge": "top",
           "gap": [
             {
-              "signifiers": [
-                "U"
+              "base_signifiers": [
+                "lg_li"
               ],
               "value": -450
             }
@@ -574,5 +610,17 @@
         }
       ]
     }
-  ]
+  ],
+  "area_to_csv_column": {
+    "fy": "area_fy",
+    "left": "area_left",
+    "hui": "area_hui",
+    "jc": "area_mod_jc",
+    "zhu": "area_mod_zhu",
+    "right": "area_right",
+    "string": "area_string",
+    "string_top": "area_string",
+    "string_bottom": "area_string",
+    "chord": "area_chord"
+  }
 }
