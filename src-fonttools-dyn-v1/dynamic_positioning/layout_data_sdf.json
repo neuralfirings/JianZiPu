@@ -1,0 +1,45 @@
+{
+  "center_x": 500,
+  "center_y": 500,
+  "area_sizes": {
+    "sdf_left": [800, 800],
+    "right_all": [600, 800],
+    "sdf_middle": [1000, 900]
+  },
+  "layouts": [
+    {
+      "name": "layout_test_lr",
+      "selector": {"contains": ["s", "d", "f"]},
+      "vertical_center_order": [["sdf_left", "right_all"]],
+      "relationships": [
+        {"axis": "x", "elem": "sdf_left", "base": null, "gap": 0},
+        {"axis": "x", "elem": "right_all", "base": "sdf_left",
+         "base_edge": "right", "elem_edge": "left", "gap": 100},
+        {"axis": "y", "elem": "sdf_left", "base": null, "gap": 0},
+        {"axis": "y", "elem": "right_all", "base": "sdf_left",
+         "base_edge": "bottom", "elem_edge": "bottom", "gap": 0}
+      ],
+      "order": [
+        {"area": "sdf_left", "optional": false, "pivot": true},
+        {"area": "right_all", "optional": false}
+      ]
+    },
+    {
+      "name": "layout_test_mid",
+      "selector": {"contains": ["wai", "ban", "jin"]},
+      "vertical_center_order": [["sdf_middle"]],
+      "relationships": [
+        {"axis": "x", "elem": "sdf_middle", "base": null, "gap": 0},
+        {"axis": "y", "elem": "sdf_middle", "base": null, "gap": 0}
+      ],
+      "order": [
+        {"area": "sdf_middle", "optional": false, "pivot": true}
+      ]
+    }
+  ],
+  "area_to_csv_column": {
+    "sdf_left": "area_left",
+    "right_all": "area_right",
+    "sdf_middle": "area_char"
+  }
+}
