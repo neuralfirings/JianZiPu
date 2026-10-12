@@ -56,7 +56,18 @@
           "l",
           "i",
           "o",
-          "U"
+          "U",
+          "ki",
+          "lo",
+          "n",
+          "c",
+          "u",
+          "h",
+          "j",
+          "V",
+          "lun",
+          "banlun",
+          "ju"
         ]
       },
       "vertical_center_order": [
@@ -116,6 +127,49 @@
         },
         {
           "axis": "x",
+          "elem": "string",
+          "base": "right",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": [
+            {
+              "base_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": 128
+            },
+            {
+              "base_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 155
+            },
+            {
+              "base_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 177
+            },
+            {
+              "base_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": 155
+            },
+            {
+              "value": 155
+            }
+          ]
+        },
+        {
+          "axis": "x",
           "elem": "string_top",
           "base": null,
           "gap": 325
@@ -144,6 +198,37 @@
                 "lg_ti",
                 "lg_zhai"
               ]
+            },
+            {
+              "base_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": 57
+            },
+            {
+              "base_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 5
+            },
+            {
+              "base_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -5
+            },
+            {
+              "base_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": 77
             },
             {
               "value": 35
@@ -206,7 +291,42 @@
           "elem": "right",
           "base": "fy",
           "base_edge": "bottom",
-          "gap": 0
+          "gap": [
+            {
+              "elem_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -221
+            },
+            {
+              "elem_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -113
+            },
+            {
+              "elem_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -113
+            },
+            {
+              "elem_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -161
+            },
+            {
+              "value": 0
+            }
+          ]
         },
         {
           "axis": "y",
@@ -227,14 +347,84 @@
           "elem": "right",
           "base": "hui",
           "base_edge": "bottom",
-          "gap": 30
+          "gap": [
+            {
+              "elem_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -160
+            },
+            {
+              "elem_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -30
+            },
+            {
+              "elem_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 10
+            },
+            {
+              "elem_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -30
+            },
+            {
+              "value": 30
+            }
+          ]
         },
         {
           "axis": "y",
           "elem": "right",
           "base": "left",
           "base_edge": "bottom",
-          "gap": 30
+          "gap": [
+            {
+              "elem_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -160
+            },
+            {
+              "elem_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -30
+            },
+            {
+              "elem_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 10
+            },
+            {
+              "elem_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -30
+            },
+            {
+              "value": 30
+            }
+          ]
         },
         {
           "axis": "y",
@@ -261,6 +451,37 @@
                 "lg_li"
               ],
               "value": 44
+            },
+            {
+              "elem_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -70
+            },
+            {
+              "elem_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 60
+            },
+            {
+              "elem_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 50
+            },
+            {
+              "elem_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -40
             }
           ]
         },
@@ -285,6 +506,37 @@
               ]
             },
             {
+              "base_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -104
+            },
+            {
+              "base_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -60
+            },
+            {
+              "base_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -60
+            },
+            {
+              "base_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -100
+            },
+            {
               "value": -102
             }
           ]
@@ -294,7 +546,42 @@
           "elem": "string",
           "base": "right",
           "base_edge": "top",
-          "gap": -175
+          "gap": [
+            {
+              "base_signifiers": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -181
+            },
+            {
+              "base_signifiers": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -230
+            },
+            {
+              "base_signifiers": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -120
+            },
+            {
+              "base_signifiers": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -385
+            },
+            {
+              "value": -175
+            }
+          ]
         },
         {
           "axis": "y",

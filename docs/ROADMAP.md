@@ -25,6 +25,15 @@ Decided 2026-10-12. Wireframes: `mockups/lofi-wireframes.html` (9 frames).
 
 ### Phase 0: pipeline prerequisite (in progress)
 
+Status: 1–3 done, 4–6 open. Finding from 3: with every family covered,
+classic-vs-dynamic parity over the shaping corpus shows every word sitting
+~200 units higher than classic, because `layouts_data.json` has
+`center_y: 500` while the classic frames center around y≈300; with
+`center_y: 300` and nothing else changed, typical words land within 4–40
+units of classic and only specific fy+jc+zhu combinations stay off. Whether
+to adopt 300 (match the released font) or keep 500 is a design call for
+the layout editor, not a code change.
+
 Make `dynamic_positioning` able to express everything the font needs, so the layout editor can be the only layout tool.
 
 1. **One GPOS lookup per pivot signifier** instead of one `dynamic_pos` lookup. The 64KB subtable ceiling then applies per family, not to the whole font; exact centering is kept. Rules from different signifiers never match the same word (each rule's context contains its own pivot glyph), so the split changes no positions. The bare-`fy` fallback gets explicit zero-valued blockers (derived from the layouts) instead of relying on sharing a lookup.

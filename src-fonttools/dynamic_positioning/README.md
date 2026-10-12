@@ -1,10 +1,11 @@
 # dynamic_positioning — geometry-derived GPOS for right-hand-technique words
 
-**Status: experimental prototype, not the final design.** Fully covers
-`gou` (`lg_gou`/`lg_da`), `io` (`lg_ti`/`lg_zhai`), and `li` (`lg_li`) —
-replacing `layout_gou/gou2/gou3`, `layout_io/io2/io3`, and
-`layout_li/li2/li3` with literal `pos` rules generated from a declarative
-table (`geometry.py`) instead of hand-tuned Figma layout frames. Also has
+**Status: experimental, on its way to being the only layout model
+(`docs/ROADMAP.md`, Phase 0).** Covers all seven right-hand families
+(gou/io/li/loki/nc/tiao/mo — see "Family coverage" below), replacing every
+classic `layout_<family>{,2,3}` frame with literal `pos` rules generated
+from a declarative table (`layouts_data.json` via `geometry.py`) instead of
+hand-tuned Figma layout frames. Also has
 an early, incomplete start on `cuo` (撮 chords: `chord_left`/`chord_right`
 in `geometry.LAYOUTS`, keyed on `C`/`DC`/`FC`/`TT`/`|`) — see "cuo: current
 status" below before relying on it — and a similarly early start on
@@ -728,23 +729,28 @@ the shape of the scaling argument is unchanged from before:
   driver, not family count — worth deciding how many more optional slots
   a topology's `order` will realistically need before extending further.
 
-## Adding another family to `default_jzp`'s scope
+## Family coverage
 
-As of this session, `jzpbuild/genfea.py` imports `FAMILIES` from
-`dynamic_positioning.geometry` (fixed — it used to hardcode `{"gou",
-"io"}` independently in two places, which meant changing
-`geometry.FAMILIES` alone would silently no-op). Adding a family to
-`FAMILIES` now genuinely is close to a one-line change, plus:
+`geometry.FAMILIES` is every `config.RIGHT_SELECTORS` family: all seven
+right-hand families (gou/io/li/loki/nc/tiao/mo) resolve through
+`default_jzp`, whose `selector.contains` lists every family's keys, and
+classic `gpos.py`'s rules for all of them are zeroed under `--dynamic_pos`.
+What makes families differ is the per-signifier gap entries on the
+relationships that reference `right` (the pivot): `right <- fy/hui/left/jc`
+(keyed on `elem_signifiers`, since `right` is that relationship's `elem`)
+and `zhu`/`string <- right` (keyed on `base_signifiers`).
 
-- A `{"elem_signifiers": [...], "value": ...}` entry (glyph names, e.g.
-  `"lg_mo"`, not ASCII keys — `elem_signifiers` since `right` is that
-  relationship's `elem`) for that family's glyphs on any `RELATIONSHIPS`
-  row that's genuinely signifier-specific (currently
-  `right`-attaches-to-`jc`) — missing this raises `KeyError` the first
-  time that signifier/combination is hit, not silently.
-- `signifiers.family_for_key` (via `KEY_TO_GLYPH`) already covers any family in
-  `config.RIGHT_SELECTORS` with `area_right`-tagged `components.csv` rows
-  — no separate registration needed there.
+loki/nc/tiao/mo were seeded from the classic `inputs/layouts.json` frames
+by `tools/seed_from_classic.py` (see its docstring for the inversion
+formulas and which classic variant supplies each number); gou/io/li keep
+their earlier hand-set values. All of these are starting points for the
+layout editor, not final values -- the dynamic model's boxes approximate
+the classic frames, they don't copy them.
+
+To add a glyph to an existing family: give it a `components.csv` row in
+`area_right`, add it to `config.RIGHT_SELECTORS`, and add it to the
+relevant signifier lists above (missing one raises `KeyError` at build
+time for that signifier/combination, not silently).
 
 ## Adding a custom signifier
 

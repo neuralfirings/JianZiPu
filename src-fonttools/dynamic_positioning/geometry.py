@@ -53,7 +53,7 @@ from jzpbuild import config
 # RIGHT_SELECTORS families this module positions; classic gpos.py's rules
 # for them are zeroed under --dynamic_pos. Distinct from config.RIGHT_KEYS,
 # which is classic's own "six standard families" list.
-FAMILIES = ("gou", "io", "li")
+FAMILIES = tuple(config.RIGHT_SELECTORS)
 
 _data = json.loads(config.DYNAMIC_LAYOUTS_JSON.read_text())
 
