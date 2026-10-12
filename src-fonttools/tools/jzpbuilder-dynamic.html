@@ -621,6 +621,7 @@ async function resolveAndRender() {
     layout: {
       name: layout.name, selector: layout.selector,
       vertical_center_order: layout.vertical_center_order,
+      horizontal_center: !!layout.horizontal_center,
       relationships: layout.relationships, order: layout.order,
     },
     present: presentByLayout[curLayoutName] || {},

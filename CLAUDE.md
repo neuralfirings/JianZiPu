@@ -6,7 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 JianZiPu is a font system for rendering traditional Chinese guqin notation (减字谱). It uses OpenType glyph layering/substitution so that typed ASCII/Chinese characters are substituted and positioned into composite musical notation glyphs.
 
-The website lives at https://guqintabs.com/jianzipu. Glyph designs are in Figma.
+The website lives at https://guqintabs.com/jianzipu. Glyph designs historically
+lived in Figma (`figma.py` can still import from it); the direction is a web
+editor as the only design path, with `dynamic_positioning` as the only layout
+model — see `docs/ROADMAP.md` for the decisions and phases.
 
 ## Commands
 

@@ -117,8 +117,7 @@ def area_glyph_token(layout_name: str, area: str, glyph: str) -> str:
 
 def area_glyph_other_token(layout_name: str, area: str) -> str:
     """FEA class name for "every glyph in this area except the ones with
-    their own area_glyph_token" -- the catch-all counterpart, mirroring
-    build.py's existing @area_right_other pattern."""
+    their own area_glyph_token" -- the catch-all counterpart."""
     return f"@area_{layout_name}__{area}__other"
 
 

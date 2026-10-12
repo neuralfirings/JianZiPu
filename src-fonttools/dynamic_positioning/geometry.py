@@ -41,8 +41,9 @@ tuned values, and lets a gap depend on either side's identity or both.
 `vertical_center_order`: visual top-to-bottom rank groups, used ONLY for
 the whole-stack centering shift onto CENTER_Y (chain._centering_bounds).
 Same-rank siblings (e.g. left/hui) sit side by side; either may define that
-rank's box. There is no X-axis equivalent yet: CENTER_X is loaded but
-nothing recenters on it.
+rank's box. `horizontal_center` (optional, default false): also center the
+word on CENTER_X, over every present element's box (chain._horizontal_bounds)
+-- no rank order needed on this axis.
 """
 
 import json

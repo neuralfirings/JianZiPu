@@ -60,9 +60,10 @@ Small JSON routes on top of static file serving:
   POST /api/dynamic/resolve -> body: {area_sizes, center_x, center_y, center,
                        layout, present, signifier_glyph, area_glyphs}.
                        `center` (bool, default True) is whether to apply
-                       chain.resolve's whole-stack vertical centering shift
-                       at all -- distinct from center_x/center_y, which say
-                       WHERE to center if so. Resolves
+                       chain.resolve's whole-word centering shifts at all
+                       (vertical always; horizontal if the layout sets
+                       `horizontal_center`) -- distinct from center_x/
+                       center_y, which say WHERE to center if so. Resolves
                        absolute (x, y) for `layout` (one geometry.LAYOUTS-
                        shaped dict, `areas` is filled in from `area_sizes`)
                        using the REAL dynamic_positioning.anchors.AnchorEngine

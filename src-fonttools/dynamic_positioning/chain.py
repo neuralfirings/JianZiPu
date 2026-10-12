@@ -27,8 +27,9 @@ or gap coverage) -- that's allowed to raise.
 After resolving, the whole composed word is shifted so it's centered on
 geometry.CENTER_Y, per the engine's vertical_center_order, regardless of
 which optional elements are present -- rather than hanging from one
-element's fixed default Y and only growing in one direction. See
-README.md.
+element's fixed default Y and only growing in one direction. A layout
+can opt into the same for X (`horizontal_center`, centered on
+geometry.CENTER_X over every present element's box). See README.md.
 """
 
 from . import anchors, geometry
@@ -111,14 +112,15 @@ def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
     varies by a relationship's base and/or elem area's own glyph identity
     (anchors.resolve_gap's base_signifiers/elem_signifiers).
 
-    `center`: whether to apply the whole-stack vertical centering shift
-    (see module docstring) at all. True (the default, and the only mode
-    the real font build ever uses -- build.py never passes this) matches
-    every existing caller's prior behavior exactly. False returns each
-    element's raw root/relationship-derived Y with no shift -- for
+    `center`: whether to apply the whole-word centering shifts (vertical
+    always, horizontal if the layout opts in -- see module docstring) at
+    all. True (the default, and the only mode the real font build ever
+    uses -- build.py never passes this) matches every existing caller's
+    prior behavior exactly. False returns each element's raw
+    root/relationship-derived position with no shift -- for
     tools/jzpbuilder-dynamic.html's "vertically center character" toggle,
     so an author can see (and drag-edit) an element's literal root->elem
-    Y value directly instead of always looking at the shifted result.
+    value directly instead of always looking at the shifted result.
     """
     to_resolve, chosen = plan(engine, present)
     always_present = to_resolve - set(engine.flat_optional)
@@ -179,14 +181,16 @@ def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
                 f"can't make progress resolving {remaining!r} in layout {engine.name!r} "
                 "-- cyclic dependency?")
 
+    shift_x = shift_y = 0.0
     if center:
         present_for_centering = {**present, **{e: True for e in always_present}}
         top, bottom = _centering_bounds(engine, resolved, present_for_centering)
-        shift = geometry.CENTER_Y - (top + bottom) / 2
-    else:
-        shift = 0
+        shift_y = geometry.CENTER_Y - (top + bottom) / 2
+        if engine.horizontal_center:
+            left, right = _horizontal_bounds(engine, resolved, present_for_centering)
+            shift_x = geometry.CENTER_X - (left + right) / 2
 
-    return {elem: (v["x"], v["y"] + shift) for elem, v in resolved.items()}
+    return {elem: (v["x"] + shift_x, v["y"] + shift_y) for elem, v in resolved.items()}
 
 
 def _rank_box(engine: "anchors.AnchorEngine", rank_group: list[str],
@@ -219,12 +223,24 @@ def _centering_bounds(engine: "anchors.AnchorEngine", resolved: dict[str, dict[s
     return max(top for top, _ in boxes), min(bottom for _, bottom in boxes)
 
 
+def _horizontal_bounds(engine: "anchors.AnchorEngine", resolved: dict[str, dict[str, float]],
+                       present: dict[str, bool]) -> tuple[float, float]:
+    """(leftmost x, rightmost x) over every present, resolved element. No
+    rank grouping, unlike _centering_bounds: side-by-side elements all
+    count, and whichever sticks out furthest defines that edge."""
+    edges = [(v["x"], v["x"] + engine.areas[elem][0])
+             for elem, v in resolved.items() if present.get(elem)]
+    if not edges:
+        raise ValueError(f"no present element to center horizontally in layout {engine.name!r}")
+    return min(left for left, _ in edges), max(right for _, right in edges)
+
+
 def bare_fy(engine: "anchors.AnchorEngine") -> tuple[float, float]:
     """The one case with no right-hand glyph at all: just area_fy, centered
-    on its own height alone (top == bottom == fy's own span)."""
+    on its own box alone."""
     x = engine.default("x", "fy", None)
     y = engine.default("y", "fy", None)
-    top = y + engine.areas["fy"][1]
-    bottom = y
-    shift = geometry.CENTER_Y - (top + bottom) / 2
-    return (x, y + shift)
+    w, h = engine.areas["fy"]
+    shift_y = geometry.CENTER_Y - (y + h / 2)
+    shift_x = geometry.CENTER_X - (x + w / 2) if engine.horizontal_center else 0
+    return (x + shift_x, y + shift_y)

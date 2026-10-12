@@ -322,8 +322,12 @@ positions are shifted uniformly so the topmost..bottommost span (per
 handles the one case with no right-hand glyph at all (currently resolved
 against the `"default_jzp"` engine specifically; may need to become
 per-topology if a second topology ever needs its own bare-fallback case).
-Only the Y axis is recentered — `geometry.CENTER_X` is declared but
-currently unread; nothing recenters horizontally today.
+A layout can also opt into horizontal centering with
+`"horizontal_center": true`: the leftmost..rightmost span over every
+present element's box (no rank grouping needed on this axis, see
+`chain._horizontal_bounds`) is centered on `geometry.CENTER_X`. It's off
+by default, since the classic frames never centered horizontally, so
+existing layouts are unaffected until they set it.
 
 ## Scoping (the correctness-critical part)
 

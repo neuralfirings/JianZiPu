@@ -69,6 +69,11 @@ class AnchorEngine:
         self.name = layout["name"]
         self.areas = layout["areas"]
         self.vertical_center_order = layout["vertical_center_order"]
+        # Optional whole-word horizontal centering onto geometry.CENTER_X
+        # (chain.resolve). Bounds are taken over every present element, so
+        # no rank order is needed. Off by default: the classic frames never
+        # centered horizontally, so existing layouts are unaffected.
+        self.horizontal_center = bool(layout.get("horizontal_center", False))
         self.relationships = layout["relationships"]
         # the real typed/glyph-sequence order (flat -- see geometry.py's
         # LAYOUTS comment for why no sibling grouping is needed here,

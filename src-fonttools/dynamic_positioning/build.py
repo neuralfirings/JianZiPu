@@ -42,11 +42,17 @@ element whose glyph IS the signifier.
 
 import itertools
 
-from jzpbuild import config
-
 from . import anchors, chain, classes, geometry, identity, signifiers
 
 _ENGINES = {layout["name"]: anchors.AnchorEngine(layout) for layout in geometry.LAYOUTS}
+
+# One GPOS lookup per pivot signifier (see _collect_rules), plus this one
+# for the bare-fy fallback.
+FY_LOOKUP = "dynamic_pos__fy"
+
+
+def _lookup_name(key: str) -> str:
+    return f"dynamic_pos__{signifiers.KEY_TO_GLYPH[key]}"
 
 
 def _engine_for_key(key: str, layouts: list[dict],
@@ -226,16 +232,46 @@ def _signifier_rules(family: str, key: str, layouts: list[dict],
     return rules
 
 
+def _pivot_glyphs_before_fy(layouts: list[dict]) -> list[str]:
+    """Signifier glyphs of every layout whose pivot is typed BEFORE its fy
+    (cuo's chord: "C fy ..."), i.e. the glyphs that can immediately precede
+    a fy that some per-signifier lookup already positions."""
+    glyphs: list[str] = []
+    for layout in layouts:
+        areas = [e["area"] for e in layout["order"]]
+        pivot = next(e["area"] for e in layout["order"] if e.get("pivot"))
+        if "fy" in areas and areas.index("fy") > areas.index(pivot):
+            for key in layout["selector"].get("contains", ()):
+                glyph = signifiers.KEY_TO_GLYPH[key]
+                if glyph not in glyphs:
+                    glyphs.append(glyph)
+    return glyphs
+
+
 def _collect_rules(layouts: list[dict] = geometry.LAYOUTS,
                    engines: dict[str, anchors.AnchorEngine] = _ENGINES,
-                   families: tuple[str, ...] = geometry.FAMILIES) -> list[_Rule]:
-    """Every `pos` rule the dynamic_pos lookup contains for `layouts`,
+                   families: tuple[str, ...] = geometry.FAMILIES) -> dict[str, list[_Rule]]:
+    """{lookup name: rules} for `layouts` -- one GPOS lookup per pivot
+    signifier (_lookup_name) plus FY_LOOKUP for the bare-fy fallback, each
     sorted most-specific first (the load-bearing order, see module
-    docstring). `engines` must hold one AnchorEngine per layout; the
-    defaults are the real geometry.LAYOUTS and the engines built from them
-    at import (what the font build uses), while the editor passes a
-    throwaway pair for unsaved layouts (see _editor_rules)."""
-    rules: list[_Rule] = []
+    docstring).
+
+    Why one lookup per signifier: the 64KB Offset16 ceiling (see
+    estimate_dynamic_pos_bytes) is per lookup subtable, so splitting gives
+    every family its own budget instead of one shared one. It changes no
+    positions: every rule from _signifier_rules carries its own pivot
+    glyph's class in its context, so rules from different signifiers never
+    match the same word, and GPOS value accumulation across lookups never
+    adds two of them together. The one rule that has no pivot in its
+    context -- bare fy -- used to be shadowed by sitting last in the shared
+    lookup; in its own lookup it needs the explicit zero-valued blockers
+    below instead.
+
+    `engines` must hold one AnchorEngine per layout; the defaults are the
+    real geometry.LAYOUTS and the engines built from them at import (what
+    the font build uses), while the editor passes a throwaway pair for
+    unsaved layouts (see _editor_rules)."""
+    lookups: dict[str, list[_Rule]] = {}
     for layout in layouts:
         for key in layout["selector"].get("contains", ()):
             family = signifiers.family_for_key(key)
@@ -247,52 +283,54 @@ def _collect_rules(layouts: list[dict] = geometry.LAYOUTS,
             # classes.signifier_token).
             if family is not None and family not in families:
                 continue
-            rules += _signifier_rules(family or layout["name"], key, layouts, engines)
+            lookups.setdefault(_lookup_name(key), []).extend(
+                _signifier_rules(family or layout["name"], key, layouts, engines))
 
-    # The one case with no right-hand glyph at all: bare area_fy. Safe as a
-    # zero-context (always-matches) rule because it sorts last (specificity
-    # 0) -- every rule that could apply to an actual "fy + more" sequence,
-    # including the blocker below, is more specific and tried first.
-    # Resolved against default_jzp specifically; once a second LAYOUTS
-    # entry has its own area_fy this may need to become per-layout.
+    # The one case with no right-hand glyph at all: bare area_fy, a
+    # zero-context (always-matches) rule. Resolved against default_jzp
+    # specifically; once a second LAYOUTS entry has its own area_fy this
+    # may need to become per-layout.
+    fy_rules: list[_Rule] = []
     if "default_jzp" in engines:
         fx, fy = chain.bare_fy(engines["default_jzp"])
-        rules.append(_Rule([], "@area_fy", fx, fy, []))
+        fy_rules.append(_Rule([], "@area_fy", fx, fy, []))
+    # Zero-valued blockers, more specific than bare fy so they win: a fy
+    # that is part of a real word -- immediately followed by hui/left/jc/zhu
+    # or any right-hand glyph (a per-signifier lookup above or classic
+    # already positions it), or immediately preceded by a pivot-first
+    # layout's signifier (cuo's chord) -- gets nothing from this lookup.
+    fy_rules.append(_Rule([], "@area_fy", 0, 0, ["@area_fy_blocker"]))
+    if _pivot_glyphs_before_fy(layouts):
+        fy_rules.append(_Rule(["@area_fy_blocker_before"], "@area_fy", 0, 0, []))
+    lookups[FY_LOOKUP] = fy_rules
 
-    # Blocks area_fy's positioning from leaking into words that aren't
-    # ours: any word where area_fy is immediately followed by
-    # hui/left/jc/zhu (a "blank"/other-family word classic already
-    # positions, see README.md) or by another family's right-hand glyph.
-    # Every genuine rule above requires its own per-signifier class
-    # (disjoint from this blocker class) somewhere in its lookahead, so
-    # it's always at least as specific and never shadowed by this.
-    rules.append(_Rule([], "@area_fy", 0, 0, ["@area_fy_blocker"]))
-
-    rules.sort(key=lambda r: -r.specificity)
-    return rules
+    for rules in lookups.values():
+        rules.sort(key=lambda r: -r.specificity)
+    return lookups
 
 
 def gen_dynamic_gpos() -> list[str]:
-    """Entry point genfea.py calls: FEA text for the classes plus the
-    dynamic_pos lookup, registered in `kern`, for geometry.LAYOUTS."""
-    rules = _collect_rules()
+    """Entry point genfea.py calls: FEA text for the classes plus one
+    lookup per signifier (see _collect_rules), all registered in `kern`."""
+    lookups = _collect_rules()
 
-    other_families = [f for f in config.RIGHT_KEYS if f not in geometry.FAMILIES]
-    other_right_class = " ".join(f"@area_right__{f}" for f in other_families)
-    class_lines = [
-        f"@area_right_other = [ {other_right_class} ];",
-        "@area_fy_blocker = [ @area_left @area_hui @area_jc @area_zhu @area_right_other ];",
-    ]
+    class_lines = ["@area_fy_blocker = [ @area_left @area_hui @area_jc @area_zhu @area_right_all ];"]
+    before = _pivot_glyphs_before_fy(geometry.LAYOUTS)
+    if before:
+        class_lines.append(f"@area_fy_blocker_before = [ {' '.join(before)} ];")
 
     lines = ["# --- dynamic_positioning: per-signifier word positioning (literal, geometry-derived) ---"]
     lines += classes.gen_signifier_classes()
     lines += classes.gen_area_glyph_classes()
     lines += classes.gen_repeated_area_classes()
     lines += class_lines
-    lines.append("lookup dynamic_pos {")
-    lines += [r.render() for r in rules]
-    lines.append("} dynamic_pos;")
-    lines += ["", "feature kern {", "  lookup dynamic_pos;", "} kern;"]
+    for name, rules in lookups.items():
+        lines.append(f"lookup {name} {{")
+        lines += [r.render() for r in rules]
+        lines.append(f"}} {name};")
+    lines += ["", "feature kern {"]
+    lines += [f"  lookup {name};" for name in lookups]
+    lines.append("} kern;")
     return lines
 
 
@@ -301,7 +339,7 @@ def gen_dynamic_gpos() -> list[str]:
 # tools/jzpbuilder-dynamic.html's live complexity badge)
 
 
-def _editor_rules(layouts: list[dict], families: tuple[str, ...]) -> list[_Rule]:
+def _editor_rules(layouts: list[dict], families: tuple[str, ...]) -> dict[str, list[_Rule]]:
     """_collect_rules over a throwaway engines dict built from `layouts` (an
     in-editor, possibly unsaved layouts_data.json "layouts" list with each
     entry's "areas" already filled in) -- never touches the real
@@ -313,8 +351,7 @@ def _editor_rules(layouts: list[dict], families: tuple[str, ...]) -> list[_Rule]
 
 
 def count_dynamic_pos_rules(layouts: list[dict], families: tuple[str, ...] = geometry.FAMILIES) -> int:
-    """Exactly how many `pos` statements the dynamic_pos lookup would have
-    for `layouts`.
+    """Total `pos` statements across every lookup for `layouts`.
 
     On its own this is a WEAK overflow predictor: two layouts_data.json
     revisions with 17,431 and 8,722 rules respectively both overflowed a
@@ -324,7 +361,7 @@ def count_dynamic_pos_rules(layouts: list[dict], families: tuple[str, ...] = geo
     backtrack+lookahead length just as much as rule count. See
     estimate_dynamic_pos_bytes, the actually-predictive metric; this is
     kept as a secondary, human-readable number for the UI."""
-    return len(_editor_rules(layouts, families))
+    return sum(len(rules) for rules in _editor_rules(layouts, families).values())
 
 
 # Per-rule byte estimate for one ChainContextPos format-3 subtable (what
@@ -347,10 +384,12 @@ GPOS_LOOKUP_OFFSET_CEILING_BYTES = 65536  # Offset16 -- the real hard limit
 
 
 def estimate_dynamic_pos_bytes(layouts: list[dict], families: tuple[str, ...] = geometry.FAMILIES) -> int:
-    """Estimated total subtable bytes of the dynamic_pos lookup for
-    `layouts` -- see the _BYTES_PER_CONTEXT_TOKEN/_SUBTABLE_OVERHEAD_BYTES
-    comment above for the method and its known slight-underestimate bias.
-    Compare against GPOS_LOOKUP_OFFSET_CEILING_BYTES -- this is the metric
-    that actually predicts real-build overflow, unlike raw rule count."""
-    rules = _editor_rules(layouts, families)
-    return sum((r.specificity + 1) * _BYTES_PER_CONTEXT_TOKEN + _SUBTABLE_OVERHEAD_BYTES for r in rules)
+    """Estimated subtable bytes of the LARGEST single lookup for `layouts`
+    -- the ceiling is per lookup, so the worst one is what matters. See the
+    _BYTES_PER_CONTEXT_TOKEN/_SUBTABLE_OVERHEAD_BYTES comment above for the
+    method and its known slight-underestimate bias. Compare against
+    GPOS_LOOKUP_OFFSET_CEILING_BYTES -- this is the metric that actually
+    predicts real-build overflow, unlike raw rule count."""
+    return max((sum((r.specificity + 1) * _BYTES_PER_CONTEXT_TOKEN + _SUBTABLE_OVERHEAD_BYTES
+                    for r in rules)
+                for rules in _editor_rules(layouts, families).values()), default=0)
