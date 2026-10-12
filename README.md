@@ -14,24 +14,24 @@ Design of the glyphs is hosted on [this Figma project](https://www.figma.com/des
 
 # Building the font
 
-The font is built by a Python pipeline in `builder/` — one command, no
+The font is built by a Python pipeline in `src-fonttools/` — one command, no
 FontForge, no hand-edited feature files:
 
 ```bash
-cd builder
+cd src-fonttools
 pip install -e .                # once
 python3 -m jzpbuild             # build src/JianZiPu.ttf
 python3 -m jzpbuild --fetch     # pull latest SVGs + positions from Figma first (needs FIGMA_TOKEN)
 ```
 
-See `builder/README.md` for the architecture, what to edit for each kind of
+See `src-fonttools/README.md` for the architecture, what to edit for each kind of
 change, and how the build is verified (a HarfBuzz shaping regression test
 against the released font).
 
 ---
 
 **Everything below documents the LEGACY manual pipeline** (FontForge +
-`scripts.cjs`), kept for reference only. It is superseded by `builder/`.
+`scripts.cjs`), kept for reference only. It is superseded by `src-fonttools/`.
 
 # Section 1. Create Base Font with Input Characters
 

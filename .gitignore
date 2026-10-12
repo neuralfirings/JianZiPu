@@ -16,8 +16,8 @@ __pycache__/
 *.egg-info/
 .gstack/
 
-# builder/ (Python font pipeline)
-builder/cache/
-builder/JianZiPu.ttf
-builder/src_font/*.ttf
-builder/.env
+# src-fonttools/ (Python font pipeline)
+src-fonttools/cache/
+src-fonttools/JianZiPu.ttf
+src-fonttools/src_font/*.ttf
+.env

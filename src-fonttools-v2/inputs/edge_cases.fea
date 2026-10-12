@@ -1,7 +1,0 @@
-# Hand-maintained disambiguation rules, included verbatim by the generator.
-lookup lat_zhi4_sub {
-  sub z h i four by md_zhi4; # otherwise it would get zhi+4
-} lat_zhi4_sub;
-lookup ch_dc_sub {
-  sub ch_v ch_cuo by xl_dacuo; # otherwise it would get da+cuo
-} ch_dc_sub;

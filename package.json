@@ -23,7 +23,7 @@
     "dev": "parcel src/index.html --dist-dir dev -p 1664",
     "build": "parcel build --public-url ./",
     "watch": "parcel watch",
-    "font": "cd builder && python3 -m jzpbuild"
+    "font": "cd src-fonttools && python3 -m jzpbuild"
   },
   "author": "Nancy Yi Liang",
   "license": "MIT",
