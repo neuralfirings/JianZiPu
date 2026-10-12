@@ -106,29 +106,6 @@ class AnchorEngine:
                 return rel
         raise KeyError(f"no root relationship for axis={axis!r} elem={elem!r} in layout {self.name!r}")
 
-    def override_relationship(self, axis: str, elem: str, base: str) -> dict:
-        """The relationship for (axis, elem) whose base is exactly `base`."""
-        for rel in self.relationships_for(axis, elem):
-            if rel["base"] == base:
-                return rel
-        raise KeyError(
-            f"no relationship for axis={axis!r} elem={elem!r} base={base!r} in layout {self.name!r}")
-
-    def declared_relationship(self, axis: str, elem: str) -> dict:
-        """The single relationship for (axis, elem) -- for elements with no
-        predecessor ambiguity (leaves: zhu, string, string_top,
-        string_bottom), where exactly one relationship should exist per
-        axis, whatever its base is. Raises if that assumption doesn't
-        hold, rather than silently picking one -- geometry.py authoring
-        should keep leaves unambiguous."""
-        rels = self.relationships_for(axis, elem)
-        if len(rels) != 1:
-            raise ValueError(
-                f"expected exactly one {axis}-relationship for elem={elem!r} in layout "
-                f"{self.name!r}, found {len(rels)} -- use override_relationship/"
-                f"root_relationship directly if {elem!r} genuinely has multiple candidate bases")
-        return rels[0]
-
     def edge_span(self, axis: str, area: str, edge: str | None) -> float:
         """Distance from `area`'s own near-edge origin to `edge` of its box.
         `edge=None` (or the axis's near edge) -> 0 (that IS the origin);

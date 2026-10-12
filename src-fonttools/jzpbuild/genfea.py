@@ -22,25 +22,16 @@ def generate(dynamic_pos: bool = False, dynamic_pos_only: bool = False) -> str:
     dynamic_pos = dynamic_pos or dynamic_pos_only
     lines = gen_gsub()
     lines.append("")
-    layouts = load_layouts()
     if dynamic_pos:
-        from dynamic_positioning.geometry import RIGHT_KEYS as dynamic_right_keys
-        dynamic_families = set(dynamic_right_keys)
+        # Imported only on demand: a plain build never touches
+        # dynamic_positioning/ at all.
+        from dynamic_positioning import geometry
+        from dynamic_positioning.build import gen_dynamic_gpos
+        dynamic_families = set(geometry.FAMILIES)
     else:
         dynamic_families = set()
-    lines += gen_gpos(layouts, skip_right_keys=dynamic_families, zero_others=dynamic_pos_only)
+    lines += gen_gpos(load_layouts(), skip_right_keys=dynamic_families, zero_others=dynamic_pos_only)
     if dynamic_pos:
-        from dynamic_positioning import gen_dynamic_gpos
         lines.append("")
-        lines += gen_dynamic_gpos(layouts, right_keys=tuple(dynamic_right_keys))
+        lines += gen_dynamic_gpos()
     return "\n".join(lines) + "\n"
-
-
-if __name__ == "__main__":
-    import sys
-    text = generate()
-    if len(sys.argv) > 1:
-        from pathlib import Path
-        Path(sys.argv[1]).write_text(text)
-    else:
-        sys.stdout.write(text)

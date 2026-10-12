@@ -17,10 +17,9 @@ after checking (like this module's own test suite/git history did for
 area_chord) that it doesn't introduce that kind of collision with what's
 already there.
 
-Kept as its own module, separate from both geometry.py (which needs key
-names for its gap overrides) and classes.py (which needs glyph names for
-FEA class emission), so neither has to import the other for this and
-there's no import cycle with geometry.py's own RIGHT_KEYS.
+Kept as its own module, separate from both geometry.py (which only
+exposes layout data) and classes.py (which needs glyph names for FEA class
+emission), so neither has to import the other for this.
 """
 
 import re
@@ -72,8 +71,6 @@ KEY_TO_GLYPH["|"] = "blank_bar"
 # this same key before dynamic_positioning ever sees it.
 KEY_TO_GLYPH[":"] = "blank_colon"
 
-GLYPH_TO_KEY = {glyph: key for key, glyph in KEY_TO_GLYPH.items()}
-
 # dynamic_positioning area name -> components.csv area column. Used to look
 # up which glyphs live in a given LAYOUTS area (e.g. for gap overrides keyed
 # by that area's own glyph identity, see identity.py) and by
@@ -122,14 +119,6 @@ def csv_column_for(area: str) -> str:
     if base != area and base in AREA_TO_CSV_COLUMN:
         return AREA_TO_CSV_COLUMN[base]
     raise KeyError(f"no components.csv column known for area {area!r} (or base {base!r})")
-
-
-def keys_for(family: str) -> list[str]:
-    """ASCII keys for every glyph in `family`, in config.RIGHT_SELECTORS order."""
-    missing = [g for g in config.RIGHT_SELECTORS[family] if g not in GLYPH_TO_KEY]
-    if missing:
-        raise KeyError(f"no components.csv row (with a 'latin' key) found for glyphs: {missing}")
-    return [GLYPH_TO_KEY[glyph] for glyph in config.RIGHT_SELECTORS[family]]
 
 
 def family_for_key(key: str) -> str | None:

@@ -24,12 +24,12 @@ letting real fy-less sequences correctly fall through to it. See
 README.md.
 
 Backtrack/lookahead context reflects the real TYPED/glyph-sequence order
-(engine.optional_order) -- a fact about the shaped text, unrelated to
-which element's POSITION a given element is computed relative to
-(chain.py's concern, see geometry.py's module docstring). area_zhu still
-gets its own `pos` rule with correct backtrack/lookahead here even though
-chain.py computes its value as an offset from area_right rather than
-from whatever preceded it in typed order.
+(engine.order) -- a fact about the shaped text, unrelated to which
+element's POSITION a given element is computed relative to (chain.py's
+concern, see geometry.py's module docstring). area_zhu still gets its own
+`pos` rule with correct backtrack/lookahead here even though chain.py
+computes its value as an offset from area_right rather than from whatever
+preceded it in typed order.
 
 geometry.LAYOUTS is what actually drives this module's coverage: iterate
 its entries, and each entry's own selector.contains gives the keys to
@@ -49,13 +49,8 @@ from . import anchors, chain, classes, geometry, identity, signifiers
 _ENGINES = {layout["name"]: anchors.AnchorEngine(layout) for layout in geometry.LAYOUTS}
 
 
-def _engine_for_key(key: str, layouts: list[dict] = geometry.LAYOUTS,
-                     engines: dict[str, anchors.AnchorEngine] = _ENGINES) -> anchors.AnchorEngine:
-    """`layouts`/`engines` default to the real, cached geometry.LAYOUTS/
-    _ENGINES globals (every existing caller's prior behavior, unchanged).
-    count_dynamic_pos_rules passes its own throwaway pair instead, so it can
-    count rules for an arbitrary (possibly unsaved/in-editor) layouts list
-    without touching those globals."""
+def _engine_for_key(key: str, layouts: list[dict],
+                    engines: dict[str, anchors.AnchorEngine]) -> anchors.AnchorEngine:
     for layout in layouts:
         if key in layout["selector"].get("contains", ()):
             return engines[layout["name"]]
@@ -99,8 +94,8 @@ def _identity_choices(present: dict[str, bool],
             for combo in itertools.product(*(opts for _, opts in axes))]
 
 
-def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOUTS,
-                      engines: dict[str, anchors.AnchorEngine] = _ENGINES) -> list[_Rule]:
+def _signifier_rules(family: str, key: str, layouts: list[dict],
+                     engines: dict[str, anchors.AnchorEngine]) -> list[_Rule]:
     engine = _engine_for_key(key, layouts, engines)
     rules: list[_Rule] = []
     right_token = classes.signifier_token(family, key)
@@ -145,7 +140,7 @@ def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOU
                     if glyph is None:
                         return classes.area_glyph_other_token(engine.name, area)
                     return classes.area_glyph_token(engine.name, area, glyph)
-                if area in classes._CLASSIC_BASE_AREAS:
+                if area in classes.CLASSIC_BASE_AREAS:
                     return f"@area_{area}"
                 return classes.repeated_area_token(area)
 
@@ -172,7 +167,6 @@ def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOU
             # so requiring one in a lookahead would wrongly reject a real
             # word that genuinely lacks it, for zero disambiguating benefit
             # since its presence never varies across combos to begin with).
-            # `elems` is `before`/`after`[i+1:] filtered to flat_optional.
             def optional_lookahead(elems: list[str]) -> list[str]:
                 return [token(e) for e in elems if e in flat_optional]
 
@@ -183,35 +177,26 @@ def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOU
             # so it needs the same kind of disambiguating lookahead, filtered
             # to optional elements only so a genuinely leaf-less/string-less
             # real word (the valid "bare pivot" case) still matches the
-            # variant generated for that same absence. A real bug this
-            # caused before lookahead was added here: every combo's pivot
-            # rule shared byte-identical (empty) backtrack/lookahead, so only
-            # whichever combo happened to be generated first ever won, for
-            # every real word regardless of what actually followed the
-            # pivot -- e.g. cuo's own chord glyph rendering at the wrong
-            # height whenever the real word's optional elements didn't match
-            # the arbitrary first-generated combo.
+            # variant generated for that same absence. Without this, every
+            # combo's pivot rule shared byte-identical (empty) context and
+            # only the first-generated combo ever won -- e.g. cuo's chord
+            # glyph rendering at the wrong height whenever the real word's
+            # optional elements didn't match that arbitrary combo.
             pivot_backtrack = [token(e) for e in before]
             x, y = positions[engine.pivot]
             rules.append(_Rule(pivot_backtrack, right_token, x, y, optional_lookahead(after)))
 
-            # Elements AFTER the pivot (leaves: string, and anything
-            # future topologies add here) each independently attach right
-            # after whatever precedes them. Scoping against OTHER families
-            # already comes from right_token sitting in their backtrack (the
-            # pivot precedes them) -- but scoping against OTHER PRESENCE
-            # COMBOS of THIS SAME family still needs a lookahead, for the
-            # identical reason as the pivot above: a leaf's own resolved
-            # (x, y) can depend on which later OPTIONAL leaves are present
-            # too, not just its own presence. Listing whichever later
-            # OPTIONAL leaves this specific combo actually has (in order) as
-            # lookahead lets rules.sort's existing most-specific-first
-            # ordering pick the correct one: a real word missing one of
-            # those later leaves fails this lookahead and falls through to
-            # the next, less-specific (fewer leaves listed) matching combo's
-            # rule instead, exactly mirroring how BEFORE-pivot elements
-            # already use their own remaining-siblings-then-right_token
-            # lookahead for the identical reason.
+            # Elements AFTER the pivot (leaves: string, and anything future
+            # topologies add here) each attach right after whatever precedes
+            # them. Scoping against OTHER families already comes from
+            # right_token sitting in their backtrack -- but scoping against
+            # OTHER PRESENCE COMBOS of this same family still needs a
+            # lookahead, for the same reason as the pivot above: a leaf's
+            # own (x, y) can depend on which later OPTIONAL leaves are
+            # present too. Listing them lets the most-specific-first sort
+            # pick the right variant: a real word missing one of those later
+            # leaves fails this lookahead and falls through to the next,
+            # less-specific matching combo's rule.
             running_backtrack = pivot_backtrack + [right_token]
             for i, area in enumerate(after):
                 after_lookahead = optional_lookahead(after[i + 1:])
@@ -223,16 +208,12 @@ def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOU
                 # (variants of the same leaf, deliberately not separate
                 # entries in `order` -- see geometry.py). Emitted alongside
                 # (not instead of) the generic "string" rule above -- li
-                # words can use either. Their own paired backtrack/
-                # lookahead (string_bottom requires string_top immediately
-                # before it, then whichever later leaves this combo has,
-                # same as the generic "string" rule above) is a real
-                # rule-matching coordination between the two, not a generic
-                # independent-leaf case, so it's special-cased here. Whether
-                # string_top/string_bottom actually show up in `positions`
-                # for THIS signifier at all IS the "is this signifier
-                # double-string" signal (see chain.resolve's docstring) --
-                # no separate flag.
+                # words can use either. string_bottom requires string_top
+                # immediately before it, then whichever later leaves this
+                # combo has. Whether string_top/string_bottom show up in
+                # `positions` for THIS signifier at all IS the "is this
+                # signifier double-string" signal (see chain.resolve's
+                # docstring) -- no separate flag.
                 if area == "string" and "string_top" in positions and "string_bottom" in positions:
                     top_x, top_y = positions["string_top"]
                     bottom_x, bottom_y = positions["string_bottom"]
@@ -245,59 +226,58 @@ def _signifier_rules(family: str, key: str, layouts: list[dict] = geometry.LAYOU
     return rules
 
 
-def gen_dynamic_gpos(layouts: dict, right_keys: tuple[str, ...] = geometry.RIGHT_KEYS) -> list[str]:
-    """Entry point genfea.py calls. `layouts` is accepted for interface
-    parity with jzpbuild.gpos.gen_gpos but unused -- this prototype's
-    geometry lives entirely in geometry.py, not inputs/layouts.json.
-    """
-    del layouts  # unused, see docstring
-
+def _collect_rules(layouts: list[dict] = geometry.LAYOUTS,
+                   engines: dict[str, anchors.AnchorEngine] = _ENGINES,
+                   families: tuple[str, ...] = geometry.FAMILIES) -> list[_Rule]:
+    """Every `pos` rule the dynamic_pos lookup contains for `layouts`,
+    sorted most-specific first (the load-bearing order, see module
+    docstring). `engines` must hold one AnchorEngine per layout; the
+    defaults are the real geometry.LAYOUTS and the engines built from them
+    at import (what the font build uses), while the editor passes a
+    throwaway pair for unsaved layouts (see _editor_rules)."""
     rules: list[_Rule] = []
-    for layout in geometry.LAYOUTS:
+    for layout in layouts:
         for key in layout["selector"].get("contains", ()):
             family = signifiers.family_for_key(key)
-            if family is not None:
-                # A RIGHT_SELECTORS family (gou/io/li/...) -- `right_keys`
-                # is genfea.py's opt-in list for that specific system;
-                # respect it same as always.
-                if family not in right_keys:
-                    continue
-            # else: this key isn't part of the RIGHT_SELECTORS/family
-            # system at all (e.g. cuo's chord keys) -- there's no
-            # per-family opt-in/opt-out for it, presence in geometry.LAYOUTS
-            # is what turns it on. Fall back to the layout's own name for
-            # class-naming/scoping purposes (see _signifier_rules).
-            rules += _signifier_rules(family or layout["name"], key)
+            # A RIGHT_SELECTORS family (gou/io/li/...) is only covered if
+            # it's in `families` (genfea.py's opt-in list). A key outside
+            # that system (e.g. cuo's chord keys) is covered simply by
+            # appearing in a LAYOUTS selector; the layout's own name then
+            # stands in for the family in class names (see
+            # classes.signifier_token).
+            if family is not None and family not in families:
+                continue
+            rules += _signifier_rules(family or layout["name"], key, layouts, engines)
 
-    # The one case with no right-hand glyph at all: bare area_fy, nothing
-    # else. Safe as a zero-context (always-matches) rule specifically
-    # because it sorts last (specificity 0) -- every other rule that could
-    # apply to an actual "fy + more" sequence, including the blocker
-    # below, is strictly more specific and tried first. Resolved against
-    # "default_jzp" specifically -- once a second LAYOUTS entry with its
-    # own area_fy exists, this may need to become per-layout too. Guarded
-    # on "default_jzp" actually being loaded -- e.g. a geometry.LAYOUTS
-    # swapped out entirely for a different topology set (no area_fy
-    # anywhere) has no bare-fy case to speak of.
-    if "default_jzp" in _ENGINES:
-        fx, fy = chain.bare_fy(_ENGINES["default_jzp"])
+    # The one case with no right-hand glyph at all: bare area_fy. Safe as a
+    # zero-context (always-matches) rule because it sorts last (specificity
+    # 0) -- every rule that could apply to an actual "fy + more" sequence,
+    # including the blocker below, is more specific and tried first.
+    # Resolved against default_jzp specifically; once a second LAYOUTS
+    # entry has its own area_fy this may need to become per-layout.
+    if "default_jzp" in engines:
+        fx, fy = chain.bare_fy(engines["default_jzp"])
         rules.append(_Rule([], "@area_fy", fx, fy, []))
 
     # Blocks area_fy's positioning from leaking into words that aren't
-    # actually gou/io/li: any word where area_fy is immediately followed
-    # by hui/left/jc/zhu (i.e. this is really a "blank"/other-family word
-    # that classic's own layout_blank/layout_<other> rules already
-    # position for real -- see README.md) or directly by another family's
-    # right-hand glyph. Every genuine rule above requires its own
-    # per-signifier class (disjoint from this blocker class, and a subset
-    # of the classic per-family class this blocker uses) somewhere in its
-    # own lookahead, so it's always at least as specific and never
-    # shadowed by this blocker.
+    # ours: any word where area_fy is immediately followed by
+    # hui/left/jc/zhu (a "blank"/other-family word classic already
+    # positions, see README.md) or by another family's right-hand glyph.
+    # Every genuine rule above requires its own per-signifier class
+    # (disjoint from this blocker class) somewhere in its lookahead, so
+    # it's always at least as specific and never shadowed by this.
     rules.append(_Rule([], "@area_fy", 0, 0, ["@area_fy_blocker"]))
 
     rules.sort(key=lambda r: -r.specificity)
+    return rules
 
-    other_families = [f for f in config.RIGHT_KEYS if f not in right_keys]
+
+def gen_dynamic_gpos() -> list[str]:
+    """Entry point genfea.py calls: FEA text for the classes plus the
+    dynamic_pos lookup, registered in `kern`, for geometry.LAYOUTS."""
+    rules = _collect_rules()
+
+    other_families = [f for f in config.RIGHT_KEYS if f not in geometry.FAMILIES]
     other_right_class = " ".join(f"@area_right__{f}" for f in other_families)
     class_lines = [
         f"@area_right_other = [ {other_right_class} ];",
@@ -316,54 +296,35 @@ def gen_dynamic_gpos(layouts: dict, right_keys: tuple[str, ...] = geometry.RIGHT
     return lines
 
 
-def _collect_rules(layouts: list[dict], right_keys: tuple[str, ...] = geometry.RIGHT_KEYS) -> list[_Rule]:
-    """Every `_Rule` gen_dynamic_gpos's dynamic_pos lookup would end up
-    containing for `layouts` (same shape as geometry.LAYOUTS, i.e. one
-    parsed layouts_data.json's "layouts" list, each entry's own "areas"
-    already filled in from area_sizes -- see anchors.AnchorEngine). Mirrors
-    gen_dynamic_gpos's own rule-collection loop, minus the bare_fy/blocker
-    rules' real (x, y) (irrelevant to count/size estimation, so left at
-    (0, 0) here rather than resolving chain.bare_fy for real), minus
-    sorting and FEA class/text rendering entirely. Builds a throwaway
-    engines dict from `layouts` instead of touching the real
-    _ENGINES/geometry.LAYOUTS globals, so this reflects in-editor/unsaved
-    layouts_data.json edits without a save-to-disk + reimport round trip --
-    shared by count_dynamic_pos_rules and estimate_dynamic_pos_bytes below
-    (jzpbuilder-dynamic.html's live complexity-warning badge, see
-    devserver.py's /api/dynamic/rule_count), and stays cheap enough to call
-    on every edit.
-    """
+# ---------------------------------------------------------------------------
+# editor support (devserver.py's /api/dynamic/rule_count, for
+# tools/jzpbuilder-dynamic.html's live complexity badge)
+
+
+def _editor_rules(layouts: list[dict], families: tuple[str, ...]) -> list[_Rule]:
+    """_collect_rules over a throwaway engines dict built from `layouts` (an
+    in-editor, possibly unsaved layouts_data.json "layouts" list with each
+    entry's "areas" already filled in) -- never touches the real
+    geometry.LAYOUTS/_ENGINES globals, so the badge reflects unsaved edits
+    without a save-to-disk + reimport round trip, and stays cheap enough to
+    call on every edit."""
     engines = {layout["name"]: anchors.AnchorEngine(layout) for layout in layouts}
-    rules: list[_Rule] = []
-    for layout in layouts:
-        for key in layout["selector"].get("contains", ()):
-            family = signifiers.family_for_key(key)
-            if family is not None and family not in right_keys:
-                continue
-            rules += _signifier_rules(family or layout["name"], key, layouts, engines)
-    if any(layout["name"] == "default_jzp" for layout in layouts):
-        rules.append(_Rule([], "@area_fy", 0, 0, []))  # bare_fy, see gen_dynamic_gpos
-    rules.append(_Rule([], "@area_fy", 0, 0, ["@area_fy_blocker"]))  # fy_blocker, see gen_dynamic_gpos
-    return rules
+    return _collect_rules(layouts, engines, families)
 
 
-def count_dynamic_pos_rules(layouts: list[dict], right_keys: tuple[str, ...] = geometry.RIGHT_KEYS) -> int:
-    """Exactly how many `pos` statements gen_dynamic_gpos's dynamic_pos
-    lookup would end up with for `layouts` -- see _collect_rules.
+def count_dynamic_pos_rules(layouts: list[dict], families: tuple[str, ...] = geometry.FAMILIES) -> int:
+    """Exactly how many `pos` statements the dynamic_pos lookup would have
+    for `layouts`.
 
     On its own this is a WEAK overflow predictor: two layouts_data.json
     revisions with 17,431 and 8,722 rules respectively both overflowed a
     real build (OTLOffsetOverflowError, "All candidates overflowed") --
     what actually overflows is total SUBTABLE BYTES in one Lookup (a hard
     64KB ceiling, 16-bit offsets), which depends on each rule's
-    backtrack+lookahead length just as much as rule count -- a "chords"-
-    style layout with long per-rule context chains can overflow at a
-    fraction of the rule count a "default_jzp"-style layout (short chains)
-    would need. See estimate_dynamic_pos_bytes, the actually-predictive
-    metric; this is kept only as a secondary, human-readable number for the
-    UI (see devserver.py's /api/dynamic/rule_count response).
-    """
-    return len(_collect_rules(layouts, right_keys))
+    backtrack+lookahead length just as much as rule count. See
+    estimate_dynamic_pos_bytes, the actually-predictive metric; this is
+    kept as a secondary, human-readable number for the UI."""
+    return len(_editor_rules(layouts, families))
 
 
 # Per-rule byte estimate for one ChainContextPos format-3 subtable (what
@@ -378,20 +339,18 @@ def count_dynamic_pos_rules(layouts: list[dict], right_keys: tuple[str, ...] = g
 # referencing the same class) -- so this is a LOWER BOUND, calibrated
 # against two known real data points: a working ~863-rule layouts_data.json
 # estimated at ~17KB (well under the 64KB ceiling, and did build), and an
-# overflowing ~8,722-rule one estimated at ~208KB (see count_dynamic_pos_rules's
-# docstring) -- both consistent with "closer to 64KB = closer to failing,"
-# even though this estimate isn't exact.
+# overflowing ~8,722-rule one estimated at ~208KB -- both consistent with
+# "closer to 64KB = closer to failing," even though this estimate isn't exact.
 _BYTES_PER_CONTEXT_TOKEN = 2
 _SUBTABLE_OVERHEAD_BYTES = 12
 GPOS_LOOKUP_OFFSET_CEILING_BYTES = 65536  # Offset16 -- the real hard limit
 
 
-def estimate_dynamic_pos_bytes(layouts: list[dict], right_keys: tuple[str, ...] = geometry.RIGHT_KEYS) -> int:
-    """Estimated total subtable bytes gen_dynamic_gpos's dynamic_pos lookup
-    would end up with for `layouts` -- see _collect_rules and the
-    _BYTES_PER_CONTEXT_TOKEN/_SUBTABLE_OVERHEAD_BYTES comment above for the
-    estimation method and its known slight-underestimate bias. Compare
-    against GPOS_LOOKUP_OFFSET_CEILING_BYTES -- this is the metric that
-    actually predicts real-build overflow, unlike raw rule count."""
-    rules = _collect_rules(layouts, right_keys)
+def estimate_dynamic_pos_bytes(layouts: list[dict], families: tuple[str, ...] = geometry.FAMILIES) -> int:
+    """Estimated total subtable bytes of the dynamic_pos lookup for
+    `layouts` -- see the _BYTES_PER_CONTEXT_TOKEN/_SUBTABLE_OVERHEAD_BYTES
+    comment above for the method and its known slight-underestimate bias.
+    Compare against GPOS_LOOKUP_OFFSET_CEILING_BYTES -- this is the metric
+    that actually predicts real-build overflow, unlike raw rule count."""
+    rules = _editor_rules(layouts, families)
     return sum((r.specificity + 1) * _BYTES_PER_CONTEXT_TOKEN + _SUBTABLE_OVERHEAD_BYTES for r in rules)

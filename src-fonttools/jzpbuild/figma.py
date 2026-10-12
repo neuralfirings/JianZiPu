@@ -9,12 +9,12 @@ page named config.FIGMA_PAGE_NAME (default "main") — other pages (drafts,
 archive, WIP) are ignored entirely, even if they contain nodes that would
 otherwise look like glyphs or layouts.
 
-  python -m jzpbuild.figma                    # fetch everything into builder/inputs
+  python -m jzpbuild.figma                    # fetch everything into inputs
 
 Fetched artifacts:
-  builder/inputs/svg/<glyph>.svg   component SVGs (API-rendered, bounds-corrected)
-  builder/inputs/layouts.json      layout/area geometry
-  builder/inputs/meta.json         figma file version, for cache invalidation
+  inputs/svg/<glyph>.svg   component SVGs (API-rendered, bounds-corrected)
+  inputs/layouts.json      layout/area geometry
+  inputs/meta.json         figma file version, for cache invalidation
 
 Bounds correction: Figma's image-render endpoint crops each exported SVG's
 canvas to the tight bounding box of its rendered ink (node["absoluteRenderBounds"]),

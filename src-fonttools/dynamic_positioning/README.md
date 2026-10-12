@@ -10,7 +10,7 @@ in `geometry.LAYOUTS`, keyed on `C`/`DC`/`FC`/`TT`/`|`) — see "cuo: current
 status" below before relying on it — and a similarly early start on
 vert-mode (`:`-triggered stacked-row words: a `"vert"` `LAYOUTS` entry,
 still being built out in `tools/jzpbuilder-dynamic.html` as of this
-writing, staged in sidecar files like `layouts_data.vert2.json` — see
+writing, prototyped in sidecar layout files since removed, see git history — see
 "Adding a custom signifier"'s worked example and "Repeated-slot areas"
 below for how its `char_1`/`char_2`/`fy_1`/`fy_2` stacking works). All
 other layout families (`loki`, `nc`, `tiao`, `mo`) are untouched and still
@@ -726,11 +726,11 @@ the shape of the scaling argument is unchanged from before:
 
 ## Adding another family to `default_jzp`'s scope
 
-As of this session, `jzpbuild/genfea.py` imports `RIGHT_KEYS` from
+As of this session, `jzpbuild/genfea.py` imports `FAMILIES` from
 `dynamic_positioning.geometry` (fixed — it used to hardcode `{"gou",
 "io"}` independently in two places, which meant changing
-`geometry.RIGHT_KEYS` alone would silently no-op). Adding a family to
-`RIGHT_KEYS` now genuinely is close to a one-line change, plus:
+`geometry.FAMILIES` alone would silently no-op). Adding a family to
+`FAMILIES` now genuinely is close to a one-line change, plus:
 
 - A `{"elem_signifiers": [...], "value": ...}` entry (glyph names, e.g.
   `"lg_mo"`, not ASCII keys — `elem_signifiers` since `right` is that
@@ -738,7 +738,7 @@ As of this session, `jzpbuild/genfea.py` imports `RIGHT_KEYS` from
   row that's genuinely signifier-specific (currently
   `right`-attaches-to-`jc`) — missing this raises `KeyError` the first
   time that signifier/combination is hit, not silently.
-- `signifiers.keys_for(family)` already works for any family in
+- `signifiers.family_for_key` (via `KEY_TO_GLYPH`) already covers any family in
   `config.RIGHT_SELECTORS` with `area_right`-tagged `components.csv` rows
   — no separate registration needed there.
 
@@ -862,12 +862,12 @@ no per-number registration needed beyond just using the area in
   pre-registered names).
 - `classes.gen_repeated_area_classes()` scans every `LAYOUTS` entry for
   non-pivot areas that aren't one of classic's own pre-declared base
-  classes (`classes._CLASSIC_BASE_AREAS`, essentially
+  classes (`classes.CLASSIC_BASE_AREAS`, essentially
   `signifiers.AREA_TO_CSV_COLUMN`'s keys) and generates a class for each,
   straight from `identity.area_glyphs()` — named `@dp_area_{area}`
   (`classes.repeated_area_token`), **not** `@area_{area}`. `build.py`'s
   generic `token()` picks between the two: `@area_{area}` for anything in
-  `_CLASSIC_BASE_AREAS` (reuse classic's real, already-declared class),
+  `CLASSIC_BASE_AREAS` (reuse classic's real, already-declared class),
   `repeated_area_token(area)` otherwise (self-generated).
 
 **Why the separate `@dp_area_` namespace, not just `@area_{area}` for

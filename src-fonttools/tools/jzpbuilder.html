@@ -178,7 +178,7 @@
         <button id="saveSvgs">svgs</button>
         <div class="menuSep"></div>
         <button id="saveAll">Save All</button>
-        <div class="hint">writes to <code>builder/inputs/</code></div>
+        <div class="hint">writes to <code>src-fonttools/inputs/</code></div>
       </div>
     </div>
     <div class="menuItem">
@@ -295,7 +295,7 @@
     <h4>Add new SVG<button id="svgPickerClose">&times; close</button></h4>
     <div class="hint">To add a brand new SVG, either click <b>Upload SVG</b> below (adds it to memory —
       then use Save ▾ &gt; svgs to write it to disk), or drop the file straight into
-      <code>builder/inputs/svg</code> and refresh this page.</div>
+      <code>src-fonttools/inputs/svg</code> and refresh this page.</div>
     <div class="hint" id="svgPickerHint">click one or more SVGs to select, then Add</div>
     <div id="svgPickerList"></div>
     <div class="row" style="justify-content: space-between">
@@ -318,7 +318,7 @@
       (<code>components.csv</code>: which SVG glyphs exist and which layout
       areas each one can occupy), then can build the actual font from them.
       Nothing here talks to Figma — it works entirely from whatever's
-      already in <code>builder/inputs/</code>.
+      already in <code>src-fonttools/inputs/</code>.
     </p>
 
     <h5>Import / Save / Export (menu bar, top of the page)</h5>
@@ -326,10 +326,10 @@
       <li><b>Import ▾</b> — load a <code>layouts.json</code>,
         <code>components.csv</code>, or SVGs from disk to replace what's
         currently loaded in the browser. On page open, this happens
-        automatically from <code>builder/inputs/</code>.</li>
+        automatically from <code>src-fonttools/inputs/</code>.</li>
       <li><b>Save ▾</b> — <code>layouts.json</code>, <code>components.csv</code>,
         and <code>svgs</code> each write your in-browser edits straight back to
-        the real files under <code>builder/inputs/</code> (svgs to one file per
+        the real files under <code>src-fonttools/inputs/</code> (svgs to one file per
         glyph, <code>inputs/svg/&lt;glyph_name&gt;.svg</code>); <b>Save All</b>
         does all three in one request. Needs the Dev Server running (see
         below) — without it you'll get a "no dev server running" message.</li>
@@ -340,7 +340,7 @@
         something you'd edit directly), <code>components.csv</code>, or
         <code>svgs.zip</code> (every loaded SVG) to your Downloads folder.
         Works with no server at all, but you'd have to move the file into
-        <code>builder/inputs/</code>
+        <code>src-fonttools/inputs/</code>
         yourself afterward.</li>
     </ul>
 
@@ -439,11 +439,11 @@
       need a small local server running, since a plain <code>file://</code>
       page can't read/write files on its own or run a build. Start it with:
     </p>
-    <p><code>cd builder &amp;&amp; python3 -m jzpbuild.devserver</code></p>
+    <p><code>cd src-fonttools &amp;&amp; python3 -m jzpbuild.devserver</code></p>
     <p>
       then make sure you're viewing this page through
       <code>http://127.0.0.1:5713/tools/jzpbuilder.html</code> (not a
-      <code>file://</code> path) — see <code>builder/README.md</code>'s
+      <code>file://</code> path) — see <code>src-fonttools/README.md</code>'s
       "Dev Server" section for the full list of what it adds.
     </p>
   </div>
@@ -453,7 +453,7 @@
   <div id="buildModal">
     <h4>Build Font <button id="buildClose">&times; close</button></h4>
     <div class="hint">
-      runs <code>python3 -m jzpbuild</code> in <code>builder/</code> — override any input
+      runs <code>python3 -m jzpbuild</code> in <code>src-fonttools/</code> — override any input
       path below for this build only (defaults are what a plain build reads)
     </div>
     <div class="hint" style="color:#b02020; font-weight:600; margin-top:6px">
@@ -885,7 +885,7 @@ function loadSvgFiles(files) {
   $("fileinfo").textContent = `${files.length} SVG(s) loaded (${Object.keys(svgs).length} total)`;
 }
 
-// ---- auto-load from builder/inputs/ ---------------------------------------
+// ---- auto-load from src-fonttools/inputs/ ---------------------------------------
 // Runs once on page open, over HTTP (python -m jzpbuild.devserver): real
 // fetch() calls read inputs/layouts.json, inputs/components.csv, and the
 // /api/svgs route directly — no build step needed first. Falls back to the
@@ -1321,7 +1321,7 @@ function renderInspector() {
 }
 
 // ---- inspector spelling-namespace validation --------------------------
-// mirrors builder/jzpbuild/validate.py: latin/latin_alt/multi-letter common
+// mirrors src-fonttools/jzpbuild/validate.py: latin/latin_alt/multi-letter common
 // share one input-spelling namespace, simplified and traditional are each
 // their own namespace. A glyph and its linked vert_variant are allowed to
 // share a spelling (that's the intentional horizontal/vert-mode pattern).
@@ -1763,7 +1763,7 @@ $("downloadSvgsZip").onclick = () => {
   URL.revokeObjectURL(url);
 };
 
-// ---- Save (menu): write straight to builder/inputs/ on disk (needs devserver) --
+// ---- Save (menu): write straight to src-fonttools/inputs/ on disk (needs devserver) --
 
 async function postSave(payload) {
   const r = await fetch("../api/save", {

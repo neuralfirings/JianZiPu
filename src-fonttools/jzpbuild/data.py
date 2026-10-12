@@ -1,14 +1,20 @@
 """Loaders for the human-maintained data files.
 
-builder/inputs/components.csv is the master mapping table: one row per
-component glyph, with the input spellings (ASCII, latin, Chinese) and the
-layout area(s) the glyph belongs to. builder/inputs/glyphRename.csv maps
-unicode characters to their glyph names in the font (Han characters get
-readable ch_* names).
+inputs/components.csv is the master mapping table: one row per component
+glyph, with the input spellings (ASCII, latin, Chinese) and the layout
+area(s) the glyph belongs to. inputs/glyphRename.csv maps unicode characters
+to their glyph names in the font (Han characters get readable ch_* names).
+
+Both loaders are cached: a build reads each file once, however many
+modules ask for it. The CLI's --input-* overrides are applied to config
+before the first load, so they're honored; a long-running process that
+rewrites a file (devserver.py's /api/save) must call the loader's
+`cache_clear()` afterwards.
 """
 
 import csv
 from dataclasses import dataclass, field
+from functools import cache
 
 from . import config
 
@@ -34,6 +40,7 @@ AREA_COLUMNS = [
 ]
 
 
+@cache
 def load_components() -> list[GlyphRow]:
     rows = []
     with open(config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
@@ -51,6 +58,7 @@ def load_components() -> list[GlyphRow]:
     return rows
 
 
+@cache
 def load_char_to_glyph_name_rows() -> list[tuple[str, str]]:
     """Raw (char, glyph_name) pairs from glyphRename.csv, duplicates included."""
     with open(config.GLYPH_RENAME_CSV, newline="", encoding="utf-8-sig") as f:

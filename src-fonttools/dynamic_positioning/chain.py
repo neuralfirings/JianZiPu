@@ -43,7 +43,7 @@ def _choose_relationships(engine: "anchors.AnchorEngine", present: dict[str, boo
     root/base=None default is typically declared before its overrides, so
     "first candidate whose base qualifies" would pick root every time --
     that's a real bug this function exists to avoid):
-    1. Among candidates whose base is a ranked (engine.optional_order)
+    1. Among candidates whose base is a ranked (engine.flat_optional)
        element that's actually present, the one with the HIGHEST rank
        (latest typed) -- reconstructs "attach to whichever optional
        element was typed most recently" without a sequential walk.
@@ -82,11 +82,25 @@ def _choose_relationships(engine: "anchors.AnchorEngine", present: dict[str, boo
     return chosen
 
 
+def plan(engine: "anchors.AnchorEngine", present: dict[str, bool]
+         ) -> tuple[set[str], dict[str, dict[str, dict]]]:
+    """(to_resolve, chosen): which elements this word resolves -- every
+    present optional element plus every always-present element that
+    declares a relationship -- and, per element and axis, the relationship
+    candidate resolve() will use (see _choose_relationships). Also used by
+    devserver.py's /api/dynamic/resolve to report the chosen bases back to
+    the editor."""
+    flat_optional = set(engine.flat_optional)
+    always_present = engine.declared_elems - flat_optional
+    to_resolve = {e for e in flat_optional if present.get(e)} | always_present
+    return to_resolve, _choose_relationships(engine, present, to_resolve)
+
+
 def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
             present_glyphs: dict[str, str], center: bool = True) -> dict[str, tuple[float, float]]:
     """Absolute (x, y) origin for every element this word resolves.
 
-    `present`: presence flags for engine.optional_order's elements
+    `present`: presence flags for engine.flat_optional's elements
     (missing/False = absent). Everything else engine.relationships
     declares is resolved unconditionally. `present_glyphs` is {area: glyph}
     for every area whose specific glyph identity is pinned down in this
@@ -106,11 +120,8 @@ def resolve(engine: "anchors.AnchorEngine", present: dict[str, bool],
     so an author can see (and drag-edit) an element's literal root->elem
     Y value directly instead of always looking at the shifted result.
     """
-    flat_optional = set(engine.flat_optional)
-    always_present = engine.declared_elems - flat_optional
-    to_resolve = {e for e in flat_optional if present.get(e)} | always_present
-
-    chosen = _choose_relationships(engine, present, to_resolve)
+    to_resolve, chosen = plan(engine, present)
+    always_present = to_resolve - set(engine.flat_optional)
 
     resolved: dict[str, dict[str, float]] = {}
     # Elements that permanently failed to resolve (an always_present element

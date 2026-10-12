@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
 
@@ -63,9 +64,10 @@ def main(argv=None):
     p.add_argument("--figma_pull", action="store_true",
                    help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
     p.add_argument("--dynamic_pos", action="store_true",
-                   help="use the experimental mark-attachment GPOS prototype "
-                        "for the gou/io/li right-hand families (proof of "
-                        "concept, see dynamic_positioning/README.md)")
+                   help="position the gou/io/li right-hand families with the "
+                        "experimental geometry-derived contextual GPOS rules "
+                        "from dynamic_positioning/ instead of layouts.json "
+                        "(see dynamic_positioning/README.md)")
     p.add_argument("--dynamic_pos_only", action="store_true",
                    help="like --dynamic_pos, but additionally zero out every "
                         "classic-positioned shape dynamic_positioning doesn't "
@@ -87,7 +89,6 @@ def main(argv=None):
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
-    from pathlib import Path
     for flag, attr, _ in INPUT_OVERRIDES:
         val = getattr(args, flag)
         if val is not None:

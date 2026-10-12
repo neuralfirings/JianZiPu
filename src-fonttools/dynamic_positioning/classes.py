@@ -30,12 +30,12 @@ from . import geometry, identity, signifiers
 # below generates itself, since classic has no base declaration for it at
 # all under THIS name -- see repeated_area_token for why "under this name"
 # matters.
-_CLASSIC_BASE_AREAS = frozenset(signifiers.AREA_TO_CSV_COLUMN)
+CLASSIC_BASE_AREAS = frozenset(signifiers.AREA_TO_CSV_COLUMN)
 
 
 def repeated_area_token(area: str) -> str:
     """FEA class name for a self-generated "repeat slot" area (build.py's
-    token() fallback for anything not in _CLASSIC_BASE_AREAS). Deliberately
+    token() fallback for anything not in CLASSIC_BASE_AREAS). Deliberately
     NOT `@area_{area}` -- classic jzpbuild/features.py::gen_classes() already
     declares its own row-numbered vert-mode aliases (@area_char1, @area_
     left_1, @area_hui_1, ...) for an unrelated purpose, under a naming
@@ -53,7 +53,7 @@ def repeated_area_token(area: str) -> str:
 
 def gen_repeated_area_classes() -> list[str]:
     """One repeated_area_token(name) class per LAYOUTS area that ISN'T one
-    of classic's own pre-declared base classes (_CLASSIC_BASE_AREAS) and
+    of classic's own pre-declared base classes (CLASSIC_BASE_AREAS) and
     isn't any topology's own pivot (pivots get their per-signifier class
     from signifier_token instead) -- auto-detected purely from
     geometry.LAYOUTS, no separate registration. `signifiers.csv_column_for`
@@ -70,7 +70,7 @@ def gen_repeated_area_classes() -> list[str]:
         referenced |= {r["elem"] for r in layout["relationships"]}
         referenced |= {r["base"] for r in layout["relationships"] if r["base"]}
         for area in referenced:
-            if area == pivot or area in _CLASSIC_BASE_AREAS or area in areas:
+            if area == pivot or area in CLASSIC_BASE_AREAS or area in areas:
                 continue
             try:
                 areas[area] = signifiers.csv_column_for(area)

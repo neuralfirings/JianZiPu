@@ -1,6 +1,6 @@
 """Pre-build validation of the human-maintained input files.
 
-Catches the uniqueness violations documented in builder/README.md that
+Catches the uniqueness violations documented in README.md that
 would otherwise fail silently at build time — a shadowed spelling, a
 dropped glyphRename.csv row, or two characters silently sharing one glyph —
 instead of erroring. Run automatically by features.py::gen_gsub() before

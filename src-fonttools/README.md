@@ -8,19 +8,19 @@ hand-edited feature files.
 1. **Python >= 3.10.**
 2. **Install dependencies:**
    ```bash
-   cd builder
+   cd src-fonttools
    pip install -e .          # fonttools, picosvg, requests, skia-pathops
    pip install -e '.[test]'  # + uharfbuzz, pytest — needed for tests/test_shaping.py
    ```
 3. **Base font.** The pipeline subsets glyphs from a base Kai typeface, and
-   expects it at `builder/src_font/TW-Kai-98.ttf`. This file is **gitignored
+   expects it at `src-fonttools/src_font/TW-Kai-98.ttf`. This file is **gitignored
    and not included in the repo** (36MB, binary, not something git handles
    well) — copy/paste your own copy of `TW-Kai-98.ttf` there before your
    first build. Using a different base font, or a different filename? Change
    `SOURCE_FONT` in `jzpbuild/config.py` (`SOURCE_FONT = BUILDER_DIR /
    "src_font/TW-Kai-98.ttf"`) to point at it — everything downstream
    (`base.py`) just reads whatever path is set there.
-4. **`builder/inputs/`** holds everything the build reads — both the
+4. **`src-fonttools/inputs/`** holds everything the build reads — both the
    hand-maintained sources (`components.csv`, `glyphRename.csv`,
    `edge_cases.fea`) and the Figma-fetched artifacts (`svg/`,
    `layouts.json`) — and is tracked in git, so a fresh checkout already has
@@ -30,7 +30,7 @@ hand-edited feature files.
    export FIGMA_TOKEN=figd_...   # see "Figma access" below for where to get one
    python3 -m jzpbuild --figma_pull
    ```
-   A plain build reads `builder/inputs/svg/` and `layouts.json`
+   A plain build reads `src-fonttools/inputs/svg/` and `layouts.json`
    unconditionally, with no fallback location — if this directory is ever
    missing or emptied, the build fails fast with `FileNotFoundError` rather
    than silently reading something stale (see "config.py's paths are the
@@ -42,38 +42,33 @@ everything from here on is just `python3 -m jzpbuild`.
 ## Commands
 
 ```bash
-cd builder
-python3 -m jzpbuild                          # build from builder/inputs
+cd src-fonttools
+python3 -m jzpbuild                          # build from inputs/ -> JianZiPu.ttf
 python3 -m jzpbuild --figma_pull             # pull latest SVGs + layouts from Figma first
 python3 -m jzpbuild --fea-only               # just regenerate the feature file (fast)
-python3 -m jzpbuild -o ../src/JianZiPu.ttf   # overwrite the tracked, released font
-python3 -m jzpbuild --output ../src/JianZiPu.ttf   # same as -o, long form
+python3 -m jzpbuild -o /path/to/JianZiPu.ttf # write the font somewhere else (e.g. a release copy)
+python3 -m jzpbuild --dynamic_pos            # experimental dynamic_positioning build (see its README)
 python3 -m jzpbuild --input-components ./experiment/components.csv  # override one input file
 python3 -m jzpbuild --help                   # full list of --input-* overrides
 ```
 
-By default the build writes to `builder/JianZiPu.ttf` — a build artifact,
-not the tracked font — so running the pipeline never touches
-`src/JianZiPu.ttf` unless you explicitly pass `-o ../src/JianZiPu.ttf` (or
-`npm run font -- -o ../src/JianZiPu.ttf` from the repo root). This also
-means the shaping regression test always has an untouched golden reference
-(`config.CURRENT_FONT`) to compare against, and lets you preview a build
-(via `tools/font_tester.html`) before deciding to overwrite the release.
+By default the build writes to `src-fonttools/JianZiPu.ttf`, and the
+`--fea-out` inspection copy of the generated feature text to
+`src-fonttools/JianZiPu.fea` — both build artifacts, both gitignored. So
+running the pipeline never touches anything tracked: the shaping regression
+test always has an untouched golden reference (`config.CURRENT_FONT`,
+`tests/JianZiPu.ttf`) to compare against, and you can preview a build (via
+`tools/font_tester.html`) before copying it anywhere with `-o`.
 
 `npm run font` at the repo root does the default build.
 
-If a build ever does clobber `src/JianZiPu.ttf` unexpectedly: it's a
-tracked file, so `git checkout -- src/JianZiPu.ttf` restores the last
-committed version (or `git log -- src/JianZiPu.ttf` + `git checkout
-<commit> -- src/JianZiPu.ttf` to go further back).
-
-**`builder/inputs/` is the only source read at build time — no fallback.**
+**`src-fonttools/inputs/` is the only source read at build time — no fallback.**
 `config.py`'s paths are the single source of truth: a plain build reads SVGs
-from `config.COMPONENTS_DIR` (`builder/inputs/svg/`) and layout geometry from
-`config.LAYOUTS_JSON` (`builder/inputs/layouts.json`) with no alternate
+from `config.COMPONENTS_DIR` (`src-fonttools/inputs/svg/`) and layout geometry from
+`config.LAYOUTS_JSON` (`src-fonttools/inputs/layouts.json`) with no alternate
 location to fall back to (unless overridden on the CLI — see "Overriding
-individual input paths" below). Unlike `builder/cache/` (a leftover,
-gitignored, safe to delete), `builder/inputs/` is tracked in git in full —
+individual input paths" below). Unlike `src-fonttools/cache/` (a leftover,
+gitignored, safe to delete), `src-fonttools/inputs/` is tracked in git in full —
 the Figma-fetched half (`svg/`, `layouts.json`, `meta.json`) is committed
 after each `--figma_pull` refresh, not regenerated on every checkout, so
 treat a `git status` diff under it after `--figma_pull` as something to
@@ -81,7 +76,7 @@ review and commit like any other source change.
 
 ### Overriding individual input paths
 
-Every path `config.py` defines under `builder/inputs/` can be pointed
+Every path `config.py` defines under `src-fonttools/inputs/` can be pointed
 elsewhere for a single build via a matching `--input-*` flag, without
 touching `config.py`:
 
@@ -96,18 +91,18 @@ python3 -m jzpbuild --input-svg-dir ./scratch/svg
 Each defaults to the matching `config.py` constant (`COMPONENTS_CSV`,
 `GLYPH_RENAME_CSV`, `EDGE_CASES_FEA`, `LAYOUTS_JSON`, `COMPONENTS_DIR`)
 and only affects that one build invocation — nothing is written back to
-`builder/inputs/`. Run `python3 -m jzpbuild --help` for the full, current
+`src-fonttools/inputs/`. Run `python3 -m jzpbuild --help` for the full, current
 list (it's generated from the same argparse definitions, so it can't drift
 from this doc).
 
 ## What it does
 
 ```
-Figma file ──(figma.py, REST API)──▶ builder/inputs/{svg/*.svg, layouts.json}
-builder/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
+Figma file ──(figma.py, REST API)──▶ src-fonttools/inputs/{svg/*.svg, layouts.json}
+src-fonttools/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
 inputs/svg/*.svg ──(glyphs.py: picosvg + pathops + cu2qu)──▶ PUA component glyphs
-builder/inputs/{components.csv, glyphRename.csv, edge_cases.fea} + gpos.py layouts ──(features.py/gpos.py)──▶ features.fea
-                                       └──(feaLib)──▶ GSUB/GPOS ──▶ builder/JianZiPu.ttf
+src-fonttools/inputs/{components.csv, glyphRename.csv, edge_cases.fea} + gpos.py layouts ──(features.py/gpos.py)──▶ features.fea
+                                       └──(feaLib)──▶ GSUB/GPOS ──▶ src-fonttools/JianZiPu.ttf
 ```
 
 ## How compilation works
@@ -149,7 +144,7 @@ touched a font yet. This is exactly what `--fea-only` writes out and what
 `feadiff` compares.
 
 **2. Build the base font — `base.py::build_base()`.** Subsets
-`builder/src_font/TW-Kai-98.ttf` down to printable ASCII/NBSP
+`src-fonttools/src_font/TW-Kai-98.ttf` down to printable ASCII/NBSP
 (`config.BASE_KEEP_CODEPOINTS`) plus every character referenced anywhere in
 `components.csv`'s `simplified`/`traditional` columns *or* listed in
 `glyphRename.csv` (`data.py::referenced_chars()` ∪ the override dict — a
@@ -182,9 +177,9 @@ every class/lookup reference against the font's actual glyph set and
 produces real `GSUB`/`GPOS` tables. `font.save(out_path)` writes the `.ttf`.
 
 Upstream of all this, `--figma_pull` (`figma.py::fetch()`) is a separate,
-optional step that populates `builder/inputs/` in the first place —
+optional step that populates `src-fonttools/inputs/` in the first place —
 nothing in the four steps above talks to Figma directly, they only ever
-read what's already sitting in `builder/inputs/`.
+read what's already sitting in `src-fonttools/inputs/`.
 
 ## Sources of truth (what you edit)
 
@@ -192,16 +187,16 @@ read what's already sitting in `builder/inputs/`.
 |---------------------------|------------------------------------------------|
 | glyph shapes              | Figma GLYPH pages (then `--figma_pull`)        |
 | layout positions          | Figma LAYOUT frames (then `--figma_pull`)      |
-| input keys / spellings    | `builder/inputs/components.csv`                |
-| Han char glyph names      | `builder/inputs/glyphRename.csv`               |
-| disambiguation rules      | `builder/inputs/edge_cases.fea`                |
+| input keys / spellings    | `src-fonttools/inputs/components.csv`                |
+| Han char glyph names      | `src-fonttools/inputs/glyphRename.csv`               |
+| disambiguation rules      | `src-fonttools/inputs/edge_cases.fea`                |
 | layout structure          | `jzpbuild/gpos.py` (declarative rule builders) |
 | metrics / naming / config | `jzpbuild/config.py`                           |
 
 Everything else — glyph classes, all substitution lookups, the 13×9 hui/
 decimal matrices, and every positioning rule — is generated.
 
-### `builder/components.csv`
+### `inputs/components`
 
 (Named `areaKeySVGMap.csv` in the legacy pipeline, then `glyphAreas.csv`
 early in this pipeline, renamed again to `components.csv` since it's really
@@ -252,7 +247,7 @@ Columns:
 A blank cell means "not applicable," not "unset" — e.g. chord glyphs
 (`xl_cuo` etc.) have no `latin`/`latin_alt`, only `common`.
 
-### `builder/glyphRename.csv`
+### `inputs/glyphRename`
 
 **Optional overrides file** (25 rows) — not every Chinese-spelled character
 needs a row here anymore. `char` (a single unicode character) and
@@ -307,7 +302,7 @@ Printable ASCII + NBSP are kept unconditionally via
 `config.BASE_KEEP_CODEPOINTS` and pass through with their original TW-Kai
 glyph names, so they never need rows in this file.
 
-### `builder/inputs/edge_cases.fea`
+### `src-fonttools/inputs/edge_cases.fea`
 
 Raw FEA `lookup { ... }` blocks, included verbatim into the generated
 feature file's `liga` feature. This is the one place where hand-written
@@ -386,8 +381,8 @@ identity/metrics change or a new right-hand technique family is added to
 ## Common tasks
 
 Two worked examples of adding new content. Both follow the same shape: get
-the SVG into `builder/inputs/svg/`, add one row to
-`builder/inputs/components.csv`, rebuild. Neither needs a `gpos.py` change,
+the SVG into `src-fonttools/inputs/svg/`, add one row to
+`src-fonttools/inputs/components.csv`, rebuild. Neither needs a `gpos.py` change,
 because both areas (`area_char`, `area_mod_jc`) are shared glyph classes
 already wired into every layout's rules — a new *member* of an existing
 area is automatically positionable everywhere that area already appears;
@@ -448,17 +443,17 @@ the shared `@area_char` glyph class — see `vert_rules()` in `gpos.py` and
 the `area_char{1..4}` entries in `layouts.json`. Any glyph tagged
 `area_char` in `components.csv` is eligible, so:
 
-1. Get the glyph's SVG into `builder/inputs/svg/<glyph_name>.svg`
+1. Get the glyph's SVG into `src-fonttools/inputs/svg/<glyph_name>.svg`
    (via `--figma_pull` if it's a new Figma GLYPH-page component, or drop it
    in by hand if you're not using Figma for this one).
-2. Add a row to `builder/inputs/components.csv` with that `glyph_name`, put
+2. Add a row to `src-fonttools/inputs/components.csv` with that `glyph_name`, put
    any non-empty value in the `area_char` column, and fill in whichever
    spelling column(s) should trigger it (`latin`/`common` and/or
    `simplified`/`traditional`) — pick a key that isn't already claimed
    elsewhere in the CSV. Existing char-only examples to copy the shape of:
    `md_shang` (上, `area_char` only) or `md_xi` (息).
    - *Truly optional, even with a `simplified`/`traditional` spelling:*
-     `builder/inputs/glyphRename.csv` is now an overrides file, not a
+     `src-fonttools/inputs/glyphRename.csv` is now an overrides file, not a
      requirement — a Chinese character with no row there still gets kept
      during subsetting and still resolves to a valid glyph name
      automatically (fontTools' own default `uniXXXX` codepoint name; see the
@@ -512,7 +507,7 @@ layout family's rules (the `jc` parameter throughout `word_layout_rules()`,
 `area_jc` x/y in `layouts.json`. Adding a third member doesn't require
 touching any of that:
 
-1. Get the new SVG into `builder/inputs/svg/<glyph_name>.svg`
+1. Get the new SVG into `src-fonttools/inputs/svg/<glyph_name>.svg`
    (same as Case 1 — `--figma_pull` or manual drop).
 2. Add a row to `components.csv`: `glyph_name` matching the SVG filename,
    any non-empty value in the `area_mod_jc` column, and a spelling key that
@@ -533,12 +528,12 @@ touching any of that:
 
 `--figma_pull` needs `FIGMA_TOKEN` in the environment (Figma → Settings →
 Security → Personal access tokens; `export FIGMA_TOKEN=figd_...` or put it
-in `builder/.env` and source it). The file key lives in
+in `src-fonttools/.env` and source it). The file key lives in
 `config.FIGMA_FILE_KEY`; only the page named `config.FIGMA_PAGE_NAME`
 (default `"main"`, override via `FIGMA_PAGE_NAME` env var) is scanned —
 other pages (drafts, archive, WIP) are ignored, and an unknown page name
 fails fast listing the real page names in the file. Fetches are cached in
-`builder/inputs/` by file version (`meta.json`), so a repeat
+`src-fonttools/inputs/` by file version (`meta.json`), so a repeat
 `--figma_pull` against an unchanged Figma file is a no-op.
 
 Two Figma-specific quirks this pipeline works around — worth knowing before
@@ -594,7 +589,7 @@ so auto-load, Import/Save, and Build Font all have nothing to talk to).
 **Spin it up:**
 
 ```bash
-cd builder
+cd src-fonttools
 python3 -m jzpbuild.devserver          # serves at http://127.0.0.1:5713/
 python3 -m jzpbuild.devserver --port 9000   # or pick a different port
 ```
@@ -606,13 +601,13 @@ command running in that terminal for as long as you want the tool's server
 features available; `Ctrl-C` stops it. `tools/font_tester.html` doesn't need
 the server at all — it only ever reads a built `.ttf` file directly.
 
-`jzpbuild/devserver.py` serves `builder/` as static files, plus four small
+`jzpbuild/devserver.py` serves `src-fonttools/` as static files, plus four small
 JSON routes:
 - `GET /api/svgs` — every `inputs/svg/*.svg` as `{glyph_name: svg_text}`.
 - `GET /api/config` — `config.py`'s `RIGHT_SELECTORS` map plus the default
   `--input-*` paths, straight from the source of truth — powers the
   `area_right` restriction and the Build Font modal's prefilled paths below.
-- `POST /api/build` — runs `python3 -m jzpbuild` in `builder/`, with
+- `POST /api/build` — runs `python3 -m jzpbuild` in `src-fonttools/`, with
   optional `--input-*` overrides from the request body, returns
   `{ok, returncode, stdout, stderr}`.
 - `POST /api/save` — writes request-body values straight to their
@@ -634,8 +629,8 @@ Dev Server above.
 ### JianZiPu Font Builder (no-Figma workflow)
 
 `tools/jzpbuilder.html` — auto-loads the current
-`builder/inputs/layouts.json`, every SVG in `builder/inputs/svg/`, and
-`builder/inputs/components.csv` on open, so it's ready to explore immediately
+`src-fonttools/inputs/layouts.json`, every SVG in `src-fonttools/inputs/svg/`, and
+`src-fonttools/inputs/components.csv` on open, so it's ready to explore immediately
 with no manual load step, and has a **Build Font** button (top toolbar) that
 opens a modal listing every input file `python3 -m jzpbuild` would read
 (prefilled with `config.py`'s defaults via `/api/config`, each editable as
@@ -652,7 +647,7 @@ Font — three dropdowns (click to open, click anywhere else to close):
   disk and replaces what's currently loaded in the browser.
 - **Save ▾** — `layouts.json`, `components.csv`, and `svgs` each POST their
   current in-memory state to `/api/save`, overwriting the real files under
-  `builder/inputs/` (`svgs` writes one file per loaded SVG, to
+  `src-fonttools/inputs/` (`svgs` writes one file per loaded SVG, to
   `inputs/svg/<glyph_name>.svg` — needs the dev server; without it you just
   get a "no dev server running" alert); **Save All** does all three in one
   request, one combined confirmation.
@@ -729,11 +724,11 @@ picker) to replace the auto-loaded set, preview how glyphs sit in each area
 placement" checkbox — off by default, since the alternative stretch-to-fill
 rendering doesn't tell you anything real about whether an area is sized
 right), then move/resize areas by drag or numeric input, add/duplicate/delete
-layouts and areas, then get the changes back to `builder/inputs/` one of two
+layouts and areas, then get the changes back to `src-fonttools/inputs/` one of two
 ways: use the Save menu (needs the dev server, writes directly, no manual
 step) or download a corrected `layouts.json` (with `yd` recomputed)
 and/or `components.csv` from the Export menu and drop them in yourself as
-`builder/inputs/layouts.json` / `builder/inputs/components.csv`. "Test random components" prefers real
+`src-fonttools/inputs/layouts.json` / `src-fonttools/inputs/components.csv`. "Test random components" prefers real
 `components.csv` membership when it's loaded (falling back to a small
 hardcoded candidate pool only for areas with no matching CSV rows), applying
 the same `area_right`-family restriction described above. The left panel,
@@ -763,7 +758,7 @@ collides with one already loaded, you're prompted with a suggested rename
 (`foo` → `foo_2`, `foo_2` → `foo_3`, ...) before it's added — re-prompting
 until you pick a free name or cancel (which skips just that file). Either
 way, a newly uploaded SVG only exists in memory until you use **Save ▾ >
-svgs** (or Save All) to write it to `builder/inputs/svg/`. Clicking a
+svgs** (or Save All) to write it to `src-fonttools/inputs/svg/`. Clicking a
 candidate chip both toggles its assignment to the
 currently-selected area in the main canvas *and* opens an inspector panel on
 the right showing every area that glyph belongs to across the whole CSV
@@ -812,10 +807,10 @@ ligature bug — see `OLD_FONT_EOT_QUIRK` in the test). Also worth using:
   (`vhea`/`vmtx`) that FontForge generated; this pipeline emits pure
   OpenType (GSUB/GPOS), which is what browsers and modern apps use.
 - The legacy pipeline (FontForge scripts in `src/scripts/`, `scripts.cjs`,
-  `src/input/figma.css`, hand-maintained `src/input/fontForgeFeatures.fea`,
-  and the wide `src/input/*.csv` files) is deprecated and kept only for
-  reference. The builder's slimmed CSVs (`builder/inputs/components.csv`,
-  `builder/inputs/glyphRename.csv`) are the live sources of truth: dead columns
+  `src-fontforge/input/figma.css`, hand-maintained `src-fontforge/input/fontForgeFeatures.fea`,
+  and the wide `src-fontforge/input/*.csv` files) is deprecated and kept only for
+  reference. The builder's slimmed CSVs (`src-fonttools/inputs/components.csv`,
+  `src-fonttools/inputs/glyphRename.csv`) are the live sources of truth: dead columns
   (ID/keys/filename/area_hui_deci/pinyin, identity ASCII rename rows) were
   dropped, and the per-glyph exceptions that used to be Python constants in
   `features.py` now live in the CSV (md_8/md_9 tagged `area_string`, md_jiu

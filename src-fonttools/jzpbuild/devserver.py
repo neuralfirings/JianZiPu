@@ -3,7 +3,7 @@
   python -m jzpbuild.devserver              # serve on http://127.0.0.1:5713/
   python -m jzpbuild.devserver --port 9000
 
-Serves builder/ over plain HTTP so tools/jzpbuilder.html can fetch()
+Serves src-fonttools/ over plain HTTP so tools/jzpbuilder.html can fetch()
 inputs/components.csv, inputs/layouts.json, and inputs/svg/*.svg directly.
 This is the only supported way to open the tool — a plain file:// double
 click can't fetch() sibling files (Chromium blocks it), so devserver must
@@ -16,7 +16,7 @@ Small JSON routes on top of static file serving:
                        candidates to the current layout's RIGHT_SELECTORS
                        family, and prefill the Build Font modal's default
                        input paths, without hardcoding a JS copy of either.
-  POST /api/build  -> runs `python3 -m jzpbuild` in builder/ with optional
+  POST /api/build  -> runs `python3 -m jzpbuild` in src-fonttools/ with optional
                        --input-* overrides from the JSON body
                        ({components, glyph_rename, edge_cases, layouts,
                        svg_dir}, any/all optional), returns
@@ -97,7 +97,7 @@ import subprocess
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-from . import config
+from . import config, data
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -182,6 +182,8 @@ class Handler(SimpleHTTPRequestHandler):
                 if key in payload:
                     path.write_text(payload[key])
                     saved[key] = str(path)
+            if "components" in saved:
+                data.load_components.cache_clear()
             svgs = payload.get("svgs")
             if isinstance(svgs, dict):
                 written = []
@@ -263,10 +265,7 @@ class Handler(SimpleHTTPRequestHandler):
                 present_glyphs = dict(area_glyphs)
                 if signifier_glyph:
                     present_glyphs[engine.pivot] = signifier_glyph
-                flat_optional = set(engine.flat_optional)
-                always_present = engine.declared_elems - flat_optional
-                to_resolve = {e for e in flat_optional if present.get(e)} | always_present
-                chosen = chain._choose_relationships(engine, present, to_resolve)
+                _, chosen = chain.plan(engine, present)
                 # `center`: whether to apply the whole-stack vertical
                 # centering shift at all (jzpbuilder-dynamic.html's
                 # "vertically center character" checkbox) -- distinct from
@@ -328,7 +327,7 @@ class DevServer(ThreadingHTTPServer):
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         prog="jzpbuild.devserver",
-        description="Serve builder/ over HTTP for tools/*.html (fetch()-based "
+        description="Serve src-fonttools/ over HTTP for tools/*.html (fetch()-based "
                      "auto-load + the Build Font modal).")
     p.add_argument("--port", type=int, default=5713)
     args = p.parse_args(argv)

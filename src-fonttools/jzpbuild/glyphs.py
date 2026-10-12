@@ -55,31 +55,34 @@ def svg_to_ttglyph(svg_file, glyph_set):
     return pen.glyph()
 
 
+def add_glyph(font: TTFont, name: str, glyph, advance: int, lsb: int,
+              codepoint: int | None = None) -> None:
+    """Append one glyph: outline, metrics, glyph order, and (if given) a
+    cmap entry in every format-4/12 subtable that can hold the codepoint."""
+    font["glyf"].glyphs[name] = glyph
+    font["hmtx"].metrics[name] = (advance, lsb)
+    font.setGlyphOrder(font.getGlyphOrder() + [name])
+    if codepoint is not None:
+        for t in font["cmap"].tables:
+            if t.format == 12 or (t.format == 4 and codepoint <= 0xFFFF):
+                t.cmap[codepoint] = name
+
+
 def add_component_glyphs(font: TTFont, components_dir=None) -> None:
     components_dir = components_dir or config.COMPONENTS_DIR
     svgs = sorted(components_dir.glob("*.svg"))
     if not svgs:
         raise RuntimeError(f"no SVGs found in {components_dir}")
 
-    glyf, hmtx = font["glyf"], font["hmtx"]
-    cmap_tables = [t for t in font["cmap"].tables if t.format in (4, 12)]
-    order = font.getGlyphOrder()
     glyph_set = font.getGlyphSet()
     code = config.COMPONENT_GLYPHS_BASE
     for svg in svgs:
         name = svg.stem
-        if name in glyf.glyphs:
+        if name in font["glyf"].glyphs:
             continue
         glyph = svg_to_ttglyph(svg, glyph_set)
-        glyf.glyphs[name] = glyph
         # TrueType renderers shift outlines by (lsb - xMin), so lsb must
         # equal xMin for the outline to render at its stored coordinates
         xmin = min((x for x, y in glyph.coordinates), default=0) if glyph.numberOfContours else 0
-        hmtx.metrics[name] = (0, xmin)
-        order.append(name)
-        for t in cmap_tables:
-            t.cmap[code] = name
+        add_glyph(font, name, glyph, advance=0, lsb=xmin, codepoint=code)
         code += 1
-    font.setGlyphOrder(order)
-    if hasattr(font, "_reverseGlyphOrderDict"):
-        del font._reverseGlyphOrderDict

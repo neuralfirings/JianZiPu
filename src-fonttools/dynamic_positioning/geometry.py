@@ -1,146 +1,75 @@
-"""Pure-data spatial-adjacency graph for the gou/io/li GPOS prototype.
+"""Layout data for dynamic_positioning: area sizes, the centering target,
+and one spatial-adjacency graph ("topology") per LAYOUTS entry.
 
-No fontTools/feaLib imports here on purpose — this module is the literal,
-reviewable translation of the composition's geometry into Python, checkable
-independent of feaLib syntax. See README.md for background.
+Everything here is loaded from config.DYNAMIC_LAYOUTS_JSON (edited by
+tools/jzpbuilder-dynamic.html); this module just exposes it. No fontTools
+imports on purpose -- the geometry stays reviewable independent of feaLib.
 
-This is a rewrite of an earlier version of this module that modeled
-positioning as a strict "typed order" chain (each element attaches to
-whichever optional element was typed immediately before it). That
-conflated two things that don't actually have to match: the ORDER GLYPHS
-APPEAR IN THE SHAPED SEQUENCE (a real fact about the font, still used by
-build.py to construct correct backtrack/lookahead context) and WHICH
-ELEMENT'S POSITION A GIVEN ELEMENT IS COMPUTED RELATIVE TO (a pure
-geometry/authoring choice). RELATIONSHIPS below is a spatial adjacency
-graph -- "elem is positioned relative to base" -- with no assumption that
-base was typed before elem. `chain.py` resolves it as a small dependency
-graph, not a fixed sequential walk.
+Each layout carries two orderings that are deliberately kept separate:
 
-Stacking template (bottom to top, visual), area_left/area_hui side by side:
+- `order`: the real typed/glyph-sequence order -- a fact about the shaped
+  text, which build.py uses to construct correct backtrack/lookahead
+  context. Exactly one entry is the `pivot` (the element whose glyph IS the
+  signifier); `optional` entries may be absent from a word.
+- `relationships`: which element's POSITION each element is computed
+  relative to -- a pure authoring choice, with no assumption that `base`
+  was typed before `elem`. chain.py resolves it as a small dependency
+  graph, not a sequential walk.
 
-    [area_fy]
-    [area_left][area_hui]
-    [area_jc]
-    [area_right]
-
-area_fy, area_left+area_hui, area_jc are each independently optional and
-form the "core chain" (chain.py's `_walk_core`) -- each attaches to
-whichever of them is actually present in this word (still typed-order
-recency among themselves, since that's a real ambiguity: which of several
-possibly-present predecessors does a given element sit against).
-
-area_right is always present for the families this module covers. Its own
-Y attaches to whichever of jc/hui/left/fy precedes it, same recency rule,
-or its own root default when none do.
-
-area_zhu, area_string, area_string_top, area_string_bottom are LEAVES: each
-is positioned purely as an offset from area_right's already-resolved
-position (both axes), regardless of typed order. area_zhu is typed before
-area_right but visually sits right up against the technique glyph, so its
-position is authored that way -- see RELATIONSHIPS' area_zhu rows.
-
-Relationship shape (see RELATIONSHIPS):
+Relationship shape:
     {"axis": "x"|"y", "elem": <area>, "base": <area>|None,
      "base_edge": <edge>|omitted, "elem_edge": <edge>|omitted, "gap": Gap}
 
-For axis="y", edges are "top"|"bottom" (base_edge default "bottom",
-elem_edge default "top"). For axis="x", edges are "left"|"right"
-(base_edge default "left", elem_edge default "right"). `elem`'s
-`elem_edge` is placed at `base`'s `base_edge` position plus `gap` (both
-expressed in `base`'s own local coordinates, base's own origin at its own
-near corner -- bottom-left). Both edge fields are almost always left at
-their default (elem's far edge measured from base's near edge -- e.g.
-"elem's top touches base's bottom plus gap") -- write them out explicitly
-only when a relationship genuinely needs the other edge (see anchors.py's
-`anchor()`). `base=None` means "no dependency" -- `gap` is then the literal absolute
-default value directly, not a relative offset.
+`elem`'s `elem_edge` is placed at `base`'s `base_edge` position plus `gap`,
+in `base`'s own local coordinates (origin at its bottom-left corner). For
+axis="y" the edges are "top"|"bottom" (base_edge default "bottom",
+elem_edge default "top"); for axis="x" they're "left"|"right" (defaults
+"left"/"right"). So by default elem's far edge is measured from base's near
+edge -- "elem's top touches base's bottom plus gap"; spell the edges out
+only when a relationship genuinely needs the other pairing (anchors.py).
+`base=None` means no dependency: `gap` is then the literal absolute value.
 
-Gap shape: a plain number (same value regardless of glyph identity), OR an
-ordered list of override entries `{"base_signifiers": [...], "elem_signifiers":
-[...], "value": <number>}` (either or both signifier keys omittable),
-evaluated FIRST-MATCH-WINS in list order (see anchors.resolve_gap) -- put
-any catch-all (an entry with neither key) last yourself, nothing enforces
-that ordering. "signifier" = an actual glyph name (e.g. "lg_gou", "lg_da",
-"md_5"), the finest-grained unit this module can address.
-`"base_signifiers"` matches against the relationship's own `base` area's
-glyph, `"elem_signifiers"` against its `elem` area's glyph -- independent
-conditions, so an entry can name either one alone, or both together for a
-genuine conjunction ("only when base is md_9 AND elem is md_bar"). This is
-what lets e.g. lg_gou and lg_da (both family "gou") get independently-tuned
-values instead of being forced to share one, unlike the classic pipeline's
-own per-family (not per-glyph) granularity -- and what lets a relationship
-vary by either side's identity, or both at once.
+Gap shape: a plain number, OR an ordered list of override entries
+`{"base_signifiers": [...], "elem_signifiers": [...], "value": N}` (either
+key omittable), evaluated FIRST-MATCH-WINS in list order
+(anchors.resolve_gap) -- put any catch-all entry last yourself, nothing
+enforces it. Signifiers are glyph names (e.g. "lg_gou", "md_5"), matched
+against the relationship's `base` / `elem` area's glyph respectively. This
+is what lets lg_gou and lg_da (same classic family) get independently
+tuned values, and lets a gap depend on either side's identity or both.
 
-Many of the numeric gap values below are placeholders (per an explicit
-decision this round to prioritize getting the new engine's shape right
-over re-deriving exact classic-matching numbers) -- expect to retune them
-against tests/test_shaping.py and font_tester.html.
+`vertical_center_order`: visual top-to-bottom rank groups, used ONLY for
+the whole-stack centering shift onto CENTER_Y (chain._centering_bounds).
+Same-rank siblings (e.g. left/hui) sit side by side; either may define that
+rank's box. There is no X-axis equivalent yet: CENTER_X is loaded but
+nothing recenters on it.
 """
 
 import json
 
 from jzpbuild import config
 
-from . import signifiers
+# RIGHT_SELECTORS families this module positions; classic gpos.py's rules
+# for them are zeroed under --dynamic_pos. Distinct from config.RIGHT_KEYS,
+# which is classic's own "six standard families" list.
+FAMILIES = ("gou", "io", "li")
 
-RIGHT_KEYS = ("gou", "io", "li")
-
-# Whether a signifier's word shape uses two string areas (area_string_top
-# + area_string_bottom) instead of one is no longer a separate table --
-# it's derived directly from whether a string_top/string_bottom
-# relationship's gap actually resolves for that signifier (see the "U"-only
-# gap lists below, and build.py's try/except around
-# chain.resolve_double_string).
-
-# All of AREA_SIZES/CENTER_X/CENTER_Y/LAYOUTS below are loaded from
-# config.DYNAMIC_LAYOUTS_JSON rather than declared as Python literals here,
-# so tools/jzpbuilder-dynamic.html can edit and save them directly. The
-# schema (per-layout selector/vertical_center_order/relationships/order,
-# a shared area_sizes map) matches what used to be hand-authored in this
-# file 1:1 -- see dynamic_positioning/layouts_data.json.
 _data = json.loads(config.DYNAMIC_LAYOUTS_JSON.read_text())
 
 CENTER_X = _data["center_x"]
 CENTER_Y = _data["center_y"]
 
-# Generic per-area box sizes (w, h), in font design units. Shared by
-# reference across every LAYOUTS entry below (see the "areas" assignment
-# after LAYOUTS) -- not derived from real glyph outlines, since anchors are
-# computed before glyph outlines exist in this pipeline's build order. See
-# README.md "Known simplifications".
+# Per-area box sizes (w, h) in font units, shared by reference across every
+# LAYOUTS entry (see below) -- not derived from glyph outlines, since
+# positions are computed before outlines exist in this pipeline's build
+# order. See README.md "Known simplifications".
 AREA_SIZES = {k: tuple(v) for k, v in _data["area_sizes"].items()}
 
-# Visual top-to-bottom rank order, used ONLY for the whole-stack Y-axis
-# centering shift (chain.py's _centering_bounds, which feeds CENTER_Y --
-# there's no X-axis equivalent, nothing recenters on CENTER_X today). At
-# resolve time: "top" = the topmost box among whichever ranks are
-# actually present in this word, "bottom" = the bottommost. Same-rank
-# groups (left/hui) sit side by side; either may define that rank's box.
-# area_right is always present, so it's always eligible to be "bottom" --
-# it's listed last for that reason, not because it's part of the core
-# chain (it isn't; see module docstring). NOT the same as typed/glyph-
-# sequence order (build.py's _ORDER) or attachment/dependency order
-# (RELATIONSHIPS' own "base" pointers) -- three separate orderings that
-# happen to agree for this topology, but aren't guaranteed to.
-VERTICAL_CENTER_ORDER = [["fy"], ["left", "hui"], ["jc"], ["zhu"], ["right"]]
-
-# One entry per distinct spatial-adjacency graph ("topology"). gou/io/li
-# all share the one below -- they're differently-proportioned SIGNIFIERS
-# within the same fy/left/hui/jc/right/zhu/string shape, not different
-# shapes. A genuinely different shape (no area_right at all, or a repeated
-# structure) needs its own entry here with its own areas/
-# vertical_center_order/relationships -- e.g. cuo_left/cuo_right, added
-# once dynamic_positioning
-# actually covers cuo. `selector.contains` lists ASCII keys (see
-# signifiers.py); anchors.AnchorEngine + chain.py are built against
-# whichever entry a given key's `contains` list matches -- see build.py's
-# `_engine_for_key`.
-#
-# Loaded from config.DYNAMIC_LAYOUTS_JSON (see AREA_SIZES above) rather
-# than a Python literal -- each entry's "areas" is re-attached here as the
-# same shared AREA_SIZES dict object every other entry uses, exactly as
-# when this was hand-authored, so editing one area's size in
-# tools/jzpbuilder-dynamic.html affects every layout that references it.
+# One entry per topology; gou/io/li share "default_jzp" (differently
+# proportioned signifiers within one shape). `selector.contains` lists the
+# ASCII keys (signifiers.py) routed to each entry -- see
+# build._engine_for_key. Every entry's "areas" is the same shared AREA_SIZES
+# object, so editing one area's size affects every layout that uses it.
 LAYOUTS = _data["layouts"]
 for _layout in LAYOUTS:
     _layout["areas"] = AREA_SIZES

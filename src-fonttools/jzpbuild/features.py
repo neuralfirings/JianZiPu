@@ -1,10 +1,14 @@
 """Generate the GSUB half of the feature file (classes + substitution lookups).
 
 The goal is semantic equivalence with the previously hand-maintained
-src/input/fontForgeFeatures.fea: every glyph class and substitution rule is
-derived from components.csv, glyphRename.csv, and algorithmic
-hui/decimal matrices. Hand-written disambiguation rules live in
-src/input/edge_cases.fea and are included verbatim.
+src-fontforge/input/fontForgeFeatures.fea: every glyph class and
+substitution rule is derived from components.csv, glyphRename.csv, and
+algorithmic hui/decimal matrices. Hand-written disambiguation rules live in
+inputs/edge_cases.fea and are included verbatim.
+
+Rule ORDER within the hui lookups is load-bearing (a 2-token hui like
+`one one` must be tried before its 1-token prefix `one`); hui_sequence()
+below is the one place that order is spelled out.
 """
 
 from . import config
@@ -33,6 +37,21 @@ def hui_ch(n: int) -> str:
     return f"ch_10 ch_{n - 10}"
 
 PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad", "ch_hui"]
+
+
+def hui_sequence(spell, wai: str = "ch_wai", last: int = 10) -> list[tuple[str, int]]:
+    """(input token sequence, hui number) pairs in the order every hui lookup
+    enumerates them: 11-13 first (so they aren't shadowed by their shorter
+    1-token prefixes), then 外 as 13, then 1..`last`. `spell` renders one
+    hui number as tokens (hui_ascii, hui_ch, ...); `wai` is 外's own glyph
+    in the same spelling system."""
+    return ([(spell(h), h) for h in (11, 12, 13)] + [(wai, 13)]
+            + [(spell(h), h) for h in range(1, last + 1)])
+
+
+def decimals(spell) -> list[tuple[str, int]]:
+    """(decimal token, md_* suffix) for the decimals 1..9 plus 半 (= .5)."""
+    return [(spell(d), d) for d in range(1, 10)] + [("ch_ban", 5)]
 
 
 def hui_class_glyphs(rows: list[GlyphRow]) -> list[str]:
@@ -125,15 +144,9 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
 def gen_s2j_lat_ch_period_liga() -> list[str]:
     """<ascii hui> <period-like char> <ascii decimal> -> md_H.D (e.g. 7点6)."""
     lines = ["lookup s2j_lat_ch_period_liga {"]
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else DIGIT[d]
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ascii(h)} @area_period_subs {dd} by md_{h}.{target};")
-        parts.append(f"sub ch_wai @area_period_subs {dd} by md_13.{target};")
-        for h in range(1, 11):
-            parts.append(f"sub {hui_ascii(h)} @area_period_subs {dd} by md_{h}.{target};")
+    for dd, target in decimals(DIGIT.__getitem__):
+        parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ascii)]
         lines.append("  " + "  ".join(parts))
     lines.append("} s2j_lat_ch_period_liga;")
     return lines
@@ -253,23 +266,12 @@ def gen_c2j_char_deci_period_liga() -> list[str]:
     """Chinese hui + period-like char (+ optional Chinese decimal)."""
     lines = ["lookup c2j_char_deci_period_liga {"]
     # bare hui + period char (十二徽 -> md_12)
-    parts = []
-    for h in (11, 12, 13):
-        parts.append(f"sub {hui_ch(h)} @area_period_subs by md_{h};")
-    parts.append("sub ch_wai @area_period_subs by md_13;")
-    for h in range(1, 11):
-        parts.append(f"sub {hui_ch(h)} @area_period_subs by md_{h};")
+    parts = [f"sub {tok} @area_period_subs by md_{h};" for tok, h in hui_sequence(hui_ch)]
     lines.append("  " + "  ".join(parts))
     # hui + period char + decimal (十点二 -> md_10.2)
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ch(h)} @area_period_subs {dd} by md_{h}.{target};")
-        parts.append(f"sub ch_wai @area_period_subs {dd} by md_13.{target};")
-        for h in range(1, 11):
-            parts.append(f"sub {hui_ch(h)} @area_period_subs {dd} by md_{h}.{target};")
+    for dd, target in decimals(hui_ch):
+        parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ch)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_period_liga;")
     return lines
@@ -284,35 +286,23 @@ def gen_c2j_char_deci_liga_parts() -> list[str]:
     merged away (part2). ch_10 alone ("十二" = 10+2 vs 12) needs its own
     pass (parts 3/4) so that 十一/十二/十三 aren't shadowed.
     """
+    # ch_10 is left out of parts 1/2 (last=9) and handled in parts 3/4 --
+    # here it would shadow 十一/十二/十三.
     lines = ["lookup c2j_char_deci_liga_part1 {"]
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub @area_left {hui_ch(h)} {dd}' by md_{h}.{target};")
-        parts.append(f"sub @area_left ch_wai {dd}' by md_13.{target};")
-        for h in range(1, 10):
-            parts.append(f"sub @area_left {hui_ch(h)} {dd}' by md_{h}.{target};")
-        # ch_10 handled in part3 (would shadow 十一/十二/十三 here)
+    for dd, target in decimals(hui_ch):
+        parts = [f"sub @area_left {tok} {dd}' by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ch, last=9)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_liga_part1;")
 
     lines.append("lookup c2j_char_deci_liga_part2 {")
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ch(h)} md_{h}.{d} by md_{h}.{d};")
-        parts.append(f"sub ch_wai md_13.{d} by md_13.{d};")
-        for h in range(1, 10):
-            parts.append(f"sub ch_{h} md_{h}.{d} by md_{h}.{d};")
+        parts = [f"sub {tok} md_{h}.{d} by md_{h}.{d};" for tok, h in hui_sequence(hui_ch, last=9)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_liga_part2;")
 
     lines.append("lookup c2j_char_deci_liga_part3 {")
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
+    for dd, target in decimals(hui_ch):
         lines.append(f"  sub @area_left ch_10 {dd}' by md_10.{target};")
     lines.append("} c2j_char_deci_liga_part3;")
 
@@ -375,31 +365,19 @@ def gen_c2j_single(rows: list[GlyphRow], c2g: dict[str, str], col: str, name: st
 # md-glyph number lookups (post-conversion, shared by ASCII and Chinese input)
 
 
-def md_hui_names() -> list[str]:
-    return [f"md_{h}" for h in range(1, 14)] + ["md_wai"]
-
-
 def gen_char_deci_liga_parts() -> list[str]:
     """hui-glyph + string-glyph collapse (s7 5 -> s7.5) in Safari-safe steps."""
+    md_hui = "md_{}".format
     lines = ["lookup char_deci_liga_part1 {"]
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub @area_left md_{h} md_{d}' by md_{h}.{d};")
-        parts.append(f"sub @area_left md_wai md_{d}' by md_13.{d};")
-        for h in range(1, 11):
-            parts.append(f"sub @area_left md_{h} md_{d}' by md_{h}.{d};")
+        parts = [f"sub @area_left {tok} md_{d}' by md_{h}.{d};"
+                 for tok, h in hui_sequence(md_hui, wai="md_wai")]
         lines.append("  " + "  ".join(parts))
     lines.append("} char_deci_liga_part1;")
 
     lines.append("lookup char_deci_liga_part2 {")
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub md_{h} md_{h}.{d} by md_{h}.{d};")
-        parts.append(f"sub md_wai md_13.{d} by md_13.{d};")
-        for h in range(1, 11):
-            parts.append(f"sub md_{h} md_{h}.{d} by md_{h}.{d};")
+        parts = [f"sub {tok} md_{h}.{d} by md_{h}.{d};" for tok, h in hui_sequence(md_hui, wai="md_wai")]
         lines.append("  " + "  ".join(parts))
     lines.append("} char_deci_liga_part2;")
     return lines

@@ -20,19 +20,13 @@ from . import config
 
 Rule = list  # of str tokens; trailing "'" marks the positioned glyph
 
+# The (left || hui) presence combinations, in canonical rule order: both,
+# left only, hui only.
+LH_COMBOS = (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"])
+
 
 class FillError(Exception):
     pass
-
-
-def _lh_combos(jc: bool) -> list[list[str]]:
-    """The (left||hui) presence combinations, in canonical order."""
-    tail = ["@area_jc"] if jc else []
-    return [
-        ["@area_left", "@area_hui"] + tail,
-        ["@area_left"] + tail,
-        ["@area_hui"] + tail,
-    ]
 
 
 def word_layout_rules(right: str | None, jc: bool,
@@ -46,6 +40,7 @@ def word_layout_rules(right: str | None, jc: bool,
     rule sets.
     """
     R_ = [f"@area_right__{right}"] if right else []
+    jc_ = ["@area_jc"] if jc else []
     rules: list[Rule] = []
 
     # In the blank (no right hand) layouts the word ends before zhu can
@@ -54,42 +49,38 @@ def word_layout_rules(right: str | None, jc: bool,
 
     # fy' — with zhu, then without
     for zhu in head_zhus:
-        for lh in _lh_combos(jc):
-            rules.append(["@area_fy'"] + lh + zhu + R_)
+        for lh in LH_COMBOS:
+            rules.append(["@area_fy'"] + lh + jc_ + zhu + R_)
 
     # left'
     for zhu in head_zhus:
         for hui in (["@area_hui"], []):
-            rules.append(["@area_left'"] + hui + (["@area_jc"] if jc else []) + zhu + R_)
+            rules.append(["@area_left'"] + hui + jc_ + zhu + R_)
 
     # hui'
     for zhu in head_zhus:
-        rule = ["@area_hui'"] + (["@area_jc"] if jc else []) + zhu + R_
         if not jc and not zhu and not R_:
             continue  # bare hui fallback handled separately (blank layouts)
-        rules.append(rule)
+        rules.append(["@area_hui'"] + jc_ + zhu + R_)
 
     # jc'
     if jc:
         for zhu in head_zhus:
-            for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+            for lh in LH_COMBOS:
                 rules.append(lh + ["@area_jc'"] + zhu + R_)
 
     # zhu'
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-        rules.append(lh + (["@area_jc"] if jc else []) + ["@area_zhu'"] + R_)
+    for lh in LH_COMBOS:
+        rules.append(lh + jc_ + ["@area_zhu'"] + R_)
 
     # right'
     if right:
         for zhu in (["@area_zhu"], []):
-            for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-                rules.append(lh + (["@area_jc"] if jc else []) + zhu + [f"@area_right__{right}'"])
+            for lh in LH_COMBOS:
+                rules.append(lh + jc_ + zhu + [f"@area_right__{right}'"])
 
     # strings
-    prefix_combos = []
-    for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-            prefix_combos.append(lh + (["@area_jc"] if jc else []) + zhu + R_)
+    prefix_combos = [lh + jc_ + zhu + R_ for zhu in (["@area_zhu"], []) for lh in LH_COMBOS]
     if strings == "li":
         for p in prefix_combos:
             rules.append(p + ["@area_string_top'", "@area_string_bottom'"])
@@ -164,7 +155,7 @@ def vert_rules(n: int) -> list[Rule]:
     return rules
 
 
-def cuo_rules(anchor: str) -> list[dict]:
+def cuo_rules(anchor: str) -> list[tuple[str, list[Rule]]]:
     """The 撮 chord segments: anchor is '@area_chord__cuo' (left segment,
     after the chord glyph) or '@area_cuo_bar' (right segment, after '|').
 
@@ -194,19 +185,19 @@ def cuo_rules(anchor: str) -> list[dict]:
         [A, "@area_left", "@area_hui", "@area_jc'"],
         [A, "@area_hui", "@area_jc'"],
     ]
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+    for lh in LH_COMBOS:
         b2.append([A] + lh + ["@area_jc", "@area_zhu'"])
     for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+        for lh in LH_COMBOS:
             b2.append([A] + lh + ["@area_jc"] + zhu + ["@area_string'"])
     blocks.append((f"layout_cuo_{side}2", b2))
 
     # plain variant
     b1: list[Rule] = []
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+    for lh in LH_COMBOS:
         b1.append([A] + lh + ["@area_zhu'"])
     for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+        for lh in LH_COMBOS:
             b1.append([A] + lh + zhu + ["@area_string'"])
     blocks.append((f"layout_cuo_{side}", b1))
 
@@ -364,19 +355,13 @@ def gen_gpos(layouts: dict, skip_right_keys: set[str] = frozenset(),
 
     lines.append("} jzp_glyph_positioning;")
     lines += ["", "feature kern {", "  lookup jzp_glyph_positioning;", ""]
-    # cleanup: hide stray glyphs of half-formed words, and give space its
-    # advance back at word boundaries
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos numbersign {wilds}{sep}@area_wild' <-1000 0 0 0>;")
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos blank_colon {wilds}{sep}@area_wild' <-1000 0 0 0>;")
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos @new_word_char {wilds}{sep}@space_char' <0 0 -1000 0>;")
+    # cleanup: hide stray glyphs of half-formed words (up to 10 deep), and
+    # give space its advance back at word boundaries
+    for context, marked, value in (("numbersign", "@area_wild", "<-1000 0 0 0>"),
+                                   ("blank_colon", "@area_wild", "<-1000 0 0 0>"),
+                                   ("@new_word_char", "@space_char", "<0 0 -1000 0>")):
+        for n in range(10, -1, -1):
+            tokens = " ".join([context] + ["@area_wild"] * n + [f"{marked}'"])
+            lines.append(f"  pos {tokens} {value};")
     lines.append("} kern;")
     return lines

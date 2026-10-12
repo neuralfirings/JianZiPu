@@ -6,12 +6,12 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # path roots — internal only, used here to build the paths below
 
-BUILDER_DIR = Path(__file__).resolve().parent.parent
+BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directory (src-fonttools/)
 
 # ---------------------------------------------------------------------------
 # input files — used by: data.py, features.py, glyphs.py, genfea.py, figma.py
 #
-# One folder (builder/inputs/) for everything the build reads: both the
+# One folder (inputs/) for everything the build reads: both the
 # human-maintained sources (components.csv, glyphRename.csv, edge_cases.fea)
 # and the Figma-fetched artifacts (svg/, layouts.json, meta.json — tracked
 # in git, refreshed via --figma_pull, no fallback to some other copy). Every
@@ -32,7 +32,6 @@ EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
 META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
 LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
-FEA_OUT_DEFAULT = INPUTS_DIR / "fontForgeFeatures.fea" # build.py — default --fea-out inspection copy
 
 # dynamic_positioning/'s own layout data (area sizes + relationship graphs,
 # see geometry.py) — separate from LAYOUTS_JSON above, which belongs to the
@@ -56,7 +55,10 @@ SOURCE_FONT = BUILDER_DIR / "src_font/TW-Kai-98.ttf"                      # base
 # printable ASCII plus NBSP.
 BASE_KEEP_CODEPOINTS = list(range(0x20, 0x7F)) + [0xA0]      # base.py
 CURRENT_FONT = BUILDER_DIR / "tests/JianZiPu.ttf"                       # tests/test_shaping.py — tracked, golden reference
-OUTPUT_FONT = BUILDER_DIR / "JianZiPu.ttf"                      # build.py — default build destination, never clobbers CURRENT_FONT
+# Build artifacts (gitignored): the font, and an inspection copy of the
+# generated feature text (--fea-out). Neither ever clobbers CURRENT_FONT.
+OUTPUT_FONT = BUILDER_DIR / "JianZiPu.ttf"                      # build.py
+FEA_OUT_DEFAULT = BUILDER_DIR / "JianZiPu.fea"                  # build.py
 
 # ---------------------------------------------------------------------------
 # font metrics / identity — used by: base.py, glyphs.py
@@ -94,14 +96,19 @@ OS2 = {
     "sCapHeight": 660,
 }
 
-# widths of the zero-ink control glyphs (from the current font)
-CONTROL_GLYPHS = {  # name -> (codepoint, advance width)  — used by: base.py
+# PUA assignments — must stay stable so existing documents keep rendering.
+
+# zero-ink control glyphs: name -> (codepoint, advance width)
+CONTROL_GLYPHS = {                                            # base.py
     "blank": (0x58001, 0),
     "blank_bar": (0x58002, 1000),
     "blank_colon": (0x58003, 1000),
     "advance": (0x58004, 1000),
     "half_advance": (0x58005, 500),
 }
+# First codepoint for the imported component glyphs; glyphs.py assigns them
+# in sorted-filename order from here.
+COMPONENT_GLYPHS_BASE = 58101                                 # glyphs.py
 
 # ---------------------------------------------------------------------------
 # right-hand technique classes — used by: features.py, gpos.py
@@ -119,15 +126,3 @@ RIGHT_SELECTORS = {  # features.py
     "li": ["lg_li"],
 }
 RIGHT_KEYS = [k for k in RIGHT_SELECTORS if k != "li"]  # gpos.py
-
-# ---------------------------------------------------------------------------
-# defined but currently unused elsewhere (kept as documented intent — features.py
-# recomputes its own hui/decimal ranges inline instead of importing these)
-
-# Hui numbers and their ASCII-digit glyph spellings ("one zero" = 10, etc.)
-HUI_RANGE = list(range(1, 14))  # 1..13; 13 also reachable as ch_wai / "13+"
-DECIMALS = list(range(1, 10))
-
-# PUA assignments (must stay stable so existing documents keep rendering)
-CONTROL_GLYPHS_BASE = 0x58001  # duplicates CONTROL_GLYPHS["blank"][0] above
-COMPONENT_GLYPHS_BASE = 58101  # duplicates the base implicit in glyphs.py's own codepoint counter

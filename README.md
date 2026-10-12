@@ -42,7 +42,7 @@ also add essential control characters and whitespace a-z, A-Z, 0-9
 
 1. Open source font (TW-Kai)
 2. Run: `src/scripts/fontForgeCreateBase.py` -- run inside FontForge (script might take a while to run)
-  a. dependency on `src/input/areaKeySVGMap.csv` for getting common, latin, han character set to keep
+  a. dependency on `src-fontforge/input/areaKeySVGMap.csv` for getting common, latin, han character set to keep
 3. Encoding > Reencode > Glyph Order
 4. Run: `src/scripts/fontForgeExportGlyphInfo.py` --> create `src/output/fontforgeGlyphInfo.csv`
 5. Open new Font Forge blank file and run `src/sciprt/fontForgeImportGlyphInfo.py`
@@ -120,7 +120,7 @@ Naming Conventions:
 
 ## 3.2. Create Feature File (manual)
 
-File: `src/input/fontForgeFeatures.fea` (reference `src/input/areaKeySVGMap.csv`)
+File: `src-fontforge/input/fontForgeFeatures.fea` (reference `src-fontforge/input/areaKeySVGMap.csv`)
 
 1. Areas: @area_xxx = [md_xxx etc]
 	a. add @area_wildcard = [@area_foo @area_bar blank] 

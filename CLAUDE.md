@@ -24,14 +24,18 @@ npm run watch
 npm run font                     # = cd src-fonttools && python3 -m jzpbuild → src-fonttools/JianZiPu.ttf
 cd src-fonttools && python3 -m jzpbuild --figma_pull  # refresh SVGs/layouts from Figma (needs FIGMA_TOKEN)
 cd src-fonttools && python3 -m jzpbuild --fea-only  # regenerate feature file only
-cd src-fonttools && python3 -m jzpbuild -o ../src/JianZiPu.ttf  # overwrite the tracked, released font
-cd src-fonttools && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs src/JianZiPu.ttf
+cd src-fonttools && python3 -m jzpbuild -o /path/to/JianZiPu.ttf  # write the font somewhere else
+cd src-fonttools && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
+cd src-fonttools && python3 -m jzpbuild --dynamic_pos  # experimental: gou/io/li positioned by dynamic_positioning/
 ```
 
-Default build output is `src-fonttools/JianZiPu.ttf`, NOT `src/JianZiPu.ttf`
-— the tracked font is only overwritten via explicit `-o`. A plain build
-reads only from `src-fonttools/inputs/` (no fallback), so a fresh checkout needs
-`--figma_pull` at least once before it will succeed. Dev tools:
+Default build output is `src-fonttools/JianZiPu.ttf` (gitignored, as is the
+`--fea-out` copy `src-fonttools/JianZiPu.fea`); nothing tracked is
+overwritten unless you pass `-o`. A plain build reads only from
+`src-fonttools/inputs/` (tracked, including the Figma-fetched `svg/` and
+`layouts.json`; `--figma_pull` refreshes them). The base font
+`src-fonttools/src_font/TW-Kai-98.ttf` is gitignored and must be copied in
+by hand once. Dev tools:
 `src-fonttools/tools/font_tester.html` (no build tooling needed, open directly in
 a browser — live-test a built .ttf, points at `../JianZiPu.ttf` by default)
 and `src-fonttools/tools/jzpbuilder.html` (edit/preview `layouts.json` + SVGs
@@ -39,20 +43,25 @@ without Figma access, also builds the font — requires `python3 -m
 jzpbuild.devserver` running; opening it as a plain `file://` page doesn't
 work, since Chromium blocks `fetch()` against `file://` sibling files).
 
-Legacy pipeline (deprecated, reference only): `src/scripts/scripts.cjs`
-(--compile / --add-positions) and the `src/scripts/fontForge*.py` scripts
-that ran inside FontForge. See src-fonttools/README.md for the current
-architecture, and its "Status / open items" section for unresolved issues
-(a Figma image-export quota was hit and not confirmed clear; a 37-vs-34
-layout count mismatch on the Figma file needs a decision from the file
-owner before `gpos.py` is extended to cover it).
+Legacy pipeline (deprecated, reference only, kept as a regression
+fallback): `src-fontforge/` — `scripts/scripts.cjs` (--compile /
+--add-positions), the `scripts/fontForge*.py` scripts that ran inside
+FontForge, the `.sfd` sources and the hand-maintained `input/` files. See
+src-fonttools/README.md for the current architecture, and its "Status /
+open items" section for unresolved issues (a Figma image-export quota was
+hit and not confirmed clear; a 37-vs-34 layout count mismatch on the Figma
+file needs a decision from the file owner before `gpos.py` is extended to
+cover it).
 
 ## Architecture
 
-### Two outputs from one build
+### Repo layout
 
-- **`web/`** — demo website (`src/demo/index.html` is the source, built by Parcel `frontend` target)
-- **`dist/`** — JS library (`src/jianzipu.js` is the source, built by Parcel `backend` target as ESM)
+- **`src-fonttools/`** — the font build pipeline (below). `README.md` there is the detailed reference.
+- **`src-fonttools/dynamic_positioning/`** — experimental geometry-derived GPOS for the gou/io/li families, opt-in via `--dynamic_pos` (see its README.md). Edited with `tools/jzpbuilder-dynamic.html`.
+- **`src-fontforge/`** — legacy FontForge pipeline plus the old demo page (`demo/index.html`).
+- **`mockups/`** — lo-fi wireframes for a future web editor (calligrapher / layout-manager / requester roles).
+- `package.json`'s Parcel targets (`web/`, `dist/`) still point at a `src/` folder that was renamed to `src-fontforge/`; `npm run dev`/`build` are broken until that's re-pointed.
 
 ### Font pipeline (src-fonttools/, pure Python)
 
@@ -73,15 +82,17 @@ src-fonttools/inputs/{components.csv, edge_cases.fea} + gpos.py ──(features.
 - `src-fonttools/jzpbuild/gpos.py` — declarative layout structure (which areas, in what order, per layout family)
 - `src-fonttools/jzpbuild/config.py` — metrics, name table, PUA codepoints, Figma file key, all generated-artifact paths (single source of truth, no fallbacks)
 
-Deprecated (legacy pipeline only): `src/input/figma.css`, `src/input/fontForgeFeatures.fea`, `src/input/areaKeySVGMap.csv` (now `src-fonttools/inputs/components.csv`), `src/input/fontforgeGlyphRename.csv` (now `src-fonttools/inputs/glyphRename.csv`), `src/scripts/`.
+- `src-fonttools/dynamic_positioning/layouts_data.json` — area sizes + relationship graphs for the experimental `--dynamic_pos` build; the one file `geometry.py` reads (`layout_data_sdf.json` beside it is only a demo input for `layout_test.py`)
+
+Deprecated (legacy pipeline only): `src-fontforge/input/figma.css`, `src-fontforge/input/fontForgeFeatures.fea`, `src-fontforge/input/areaKeySVGMap.csv` (now `src-fonttools/inputs/components.csv`), `src-fontforge/input/fontforgeGlyphRename.csv` (now `src-fonttools/inputs/glyphRename.csv`), `src-fontforge/scripts/`.
 
 ### SVG components
 
-`src/components/` contains all PUA glyph SVGs exported from Figma:
+`src-fonttools/inputs/svg/` contains all PUA glyph SVGs, fetched from Figma (`src-fontforge/components/` is the legacy hand-exported set):
 - `lg_*` — large glyphs (strokes: 勾 gou, 挑 tiao, etc.)
 - `md_*` — medium glyphs (finger positions, strings)
 - Other prefixes for hui markers, decorations, etc.
 
-### Demo page (`src/demo/index.html`)
+### Demo page (`src-fontforge/demo/index.html`)
 
 Self-contained HTML file. Loads `JianZiPu.ttf` and `TW-Kai-98.ttf` via `@font-face`. Uses Bootstrap 5. The font is applied via `font-family: 'JianZiPu'` and OpenType features are enabled with `font-feature-settings: "kern", "liga"` (required for Firefox).

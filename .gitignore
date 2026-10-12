@@ -19,5 +19,6 @@ __pycache__/
 # src-fonttools/ (Python font pipeline)
 src-fonttools/cache/
 src-fonttools/JianZiPu.ttf
+src-fonttools/JianZiPu.fea
 src-fonttools/src_font/*.ttf
 .env
