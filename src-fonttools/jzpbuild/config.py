@@ -33,10 +33,11 @@ COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py —
 META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
 LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
 
-# dynamic_positioning/'s own layout data (area sizes + relationship graphs,
-# see geometry.py) — separate from LAYOUTS_JSON above, which belongs to the
-# classic Figma-driven pipeline. Edited by tools/jzpbuilder-dynamic.html.
-DYNAMIC_LAYOUTS_JSON = BUILDER_DIR / "dynamic_positioning" / "layouts_data.json"  # geometry.py, devserver.py
+# The design file: areas (box size + member glyphs), layouts (slots,
+# relationships/gaps, centering). Source of truth for positioning AND for the
+# GSUB area classes; edited by the JZP Font Builder app. LAYOUTS_JSON above is
+# the classic Figma geometry, used only by --classic_pos.
+DESIGN_JSON = INPUTS_DIR / "design.json"                     # positioning/, data.py, devserver.py
 
 # ---------------------------------------------------------------------------
 # Figma access — used by: figma.py

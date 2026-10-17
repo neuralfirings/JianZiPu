@@ -21,16 +21,16 @@ hand-edited feature files.
    "src_font/TW-Kai-98.ttf"`) to point at it — everything downstream
    (`base.py`) just reads whatever path is set there.
 4. **`src-fonttools/inputs/`** holds everything the build reads — both the
-   hand-maintained sources (`components.csv`, `glyphRename.csv`,
-   `edge_cases.fea`) and the Figma-fetched artifacts (`svg/`,
-   `layouts.json`) — and is tracked in git, so a fresh checkout already has
-   it — nothing to do here. Refresh the Figma-fetched half whenever you want
-   the latest:
+   hand-maintained sources (`design.json`, `components.csv`,
+   `glyphRename.csv`, `edge_cases.fea`) and the Figma-fetched artifacts
+   (`svg/`, and `layouts.json` for the legacy `--classic_pos` build) — and
+   is tracked in git, so a fresh checkout already has it — nothing to do
+   here. Refresh the Figma-fetched half whenever you want the latest:
    ```bash
    export FIGMA_TOKEN=figd_...   # see "Figma access" below for where to get one
    python3 -m jzpbuild --figma_pull
    ```
-   A plain build reads `src-fonttools/inputs/svg/` and `layouts.json`
+   A plain build reads `src-fonttools/inputs/svg/` and `design.json`
    unconditionally, with no fallback location — if this directory is ever
    missing or emptied, the build fails fast with `FileNotFoundError` rather
    than silently reading something stale (see "config.py's paths are the
@@ -44,12 +44,14 @@ everything from here on is just `python3 -m jzpbuild`.
 ```bash
 cd src-fonttools
 python3 -m jzpbuild                          # build from inputs/ -> JianZiPu.ttf
-python3 -m jzpbuild --figma_pull             # pull latest SVGs + layouts from Figma first
+python3 -m jzpbuild --figma_pull             # pull latest SVGs (+ legacy layouts) from Figma first
 python3 -m jzpbuild --fea-only               # just regenerate the feature file (fast)
 python3 -m jzpbuild -o /path/to/JianZiPu.ttf # write the font somewhere else (e.g. a release copy)
-python3 -m jzpbuild --dynamic_pos            # experimental dynamic_positioning build (see its README)
+python3 -m jzpbuild --design ./scratch/design.json   # position from another design file
+python3 -m jzpbuild --classic_pos            # legacy: position from inputs/layouts.json + gpos.py
 python3 -m jzpbuild --input-components ./experiment/components.csv  # override one input file
 python3 -m jzpbuild --help                   # full list of --input-* overrides
+python3 -m jzpbuild.devserver                # API + the Builder app at http://127.0.0.1:5713/
 ```
 
 By default the build writes to `src-fonttools/JianZiPu.ttf`, and the
@@ -58,21 +60,21 @@ By default the build writes to `src-fonttools/JianZiPu.ttf`, and the
 running the pipeline never touches anything tracked: the shaping regression
 test always has an untouched golden reference (`config.CURRENT_FONT`,
 `tests/JianZiPu.ttf`) to compare against, and you can preview a build (via
-`tools/font_tester.html`) before copying it anywhere with `-o`.
+the Builder's Test & Build screen or `tools/font_tester.html`) before
+copying it anywhere with `-o`.
 
 `npm run font` at the repo root does the default build.
 
 **`src-fonttools/inputs/` is the only source read at build time — no fallback.**
 `config.py`'s paths are the single source of truth: a plain build reads SVGs
-from `config.COMPONENTS_DIR` (`src-fonttools/inputs/svg/`) and layout geometry from
-`config.LAYOUTS_JSON` (`src-fonttools/inputs/layouts.json`) with no alternate
-location to fall back to (unless overridden on the CLI — see "Overriding
-individual input paths" below). Unlike `src-fonttools/cache/` (a leftover,
-gitignored, safe to delete), `src-fonttools/inputs/` is tracked in git in full —
-the Figma-fetched half (`svg/`, `layouts.json`, `meta.json`) is committed
-after each `--figma_pull` refresh, not regenerated on every checkout, so
-treat a `git status` diff under it after `--figma_pull` as something to
-review and commit like any other source change.
+from `config.COMPONENTS_DIR` (`src-fonttools/inputs/svg/`) and the positioning
+design from `config.DESIGN_JSON` (`src-fonttools/inputs/design.json`) with no
+alternate location to fall back to (unless overridden on the CLI — see
+"Overriding individual input paths" below). `src-fonttools/inputs/` is tracked
+in git in full — the Figma-fetched half (`svg/`, `layouts.json`, `meta.json`)
+is committed after each `--figma_pull` refresh, not regenerated on every
+checkout, so treat a `git status` diff under it after `--figma_pull` as
+something to review and commit like any other source change.
 
 ### Overriding individual input paths
 
@@ -98,11 +100,13 @@ from this doc).
 ## What it does
 
 ```
-Figma file ──(figma.py, REST API)──▶ src-fonttools/inputs/{svg/*.svg, layouts.json}
+Figma file ──(figma.py, REST API)──▶ src-fonttools/inputs/svg/*.svg  (+ layouts.json, legacy)
 src-fonttools/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
 inputs/svg/*.svg ──(glyphs.py: picosvg + pathops + cu2qu)──▶ PUA component glyphs
-src-fonttools/inputs/{components.csv, glyphRename.csv, edge_cases.fea} + gpos.py layouts ──(features.py/gpos.py)──▶ features.fea
+inputs/{components.csv, glyphRename.csv, edge_cases.fea} ──(features.py)──▶ GSUB feature text
+inputs/design.json ──(positioning/: shapes → resolve → emit)──▶ GPOS feature text
                                        └──(feaLib)──▶ GSUB/GPOS ──▶ src-fonttools/JianZiPu.ttf
+app/ (SvelteKit, served by jzpbuild.devserver) ──▶ edits design.json / components.csv, runs builds
 ```
 
 ## How compilation works
@@ -119,7 +123,7 @@ concatenated:
   `validate.py::validate_or_raise()` (the uniqueness checks — see "What must
   be unique" above) before generating anything, so a bad CSV aborts here,
   before any lookup text is even built. Then, in order: `gen_classes()`
-  builds every `@area_*` glyph class straight from the CSV's area columns;
+  builds every `@area_*` glyph class from `design.json`'s area membership;
   the hand-written `edge_cases.fea` is spliced in verbatim; then one lookup
   per input pathway — ASCII/decimal (`s2j_*`), latin (`l2j_*`), Chinese
   (`c2j_*`, several passes since Safari can't do single-step contextual
@@ -129,15 +133,17 @@ concatenated:
   feature block in the specific order that makes longest/most-specific
   matches win before more general fallbacks (see the `ch_shang`-vs-`ch_1`
   trace pattern: single fallback substitutions always sit last).
-- **GPOS — `gpos.py::gen_gpos(layouts)`.** `layouts` comes from
-  `genfea.py::load_layouts()`, which just reads `config.LAYOUTS_JSON`
-  (`inputs/layouts.json`) — no code generation here, purely
-  data. `gen_gpos()`'s rule-builder functions (`word_layout_rules()`,
-  `no_left_layout_rules()`, `vert_rules()`, `cuo_rules()`) enumerate, for
-  each layout family, every valid area-class sequence a composed word can
-  take (see the module docstring on why rule *order* is load-bearing), and
-  `fill_rule()` looks up each marked token's `x`/`yd` in `layouts` to bake
-  in a literal `pos ... <x yd 0 0>;` line per rule.
+- **GPOS — `positioning/emit.py::gen_gpos(design)`.** `design` is
+  `inputs/design.json` parsed by `positioning/schema.py`. For every word
+  type (`layouts[]`) `shapes.py` enumerates the concrete word shapes
+  (which optional parts are present, which alternative each slot holds,
+  how many rows a repeated slot has), `resolve.py` turns each shape into
+  absolute x/y per part from the spacing relationships, and `emit.py`
+  writes one chained-context rule per shape (longest first) whose glyphs
+  dispatch cursive-attachment pair lookups carrying the y-delta to the
+  previous part, a single-adjust lookup with the first part's absolute y,
+  and a separate x pass. See "`jzpbuild/positioning/` and `design.json`"
+  below. `--classic_pos` swaps this for the legacy `gpos.py` builder.
 
 At this point `fea_text` is a complete, self-contained string — nothing has
 touched a font yet. This is exactly what `--fea-only` writes out and what
@@ -183,15 +189,15 @@ read what's already sitting in `src-fonttools/inputs/`.
 
 ## Sources of truth (what you edit)
 
-| To change...              | Edit...                                        |
-|---------------------------|------------------------------------------------|
-| glyph shapes              | Figma GLYPH pages (then `--figma_pull`)        |
-| layout positions          | Figma LAYOUT frames (then `--figma_pull`)      |
-| input keys / spellings    | `src-fonttools/inputs/components.csv`                |
-| Han char glyph names      | `src-fonttools/inputs/glyphRename.csv`               |
-| disambiguation rules      | `src-fonttools/inputs/edge_cases.fea`                |
-| layout structure          | `jzpbuild/gpos.py` (declarative rule builders) |
-| metrics / naming / config | `jzpbuild/config.py`                           |
+| To change...                       | Edit...                                                       |
+|------------------------------------|---------------------------------------------------------------|
+| glyph shapes                       | Figma GLYPH pages (then `--figma_pull`), or drop SVGs in `inputs/svg/` |
+| which glyphs belong to which part  | Builder → Areas (writes `inputs/design.json`)                  |
+| word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
+| input keys / spellings             | Builder → Areas → typing keys, or `inputs/components.csv`      |
+| Han char glyph names               | `src-fonttools/inputs/glyphRename.csv`                         |
+| disambiguation rules               | `src-fonttools/inputs/edge_cases.fea`                          |
+| metrics / naming / config          | `jzpbuild/config.py`                                           |
 
 Everything else — glyph classes, all substitution lookups, the 13×9 hui/
 decimal matrices, and every positioning rule — is generated.
@@ -202,7 +208,7 @@ decimal matrices, and every positioning rule — is generated.
 early in this pipeline, renamed again to `components.csv` since it's really
 the catalog of every component glyph — its area membership is one of
 several things it tracks, not the whole story.) One row per component glyph
-(91 rows) — the join between "what can
+(≈90 rows) — the join between "what can
 someone type" and "what layout area does the resulting glyph belong in."
 `features.py`/`gpos.py` derive almost every GSUB class and rule from it.
 Columns:
@@ -213,22 +219,17 @@ Columns:
   the compiled font (fontTools names it from the SVG's filename stem). The
   two uses are coupled by convention, not enforced — renaming a row here
   without renaming the matching SVG breaks the build.
-- `area_*` (`area_char`, `area_chord`, `area_fy`, `area_left`, `area_hui`,
-  `area_mod_jc`, `area_mod_zhu`, `area_right`, `area_string`) — one-hot
-  membership flags (any non-empty value counts as "yes"). A glyph can belong
-  to more than one area, e.g. the hui-number glyphs (`md_1`..`md_13`) are
-  both `area_hui` and `area_char` (chars for vertical-word mode, hui for
-  normal word layout). `gen_classes()` in `features.py` turns each flag into
-  an `@area_*` glyph class; `gpos.py` then emits, per layout, "wherever a
-  member of `@area_left` appears in this word shape, move it to this
-  layout's `area_left` x/y." So area membership decides which *slot type* a
-  glyph can occupy in a composed word — it doesn't grant access to a
-  specific layout's coordinates by itself. Which layout is active (and
-  therefore which x/y a shared area like `area_left` resolves to) is decided
-  separately, usually by which right-hand-technique glyph is present in the
-  same word. If a given layout has no `area_left` entry in
-  `layout_area_layouts.json`, an `area_left` glyph simply has nothing to
-  resolve to there.
+- *(area membership is no longer a CSV column.)* Which glyphs belong to
+  which area (`left`, `hui`, `right`, `char`, …) lives in
+  `inputs/design.json` → `areas.<name>.glyphs`, edited in the Builder's
+  Areas screen. A glyph can belong to more than one area, e.g. the
+  hui-number glyphs (`md_1`..`md_13`) are both `hui` and `char` (chars for
+  vertical-word mode, hui for normal word layout). `gen_classes()` in
+  `features.py` turns each area into an `@area_*` glyph class (plus the
+  legacy `@area_mod_jc`-style aliases); the positioning rules then match
+  words by those classes. So area membership decides which *part* of a word
+  a glyph can be — where that part sits is decided by the word type's
+  spacing rules.
 - `vert_variant` — for glyphs whose normal (left-aligned) form needs a
   centered replacement when it appears in vertical/char-stack mode (after
   `:`), the target glyph name (e.g. `lg_lun` → `md_lun`). Empty for glyphs
@@ -314,59 +315,51 @@ CSV row (a new spelling, a new area membership) belongs there instead, since
 CSV-driven rules get maintained (reordered, regenerated) automatically while
 hand-written FEA does not.
 
-### `jzpbuild/gpos.py`
+### `jzpbuild/positioning/` and `inputs/design.json`
 
-Not a data file — Python functions that declaratively enumerate the GPOS
-positioning rules for each layout family (word layouts, vertical stacks, the
-two-string 历 variant, 撮-chord segments). Each rule is a list of area-class
-tokens with one token marked `'` (the glyph being positioned); `fill_rule()`
-looks up that area's `x`/`yd` in `inputs/layouts.json` (from Figma)
-to produce the final `pos ... <x yd 0 0>;` line. Edit this file when a
-*layout's structure* changes (a new area combination becomes possible, a new
-right-hand technique family is added) — not for anything expressible as
-per-glyph area membership, which belongs in `components.csv` instead.
-Rule order inside each generated lookup is load-bearing (see the module
-docstring), so treat reordering existing rules as a behavioral change, not a
-cleanup.
+The positioning model, replacing `gpos.py` + Figma frames. `design.json`
+(version 2) holds:
 
-### How a layout gets picked
+- **`areas`** — the reusable parts a word is made of: a box size, the
+  glyphs allowed in it, a label, and (for the `:` colon and the `|` bar) an
+  `advance` that moves the pen. An area is defined once and used by any
+  number of word types.
+- **`layouts`** — the word types (`standard`, `vertical`, `chord`,
+  `chord_right`). Each lists its **slots** in typing order; a slot is
+  optional or required, holds one of several **alternatives** (lists of
+  `element:area` parts, so the same area can appear twice, as in 歷's two
+  strings), and may **repeat** (`[min, max]` rows, as in vertical words).
+  `requires_any`/`priority` decide which reading wins when the same glyphs
+  fit two shapes.
+- **`relationships`** — the spacing rules: `elem`'s `elem_edge` lands at
+  `base`'s `base_edge` plus `gap`, per axis. `base: null` is an absolute
+  position, `base: "prev"` the previous row. The first rule whose base is
+  present in the word wins, so a part can say "below jc if there is one,
+  else below hui, else below left". `gap` is a number or an ordered list of
+  `{when_base, when_elem, value}` exceptions, first match wins, so 勾 and
+  歷 can sit at different heights without separate word types.
+- **`center`** — which parts the vertical/horizontal centering spans, parts
+  that count even when absent (`y_phantom`, so a word keeps its height with
+  or without a string), and the target.
 
-There's no runtime "choose a layout" step — every rule for every layout
-variant is baked into one big contextual `pos` lookup
-(`jzp_glyph_positioning`) at build time, and for a given glyph sequence
-HarfBuzz just matches it against these rules in emission order, first match
-wins. What looks like layout selection is really two things baked into which
-rule matches:
+The package (`schema.py` → `shapes.py` → `resolve.py` → `emit.py`) turns
+that into GPOS: one rule per concrete word shape, all shapes of all word
+types in one `pos_y` lookup (longest first, a matched rule consumes its
+glyphs, which is the only scoping needed) and one `pos_x` lookup. Each rule
+marks every glyph; the first glyph of a chain dispatches `cen_<y>` (the
+word's absolute, centred y) and each later glyph a `cur<n>` cursive pair
+lookup whose entry anchor carries the delta to the previous glyph. Parts
+with an `advance` (colon, bar) are chain breakers: what follows starts a
+new chain and its x is pen-relative. When a gap depends on glyph identity
+the shape is split into per-glyph buckets plus an `@pos_…_other` class, so
+only the parts named in exceptions multiply rules. `emit.stats()` is the
+"font budget" the app shows. This shapes identically under HarfBuzz and
+CoreText (`tests/shaper_parity.py`); the only engine constraints are that
+cursive rules use the default lookup flag and that x is a separate pass
+(cursive zeroes x offsets in HarfBuzz and chains them in CoreText).
 
-1. **Which right-hand-technique family.** `config.RIGHT_SELECTORS` maps a
-   family key (`loki`, `nc`, `tiao`, `mo`, `gou`, `io`, `li`) to the `lg_*`
-   glyphs that belong to it; `gen_classes()` in `features.py` turns each key
-   into an `@area_right__<key>` glyph class. `RIGHT_KEYS` (every key but
-   `li`, which needs its own two-string rules) drives the loop in
-   `gpos.py::gen_gpos()` that emits three GPOS layouts per family —
-   `layout_<right>`, `layout_<right>2`, `layout_<right>3`. A word with no
-   right-hand glyph at all falls into the `layout_blank*` family instead.
-2. **Which of the 3 variants within that family.** Decided purely by which
-   *other* area-glyphs are present in the word, via `word_layout_rules()` and
-   `no_left_layout_rules()`: the `2` variant is the `jc=True` case (an
-   `@area_jc` 急/绰 marker glyph is present), the plain variant is `jc=False`,
-   and the `3` variant (`no_left_layout_rules`) is for words with no
-   `@area_left` glyph at all. Within each, rules enumerate every legal
-   presence-combination of `@area_fy`/`@area_left`/`@area_hui`/`@area_zhu`/
-   `@area_string`, each keyed to its own x/y in `layouts.json` for that
-   specific layout name.
-
-A few families sit outside this scheme entirely: `layout_vertjzpN` (leading
-`:`, stacked vertical char mode — `vert_rules()`), `layout_li*` (历 takes two
-strings, so it gets bespoke rules despite being a `RIGHT_SELECTORS` key), and
-`layout_cuo_*` (撮 chords, anchored on `@area_chord__cuo` or the `|` bar glyph
-— `cuo_rules()`).
-
-Because it's all first-match-wins in one lookup, rule *emission* order across
-these blocks matters too, not just within a single block — e.g. the
-`:大息` special case is emitted before the generic vertical/word rules so it
-isn't misread as a word-layout left-hand glyph, and the bare-hui fallback is
-emitted dead last in `gen_gpos()`.
+`jzpbuild/gpos.py` + `inputs/layouts.json` remain only for `--classic_pos`,
+used by `tests/parity_report.py` to compare the two models.
 
 ### `jzpbuild/config.py`
 
@@ -381,13 +374,11 @@ identity/metrics change or a new right-hand technique family is added to
 ## Common tasks
 
 Two worked examples of adding new content. Both follow the same shape: get
-the SVG into `src-fonttools/inputs/svg/`, add one row to
-`src-fonttools/inputs/components.csv`, rebuild. Neither needs a `gpos.py` change,
-because both areas (`area_char`, `area_mod_jc`) are shared glyph classes
-already wired into every layout's rules — a new *member* of an existing
-area is automatically positionable everywhere that area already appears;
-you only touch `gpos.py` when the *shape* of a layout changes (a new area
-combination, a new right-hand technique family).
+the SVG into `src-fonttools/inputs/svg/`, add the glyph to an area and give
+it typing keys in the Builder (Areas screen), rebuild. Neither needs a
+code change: a new *member* of an existing area is positionable everywhere
+that area already appears. New word types, parts and spacing rules are
+edited in the Builder's Layouts screen (Advanced toggle for structure).
 
 **What must be unique, and what happens if it isn't.** `jzpbuild/validate.py`
 checks the three riskiest ones automatically — `gen_gsub()` calls
@@ -403,7 +394,7 @@ underlying mechanism explains what "conflict" means here:
   `traditional`) in `components.csv` must not already be used by another
   row, *anywhere in the file* — not just within the same column.
   `latin_entries()`/`chinese_entries()` in `features.py` resolve raw
-  collisions with a "non-`area_char`-only row wins" preference rule; the
+  collisions with a "non-`char`-only row wins" preference rule; the
   validator now catches any collision that isn't the known
   horizontal/`vert_variant` pattern, but the rule itself is why a
   *tolerated* collision (the vert-variant case) silently picks a winner
@@ -438,91 +429,26 @@ underlying mechanism explains what "conflict" means here:
 
 ### Case 1: add a character for use in the vertical (`:`) layouts
 
-Vertical/char-stack mode (input starting with `:`) positions each row from
-the shared `@area_char` glyph class — see `vert_rules()` in `gpos.py` and
-the `area_char{1..4}` entries in `layouts.json`. Any glyph tagged
-`area_char` in `components.csv` is eligible, so:
+1. Export the glyph as `inputs/svg/md_<name>.svg` (a 350×350 box, like the
+   other `md_*` glyphs).
+2. Builder → Areas → **Character** (`char`) → **Add glyphs** → pick it.
+   Select it and fill in its typing keys (`key`, `简`, `繁`, …); those go
+   straight to `components.csv`.
+3. **Save**, then Test & Build → **Build font**. Type `:<key>` in the test
+   box: the live preview shows it as a row of a vertical word before the
+   build finishes; the built font afterwards.
 
-1. Get the glyph's SVG into `src-fonttools/inputs/svg/<glyph_name>.svg`
-   (via `--figma_pull` if it's a new Figma GLYPH-page component, or drop it
-   in by hand if you're not using Figma for this one).
-2. Add a row to `src-fonttools/inputs/components.csv` with that `glyph_name`, put
-   any non-empty value in the `area_char` column, and fill in whichever
-   spelling column(s) should trigger it (`latin`/`common` and/or
-   `simplified`/`traditional`) — pick a key that isn't already claimed
-   elsewhere in the CSV. Existing char-only examples to copy the shape of:
-   `md_shang` (上, `area_char` only) or `md_xi` (息).
-   - *Truly optional, even with a `simplified`/`traditional` spelling:*
-     `src-fonttools/inputs/glyphRename.csv` is now an overrides file, not a
-     requirement — a Chinese character with no row there still gets kept
-     during subsetting and still resolves to a valid glyph name
-     automatically (fontTools' own default `uniXXXX` codepoint name; see the
-     `glyphRename.csv` section below). Add a `char,ch_glyphname` row only if
-     you want that character to get a readable `ch_*` name in the generated
-     `.fea` instead of `uniXXXX` — purely a legibility choice, not something
-     the build needs. Either way the generated substitution line carries a
-     trailing `# name=char` comment, so the `.fea` stays readable regardless.
-3. If this glyph *also* has a left-aligned form used in normal horizontal
-   word layouts and needs a distinct centered look when stacked vertically,
-   set `vert_variant` to the name of that centered glyph (which needs its
-   own SVG + row too) — see `lg_lun` → `md_lun` for a working example. If
-   it's vert-only, leave `vert_variant` blank.
-4. Rebuild: `python3 -m jzpbuild`. The new glyph is picked up automatically
-   into the generated `@area_char` class; no `gpos.py` edit needed.
-5. Verify: try it in `tools/font_tester.html` (`:` + your new spelling), and
-   run `python3 tests/test_shaping.py JianZiPu.ttf`-style regression
-   check — add a line to `CORPUS` in `tests/test_shaping.py` if you want the
-   new spelling itself covered going forward (existing entries won't catch
-   it; see the shaping-test discussion above on what that test does and
-   doesn't verify).
+If the character should also work as a hui number or a left-hand glyph,
+add it to those areas too; one glyph can be in several.
 
-**Known limitation: `:` immediately after Han text can silently drop out of
-vertical mode.** The trigger is `sub colon by blank_colon;` (`features.py`),
-and `vert_rules()`/`@area_to_md_for_vert` only fire when that `blank_colon`
-glyph sits in the *same shaping run* as the glyphs after it. `:` (U+003A) is
-Unicode "Common" script, so when it directly follows Chinese text (e.g.
-`名九淌上 :shang34`), browsers' per-script text-itemization (splitting a text
-node into separate shaping runs for `hani` vs `latn`/`Common`, independent of
-which font is used — this happens even though everything renders through
-one `@font-face`) can fold that `:` into the *preceding* Han run instead of
-the following Latin one. The stranded word then shapes with plain
-(non-vertical) positioning instead of the intended centered variant — no
-error, just the wrong layout, and it only shows up when a colon-triggered
-word directly abuts prior Han text with nothing else between them. Confirmed
-with `hb-shape`: shaping `:名九淌上 :shang34` as one buffer positions the
-second word correctly (`md_shang@-675,510` etc.), but shaping `shang34` in
-isolation (simulating the stranded-colon run split) gives completely
-different offsets (`md_shang@0,0`, `md_3@500,318`, ...). This is a
-consequence of the colon being a script-neutral character, not a bug in
-`gpos.py`/`features.py` — no `.fea` change fixes it, since the split happens
-on raw input codepoints before GSUB ever runs. Workaround: don't chain a
-`:`-triggered word directly after Han-script notation in the same run.
+### Case 2: add a new SVG for the `jc` area (a third 急/绰-style marker)
 
-### Case 2: add a new SVG for `area_jc` (a third 急/绰-style marker)
-
-`area_jc` (CSV column `area_mod_jc`) currently has two members — `mod_chuo`
-(`/`, 绰) and `mod_ji` (`>`, 急). It's a shared class referenced by every
-layout family's rules (the `jc` parameter throughout `word_layout_rules()`,
-`no_left_layout_rules()`, and `cuo_rules()` in `gpos.py`), each with its own
-`area_jc` x/y in `layouts.json`. Adding a third member doesn't require
-touching any of that:
-
-1. Get the new SVG into `src-fonttools/inputs/svg/<glyph_name>.svg`
-   (same as Case 1 — `--figma_pull` or manual drop).
-2. Add a row to `components.csv`: `glyph_name` matching the SVG filename,
-   any non-empty value in the `area_mod_jc` column, and a spelling key that
-   doesn't collide with `/`, `>`, or anything else already in the CSV.
-   - *Truly optional, even with a `simplified`/`traditional` spelling:* same
-     `glyphRename.csv` note as Case 1 step 2 — add a row only if you want a
-     readable `ch_*` name for this character instead of the auto-derived
-     `uniXXXX`; the build works either way.
-3. Rebuild: `python3 -m jzpbuild`. The new glyph joins the generated
-   `@area_jc` class and is immediately positionable in every layout that
-   has an `area_jc` slot — same mechanism as Case 1.
-4. Verify the same way: `tools/font_tester.html` with your new spelling in
-   a few different word shapes (with/without left hand, with/without a
-   right-hand technique) to confirm it picks up each layout's `area_jc`
-   position correctly, plus the shaping-test regression check.
+1. `inputs/svg/mod_<name>.svg`, 200×200 like `mod_chuo`/`mod_ji`.
+2. Areas → **急/绰 modifier** (`jc`) → Add glyphs; set its typing key.
+3. Save and build. It is positioned by the existing `jc` rules in every
+   word type that has a `jc` part; if it needs its own gap, open Layouts,
+   select the part whose gap depends on it, and add an exception row
+   ("by glyph") naming the new glyph.
 
 ## Figma access
 
@@ -562,241 +488,87 @@ touching `figma.py` again:
 
 ### Layout count: 37 on Figma, 34 wired up
 
-After the page-scoping fix, `--figma_pull` finds **37 layouts** on Figma's
-"main" page vs. the legacy hand-maintained set's **34** (`layout_bo`,
-`layout_char1-4` etc. showed up before page-scoping — page-scoping cut a
-75-layout mismatch down to 37, but 3 extra remain). Several matching
-layouts also have extra areas not in the legacy design
-(`area_hui_small_top`/`_bottom`, `area_left_mod1`/`_mod2`, and `area_right`
-newly present in `layout_li`). `gpos.py`'s declarative layout builders only
-emit rules for the original 34-layout scheme and silently ignore the rest as
-inert data (present in `layouts.json`, but no glyph is ever routed to
-them).
+Only relevant to the legacy `--classic_pos` build: three Figma frames
+(`layout_li`'s extra areas) were never routed to glyphs by `gpos.py`. The
+default build does not read `layouts.json`, so this needs no decision
+unless the classic path is revived.
 
-**Decision (file owner, current):** leave as-is for now — the 3 extra
-layouts/areas can stay unused in the fetched data without being wired into
-`gpos.py`. Revisit if/when those layouts are actually needed.
+## Dev Server and the Builder app
 
-## Dev Server
-
-A **required**, **stdlib-only** local HTTP server for the browser tools
-below — no extra dependency beyond the Python standard library already
-installed in "Setup" above. `tools/jzpbuilder.html` only works served
-through this; opening it as a plain `file://` page doesn't work at all
-(Chromium blocks `fetch`/`XMLHttpRequest` against `file://` sibling files,
-so auto-load, Import/Save, and Build Font all have nothing to talk to).
-
-**Spin it up:**
+`jzpbuild/devserver.py` is a stdlib-only local HTTP server (no extra
+dependency). It serves the built Builder app (`app/build/`, SPA fallback)
+at `/`, `src-fonttools/` as static files (`/inputs/svg/...`, `/tools/...`,
+`/JianZiPu.ttf`), and the JSON API the app uses:
 
 ```bash
 cd src-fonttools
-python3 -m jzpbuild.devserver          # serves at http://127.0.0.1:5713/
-python3 -m jzpbuild.devserver --port 9000   # or pick a different port
+python3 -m jzpbuild.devserver          # http://127.0.0.1:5713/
+python3 -m jzpbuild.devserver --port 9000
 ```
 
-Then open **`http://127.0.0.1:5713/tools/jzpbuilder.html`** in your browser
-(through the server's URL, not by double-clicking the file — that's the
-difference that makes fetch/Build Font/Save Configs work). Leave the
-command running in that terminal for as long as you want the tool's server
-features available; `Ctrl-C` stops it. `tools/font_tester.html` doesn't need
-the server at all — it only ever reads a built `.ttf` file directly.
+| Route | Does |
+|---|---|
+| `GET /api/design` | `design.json` + content hash + validation warnings + rule stats |
+| `PUT /api/design` | `{design, base_hash}` → validates, writes `design.json`; 409 if the file changed on disk since `base_hash` (empty hash = force) |
+| `POST /api/design/check` | validate + stats for an unsaved design (the app calls this after every edit) |
+| `POST /api/resolve` | `{design?, layout, choice, pinned?, center?}` → positions of one word shape; `choice` is per slot `null` / alternative index / list per row |
+| `POST /api/words` | `{design?, words}` → each typed word shaped through GSUB (HarfBuzz on the last built font) and positioned by the unsaved design — the live preview |
+| `GET/PUT /api/glyphs` | the `components.csv` catalog merged with SVG presence and area membership; PUT rewrites the CSV |
+| `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
+| `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild` (one at a time) and poll its log |
 
-`jzpbuild/devserver.py` serves `src-fonttools/` as static files, plus four small
-JSON routes:
-- `GET /api/svgs` — every `inputs/svg/*.svg` as `{glyph_name: svg_text}`.
-- `GET /api/config` — `config.py`'s `RIGHT_SELECTORS` map plus the default
-  `--input-*` paths, straight from the source of truth — powers the
-  `area_right` restriction and the Build Font modal's prefilled paths below.
-- `POST /api/build` — runs `python3 -m jzpbuild` in `src-fonttools/`, with
-  optional `--input-*` overrides from the request body, returns
-  `{ok, returncode, stdout, stderr}`.
-- `POST /api/save` — writes request-body values straight to their
-  `config.py` default path (`layouts` → `inputs/layouts.json`,
-  `components` → `inputs/components.csv`, `svgs` → one file per entry,
-  `inputs/svg/<glyph_name>.svg`, overwriting existing files of the same
-  name) — the "Save Configs" button, so a build afterward (which only ever
-  reads what's on disk) picks up in-browser edits without a manual
-  download-then-move-the-file step.
+The app itself lives in `app/` (SvelteKit 2 + Svelte 5, static build):
+
+```bash
+cd app && npm install
+npm run dev      # Vite dev server on :5173, proxies /api etc. to the Python server on :5713
+npm run build    # writes app/build/, which the Python server then serves at /
+```
+
+Screens: **Glyphs** (every SVG on disk, grouped, with the unassigned ones
+called out; SVG upload/edit are placeholders), **Areas** (members, box
+size, typing keys), **Layouts** (word types; eight dockable, foldable,
+resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
+Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
+rule editor with live canvas preview), Centering; a live test strip;
+Advanced toggle for structural edits), **Test & Build** (live preview vs
+the built font, sample sets, Build button with log). Edits are held in the
+browser until **Save (⌘S)**; Save refuses to clobber a `design.json` that
+changed on disk. **⋯ → Import/Export** moves the whole design as one JSON
+file. `.claude/launch.json` has a `builder` entry that starts the server.
 
 ## Helpful Tools
 
-Two self-contained HTML tools live in `tools/` — open `tools/index.html` for
-a landing page linking both. `tools/font_tester.html` works with **no
-server at all** (open directly with a plain `file://` double-click) since it
-only ever reads a built `.ttf` file directly; `jzpbuilder.html` requires the
-Dev Server above.
-
-### JianZiPu Font Builder (no-Figma workflow)
-
-`tools/jzpbuilder.html` — auto-loads the current
-`src-fonttools/inputs/layouts.json`, every SVG in `src-fonttools/inputs/svg/`, and
-`src-fonttools/inputs/components.csv` on open, so it's ready to explore immediately
-with no manual load step, and has a **Build Font** button (top toolbar) that
-opens a modal listing every input file `python3 -m jzpbuild` would read
-(prefilled with `config.py`'s defaults via `/api/config`, each editable as
-plain text — matching the `--input-*` CLI flags) plus a **Build** action
-that POSTs those paths to `/api/build`, shows a loading state, then
-success/failure and a link to open Font Tester next. The modal also carries
-a red reminder: Build Font only ever reads what's on disk, so any in-browser
-edit not yet pushed out via "Save Configs" (below) won't be picked up. Both
-auto-load and the Build Font modal require the dev server above.
-
-A **File-menu-style bar** sits in the top toolbar, alongside Help/Build
-Font — three dropdowns (click to open, click anywhere else to close):
-- **Import ▾** — `layouts.json`, `components.csv`, `svgs` — each loads from
-  disk and replaces what's currently loaded in the browser.
-- **Save ▾** — `layouts.json`, `components.csv`, and `svgs` each POST their
-  current in-memory state to `/api/save`, overwriting the real files under
-  `src-fonttools/inputs/` (`svgs` writes one file per loaded SVG, to
-  `inputs/svg/<glyph_name>.svg` — needs the dev server; without it you just
-  get a "no dev server running" alert); **Save All** does all three in one
-  request, one combined confirmation.
-- **Export ▾** — downloads `layouts.json` (recomputing its `yd` field from
-  `y`/`h` on the way out — `yd` is the baseline-flipped offset the font's
-  GPOS rules actually use, so it's kept in sync automatically rather than
-  ever being hand-edited), `components.csv`, and `svgs.zip` (every loaded
-  SVG, zipped client-side by a small dependency-free stored/no-compression
-  ZIP writer — no external library, keeps the tool self-contained) to your
-  Downloads folder, independent of any server.
-- **Edit ▾** — Undo/Redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z` or `Ctrl+Y`);
-  most edits (drags, area/layout add/delete, glyph assignment, CSV field
-  edits) are one undo step each, snapshot-based (see `historyStack`/
-  `redoStack` in the script).
-
-The toolbar spans the full page width (a sibling of the side/canvas/tools
-row, not nested inside it) and also holds a **&minus; / percentage / + /
-reset** zoom control group just left of Help — mouse wheel over the canvas
-zooms too, and dragging on empty canvas pans. Area name labels on the
-canvas boost their own font size as you zoom out (countering the shrink
-from the canvas-wide `transform: scale()`), so they stay legible instead of
-vanishing at low zoom.
-
-The **left panel** has the **Layouts** list (plus Add/Duplicate/Delete),
-plus a **Layouts (Double Sided)** section below it — a dedicated left/right
-picker for the six cuo layouts (`layout_cuo_left`/`right` and their `2`/`3`
-variants) that lets you mix and match any left variant with any right
-variant (e.g. preview `layout_cuo_left3` paired with `layout_cuo_right`),
-overriding the fixed `left`↔`right`, `left2`↔`right2`, `left3`↔`right3`
-pairing described below. Picking one from each column previews that custom
-pairing; picking only one side falls back to the normal fixed pair; picking
-any other (non-cuo) layout from the main Layouts list clears both picks —
-the two pickers and the main list all drive the same underlying
-selection, they're just different ways to set it.
-Everything else that used to live in the left panel moved to a **Tools
-panel** on the right, which (like the left panel and the bottom panel) is
-resizable by dragging its edge. Tools holds **Preview** (the "exact font
-placement" checkbox, **Test random components**, **Clear Components**) and
-**Areas** (the click-a-canvas-area editor: name/x/y/w/h/svg fields). **Test
-random components** fills every area of the current layout with a random
-glyph from its `components.csv` candidates (re-rolls on every click, useful
-for spot-checking fit across many shapes), with two rules layered on top of
-plain per-area randomness:
-- `area_right` only ever gets a glyph from the *current layout's*
-  `RIGHT_SELECTORS` family (e.g. `layout_gou3` only ever picks
-  `lg_gou`/`lg_da`, never an `lg_pi` or `lg_li`) — that restriction comes
-  from `/api/config`, so it's a no-op (unrestricted) without the dev server
-  running.
-- In `layout_vertjzpN` (N ≥ 2), each numbered row is either `area_char{row}`
-  *or* `area_left_{row}` + `area_hui_{row}` together, never all three at
-  once — matches the actual choice `gpos.py::vert_rules()` enumerates, so
-  the preview can't show an illegal combination.
-- `layout_cuo_left`/`layout_cuo_right` (and their `2`/`3` jc/no-left
-  variants) are two halves of the same 撮 chord, so selecting either one
-  renders **both** on canvas together — the paired layout appears as a
-  dashed, read-only overlay offset 500 (font design units) to the right of
-  the primary one — and clicking "Test random components" fills both sides
-  at once so the whole chord previews correctly, not just half of it.
-
-**Clear Components** empties every area's assigned glyph for the *current
-layout only* (other layouts, including a cuo pair, and the loaded SVG
-library are untouched), leaving bare area outlines.
-
-The auto-load itself makes real `fetch()`/`/api/svgs` calls (works only when
-served by `jzpbuild.devserver`); if the dev server isn't running, the page
-falls back cleanly to the manual controls below — you'll see "auto-load
-unavailable" in the status line instead of a broken page.
-
-For users who author glyph SVGs and `layouts.json` with their own tools
-(or want to try something different from what's checked in): load a
-layouts JSON, CSV, and/or any subset of SVGs via the Import menu (file
-picker) to replace the auto-loaded set, preview how glyphs sit in each area
-(natural size, bottom-anchored at `y + h`, toggleable via the "exact font
-placement" checkbox — off by default, since the alternative stretch-to-fill
-rendering doesn't tell you anything real about whether an area is sized
-right), then move/resize areas by drag or numeric input, add/duplicate/delete
-layouts and areas, then get the changes back to `src-fonttools/inputs/` one of two
-ways: use the Save menu (needs the dev server, writes directly, no manual
-step) or download a corrected `layouts.json` (with `yd` recomputed)
-and/or `components.csv` from the Export menu and drop them in yourself as
-`src-fonttools/inputs/layouts.json` / `src-fonttools/inputs/components.csv`. "Test random components" prefers real
-`components.csv` membership when it's loaded (falling back to a small
-hardcoded candidate pool only for areas with no matching CSV rows), applying
-the same `area_right`-family restriction described above. The left panel,
-right Tools panel, and bottom panel are all resizable by dragging their edge
-(`#sideResizer` / `#toolsResizer` / `#bottomResizer`).
-
-**Area → components panel** (bottom of the page): click any area on the
-canvas to see every glyph whose `components.csv` row includes that area
-(matched via the area name → CSV column mapping — e.g. canvas area
-`area_hui_2` / `area_left_rt` both map to the `area_hui`/`area_left`
-columns respectively, and `area_jc`/`area_zhu` map to the historically-named
-`area_mod_jc`/`area_mod_zhu` columns), shown as clickable preview chips with
-a `×` to remove that glyph from the area. Clicking an unassigned chip
-assigns it to the currently-selected area; clicking the already-assigned
-chip again unassigns it (toggle). For `area_right`, chips outside the
-current layout's `RIGHT_SELECTORS` family are shown but grayed out and
-unclickable (not hidden — makes clear *why* e.g. `lg_pi` can't go in
-`layout_gou3`'s `area_right`), same restriction "Test random components"
-applies. Add another glyph via "Add New SVG", which opens a modal listing
-every loaded SVG as a click-to-select chip (multi-select, already-assigned
-ones shown pre-highlighted) — "Add selected" adds them all to the current
-area (creating a minimal CSV row for any that don't have one yet),
-"Cancel" discards the selection. The modal's own "Upload SVG" button reads
-one or more `.svg` files straight into memory (`registerSvg()` — no
-dev-server round trip needed for this step); if an uploaded file's name
-collides with one already loaded, you're prompted with a suggested rename
-(`foo` → `foo_2`, `foo_2` → `foo_3`, ...) before it's added — re-prompting
-until you pick a free name or cancel (which skips just that file). Either
-way, a newly uploaded SVG only exists in memory until you use **Save ▾ >
-svgs** (or Save All) to write it to `src-fonttools/inputs/svg/`. Clicking a
-candidate chip both toggles its assignment to the
-currently-selected area in the main canvas *and* opens an inspector panel on
-the right showing every area that glyph belongs to across the whole CSV
-(editable checkboxes — this is where you'd add/remove other area
-memberships, not just the current one), its
-`common`/`latin`/`latin_alt`/`simplified`/`traditional` spellings (editable
-text fields; `vert_variant` is shown read-only), and a "Download SVG" button
-to save that glyph's raw SVG back out. All of this edits the in-memory CSV
-rows directly — use "Download components.csv" in the side panel to save
-your changes out.
-
-### Font tester (no-build-tooling workflow)
-
-`tools/font_tester.html` — points at `../JianZiPu.ttf` by default; a
-"Load / reload font" button cache-busts with a timestamp so it always
-picks up your latest build, no hard-refresh needed. Includes a live
-input/output pair, a 中文/ASCII toggle that loads two equivalent spellings
-of the same passage (same pattern as `src/demo/index.html`), and example
-chips across basic words, decimals, modifiers, chords, vertical words,
-Chinese input, and edge cases. Change the path field to
-`../../src/JianZiPu.ttf` to eyeball-compare against the released font
-instead.
+`tools/font_tester.html` — works with **no server at all** (open directly
+with a plain `file://` double-click) since it only reads a built `.ttf`.
+Points at `../JianZiPu.ttf` by default; a "Load / reload font" button
+cache-busts with a timestamp so it always picks up your latest build.
+Includes a live input/output pair, a 中文/ASCII toggle that loads two
+equivalent spellings of the same passage, and example chips across basic
+words, decimals, modifiers, chords, vertical words, Chinese input, and
+edge cases. The Builder's Test & Build screen covers the same ground with
+a side-by-side of the live preview and the built font.
 
 ## Verification
 
 ```bash
-pytest tests/test_shaping.py                      # builds into a temp dir, compares vs src/JianZiPu.ttf
-python3 tests/test_shaping.py NEW.ttf              # compare an existing NEW.ttf vs src/JianZiPu.ttf
+python3 tests/test_positioning.py                  # unit tests for positioning/ (no pytest needed)
+pytest tests/test_positioning.py tests/test_shaping.py
+python3 tests/test_shaping.py NEW.ttf              # compare an existing NEW.ttf vs tests/JianZiPu.ttf (golden)
 python3 tests/test_shaping.py OLD.ttf NEW.ttf      # or compare two specific fonts directly
+python3 -m jzpbuild --classic_pos -o /tmp/classic.ttf --fea-out "" && python3 -m jzpbuild -o /tmp/cursive.ttf --fea-out ""
+python3 tests/parity_report.py /tmp/classic.ttf /tmp/cursive.ttf   # classic vs design.json positions, per word
+python3 tests/shaper_parity.py /tmp/cursive.ttf    # HarfBuzz vs CoreText (macOS, needs swift)
 python3 -m jzpbuild.feadiff GOLDEN.fea NEW.fea     # semantic .fea diff
 ```
 
 `tests/test_shaping.py` shapes ~80 tutorial inputs with HarfBuzz against two
-fonts and requires identical glyph sequences and positions. When the
-pipeline was introduced this passed 78/78 (three inputs are compared with a
-trailing space because the old FontForge-compiled font had an end-of-text
-ligature bug — see `OLD_FONT_EOT_QUIRK` in the test). Also worth using:
-`tools/font_tester.html` for a quick visual check after a rebuild.
+fonts and requires identical glyph sequences and positions. The golden
+`tests/JianZiPu.ttf` is still the classic-positioned font, so the pytest
+entry builds with `--classic_pos`; regenerate the golden from a default
+build once the design.json positions are accepted (the parity report is
+the acceptance check — the remaining differences are documented classic
+quirks, see `docs/ROADMAP.md`).
 
 ## Notes
 

@@ -12,13 +12,12 @@ from .genfea import generate
 from .glyphs import add_component_glyphs
 
 
-def build(out_path=None, fea_out=None, verbose=False, dynamic_pos=False,
-          dynamic_pos_only=False):
+def build(out_path=None, fea_out=None, verbose=False, classic_pos=False):
     out_path = out_path or config.OUTPUT_FONT
     vlog = print if verbose else (lambda *a: None)
 
     print("generating feature file ...")
-    fea_text = generate(dynamic_pos=dynamic_pos, dynamic_pos_only=dynamic_pos_only)
+    fea_text = generate(classic_pos=classic_pos)
     if fea_out:
         fea_out.write_text(fea_text)
         print(f"  wrote {fea_out}")
@@ -63,29 +62,16 @@ def main(argv=None):
                    help="only generate the feature file, don't build the font")
     p.add_argument("--figma_pull", action="store_true",
                    help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
-    p.add_argument("--dynamic_pos", action="store_true",
-                   help="position the gou/io/li right-hand families with the "
-                        "experimental geometry-derived contextual GPOS rules "
-                        "from dynamic_positioning/ instead of layouts.json "
-                        "(see dynamic_positioning/README.md)")
-    p.add_argument("--dynamic_pos_only", action="store_true",
-                   help="like --dynamic_pos, but additionally zero out every "
-                        "classic-positioned shape dynamic_positioning doesn't "
-                        "cover (other right-hand families, vertical-mode "
-                        "words, cuo chords) so they render visibly broken "
-                        "instead of silently working via classic -- a test "
-                        "build for checking dynamic_positioning's actual "
-                        "coverage without classic quietly filling the gaps")
+    p.add_argument("--classic_pos", action="store_true",
+                   help="legacy positioning from inputs/layouts.json + gpos.py "
+                        "instead of the cursive rules from inputs/design.json "
+                        "(only for comparing against the released font)")
     for flag, attr, desc in INPUT_OVERRIDES:
         p.add_argument(f"--{flag.replace('_', '-')}", type=str, default=None,
                        help=f"override the {desc} input path "
                             f"(default {getattr(config, attr)})")
-    p.add_argument("--positions", type=str, default=None,
-                   help="override dynamic_positioning's own layouts_data.json "
-                        f"(default {config.DYNAMIC_LAYOUTS_JSON}) -- only takes "
-                        "effect with --dynamic_pos/--dynamic_pos_only, since "
-                        "that's the only time dynamic_positioning/ is imported "
-                        "at all")
+    p.add_argument("--design", type=str, default=None,
+                   help=f"override the design file (default {config.DESIGN_JSON})")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -93,19 +79,15 @@ def main(argv=None):
         val = getattr(args, flag)
         if val is not None:
             setattr(config, attr, Path(val))
-    if args.positions is not None:
-        # Must be set before dynamic_positioning.geometry's first import
-        # (inside generate(), only reached under --dynamic_pos/
-        # --dynamic_pos_only) -- that module reads config.DYNAMIC_LAYOUTS_JSON
-        # once, at import time, same as every other INPUT_OVERRIDES path.
-        config.DYNAMIC_LAYOUTS_JSON = Path(args.positions)
+    if args.design is not None:
+        config.DESIGN_JSON = Path(args.design)
 
     if args.figma_pull:
         from .figma import fetch
         fetch()
     fea_out = Path(args.fea_out) if args.fea_out else None
     if args.fea_only:
-        text = generate(dynamic_pos=args.dynamic_pos, dynamic_pos_only=args.dynamic_pos_only)
+        text = generate(classic_pos=args.classic_pos)
         if fea_out:
             fea_out.write_text(text)
             print(f"wrote {fea_out}")
@@ -114,8 +96,7 @@ def main(argv=None):
         return 0
 
     build(out_path=Path(args.output) if args.output else None,
-          fea_out=fea_out, verbose=args.verbose, dynamic_pos=args.dynamic_pos,
-          dynamic_pos_only=args.dynamic_pos_only)
+          fea_out=fea_out, verbose=args.verbose, classic_pos=args.classic_pos)
     return 0
 
 

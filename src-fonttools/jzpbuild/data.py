@@ -1,8 +1,9 @@
 """Loaders for the human-maintained data files.
 
-inputs/components.csv is the master mapping table: one row per component
-glyph, with the input spellings (ASCII, latin, Chinese) and the layout
-area(s) the glyph belongs to. inputs/glyphRename.csv maps unicode characters
+inputs/components.csv is the glyph catalog: one row per component glyph
+with its input spellings (ASCII, latin, Chinese). Which layout area(s) a
+glyph belongs to lives in inputs/design.json (see jzpbuild.positioning) and
+is merged onto each row here. inputs/glyphRename.csv maps unicode characters
 to their glyph names in the font (Han characters get readable ch_* names).
 
 Both loaders are cached: a build reads each file once, however many
@@ -22,7 +23,7 @@ from . import config
 @dataclass
 class GlyphRow:
     glyph_name: str
-    areas: dict = field(default_factory=dict)  # column name -> value
+    areas: set = field(default_factory=set)   # design.json area names this glyph belongs to
     vert_variant: str = ""
     common: str = ""
     latin: str = ""
@@ -30,14 +31,30 @@ class GlyphRow:
     simplified: str = ""
     traditional: str = ""
 
-    def in_area(self, col: str) -> bool:
-        return bool(self.areas.get(col))
+    def in_area(self, name: str) -> bool:
+        """`name` is a design.json area ("left"); the legacy CSV column
+        spellings ("area_left", "area_mod_jc") are accepted too."""
+        return _LEGACY_AREA_NAMES.get(name, name) in self.areas
 
 
-AREA_COLUMNS = [
-    "area_char", "area_chord", "area_fy", "area_left", "area_hui",
-    "area_mod_jc", "area_mod_zhu", "area_right", "area_string",
-]
+_LEGACY_AREA_NAMES = {
+    "area_char": "char", "area_chord": "chord", "area_fy": "fy", "area_left": "left",
+    "area_hui": "hui", "area_mod_jc": "jc", "area_mod_zhu": "zhu", "area_right": "right",
+    "area_string": "string",
+}
+
+
+@cache
+def load_design():
+    """The parsed design file (jzpbuild.positioning.schema.Design)."""
+    from .positioning.schema import load_design as _load
+    return _load(config.DESIGN_JSON)
+
+
+def cache_clear_all() -> None:
+    load_design.cache_clear()
+    load_components.cache_clear()
+    load_char_to_glyph_name_rows.cache_clear()
 
 
 @cache
@@ -47,7 +64,6 @@ def load_components() -> list[GlyphRow]:
         for rec in csv.DictReader(f):
             rows.append(GlyphRow(
                 glyph_name=rec["glyph_name"].strip(),
-                areas={c: rec[c].strip() for c in AREA_COLUMNS if rec.get(c, "").strip()},
                 vert_variant=rec["vert_variant"].strip(),
                 common=rec["common"].strip(),
                 latin=rec["latin"].strip(),
@@ -55,6 +71,11 @@ def load_components() -> list[GlyphRow]:
                 simplified=rec["simplified"].strip(),
                 traditional=rec["traditional"].strip(),
             ))
+    by_name = {r.glyph_name: r for r in rows}
+    for area in load_design().areas.values():
+        for g in area.glyphs:
+            if g in by_name:
+                by_name[g].areas.add(area.name)
     return rows
 
 

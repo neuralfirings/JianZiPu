@@ -1,0 +1,1741 @@
+{
+  "version": 2,
+  "center": {
+    "x": 500,
+    "y": 300
+  },
+  "areas": {
+    "fy": {
+      "label": "泛音 harmonic",
+      "size": [
+        420,
+        200
+      ],
+      "glyphs": [
+        "mod_fanyin"
+      ]
+    },
+    "left": {
+      "label": "Left hand",
+      "size": [
+        350,
+        350
+      ],
+      "glyphs": [
+        "md_ming",
+        "md_zhong",
+        "md_shi",
+        "md_da",
+        "md_gui"
+      ]
+    },
+    "hui": {
+      "label": "徽 position",
+      "size": [
+        350,
+        350
+      ],
+      "glyphs": [
+        "md_san",
+        "md_1",
+        "md_2",
+        "md_3",
+        "md_4",
+        "md_5",
+        "md_6",
+        "md_7",
+        "md_8",
+        "md_9",
+        "md_10",
+        "md_11",
+        "md_12",
+        "md_13",
+        "md_wai",
+        "md_jiu",
+        "md_1.blank",
+        "md_1.1",
+        "md_1.2",
+        "md_1.3",
+        "md_1.4",
+        "md_1.5",
+        "md_1.6",
+        "md_1.7",
+        "md_1.8",
+        "md_1.9",
+        "md_2.blank",
+        "md_2.1",
+        "md_2.2",
+        "md_2.3",
+        "md_2.4",
+        "md_2.5",
+        "md_2.6",
+        "md_2.7",
+        "md_2.8",
+        "md_2.9",
+        "md_3.blank",
+        "md_3.1",
+        "md_3.2",
+        "md_3.3",
+        "md_3.4",
+        "md_3.5",
+        "md_3.6",
+        "md_3.7",
+        "md_3.8",
+        "md_3.9",
+        "md_4.blank",
+        "md_4.1",
+        "md_4.2",
+        "md_4.3",
+        "md_4.4",
+        "md_4.5",
+        "md_4.6",
+        "md_4.7",
+        "md_4.8",
+        "md_4.9",
+        "md_5.blank",
+        "md_5.1",
+        "md_5.2",
+        "md_5.3",
+        "md_5.4",
+        "md_5.5",
+        "md_5.6",
+        "md_5.7",
+        "md_5.8",
+        "md_5.9",
+        "md_6.blank",
+        "md_6.1",
+        "md_6.2",
+        "md_6.3",
+        "md_6.4",
+        "md_6.5",
+        "md_6.6",
+        "md_6.7",
+        "md_6.8",
+        "md_6.9",
+        "md_7.blank",
+        "md_7.1",
+        "md_7.2",
+        "md_7.3",
+        "md_7.4",
+        "md_7.5",
+        "md_7.6",
+        "md_7.7",
+        "md_7.8",
+        "md_7.9",
+        "md_8.blank",
+        "md_8.1",
+        "md_8.2",
+        "md_8.3",
+        "md_8.4",
+        "md_8.5",
+        "md_8.6",
+        "md_8.7",
+        "md_8.8",
+        "md_8.9",
+        "md_9.blank",
+        "md_9.1",
+        "md_9.2",
+        "md_9.3",
+        "md_9.4",
+        "md_9.5",
+        "md_9.6",
+        "md_9.7",
+        "md_9.8",
+        "md_9.9",
+        "md_10.blank",
+        "md_10.1",
+        "md_10.2",
+        "md_10.3",
+        "md_10.4",
+        "md_10.5",
+        "md_10.6",
+        "md_10.7",
+        "md_10.8",
+        "md_10.9",
+        "md_11.blank",
+        "md_11.1",
+        "md_11.2",
+        "md_11.3",
+        "md_11.4",
+        "md_11.5",
+        "md_11.6",
+        "md_11.7",
+        "md_11.8",
+        "md_11.9",
+        "md_12.blank",
+        "md_12.1",
+        "md_12.2",
+        "md_12.3",
+        "md_12.4",
+        "md_12.5",
+        "md_12.6",
+        "md_12.7",
+        "md_12.8",
+        "md_12.9",
+        "md_13.blank",
+        "md_13.1",
+        "md_13.2",
+        "md_13.3",
+        "md_13.4",
+        "md_13.5",
+        "md_13.6",
+        "md_13.7",
+        "md_13.8",
+        "md_13.9",
+        "blank"
+      ]
+    },
+    "jc": {
+      "label": "急/绰 modifier",
+      "size": [
+        200,
+        200
+      ],
+      "glyphs": [
+        "mod_chuo",
+        "mod_ji"
+      ]
+    },
+    "zhu": {
+      "label": "注 modifier",
+      "size": [
+        115,
+        470
+      ],
+      "glyphs": [
+        "mod_zhu"
+      ]
+    },
+    "right": {
+      "label": "Right hand",
+      "size": [
+        660,
+        660
+      ],
+      "glyphs": [
+        "lg_tiao",
+        "lg_gou",
+        "lg_pi",
+        "lg_qiaqi",
+        "lg_tuo",
+        "lg_da",
+        "lg_ti",
+        "lg_zhai",
+        "lg_mo",
+        "lg_yan",
+        "lg_lun",
+        "lg_banlun",
+        "lg_motiao",
+        "lg_gouti",
+        "lg_dazhai",
+        "lg_li"
+      ]
+    },
+    "string": {
+      "label": "String",
+      "size": [
+        350,
+        350
+      ],
+      "glyphs": [
+        "md_1",
+        "md_2",
+        "md_3",
+        "md_4",
+        "md_5",
+        "md_6",
+        "md_7"
+      ]
+    },
+    "char": {
+      "label": "Character",
+      "size": [
+        350,
+        350
+      ],
+      "glyphs": [
+        "md_san",
+        "md_1",
+        "md_2",
+        "md_3",
+        "md_4",
+        "md_5",
+        "md_6",
+        "md_7",
+        "md_8",
+        "md_9",
+        "md_10",
+        "md_11",
+        "md_12",
+        "md_13",
+        "md_wai",
+        "md_ban",
+        "md_san2",
+        "md_placeholder",
+        "md_jiu2",
+        "md_shang",
+        "md_xia",
+        "md_tui",
+        "md_ru",
+        "md_yan",
+        "md_jin",
+        "md_fenkai",
+        "md_lun",
+        "md_banlun",
+        "md_shao",
+        "md_xi",
+        "md_fan",
+        "md_qi",
+        "md_zhi",
+        "md_dai",
+        "md_dui",
+        "md_zhua",
+        "md_pie",
+        "md_yin",
+        "md_ding",
+        "md_xi4",
+        "md_chang",
+        "md_xiao",
+        "md_fu",
+        "md_yinghe",
+        "md_nao",
+        "md_zhuang",
+        "md_suo",
+        "md_duan",
+        "md_bai",
+        "md_gun",
+        "md_fu2",
+        "md_zhi4",
+        "md_banfu",
+        "md_quanfu",
+        "md_diejuan",
+        "md_dayuan",
+        "md_yuanlou",
+        "md_tang",
+        "md_ming",
+        "md_zhong",
+        "md_shi",
+        "md_da",
+        "md_gui"
+      ]
+    },
+    "chord": {
+      "label": "Chord",
+      "size": [
+        1000,
+        1000
+      ],
+      "glyphs": [
+        "xl_cuo",
+        "xl_dacuo",
+        "xl_fancuo",
+        "xl_tt",
+        "xl_ttt",
+        "xl_bo",
+        "xl_la",
+        "xl_bola"
+      ]
+    },
+    "colon": {
+      "label": "Vertical marker",
+      "size": [
+        1000,
+        1000
+      ],
+      "glyphs": [
+        "blank_colon"
+      ],
+      "advance": 1000
+    },
+    "bar": {
+      "label": "Chord divider",
+      "size": [
+        1000,
+        1000
+      ],
+      "glyphs": [
+        "blank_bar"
+      ],
+      "advance": 1000
+    }
+  },
+  "layouts": [
+    {
+      "name": "standard",
+      "label": "Standard word",
+      "slots": [
+        {
+          "name": "fy",
+          "optional": true,
+          "alternatives": [
+            [
+              "fy"
+            ]
+          ]
+        },
+        {
+          "name": "left",
+          "optional": true,
+          "alternatives": [
+            [
+              "left"
+            ]
+          ]
+        },
+        {
+          "name": "hui",
+          "optional": true,
+          "alternatives": [
+            [
+              "hui"
+            ]
+          ]
+        },
+        {
+          "name": "jc",
+          "optional": true,
+          "alternatives": [
+            [
+              "jc"
+            ]
+          ]
+        },
+        {
+          "name": "zhu",
+          "optional": true,
+          "alternatives": [
+            [
+              "zhu"
+            ]
+          ]
+        },
+        {
+          "name": "right",
+          "optional": true,
+          "alternatives": [
+            [
+              "right"
+            ]
+          ]
+        },
+        {
+          "name": "string",
+          "optional": true,
+          "alternatives": [
+            [
+              "string"
+            ],
+            [
+              "string_top:string",
+              "string_bottom:string"
+            ]
+          ]
+        }
+      ],
+      "requires_any": [
+        "fy",
+        "left",
+        "hui",
+        "jc",
+        "zhu",
+        "right"
+      ],
+      "relationships": [
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": "right",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": [
+            {
+              "when_base": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": 128
+            },
+            {
+              "when_base": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 155
+            },
+            {
+              "when_base": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 177
+            },
+            {
+              "when_base": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": 155
+            },
+            {
+              "when_base": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": 128
+            },
+            {
+              "when_base": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": 130
+            },
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": 155
+            }
+          ]
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": "right",
+          "gap": [
+            {
+              "when_base": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": 57
+            },
+            {
+              "when_base": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 5
+            },
+            {
+              "when_base": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -5
+            },
+            {
+              "when_base": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": 77
+            },
+            {
+              "when_base": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": 77
+            },
+            {
+              "when_base": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": 77
+            },
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": 5
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": "fy",
+          "base_edge": "bottom",
+          "gap": -30
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": "fy",
+          "base_edge": "bottom",
+          "gap": -30
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "fy",
+          "base_edge": "bottom",
+          "gap": 47
+        },
+        {
+          "axis": "y",
+          "elem": "right",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": [
+            {
+              "when_elem": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -70
+            },
+            {
+              "when_elem": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": 60
+            },
+            {
+              "when_elem": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 50
+            },
+            {
+              "when_elem": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -40
+            },
+            {
+              "when_elem": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": 120
+            },
+            {
+              "when_elem": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -40
+            },
+            {
+              "when_elem": [
+                "lg_li"
+              ],
+              "value": 60
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "right",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": [
+            {
+              "when_elem": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -160
+            },
+            {
+              "when_elem": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -30
+            },
+            {
+              "when_elem": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 10
+            },
+            {
+              "when_elem": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -30
+            },
+            {
+              "when_elem": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": 10
+            },
+            {
+              "when_elem": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -90
+            },
+            {
+              "when_elem": [
+                "lg_li"
+              ],
+              "value": -30
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "right",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": [
+            {
+              "when_elem": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -160
+            },
+            {
+              "when_elem": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -30
+            },
+            {
+              "when_elem": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": 10
+            },
+            {
+              "when_elem": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -30
+            },
+            {
+              "when_elem": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": 10
+            },
+            {
+              "when_elem": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -90
+            },
+            {
+              "when_elem": [
+                "lg_li"
+              ],
+              "value": -30
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "right",
+          "base": "fy",
+          "base_edge": "bottom",
+          "gap": [
+            {
+              "when_elem": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -221
+            },
+            {
+              "when_elem": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -113
+            },
+            {
+              "when_elem": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -113
+            },
+            {
+              "when_elem": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -161
+            },
+            {
+              "when_elem": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": -21
+            },
+            {
+              "when_elem": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -201
+            },
+            {
+              "when_elem": [
+                "lg_li"
+              ],
+              "value": -113
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "right",
+          "base_edge": "top",
+          "gap": [
+            {
+              "when_base": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -104
+            },
+            {
+              "when_base": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -60
+            },
+            {
+              "when_base": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -60
+            },
+            {
+              "when_base": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -100
+            },
+            {
+              "when_base": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": -24
+            },
+            {
+              "when_base": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -24
+            },
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": -60
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "right",
+          "base_edge": "top",
+          "gap": [
+            {
+              "when_base": [
+                "lg_dazhai",
+                "lg_gouti"
+              ],
+              "value": -181
+            },
+            {
+              "when_base": [
+                "lg_pi",
+                "lg_qiaqi"
+              ],
+              "value": -230
+            },
+            {
+              "when_base": [
+                "lg_tiao",
+                "lg_tuo"
+              ],
+              "value": -120
+            },
+            {
+              "when_base": [
+                "lg_mo",
+                "lg_motiao",
+                "lg_yan",
+                "lg_lun",
+                "lg_banlun"
+              ],
+              "value": -385
+            },
+            {
+              "when_base": [
+                "lg_gou",
+                "lg_da"
+              ],
+              "value": -181
+            },
+            {
+              "when_base": [
+                "lg_ti",
+                "lg_zhai"
+              ],
+              "value": -180
+            },
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": -240
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "string_top",
+          "base": "right",
+          "base_edge": "top",
+          "gap": [
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": -70
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "string_bottom",
+          "base": "right",
+          "base_edge": "top",
+          "gap": [
+            {
+              "when_base": [
+                "lg_li"
+              ],
+              "value": -450
+            }
+          ]
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 6
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "x",
+          "elem": "fy",
+          "base": null,
+          "gap": 290
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": null,
+          "gap": 500
+        },
+        {
+          "axis": "x",
+          "elem": "left",
+          "base": null,
+          "gap": 150
+        },
+        {
+          "axis": "x",
+          "elem": "jc",
+          "base": null,
+          "gap": 400
+        },
+        {
+          "axis": "x",
+          "elem": "right",
+          "base": null,
+          "gap": 170
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": null,
+          "gap": 325
+        },
+        {
+          "axis": "x",
+          "elem": "string_top",
+          "base": null,
+          "gap": 325
+        },
+        {
+          "axis": "x",
+          "elem": "string_bottom",
+          "base": null,
+          "gap": 325
+        },
+        {
+          "axis": "y",
+          "elem": "fy",
+          "base": null,
+          "gap": 830
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": null,
+          "gap": 450
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": null,
+          "gap": 450
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": null,
+          "gap": 498
+        },
+        {
+          "axis": "y",
+          "elem": "right",
+          "base": null,
+          "gap": -30
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": null,
+          "gap": 125
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": null,
+          "gap": 125
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": null,
+          "gap": 209
+        }
+      ],
+      "center": {
+        "y": [
+          "left",
+          "hui",
+          "jc",
+          "zhu",
+          "right",
+          "string"
+        ],
+        "y_phantom": [
+          "string"
+        ],
+        "x": null
+      }
+    },
+    {
+      "name": "vertical",
+      "label": "Vertical (after :)",
+      "slots": [
+        {
+          "name": "colon",
+          "alternatives": [
+            [
+              "colon"
+            ]
+          ]
+        },
+        {
+          "name": "row",
+          "repeat": [
+            1,
+            4
+          ],
+          "alternatives": [
+            [
+              "char"
+            ],
+            [
+              "left",
+              "hui"
+            ]
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "axis": "x",
+          "elem": "colon",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "colon",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "x",
+          "elem": "char",
+          "base": null,
+          "gap": 325
+        },
+        {
+          "axis": "x",
+          "elem": "left",
+          "base": null,
+          "gap": 150
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "right",
+          "elem_edge": "left",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "char",
+          "base": "prev",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": "prev",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "char",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "top",
+          "elem_edge": "top",
+          "gap": 0
+        }
+      ],
+      "center": {
+        "y": [
+          "row"
+        ],
+        "x": null
+      }
+    },
+    {
+      "name": "chord",
+      "label": "Chord (left of |)",
+      "slots": [
+        {
+          "name": "fy",
+          "optional": true,
+          "alternatives": [
+            [
+              "fy"
+            ]
+          ]
+        },
+        {
+          "name": "chord",
+          "alternatives": [
+            [
+              "chord"
+            ]
+          ]
+        },
+        {
+          "name": "left",
+          "optional": true,
+          "alternatives": [
+            [
+              "left"
+            ]
+          ]
+        },
+        {
+          "name": "hui",
+          "optional": true,
+          "alternatives": [
+            [
+              "hui"
+            ]
+          ]
+        },
+        {
+          "name": "jc",
+          "optional": true,
+          "alternatives": [
+            [
+              "jc"
+            ]
+          ]
+        },
+        {
+          "name": "zhu",
+          "optional": true,
+          "alternatives": [
+            [
+              "zhu"
+            ]
+          ]
+        },
+        {
+          "name": "string",
+          "optional": true,
+          "alternatives": [
+            [
+              "string"
+            ]
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "axis": "x",
+          "elem": "chord",
+          "base": null,
+          "gap": 250
+        },
+        {
+          "axis": "y",
+          "elem": "chord",
+          "base": null,
+          "gap": -200
+        },
+        {
+          "axis": "x",
+          "elem": "fy",
+          "base": null,
+          "gap": 575
+        },
+        {
+          "axis": "y",
+          "elem": "fy",
+          "base": null,
+          "gap": 1050
+        },
+        {
+          "axis": "x",
+          "elem": "left",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": null,
+          "gap": 220
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "right",
+          "elem_edge": "left",
+          "gap": 0
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": null,
+          "gap": 350
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "top",
+          "elem_edge": "top",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": null,
+          "gap": 220
+        },
+        {
+          "axis": "x",
+          "elem": "jc",
+          "base": null,
+          "gap": 250
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -28
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -28
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": null,
+          "gap": 365
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": "hui",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": -175
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": "left",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": 175
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": null,
+          "gap": 215
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 3
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": null,
+          "gap": 15
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": "string",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": -116
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": null,
+          "gap": 99
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "string",
+          "base_edge": "bottom",
+          "elem_edge": "bottom",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 6
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": null,
+          "gap": 15
+        }
+      ],
+      "priority": [
+        "string"
+      ],
+      "center": {}
+    },
+    {
+      "name": "chord_right",
+      "label": "Chord (right of |)",
+      "slots": [
+        {
+          "name": "bar",
+          "alternatives": [
+            [
+              "bar"
+            ]
+          ]
+        },
+        {
+          "name": "left",
+          "optional": true,
+          "alternatives": [
+            [
+              "left"
+            ]
+          ]
+        },
+        {
+          "name": "hui",
+          "optional": true,
+          "alternatives": [
+            [
+              "hui"
+            ]
+          ]
+        },
+        {
+          "name": "jc",
+          "optional": true,
+          "alternatives": [
+            [
+              "jc"
+            ]
+          ]
+        },
+        {
+          "name": "zhu",
+          "optional": true,
+          "alternatives": [
+            [
+              "zhu"
+            ]
+          ]
+        },
+        {
+          "name": "string",
+          "optional": true,
+          "alternatives": [
+            [
+              "string"
+            ]
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "axis": "x",
+          "elem": "bar",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "bar",
+          "base": null,
+          "gap": 0
+        },
+        {
+          "axis": "x",
+          "elem": "left",
+          "base": null,
+          "gap": 1300
+        },
+        {
+          "axis": "y",
+          "elem": "left",
+          "base": null,
+          "gap": 220
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "right",
+          "elem_edge": "left",
+          "gap": 0
+        },
+        {
+          "axis": "x",
+          "elem": "hui",
+          "base": null,
+          "gap": 1650
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": "left",
+          "base_edge": "top",
+          "elem_edge": "top",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "hui",
+          "base": null,
+          "gap": 220
+        },
+        {
+          "axis": "x",
+          "elem": "jc",
+          "base": null,
+          "gap": 1550
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -28
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -28
+        },
+        {
+          "axis": "y",
+          "elem": "jc",
+          "base": null,
+          "gap": 365
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": "hui",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": -175
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": "left",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": 175
+        },
+        {
+          "axis": "x",
+          "elem": "string",
+          "base": null,
+          "gap": 1515
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 3
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -35
+        },
+        {
+          "axis": "y",
+          "elem": "string",
+          "base": null,
+          "gap": 15
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": "string",
+          "base_edge": "left",
+          "elem_edge": "left",
+          "gap": -116
+        },
+        {
+          "axis": "x",
+          "elem": "zhu",
+          "base": null,
+          "gap": 1399
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "string",
+          "base_edge": "bottom",
+          "elem_edge": "bottom",
+          "gap": 0
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "jc",
+          "base_edge": "bottom",
+          "gap": 6
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "hui",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": "left",
+          "base_edge": "bottom",
+          "gap": -32
+        },
+        {
+          "axis": "y",
+          "elem": "zhu",
+          "base": null,
+          "gap": 15
+        }
+      ],
+      "priority": [
+        "string"
+      ],
+      "center": {}
+    }
+  ]
+}

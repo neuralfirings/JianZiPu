@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "builder",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "jzpbuild.devserver", "--port", "5713"],
+      "cwd": "src-fonttools",
+      "port": 5713
+    },
+    {
+      "name": "app-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "app",
+      "port": 5173
+    }
+  ]
+}

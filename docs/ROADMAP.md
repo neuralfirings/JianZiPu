@@ -7,9 +7,9 @@ Decided 2026-10-12. Wireframes: `mockups/lofi-wireframes.html` (9 frames).
 | question | decision |
 |---|---|
 | Where are glyphs and layouts designed? | In the web app, by signed-in Calligraphers and Layout Managers. Figma is legacy; `src-fonttools/jzpbuild/figma.py` stays as a one-way importer only. |
-| Layout model | `dynamic_positioning` only. Every family is expressed in `dynamic_positioning/layouts_data.json`; classic `inputs/layouts.json` + `gpos.py` become legacy and `--dynamic_pos` becomes the default build. |
+| Layout model | `jzpbuild/positioning/` only (cursive-attachment GPOS from `inputs/design.json`). Classic `inputs/layouts.json` + `gpos.py` are legacy, reachable with `--classic_pos` for the parity report. (Decided 2026-10-15, replacing the earlier `dynamic_positioning` plan.) |
 | Backend | GitHub + GitHub Actions + Supabase. Supabase: auth, roles, proposals, requests, comments. Each proposal is a GitHub branch written through a bot token (contributors never need GitHub accounts). Actions builds the font on proposal-branch push (preview) and on merge to main (release). No server to run. |
-| First end-to-end slice | Layout Manager: sign in → edit a dynamic layout → save as proposal → admin approves → font built. |
+| First end-to-end slice | **Local-first Builder** (done 2026-10-15): the SvelteKit app in `app/` served by the Python dev server, reading/writing repo files directly. Logins, proposals and hosting come later. |
 | Front end | SvelteKit. |
 | Roles | Calligrapher, Layout Manager, Requester (implicitly every signed-in user), Admin. One person can hold several. Roles are entry points, not separate logins. |
 | Proposal state machine | draft → submitted → in review → approved → merged. Reject returns to draft (work is kept). Build failure does not un-approve: the proposal stays approved with a failed-build badge and an admin can retry. |
@@ -23,33 +23,49 @@ Decided 2026-10-12. Wireframes: `mockups/lofi-wireframes.html` (9 frames).
 
 ## Phases
 
-### Phase 0: pipeline prerequisite (in progress)
+### Phase 0: pipeline prerequisite (done 2026-10-15)
 
-Status: 1–3 done, 4–6 open. Finding from 3: with every family covered,
-classic-vs-dynamic parity over the shaping corpus shows every word sitting
-~200 units higher than classic, because `layouts_data.json` has
-`center_y: 500` while the classic frames center around y≈300; with
-`center_y: 300` and nothing else changed, typical words land within 4–40
-units of classic and only specific fy+jc+zhu combinations stay off. Whether
-to adopt 300 (match the released font) or keep 500 is a design call for
-the layout editor, not a code change.
+`dynamic_positioning/` was replaced by `jzpbuild/positioning/`, a
+cursive-attachment model proven first as a spike (`spike_cursive.py`,
+2026-10-12: 266/266 words identical to the dynamic font on HarfBuzz and
+CoreText) and then extended to every word type. The default build now
+positions from `inputs/design.json`; `--classic_pos` keeps the old path.
 
-Make `dynamic_positioning` able to express everything the font needs, so the layout editor can be the only layout tool.
+Parity vs classic over the shaping corpus plus 150 generated words: 65
+identical, 56 within 10 units, 51 within 40, 42 within 100, 16 larger. The
+large ones are classic holes or quirks rather than regressions: `fy` above
+`U5`'s x, `綽`/`quanfu3`/`banfu2`/`0.5` (character-only words classic never
+positioned), one-row vertical words (`:v8` at 318 vs 125), li's string next
+to a jc, and no-left words with fy+jc+right (classic's `*3` frames are not
+centred at 300). Each is a design call to make in the Builder, not code.
+The golden `tests/JianZiPu.ttf` is still classic; regenerate it once those
+calls are made.
 
-1. **One GPOS lookup per pivot signifier** instead of one `dynamic_pos` lookup. The 64KB subtable ceiling then applies per family, not to the whole font; exact centering is kept. Rules from different signifiers never match the same word (each rule's context contains its own pivot glyph), so the split changes no positions. The bare-`fy` fallback gets explicit zero-valued blockers (derived from the layouts) instead of relying on sharing a lookup.
-2. **Horizontal centering** (`horizontal_center_order`), same mechanism as vertical.
-3. **loki / nc / tiao / mo** join `default_jzp`'s selector, with per-signifier gaps seeded from classic `layouts.json` so they start where the Figma frames put them.
-4. **cuo** (`chord_left` / `chord_right`): add `fy`/`left`/`hui`, remaining chord keys (`DC`, `FC`, `TTT`, `B`, `L`, `BL`), and zero classic's cuo rules under `--dynamic_pos` so nothing double-stacks.
-5. **vert mode** (`:` topology with repeated-slot rows), replacing `layout_vertjzp1..4`.
-6. **Flip the default**: `python3 -m jzpbuild` builds with dynamic positioning; `--classic_pos` keeps the old path for comparison. A parity report (classic vs dynamic positions over `tests/test_shaping.py`'s corpus) is the acceptance test for 3–5; the golden `tests/JianZiPu.ttf` is regenerated once the result is accepted.
+Open: 12 design-time warnings (no catch-all on `y right <- jc`, string_top/
+bottom only for li, vertical hui without an absolute position) and 497
+skipped shape/glyph combinations in `standard`, all from the migrated
+classic gaps having no "otherwise" row — add them in the Spacing panel.
 
-### Phase 1: Layout Manager slice
+### Phase 1: Builder, local-first (done 2026-10-15)
 
-- SvelteKit app (`app/`), Supabase auth, roles table, workspace home.
-- Layout editor: port of `tools/jzpbuilder-dynamic.html` (frame 5). Live resolve runs **in the browser via Pyodide** executing the real `dynamic_positioning` package (pure Python), so the preview cannot drift from the build; the rule-count/bytes badge uses the same code.
-- Proposal: a Supabase row + a GitHub branch `proposal/<id>` holding the changed `layouts_data.json`, created and updated through a serverless function with the bot token. Submit → PR. Admin "Approve & build" → merge.
-- GitHub Actions: `.github/workflows/font.yml` builds on `proposal/**` push (uploads the `.ttf` as an artifact the tester can load) and on `main` (release: commits/publishes the built font).
-- Proposal detail (frame 8) for layout changes: before/after rendered words, comments, state strip, build status.
+`app/` (SvelteKit 2 + Svelte 5, static) served by `jzpbuild.devserver`:
+Glyphs (grid, groups, unassigned, inspector, upload/edit as disabled
+placeholders), Areas (members, box size, typing keys → `components.csv`),
+Layouts (word types, canvas with draggable parts and rule arrows,
+Structure/Spacing/Centering panels, glyph exceptions, Advanced structural
+edits, live test strip, font budget), Test & Build (live preview vs built
+font, sample sets, build log), Import/Export of `design.json`, undo/redo,
+browser draft, Save with on-disk hash check. `docs/BUILDER-UX.md` is the
+spec. Live resolve runs on the Python server (no Pyodide needed locally).
+
+Next for this phase: per-item import ("pick per item"), a change list
+with per-line revert, the "give X its own exception" toast on drag, and
+regenerating the golden font.
+
+### Phase 1b: hosted Layout Manager (later)
+
+Supabase auth + roles, proposals as GitHub branches, Actions builds, the
+proposal detail page — as in the original plan, on top of the local app.
 
 ### Phase 2: Calligrapher slice
 
@@ -63,4 +79,4 @@ Make `dynamic_positioning` able to express everything the font needs, so the lay
 
 ## Out of scope / kept as legacy
 
-`src-fontforge/` (FontForge pipeline), `figma.py`, classic `gpos.py` + `inputs/layouts.json` after Phase 0.6, and the `tools/*.html` editors once the app covers them.
+`src-fontforge/` (FontForge pipeline), `figma.py`, classic `gpos.py` + `inputs/layouts.json` (`--classic_pos` only). The `tools/jzpbuilder*.html` editors were removed with the old model; `tools/font_tester.html` stays.

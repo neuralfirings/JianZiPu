@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Layout</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #faf8f3;
+    --fg: #2b2a28;
+    --fg-2: #6b6760;
+    --line: #8d887f;
+    --line-soft: #c9c4ba;
+    --wf-bg: #ffffff;
+    --wf-fill: #ebe8e1;
+    --wf-fill-2: #dcd8cf;
+    --accent: #d23b2f;
+    --accent-bg: #fbe3e0;
+    --ok: #3b7d4f;
+    --ok-bg: #dcefe0;
+    --sel: #2f5fa8;
+    --sel-bg: #dde7f7;
+    --ghost: #a09b92;
+    --scrib: repeating-linear-gradient(0deg, transparent 0 5px, var(--line-soft) 5px 7px);
+    --hand: "Patrick Hand", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive, sans-serif;
+    --cjk: "Noto Serif TC", "Songti TC", "PingFang TC", "Microsoft JhengHei", serif;
+    --mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+      --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+      --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+      --sel: #8fb4f0; --sel-bg: #263650; --ghost: #6e6a62;
+      --scrib: repeating-linear-gradient(0deg, transparent 0 5px, var(--line-soft) 5px 7px);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+    --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+    --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+    --sel: #8fb4f0; --sel-bg: #263650; --ghost: #6e6a62;
+    --scrib: repeating-linear-gradient(0deg, transparent 0 5px, var(--line-soft) 5px 7px);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 var(--hand);
+    padding-block: 28px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 34px; margin: 0 0 6px; font-weight: 400; line-height: 1.15; }
+  h2 { font-size: 26px; margin: 48px 0 8px; font-weight: 400; border-bottom: 2px solid var(--line); padding-bottom: 2px; }
+  h3 { font-size: 20px; margin: 22px 0 6px; font-weight: 400; }
+  p { margin: 6px 0 10px; max-width: 72ch; }
+  ul, ol { margin: 4px 0 10px; padding-left: 22px; max-width: 76ch; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; }
+  b { font-weight: 700; }
+  .sub { color: var(--fg-2); }
+  .cjk { font-family: var(--cjk); }
+
+  /* ---- wireframe primitives (same family as rule-builder-ux.html) ---- */
+  .scroll { overflow-x: auto; padding: 12px 2px 8px; margin: 6px 0 12px; }
+  .wf { background: var(--wf-bg); border: 2px solid var(--line); border-radius: 6px; padding: 10px; position: relative; }
+  .wf .cap { position: absolute; top: -12px; left: 12px; background: var(--bg); padding: 0 6px; font-size: 14px; color: var(--fg-2); white-space: nowrap; }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .btn { border: 1.5px solid var(--line); border-radius: 5px; padding: 0 8px; background: var(--wf-fill); font-size: 14px; white-space: nowrap; line-height: 22px; display: inline-block; }
+  .btn.lnk { border-style: dashed; background: transparent; }
+  .btn.danger { color: var(--accent); border-color: var(--accent); background: transparent; }
+  .sel-dd { border: 1.5px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--wf-bg); font-size: 14px; white-space: nowrap; line-height: 22px; display: inline-block; }
+  .sel-dd::after { content: " ▾"; color: var(--fg-2); }
+  .num { display: inline-block; min-width: 34px; text-align: right; border: 1.5px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--wf-bg); font-family: var(--mono); font-size: 12px; line-height: 20px; }
+  .num.hot { border-color: var(--accent); background: var(--accent-bg); }
+  .scrib { display: inline-block; height: 12px; background: var(--scrib); border-radius: 2px; vertical-align: middle; }
+  .muted { color: var(--fg-2); font-size: 14px; }
+  .tiny { font-size: 12px; color: var(--fg-2); }
+  .id { font-family: var(--mono); font-size: 11px; color: var(--fg-2); }
+  .red { color: var(--accent); }
+  .green { color: var(--ok); }
+  .blue { color: var(--sel); }
+  .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 4px; border: 1.5px solid var(--line); border-radius: 4px; background: var(--wf-bg); font-family: var(--cjk); font-size: 15px; white-space: nowrap; }
+  .chip.xs { min-width: 21px; height: 21px; font-size: 13px; padding: 0 3px; }
+  .chip.dash { border-style: dashed; color: var(--fg-2); background: transparent; }
+  .chip.hot { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .chips { display: inline-flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+  .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 5px; overflow: hidden; font-size: 13px; }
+  .seg span { padding: 0 7px; line-height: 20px; background: var(--wf-bg); white-space: nowrap; }
+  .seg span + span { border-left: 1.5px solid var(--line); }
+  .seg span.on { background: var(--fg); color: var(--bg); }
+  .pill { border: 1.5px solid var(--line); border-radius: 12px; padding: 0 7px; font-size: 13px; line-height: 19px; background: var(--wf-bg); white-space: nowrap; }
+  .pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .else { font-size: 11px; color: var(--fg-2); }
+  .hint { font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--line-soft); padding-left: 8px; margin: 6px 0; max-width: 76ch; }
+  .infob { border: 1.5px dashed var(--line); border-radius: 5px; padding: 4px 8px; font-size: 13px; color: var(--fg-2); }
+  .mini { width: 30px; height: 44px; border: 1.5px solid var(--line); border-radius: 3px; background: var(--wf-fill); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: none; }
+  .mini i { display: block; width: 14px; height: 8px; border: 1px solid var(--line); background: var(--wf-bg); }
+  svg { max-width: 100%; height: auto; display: block; }
+
+  /* callouts */
+  .co { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 12px; align-items: center; justify-content: center; font-family: var(--mono); flex: none; }
+  .co.s { width: 17px; height: 17px; font-size: 11px; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 18px; margin: 8px 0; }
+  .notes > div { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; }
+  .side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (min-width: 900px) { .side { grid-template-columns: 430px minmax(0, 1fr); } }
+  .side .notes { grid-template-columns: minmax(0, 1fr); margin: 0; }
+
+  /* ---- panels ---- */
+  .pn { border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); min-width: 0; }
+  .ph { display: flex; align-items: center; gap: 5px; padding: 1px 6px; font-size: 15px; min-height: 27px; border-bottom: 1.5px dashed var(--line-soft); white-space: nowrap; }
+  .pn.c .ph { border-bottom: 0; }
+  .grip { color: var(--fg-2); font-size: 12px; letter-spacing: -2px; font-family: var(--mono); }
+  .chev { color: var(--fg-2); font-size: 11px; width: 10px; text-align: center; }
+  .ph .t { white-space: nowrap; }
+  .ph .sum { color: var(--fg-2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+  .ph .sp { flex: 1; }
+  .bdg { font-size: 12px; border: 1.5px solid var(--line-soft); border-radius: 9px; padding: 0 6px; line-height: 16px; color: var(--fg-2); white-space: nowrap; }
+  .bdg.warn { border-color: var(--accent); color: var(--accent); }
+  .pm { color: var(--fg-2); font-size: 14px; }
+  .pb { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .pn.sm .ph { font-size: 13px; min-height: 22px; gap: 4px; padding: 0 5px; }
+  .pn.sm .ph .sum { font-size: 11px; }
+  .pn.sm .bdg { font-size: 10px; line-height: 13px; padding: 0 4px; }
+  .pn.sm .pb { padding: 4px; gap: 3px; }
+  .pn.lifted { transform: rotate(-2deg); box-shadow: 6px 7px 0 var(--line-soft); border-color: var(--sel); }
+  .place { border: 2px dashed var(--line-soft); border-radius: 5px; min-height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--fg-2); }
+
+  /* docks & screens */
+  .screen { display: grid; gap: 8px; align-items: stretch; }
+  .dock { display: flex; flex-direction: column; gap: 5px; padding: 5px; border: 1.5px solid var(--line-soft); border-radius: 5px; background: var(--wf-fill); min-width: 0; position: relative; }
+  .dock.hot { outline: 3px dashed var(--sel); outline-offset: -1px; background: var(--sel-bg); }
+  .dock .dl { position: absolute; top: -10px; right: 8px; background: var(--bg); font-size: 12px; color: var(--fg-2); padding: 0 4px; }
+  .dock.hot .dl { color: var(--sel); }
+  .ins { height: 0; border-top: 3px solid var(--sel); position: relative; margin: 1px 0; }
+  .ins::before, .ins::after { content: ""; position: absolute; top: -6px; width: 9px; height: 9px; border-radius: 50%; background: var(--sel); }
+  .ins::before { left: -5px; } .ins::after { right: -5px; }
+  .centre { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .canvas { border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); flex: 1; display: flex; flex-direction: column; min-height: 260px; }
+  .ctool { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1.5px dashed var(--line-soft); padding: 2px 8px; font-size: 13px; color: var(--fg-2); }
+  .cstat { border-top: 1.5px dashed var(--line-soft); padding: 2px 8px; font-size: 12px; color: var(--fg-2); }
+  .switch { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+  .switch i { display: inline-block; width: 24px; height: 13px; border: 1.5px solid var(--line); border-radius: 8px; position: relative; background: var(--wf-bg); }
+  .switch i::after { content: ""; position: absolute; top: 1px; left: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .switch.on i { background: var(--sel); border-color: var(--sel); }
+  .switch.on i::after { left: auto; right: 1px; background: var(--bg); }
+  .bottom { display: flex; flex-direction: column; gap: 0; border: 1.5px solid var(--line-soft); border-radius: 5px; background: var(--wf-fill); padding: 5px; position: relative; }
+  .bottom .pn + .pn { margin-top: 5px; }
+  .bottom.hot { outline: 3px dashed var(--sel); outline-offset: -1px; background: var(--sel-bg); }
+  .bottom .dl { position: absolute; top: -10px; right: 8px; background: var(--bg); font-size: 12px; color: var(--fg-2); padding: 0 4px; }
+  .bottom.hot .dl { color: var(--sel); }
+  .resize { height: 6px; margin: -3px 30% 2px; border-top: 2px solid var(--line-soft); border-bottom: 2px solid var(--line-soft); }
+  .tabbar { display: flex; flex-wrap: wrap; border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); font-size: 14px; margin-top: 5px; }
+  .tabbar > span { padding: 0 10px; border-right: 1.5px solid var(--line-soft); line-height: 25px; white-space: nowrap; }
+  .tabbar > span:last-child { border-right: 0; }
+  .tabbar .chev { width: auto; margin-right: 3px; }
+  .rail { width: 26px; border: 3px dashed var(--sel); background: var(--sel-bg); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+  .rail span { writing-mode: vertical-rl; font-size: 12px; color: var(--sel); white-space: nowrap; }
+
+  /* ---- Structure panel rows ---- */
+  .sr { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 4px; font-size: 15px; min-height: 30px; border: 1.5px solid transparent; }
+  .sr.on { background: var(--sel-bg); border-color: var(--sel); }
+  .sr.off .lbl, .sr.off .gp { opacity: .45; }
+  .cb { font-size: 16px; width: 16px; text-align: center; color: var(--fg); line-height: 1; flex: none; }
+  .cb.req { font-size: 9px; color: var(--fg-2); }
+  .gp { display: inline-flex; align-items: center; gap: 1px; height: 26px; min-width: 32px; padding: 0 3px; border: 1.5px solid var(--line); border-radius: 4px; background: var(--wf-bg); font-family: var(--cjk); font-size: 16px; flex: none; }
+  .gp::after { content: "▾"; font-family: var(--hand); font-size: 9px; color: var(--fg-2); margin-left: 1px; }
+  .lbl { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag { font-size: 11px; border: 1.5px solid var(--line-soft); border-radius: 3px; padding: 0 4px; color: var(--fg-2); line-height: 16px; white-space: nowrap; }
+  .tag.red { color: var(--accent); border-color: var(--accent); }
+  .tag.dot { border-style: dotted; }
+  .exp { color: var(--fg-2); font-size: 13px; white-space: nowrap; }
+  .sub2 { margin: 0 0 3px 28px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--fg-2); }
+  .edcard { margin: 0 0 4px 22px; border: 1.5px solid var(--line); border-radius: 5px; padding: 6px 8px; background: var(--wf-fill); display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
+  .alt { border: 1.5px solid var(--line); border-radius: 5px; padding: 3px 5px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; background: var(--wf-bg); }
+  .alt .n { font-size: 12px; color: var(--fg-2); width: 50px; flex: none; }
+  .or { font-size: 12px; color: var(--fg-2); padding-left: 14px; }
+  .ec { display: inline-flex; align-items: baseline; gap: 4px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 8px; font-size: 13px; line-height: 20px; background: var(--wf-fill); white-space: nowrap; }
+  .ec.add { border-style: dashed; background: transparent; color: var(--fg-2); }
+  .tg { display: inline-flex; align-items: center; gap: 3px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 8px; font-size: 13px; line-height: 20px; background: var(--wf-bg); white-space: nowrap; }
+  .tg.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .tg .rk { font-family: var(--mono); font-size: 11px; }
+  .subsec { border-top: 1.5px dashed var(--line-soft); padding-top: 4px; margin-top: 2px; display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
+  .addrow { border: 1.5px dashed var(--line); border-radius: 4px; padding: 0 8px; line-height: 26px; color: var(--fg-2); font-size: 14px; }
+  .menu { border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); box-shadow: 5px 6px 0 var(--line-soft); padding: 4px 0; font-size: 14px; min-width: 190px; }
+  .menu div { padding: 0 12px; line-height: 25px; white-space: nowrap; }
+  .menu hr { border: 0; border-top: 1.5px dashed var(--line-soft); margin: 3px 0; }
+  .menu .new { background: var(--ok-bg); }
+  .menu .k { float: right; color: var(--fg-2); font-size: 12px; margin-left: 16px; }
+
+  /* old (today) */
+  .old { font-size: 13px; line-height: 1.35; }
+  .old .ob { border: 1.5px solid var(--line); border-radius: 5px; padding: 4px 6px; margin: 4px 0; background: var(--wf-bg); }
+  .old .fld { display: inline-block; border: 1.5px solid var(--line); border-radius: 4px; padding: 0 6px; font-family: var(--mono); font-size: 12px; background: var(--wf-bg); min-width: 160px; }
+  .x-out { position: relative; }
+  .x-out::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--accent) 18%, transparent) 7px 9px); pointer-events: none; border-radius: 5px; }
+
+  table.map { border-collapse: collapse; font-size: 15px; min-width: 700px; background: var(--wf-bg); }
+  table.map th, table.map td { border: 1.5px solid var(--line); padding: 3px 9px; text-align: left; vertical-align: top; }
+  table.map th { background: var(--wf-fill); font-weight: 400; }
+  .kc { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+  .kc > div { border: 1.5px solid var(--line); border-radius: 6px; padding: 6px 12px; background: var(--wf-bg); }
+  .kc h3 { margin: 2px 0 4px; font-size: 19px; }
+  .kc ul { padding-left: 18px; font-size: 15px; }
+  .pair2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  @media (min-width: 820px) { .pair2 { grid-template-columns: 1fr 1fr; } }
+  .stlabel { display: flex; align-items: baseline; gap: 8px; margin-top: 22px; }
+  .stlabel b { font-weight: 400; font-size: 20px; }
+  .stl { display: inline-block; border: 1.5px solid var(--line); border-radius: 50%; width: 26px; height: 26px; text-align: center; line-height: 23px; font-size: 15px; flex: none; }
+</style>
+</head>
+<body>
+<main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="word" viewBox="0 0 320 440">
+    <rect x="30" y="8" width="260" height="424" fill="none" stroke="var(--line-soft)" stroke-dasharray="4 4"/>
+    <g font-family="'Noto Serif TC','Songti TC',serif" font-size="30" text-anchor="middle" fill="var(--fg)">
+      <rect x="95" y="20" width="130" height="50" rx="3" fill="var(--wf-fill)" stroke="var(--line)" stroke-width="1.5"/><text x="160" y="54" font-size="22">泛</text>
+      <rect x="70" y="74" width="88" height="88" rx="3" fill="var(--wf-fill)" stroke="var(--line)" stroke-width="1.5"/><text x="114" y="128">名</text>
+      <rect x="162" y="74" width="88" height="88" rx="3" fill="var(--wf-fill)" stroke="var(--line)" stroke-width="1.5"/><text x="206" y="128">七</text>
+      <rect x="62" y="226" width="30" height="120" rx="3" fill="var(--wf-fill)" stroke="var(--line)" stroke-width="1.5"/><text x="77" y="292" font-size="20">注</text>
+      <rect x="96" y="222" width="160" height="160" rx="3" fill="var(--wf-fill)" stroke="var(--accent)" stroke-width="2.5"/><text x="176" y="316" font-size="60">勾</text>
+      <rect x="132" y="386" width="56" height="44" rx="3" fill="var(--wf-fill)" stroke="var(--line)" stroke-width="1.5"/><text x="160" y="416" font-size="22">五</text>
+    </g>
+    <line x1="226" y1="162" x2="226" y2="222" stroke="var(--accent)" stroke-width="2"/>
+  </symbol>
+</svg>
+
+<h1>Calmer Structure, movable panels</h1>
+<p class="sub">Lo-fi wireframes for the Layouts screen. Two asks: make the Structure panel less messy (mostly in Advanced), and let every panel fold up and move to the left column, the right column or the strip under the canvas. Same look as <code>rule-builder-ux.html</code>. This page changes no app code and no <code>design.json</code>.</p>
+
+<div class="notes" style="margin-top:14px">
+  <div><span class="co">A</span><span><b>Structure:</b> one line per part. What you do all the time (preview glyph, leave a part out) stays on the line. Rare edits sit behind <b>edit ▸</b> on that part, and only in Advanced. Recognition gets its own small section.</span></div>
+  <div><span class="co">B</span><span><b>Panels:</b> each one has the same header: <b>⠿</b> drag, <b>▾/▸</b> fold, a title, a short summary. Drag it into one of three docks. The canvas stays in the middle. Your arrangement is saved in this browser.</span></div>
+</div>
+
+<!-- =================================================================== PART 1 -->
+<h2>1 · The Structure panel</h2>
+
+<h3>Today, with Advanced on: what makes it noisy</h3>
+<div class="side">
+  <div class="scroll" style="padding-top:14px"><div class="wf old" style="min-width:380px"><span class="cap">today · Chord · Advanced</span>
+    <div class="row"><b style="font-size:16px">Structure</b><span class="grow"></span>☑ Advanced <span class="co s">1</span></div>
+    <div class="row">Shown as <span class="fld" style="font-family:var(--hand); font-size:13px">Chord (left of |)</span><span class="co s">2</span></div>
+    <div class="x-out" style="padding:2px 0"><span class="muted" style="font-size:13px">Recognised when the word has any of: ☐ fy ☐ chord ☐ left ☐ hui ☐ jc ☐ zhu ☐ string ☐ fy_left<br>Prefer when ambiguous: ☐ fy ☐ chord ☐ left ☐ hui ☐ jc ☐ zhu ☑ string ☐ fy_left</span> <span class="co s">3</span></div>
+    <div class="ob"><div class="row">☑ <b>泛音 harmonic</b> <span class="id">fy</span><span class="grow"></span>☑ optional ☐ repeat <span class="btn" style="font-size:11px; line-height:16px">↑</span><span class="btn" style="font-size:11px; line-height:16px">↓</span><span class="btn" style="font-size:11px; line-height:16px">×</span><span class="co s">4</span></div>
+      <div class="row x-out">parts <span class="fld">fy</span><span class="co s">5</span></div>
+      <div class="row"><span class="cjk">⺈</span> <span class="fld" style="min-width:110px">mod_fanyin ▾</span> <span class="red">anchor</span><span class="co s">6</span></div></div>
+    <div class="ob"><div class="row">● <b>Chord</b> <span class="id">chord</span><span class="grow"></span>☐ optional ☐ repeat ↑ ↓ ×</div>
+      <div class="row">parts <span class="fld">chord</span></div>
+      <div class="row"><span class="cjk">丅</span> <span class="fld" style="min-width:110px">xl_cuo ▾</span></div></div>
+    <div class="ob"><div class="row">☑ <b>Left hand</b> <span class="id">left</span><span class="grow"></span>☑ optional ☐ repeat ↑ ↓ ×</div>
+      <div class="row">parts <span class="fld">left</span></div><div class="tiny">… 4 more cards like these</div></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span>"Advanced" lives in this panel but also unlocks things in the word-types column (New, Delete, Page center). Once panels can move, that is confusing.</span></div>
+    <div><span class="co">2</span><span>The word type's name is a word-type setting, not a part setting.</span></div>
+    <div><span class="co">3</span><span>Two lines of checkboxes that wrap mid-word, sit above the parts and use raw ids. Almost never touched, but they come first.</span></div>
+    <div><span class="co">4</span><span>Seven controls on every card (optional, repeat, ↑ ↓ ×) for edits made a few times a year.</span></div>
+    <div><span class="co">5</span><span>A raw text field with a mini-language (<code>name:area, … | …</code>). Typos only show up as an alert.</span></div>
+    <div><span class="co">6</span><span>The glyph you see most is picked from a list of file names (<code>mod_fanyin</code>), unlike "In this word" which shows glyphs.</span></div>
+  </div>
+</div>
+<p class="hint">Each part takes 3 lines, so a 7-part word needs about 21 lines and the panel scrolls before you reach String. The redesign uses 1 line per part, plus 1 for a part with options.</p>
+
+<h3>Redesign · normal mode (Advanced off)</h3>
+<div class="side">
+  <div class="scroll" style="padding-top:14px"><div class="wf" style="min-width:380px; padding:0; border:0; background:transparent"><span class="cap">Structure · Standard word · Stroke selected</span>
+    <div class="pn">
+      <div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">7 parts · 6 shown</span><span class="sp"></span><span class="pm">⋯</span></div>
+      <div class="pb">
+        <div class="sr"><span class="cb">☑</span><span class="gp">泛</span><span class="lbl">泛音 harmonic <span class="id">fy</span></span><span class="grow"></span><span class="tag red">anchor</span><span class="co s">1</span></div>
+        <div class="sr"><span class="cb">☑</span><span class="gp">名</span><span class="lbl">Left hand <span class="id">left</span></span></div>
+        <div class="sr"><span class="cb">☑</span><span class="gp">七</span><span class="lbl">Position <span class="id">hui</span></span><span class="grow"></span><span class="tag dot">by glyph</span></div>
+        <div class="sr off"><span class="cb">☐</span><span class="gp">急</span><span class="lbl">急/綽 modifier <span class="id">jc</span></span><span class="grow"></span><span class="tiny">left out</span><span class="co s">2</span></div>
+        <div class="sr"><span class="cb">☑</span><span class="gp">注</span><span class="lbl">注 <span class="id">zhu</span></span></div>
+        <div class="sr on"><span class="cb">☑</span><span class="gp">勾</span><span class="lbl">Stroke <span class="id">right</span></span><span class="co s">3</span></div>
+        <div class="sr"><span class="cb">☑</span><span class="gp">五</span><span class="lbl">String <span class="id">string</span></span></div>
+        <div class="sub2">one of <span class="seg"><span class="on">String</span><span>Two strings</span></span><span class="co s">4</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span><b>One line per part</b>, top to bottom in typing order, so it reads like the canvas. Checkbox = in the preview word. <span class="cjk">泛</span>▾ = preview glyph: click it to get the same glyph popover "In this word" uses. Tags only when they mean something: <span class="tag red">anchor</span>, <span class="tag dot">by glyph</span> (a rule depends on this glyph).</span></div>
+    <div><span class="co">2</span><span>A part left out of the preview fades but keeps its place. A part that is always there has ● instead of a checkbox.</span></div>
+    <div><span class="co">3</span><span>Click a line to select the part: it is outlined here, on the canvas and in "In this word", and Spacing follows. Clicking the glyph only changes the preview glyph; it does not select the part.</span></div>
+    <div><span class="co">4</span><span>A part with options gets one extra line: a small switch picks which option the preview uses. Picking "Two strings" shows two glyph pickers on the String line.</span></div>
+    <div><span class="tiny" style="margin-left:28px">Gone from this mode: the "can be left out" text on every line (the checkbox already says it) and all structural controls.</span></div>
+  </div>
+</div>
+
+<h3>Redesign · Advanced on, String opened for editing</h3>
+<div class="side">
+  <div class="scroll" style="padding-top:14px"><div class="wf" style="min-width:400px; padding:0; border:0; background:transparent"><span class="cap">Structure · Standard word · Advanced</span>
+    <div class="pn">
+      <div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">7 parts</span><span class="tag" style="border-color:var(--sel); color:var(--sel)">Advanced</span><span class="sp"></span><span class="pm">⋯</span></div>
+      <div class="pb">
+        <div class="sr"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">泛</span><span class="lbl">泛音 harmonic <span class="id">fy</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span><span class="co s">1</span></div>
+        <div class="sr"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">名</span><span class="lbl">Left hand <span class="id">left</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span></div>
+        <div class="sr"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">七</span><span class="lbl">Position <span class="id">hui</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span></div>
+        <div class="sr off"><span class="grip">⠿</span><span class="cb">☐</span><span class="gp">急</span><span class="lbl">急/綽 <span class="id">jc</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span></div>
+        <div class="sr"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">注</span><span class="lbl">注 <span class="id">zhu</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span></div>
+        <div class="sr"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">勾</span><span class="lbl">Stroke <span class="id">right</span></span><span class="grow"></span><span class="tag">can be left out</span><span class="exp">edit ▸</span></div>
+        <div class="sr on"><span class="grip">⠿</span><span class="cb">☑</span><span class="gp">五</span><span class="lbl">String <span class="id">string</span></span><span class="grow"></span><span class="tag">2 options</span><span class="exp blue">edit ▾</span><span class="co s">2</span></div>
+        <div class="edcard">
+          <div class="row">☑ can be left out of a word <span class="grow"></span>☐ repeats <span class="tiny">(then: <span class="num" style="min-width:20px">1</span>–<span class="num" style="min-width:20px">4</span> rows)</span></div>
+          <div class="row"><span class="tiny">only when this part is also there:</span><span class="tg" style="border-style:dashed; color:var(--fg-2)">+ ▾</span><span class="tiny">(<code>requires</code>, no UI today)</span></div>
+          <div class="tiny">holds one of: <span class="co s">3</span></div>
+          <div class="alt"><span class="n">option 1</span><span class="ec">String <span class="id">string</span></span><span class="ec add">+</span></div>
+          <div class="or">or</div>
+          <div class="alt"><span class="n">option 2</span><span class="ec">String <span class="id">string_top</span></span>+<span class="ec">String <span class="id">string_bottom</span></span><span class="ec add">+</span></div>
+          <div class="row"><span class="btn lnk">+ another option</span><span class="grow"></span><span class="btn danger">Remove part…</span><span class="co s">4</span></div>
+        </div>
+        <div class="addrow">+ Add part ▾ <span class="tiny">pick an area; lands at the bottom</span><span class="co s" style="float:right; margin-top:4px">5</span></div>
+
+        <div class="subsec">
+          <div class="row"><span class="chev">▾</span>Recognition <span class="tiny">which typed words become a Standard word</span><span class="co s">6</span></div>
+          <div class="tiny">Used when the typed word has at least one of:</div>
+          <div class="chips"><span class="tg on">泛音</span><span class="tg on">Left hand</span><span class="tg on">Position</span><span class="tg on">急/綽</span><span class="tg on">注</span><span class="tg on">Stroke</span><span class="tg">String</span></div>
+          <div class="tiny">If the same keys can be read two ways, prefer the reading with:</div>
+          <div class="chips"><span class="tiny">nothing set (stack order decides)</span><span class="tg" style="border-style:dashed; color:var(--fg-2)">+ ▾</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span>Advanced adds three things to each line: <b>⠿</b> to drag it (replaces ↑ ↓), a plain tag for what is unusual about the part (<i>can be left out</i>, <i>1–4 rows</i>, <i>2 options</i>), and <b>edit ▸</b>. The checkbox and glyph keep working as in normal mode.</span></div>
+    <div><span class="co">2</span><span><b>edit ▸</b> opens a card under that one line, one at a time. Everything structural about a part is in there and nowhere else.</span></div>
+    <div><span class="co">3</span><span><b>Options as blocks, not a text field.</b> Each option is a row of part chips (area name, element id in small text). Click a chip to rename it, change its area or remove it. <b>+</b> adds an area to that option ("String top + String bottom"). <b>+ another option</b> adds an "or" row. No syntax to remember, and an unknown area can't be typed.</span></div>
+    <div><span class="co">4</span><span><b>Remove part…</b> is at the bottom of the card, in red, and asks first ("2 spacing rules mention it and will go too"). It is not one click away on every line any more.</span></div>
+    <div><span class="co">5</span><span><b>+ Add part</b> is a single dashed line: choose an area, done. The name defaults to the area id; rename it in the card later.</span></div>
+    <div><span class="co">6</span><span><b>Recognition</b> is a small fold at the bottom (folded by default) and uses part names, in stack order, as chips. The first group says which parts make a typed word count as this type (<code>requires_any</code>). The second settles a tie inside this word type when the same keys fit two readings: numbered chips, first wins, add with <b>+ ▾</b>, drag to reorder (<code>priority</code>). Chord shows "① String" there, so a lone number after a chord glyph is read as a string, not a position.</span></div>
+    <div><span class="tiny" style="margin-left:28px">"Shown as" (the word-type name) moves to the Word types panel: double-click a name, or its ⋯ → Rename. The <b>Advanced</b> switch moves to the canvas toolbar (see §2), because it unlocks things in several panels.</span></div>
+  </div>
+</div>
+
+<h3>Same pattern for the other word types</h3>
+<div class="pair2">
+  <div class="scroll" style="padding-top:14px"><div class="wf" style="padding:0; border:0; background:transparent"><span class="cap">Vertical word · normal mode</span>
+    <div class="pn">
+      <div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">2 parts</span><span class="sp"></span><span class="pm">⋯</span></div>
+      <div class="pb">
+        <div class="sr"><span class="cb req">●</span><span class="gp">：</span><span class="lbl">starts with ： <span class="id">colon</span></span><span class="grow"></span><span class="tag red">anchor</span></div>
+        <div class="sr"><span class="cb req">●</span><span class="lbl">Rows <span class="id">row</span></span><span class="grow"></span><span class="tiny">preview</span><span class="seg"><span>−</span><span class="on">3</span><span>+</span></span><span class="tiny">of 1–4</span></div>
+        <div class="sub2">row 1 <span class="seg"><span class="on">glyph</span><span>finger + position</span></span><span class="gp">上</span></div>
+        <div class="sub2">row 2 <span class="seg"><span>glyph</span><span class="on">finger + position</span></span><span class="gp">名</span><span class="gp">九</span></div>
+        <div class="sub2">row 3 <span class="seg"><span class="on">glyph</span><span>finger + position</span></span><span class="gp">進</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="scroll" style="padding-top:14px"><div class="wf" style="padding:0; border:0; background:transparent"><span class="cap">Vertical word · Advanced · Rows opened</span>
+    <div class="pn">
+      <div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">2 parts</span><span class="tag" style="border-color:var(--sel); color:var(--sel)">Advanced</span><span class="sp"></span><span class="pm">⋯</span></div>
+      <div class="pb">
+        <div class="sr"><span class="grip">⠿</span><span class="cb req">●</span><span class="gp">：</span><span class="lbl">starts with ：</span><span class="grow"></span><span class="tag">always</span><span class="exp">edit ▸</span></div>
+        <div class="sr on"><span class="grip">⠿</span><span class="cb req">●</span><span class="lbl">Rows <span class="id">row</span></span><span class="grow"></span><span class="tag">1–4 rows</span><span class="tag">2 options</span><span class="exp blue">edit ▾</span></div>
+        <div class="edcard">
+          <div class="row">☐ can be left out <span class="grow"></span>☑ repeats <span class="num" style="min-width:20px">1</span>–<span class="num" style="min-width:20px">4</span> rows</div>
+          <div class="tiny">each row holds one of:</div>
+          <div class="alt"><span class="n">option 1</span><span class="ec">Vertical glyph <span class="id">char</span></span><span class="ec add">+</span></div>
+          <div class="or">or</div>
+          <div class="alt"><span class="n">option 2</span><span class="ec">Left hand <span class="id">left</span></span>+<span class="ec">Position <span class="id">hui</span></span><span class="ec add">+</span></div>
+          <div class="row"><span class="btn lnk">+ another option</span><span class="grow"></span><span class="btn danger">Remove part…</span></div>
+        </div>
+        <div class="addrow">+ Add part ▾</div>
+        <div class="subsec"><div class="row"><span class="chev">▸</span>Recognition <span class="tiny">starts with ：</span></div></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+<p class="hint">Rows: the preview row count is an everyday control (− 3 +), so it is on the line. The allowed range (1–4) is structural, so it is in the card. Chord's two halves stay two word types for now ("Chord (left of |)" and "Chord (right of |)"), each with its own Structure, as in the data today.</p>
+
+<h3>How often each edit happens, and where it lives</h3>
+<div class="scroll">
+<table class="map">
+  <tr><th>Edit</th><th>How often</th><th>Where it lives now</th><th>Mode</th></tr>
+  <tr><td>Change a preview glyph</td><td><b>all the time</b></td><td>glyph ▾ on the line · "In this word" · Glyphs tray</td><td>always</td></tr>
+  <tr><td>Leave a part out of / put it back in the preview</td><td><b>all the time</b></td><td>checkbox on the line · × on the "In this word" chip</td><td>always</td></tr>
+  <tr><td>Select a part (to edit its spacing)</td><td><b>all the time</b></td><td>click the line · canvas · "In this word"</td><td>always</td></tr>
+  <tr><td>Pick which option to preview / how many rows</td><td>often</td><td>small switch under the line / − n + on the line</td><td>always</td></tr>
+  <tr><td>Reorder parts (typing order)</td><td>rare</td><td>⠿ drag on the line</td><td>Advanced</td></tr>
+  <tr><td>Can be left out · repeats · row range</td><td>rare</td><td>edit ▸ card</td><td>Advanced</td></tr>
+  <tr><td>What a part holds (options, areas, element names)</td><td>rare</td><td>edit ▸ card, as chips</td><td>Advanced</td></tr>
+  <tr><td>Add / remove a part</td><td>rare</td><td>+ Add part line · Remove part… in the card</td><td>Advanced</td></tr>
+  <tr><td>Recognition (which parts count, tie-break)</td><td>very rare</td><td>Recognition fold, bottom of Structure</td><td>Advanced</td></tr>
+  <tr><td>Rename the word type</td><td>very rare</td><td>Word types panel (double-click or ⋯)</td><td>Advanced</td></tr>
+</table>
+</div>
+
+<!-- =================================================================== PART 2 -->
+<h2>2 · Panels that fold and move</h2>
+<p>The Layouts screen has three <b>docks</b> around a fixed canvas: <b>left column</b>, <b>right column</b>, and a <b>bottom strip</b> under the canvas, as wide as the canvas. Each of the nine panels sits in one dock, open or folded. Nothing floats and nothing overlaps.</p>
+
+<h3>The panel header (same on all nine)</h3>
+<div class="side">
+  <div style="display:flex; flex-direction:column; gap:12px; padding-top:6px">
+    <div class="pn">
+      <div class="ph"><span class="grip">⠿</span><span class="co s">1</span><span class="chev">▾</span><span class="co s">2</span><span class="t">Glyphs of Stroke</span><span class="co s">3</span><span class="bdg">16</span><span class="co s">4</span><span class="sp"></span><span class="pm">⋯</span><span class="co s">5</span></div>
+      <div class="pb"><div class="chips"><span class="chip hot">勾</span><span class="chip">挑</span><span class="chip">歷</span><span class="chip">大</span><span class="chip">剔</span><span class="chip">摘</span><span class="chip">劈</span><span class="muted">…</span></div></div>
+    </div>
+    <div class="pn c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Glyphs of Stroke</span><span class="bdg">16</span><span class="sum">勾 selected · area right</span><span class="co s">6</span><span class="pm">⋯</span></div></div>
+    <div class="pn c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Font budget</span><span class="bdg warn">● 3 skipped</span><span class="sum">1,180 rules · 212 KB</span><span class="pm">⋯</span></div></div>
+    <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start">
+      <div class="menu"><div>Fold <span class="k">click title</span></div><hr><div>Move to left column</div><div style="color:var(--fg-2)">✓ Right column</div><div>Move to bottom strip</div><hr><div>Move up</div><div>Move down</div></div>
+      <div class="tiny" style="max-width:200px; margin-top:6px">the panel ⋯ menu <span class="co s">5</span>: the same moves without dragging (keyboard, trackpad)</div>
+    </div>
+  </div>
+  <div class="notes">
+    <div><span class="co">1</span><span><b>⠿ drag handle.</b> Grab it to move the panel. The rest of the header does not start a drag, so selecting text or clicking the title never moves anything by accident.</span></div>
+    <div><span class="co">2</span><span><b>▾ / ▸ fold.</b> Clicking the chevron <i>or the title</i> folds and unfolds. Space/Enter do the same when the header has focus.</span></div>
+    <div><span class="co">3</span><span><b>Title.</b> Follows the selection where it makes sense: "Spacing · Stroke", "Glyphs of Stroke". With nothing selected: "Spacing" in grey, with one line in the body: "click a part".</span></div>
+    <div><span class="co">4</span><span><b>Count badge</b>, only where a count helps: parts, glyphs, word types, test words. It turns red only for a problem (skipped shapes).</span></div>
+    <div><span class="co">5</span><span><b>⋯</b> appears on hover/focus: fold, move to a dock, move up/down.</span></div>
+    <div><span class="co">6</span><span><b>Folded = one line</b> (27 px). The rest of the line shows a <b>summary</b>, so many folded panels still tell you something (list in §2·h).</span></div>
+  </div>
+</div>
+
+<h3>a · Default arrangement, 1440 px window</h3>
+<p class="sub">Drawn at about 72 %. Left column 280 px, right column 420 px, canvas gets the rest (about 740 px).</p>
+<div class="scroll"><div class="wf" style="min-width:1000px"><span class="cap">Layouts · 1440 px · default · Stroke selected</span>
+<div class="screen" style="grid-template-columns: 200px minmax(0,1fr) 300px">
+  <div class="dock"><span class="dl">left</span>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Word types</span><span class="bdg">4</span><span class="sp"></span></div>
+      <div class="pb"><div class="sr on" style="font-size:13px; min-height:22px">Standard word <span class="id">standard</span></div><div class="sr" style="font-size:13px; min-height:22px">Vertical <span class="id">vertical</span></div><div class="sr" style="font-size:13px; min-height:22px">Chord (left of |)</div><div class="sr" style="font-size:13px; min-height:22px">Chord (right of |)</div></div></div>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">7 · 6 shown</span><span class="sp"></span></div>
+      <div class="pb" style="font-size:12px">
+        <div class="sr" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">泛</span>泛音</div>
+        <div class="sr" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">名</span>Left hand</div>
+        <div class="sr" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">七</span>Position</div>
+        <div class="sr off" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☐</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">急</span>急/綽</div>
+        <div class="sr" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">注</span>注</div>
+        <div class="sr on" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">勾</span>Stroke</div>
+        <div class="sr" style="font-size:12px; min-height:22px"><span class="cb" style="font-size:12px">☑</span><span class="gp" style="height:19px; font-size:12px; min-width:24px">五</span>String</div>
+      </div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Page center</span><span class="sum">500, 500</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Font budget</span><span class="sum">1,180 rules</span></div></div>
+  </div>
+  <div class="centre">
+    <div class="canvas">
+      <div class="ctool">☑ boxes ☑ glyphs <span class="grow"></span>width <span class="scrib" style="width:50px"></span><span class="switch"><i></i> Advanced</span></div>
+      <svg viewBox="0 0 320 440" style="width:200px; margin:6px auto"><use href="#word"/></svg>
+      <div class="cstat">Stroke · drag to change rule 5 (勾 大 after Position)</div>
+    </div>
+    <div class="bottom"><span class="dl">bottom</span>
+      <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Glyphs of Stroke</span><span class="bdg">16</span><span class="sum">area right</span></div>
+        <div class="pb"><div class="chips"><span class="chip xs hot">勾</span><span class="chip xs">挑</span><span class="chip xs">歷</span><span class="chip xs">大</span><span class="chip xs">剔</span><span class="chip xs">摘</span><span class="chip xs">劈</span><span class="chip xs">托</span><span class="chip xs">抹</span><span class="chip xs">掩</span><span class="chip xs">輪</span><span class="muted">…</span></div></div></div>
+      <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Tester</span><span class="bdg">8 words</span><span class="sum">s7k5 fys9k5 …</span></div>
+        <div class="pb"><div class="row" style="gap:5px"><span class="scrib grow" style="height:14px"></span><span class="sel-dd" style="font-size:12px; line-height:18px">Sample set</span></div><div class="row" style="gap:5px"><span class="mini"><i></i><i></i></span><span class="mini"><i></i><i></i><i></i></span><span class="mini"><i></i></span><span class="mini"><i></i><i></i></span><span class="mini"><i></i><i></i><i></i></span><span class="mini"><i></i><i></i></span></div></div></div>
+    </div>
+  </div>
+  <div class="dock"><span class="dl">right</span>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">In this word</span><span class="bdg">6 of 7</span><span class="sp"></span></div>
+      <div class="pb"><div class="chips"><span class="chip xs">泛</span><span class="chip xs">名</span><span class="chip xs">七</span><span class="chip xs dash">急</span><span class="chip xs">注</span><span class="chip xs hot">勾</span><span class="chip xs">五</span></div></div></div>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Spacing · Stroke</span><span class="sp"></span><span class="tiny">anchor</span></div>
+      <div class="pb">
+        <div class="seg" style="align-self:flex-start"><span class="on">↕ Vertical</span><span>⇆ Horizontal</span></div>
+        <div class="row" style="gap:3px"><span class="tiny">relative to</span><span class="pill active">● Position</span><span class="else">else</span><span class="pill">Finger</span><span class="else">else</span><span class="pill">泛音</span></div>
+        <div class="infob" style="padding:2px 6px">1 <span class="cjk">打摘 勾剔</span> → <span class="num">-160</span></div>
+        <div class="infob" style="padding:2px 6px">2 <span class="cjk">劈 掐起</span> → <span class="num">-30</span></div>
+        <div class="infob" style="padding:2px 6px">… 3 more rules</div>
+        <div class="infob" style="padding:2px 6px; border-color:var(--accent); color:var(--accent)">● 5 <span class="cjk">勾 大</span> → <span class="num hot">120</span></div>
+        <div class="infob" style="padding:2px 6px">otherwise → —</div>
+        <div class="row"><span class="btn" style="font-size:12px; line-height:18px">+ new rule</span></div>
+      </div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Centering</span><span class="sum">↕ on 4 parts · ⇆ off</span></div></div>
+  </div>
+</div>
+</div></div>
+<div class="notes">
+  <div><span class="co">L</span><span><b>Left = the word type</b>: which one (Word types), what it is made of (Structure), and the two global, rarely-touched panels, folded. Structure fits at 280 px because it is now one line per part.</span></div>
+  <div><span class="co">C</span><span><b>Centre = the word</b>: canvas, then Glyphs and Tester underneath. Both are wide, short strips and want the canvas's width.</span></div>
+  <div><span class="co">R</span><span><b>Right = the selected part</b>: In this word, Spacing (the tallest), Centering folded. Same order as today's inspector, so nothing has to be relearned.</span></div>
+  <div><span class="co">✓</span><span>The <b>Advanced</b> switch is in the canvas toolbar. It unlocks things in Word types, Page center and Structure, wherever those panels are.</span></div>
+</div>
+
+<h3>b · Default arrangement, 1100 px window</h3>
+<p class="sub">Drawn at about 94 %. No left column: its panels move to the top of the right column, folded. Canvas about 720 px, right column 380 px.</p>
+<div class="scroll"><div class="wf" style="min-width:1000px"><span class="cap">Layouts · 1100 px · default · Stroke selected</span>
+<div class="screen" style="grid-template-columns: minmax(0,1fr) 340px">
+  <div class="centre">
+    <div class="canvas">
+      <div class="ctool">☑ boxes ☑ glyphs <span class="grow"></span>width <span class="scrib" style="width:50px"></span><span class="switch"><i></i> Advanced</span></div>
+      <svg viewBox="0 0 320 440" style="width:210px; margin:6px auto"><use href="#word"/></svg>
+      <div class="cstat">Stroke · drag to change rule 5 (勾 大 after Position)</div>
+    </div>
+    <div class="bottom"><span class="dl">bottom</span>
+      <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Glyphs of Stroke</span><span class="bdg">16</span><span class="sum">area right</span></div>
+        <div class="pb"><div class="chips"><span class="chip xs hot">勾</span><span class="chip xs">挑</span><span class="chip xs">歷</span><span class="chip xs">大</span><span class="chip xs">剔</span><span class="chip xs">摘</span><span class="chip xs">劈</span><span class="chip xs">托</span><span class="chip xs">抹</span><span class="chip xs">掩</span><span class="chip xs">輪</span><span class="chip xs">半輪</span><span class="chip xs">歷</span><span class="muted">…</span></div></div></div>
+      <div class="tabbar"><span><span class="chev">▸</span>Tester <span class="bdg">8 words</span></span></div>
+    </div>
+  </div>
+  <div class="dock"><span class="dl">right</span>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Word types</span><span class="bdg">4</span><span class="sum"><b style="color:var(--fg)">Standard word</b></span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Structure</span><span class="sum">7 parts · 6 shown</span></div></div>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">In this word</span><span class="bdg">6 of 7</span><span class="sp"></span></div>
+      <div class="pb"><div class="chips"><span class="chip xs">泛</span><span class="chip xs">名</span><span class="chip xs">七</span><span class="chip xs dash">急</span><span class="chip xs">注</span><span class="chip xs hot">勾</span><span class="chip xs">五</span></div></div></div>
+    <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Spacing · Stroke</span><span class="sp"></span></div>
+      <div class="pb">
+        <div class="seg" style="align-self:flex-start"><span class="on">↕ Vertical</span><span>⇆ Horizontal</span></div>
+        <div class="row" style="gap:3px"><span class="tiny">relative to</span><span class="pill active">● Position</span><span class="else">else</span><span class="pill">Finger</span><span class="else">else</span><span class="pill">泛音</span></div>
+        <div class="infob" style="padding:2px 6px">1–4 …</div>
+        <div class="infob" style="padding:2px 6px; border-color:var(--accent); color:var(--accent)">● 5 <span class="cjk">勾 大</span> → <span class="num hot">120</span></div>
+        <div class="infob" style="padding:2px 6px">otherwise → —</div>
+      </div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Centering</span><span class="sum">↕ on · ⇆ off</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Page center</span><span class="sum">500, 500</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Font budget</span><span class="sum">1,180 rules</span></div></div>
+  </div>
+</div>
+</div></div>
+<div class="notes">
+  <div><span class="co">1</span><span><b>Word types, folded, still shows which type is open</b> (in bold, in its summary). Unfold it to switch. The Tester's interpreted words also switch type when clicked, as today.</span></div>
+  <div><span class="co">2</span><span><b>Structure folded, "In this word" open.</b> In this word already does the two everyday Structure jobs (leave a part out, change its glyph) in one line, so the full stack only needs opening for options and Advanced edits.</span></div>
+  <div><span class="co">3</span><span><b>Tester folded into the bottom tab bar</b>, so the canvas keeps its height on a short screen. One click opens it above the bar.</span></div>
+</div>
+
+<h3>c · Moving a panel: drag, and where it can land</h3>
+<p>Here Centering is dragged from the right column. While dragging, <b>every dock lights up</b> (blue dashed), the dock under the pointer shows a <b>blue insert line</b>, and the panel's old place stays as a dashed gap. The canvas does not light up: you can't drop on it.</p>
+<div class="scroll"><div class="wf" style="min-width:1000px"><span class="cap">dragging "Centering" by its ⠿ · pointer over the left column</span>
+<div class="screen" style="grid-template-columns: 200px minmax(0,1fr) 300px; position:relative">
+  <div class="dock hot"><span class="dl">left · drop here</span>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Word types</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span></div></div>
+    <div class="ins"></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Page center</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Font budget</span></div></div>
+    <div class="pn sm lifted" style="position:absolute; left:70px; top:52px; width:170px; z-index:2"><div class="ph"><span class="grip">✥</span><span class="chev">▸</span><span class="t">Centering</span><span class="sum">↕ on</span></div></div>
+  </div>
+  <div class="centre">
+    <div class="canvas" style="min-height:220px; align-items:center; justify-content:center; color:var(--fg-2); font-size:14px">canvas · not a drop target</div>
+    <div class="bottom hot"><span class="dl">bottom · drop here</span>
+      <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Glyphs of Stroke</span></div></div>
+      <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Tester</span></div></div>
+    </div>
+  </div>
+  <div class="dock hot"><span class="dl">right · drop here</span>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">In this word</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Spacing · Stroke</span></div></div>
+    <div class="place">Centering was here</div>
+  </div>
+</div>
+</div></div>
+<div class="notes">
+  <div><span class="co">1</span><span>While dragging, <b>all panels show as headers only</b>, so the docks are short and every gap between panels is easy to hit. They unfold again when you drop.</span></div>
+  <div><span class="co">2</span><span>The insert line snaps to the nearest gap between headers, or to the end of the dock. Drop = the panel goes there, keeping its open/folded state.</span></div>
+  <div><span class="co">3</span><span><b>Esc</b> or dropping on the canvas cancels: everything goes back. Each move can also be undone with "Reset panel layout" (below), but not with ⌘Z; ⌘Z stays for design edits only.</span></div>
+</div>
+
+<h3>d · An empty dock still accepts drops</h3>
+<p>If the left column is empty (the 1100 default), a <b>thin drop rail</b> appears at the left edge only while you drag. Drop on it and a left column opens with that panel in it.</p>
+<div class="scroll"><div class="wf" style="min-width:760px"><span class="cap">1100 px · dragging Structure out of the right column</span>
+<div class="screen" style="grid-template-columns: 26px minmax(0,1fr) 260px">
+  <div class="rail"><span>drop: new left column</span></div>
+  <div class="centre"><div class="canvas" style="min-height:150px; align-items:center; justify-content:center; color:var(--fg-2); font-size:14px">canvas</div>
+    <div class="bottom hot"><span class="dl">bottom</span><div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Glyphs of Stroke</span></div></div></div></div>
+  <div class="dock hot"><span class="dl">right</span>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Word types</span></div></div>
+    <div class="place">Structure was here</div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">In this word</span></div></div>
+    <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Spacing · Stroke</span></div></div>
+    <div class="tiny">…</div>
+  </div>
+</div>
+</div></div>
+
+<h3>e · What a folded panel looks like in each dock</h3>
+<div class="pair2">
+  <div>
+    <div class="scroll"><div class="wf"><span class="cap">side column (left or right)</span>
+      <div class="dock" style="max-width:320px">
+        <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Word types</span><span class="bdg">4</span><span class="sum"><b style="color:var(--fg)">Standard word</b></span></div></div>
+        <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Structure</span><span class="bdg">7</span><span class="sp"></span></div><div class="pb"><span class="scrib" style="width:90%"></span><span class="scrib" style="width:80%"></span><span class="scrib" style="width:85%"></span></div></div>
+        <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Page center</span><span class="sum">500, 500</span></div></div>
+        <div class="pn sm c"><div class="ph"><span class="grip">⠿</span><span class="chev">▸</span><span class="t">Font budget</span><span class="bdg warn">3 skipped</span><span class="sum">1,180 rules</span></div></div>
+      </div>
+    </div></div>
+    <ul>
+      <li>A folded panel is <b>its header line</b>, in the same place in the column. Folding never moves it.</li>
+      <li>The column scrolls as a whole. The header of the panel you are scrolling through <b>sticks to the top</b> of the column, so you always see which panel you are in.</li>
+      <li>Column width: drag its inner edge (240–520 px); double-click the edge to reset.</li>
+    </ul>
+  </div>
+  <div>
+    <div class="scroll"><div class="wf"><span class="cap">bottom strip</span>
+      <div class="bottom" style="max-width:460px">
+        <div class="resize"></div>
+        <div class="pn sm"><div class="ph"><span class="grip">⠿</span><span class="chev">▾</span><span class="t">Glyphs of Stroke</span><span class="bdg">16</span><span class="sp"></span></div><div class="pb"><div class="chips"><span class="chip xs">勾</span><span class="chip xs">挑</span><span class="chip xs">歷</span><span class="chip xs">大</span><span class="muted">…</span></div></div></div>
+        <div class="tabbar"><span><span class="chev">▸</span>Tester <span class="bdg">8</span></span><span><span class="chev">▸</span>Centering <span class="tiny">↕ on</span></span></div>
+      </div>
+      <div class="tiny" style="margin:10px 0 4px">everything folded: the strip is just the tab bar (27 px)</div>
+      <div class="bottom" style="max-width:460px; padding:0; background:transparent; border:0">
+        <div class="tabbar" style="margin:0"><span><span class="chev">▸</span>Glyphs of Stroke <span class="bdg">16</span></span><span><span class="chev">▸</span>Tester <span class="bdg">8</span></span></div>
+      </div>
+    </div></div>
+    <ul>
+      <li>Open panels stack <b>above</b>; folded ones collect in <b>one tab bar</b> at the very bottom. This is the only "tabs" in the design: lines stacked under a canvas would waste height.</li>
+      <li>Click a tab to open that panel above the bar. Drag a tab's ⠿ (shown on hover) to move it like any header.</li>
+      <li>The strip's top edge (≡) drags to change its height; the canvas gives up the space.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>f · When a dock empties</h3>
+<div class="pair2">
+  <div class="scroll"><div class="wf"><span class="cap">before: the last panel leaves the left column</span>
+    <div class="screen" style="grid-template-columns: 90px minmax(0,1fr) 120px; min-width:400px">
+      <div class="dock"><div class="pn sm lifted"><div class="ph"><span class="grip">✥</span><span class="t">Word types</span></div></div><div class="tiny">→ to the right column</div></div>
+      <div class="canvas" style="min-height:120px; align-items:center; justify-content:center; color:var(--fg-2); font-size:13px">canvas</div>
+      <div class="dock hot"><div class="ins"></div><div class="pn sm c"><div class="ph"><span class="t">In this word</span></div></div><div class="pn sm c"><div class="ph"><span class="t">Spacing</span></div></div></div>
+    </div>
+  </div></div>
+  <div class="scroll"><div class="wf"><span class="cap">after: the column is gone, the canvas widens</span>
+    <div class="screen" style="grid-template-columns: minmax(0,1fr) 120px; min-width:400px">
+      <div class="canvas" style="min-height:120px; align-items:center; justify-content:center; color:var(--fg-2); font-size:13px">canvas ⟷ wider</div>
+      <div class="dock"><div class="pn sm c"><div class="ph"><span class="t">Word types</span></div></div><div class="pn sm c"><div class="ph"><span class="t">In this word</span></div></div><div class="pn sm c"><div class="ph"><span class="t">Spacing</span></div></div></div>
+    </div>
+  </div></div>
+</div>
+<ul>
+  <li>An empty side column takes <b>no space</b>, not even a border. An empty bottom strip disappears too, and the canvas uses the full height.</li>
+  <li>The canvas never goes below <b>420 px wide</b>. If saved columns would squeeze it more (a narrower window than the one you arranged in), the left column folds to a 28 px rail of panel names. Click a name to open that column as an overlay; it closes again when you click the canvas. This is the only overlay, and only when nothing else fits.</li>
+</ul>
+
+<h3>g · Saved per user · Reset in the ⋯ menu</h3>
+<div class="side">
+  <div class="scroll"><div class="wf" style="min-width:300px"><span class="cap">app header ⋯ menu</span>
+    <div class="row"><span class="grow"></span><span class="muted">● Unsaved (3)</span><span class="btn">Save ⌘S</span><span class="btn">⋯</span></div>
+    <div class="row" style="justify-content:flex-end; margin-top:6px"><div class="menu"><div>Import…</div><div>Export…</div><div>Reload from disk</div><div>Discard unsaved changes</div><hr><div class="new">Reset panel layout</div></div></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span>The arrangement (which dock, order, open/folded, column widths, bottom height) is kept in this browser's <code>localStorage</code>. It is not part of <code>design.json</code>, not exported, and not counted as an unsaved change.</span></div>
+    <div><span class="co">2</span><span><b>Two saved arrangements</b>: one for wide windows (≥ 1280 px) and one for narrow ones. Each starts from its default (a or b above). Resizing across 1280 px switches between them, so a laptop and a big monitor don't spoil each other's layout.</span></div>
+    <div><span class="co">3</span><span><b>Reset panel layout</b> puts both back to the defaults, with no confirmation (nothing in the design changes). The item is greyed out when nothing has been moved.</span></div>
+    <div><span class="co">4</span><span>Docking applies to the <b>Layouts</b> screen only. Glyphs, Areas and Test &amp; Build keep their fixed layouts.</span></div>
+  </div>
+</div>
+
+<h3>h · The nine panels</h3>
+<div class="scroll">
+<table class="map">
+  <tr><th>Panel</th><th>Today</th><th>1440 default</th><th>1100 default</th><th>Folded header shows</th></tr>
+  <tr><td>Word types</td><td>left sidebar</td><td>left · open</td><td>right · folded</td><td>4 · <b>current type</b></td></tr>
+  <tr><td>Structure</td><td>inspector (folds when a part is selected)</td><td>left · open</td><td>right · folded</td><td>7 parts · 6 shown</td></tr>
+  <tr><td>Page center</td><td>left sidebar, Advanced</td><td>left · folded</td><td>right · folded</td><td>500, 500</td></tr>
+  <tr><td>Font budget</td><td>left sidebar, "Font budget ▸"</td><td>left · folded</td><td>right · folded</td><td>1,180 rules · red badge if skipped</td></tr>
+  <tr><td>In this word</td><td>inspector top</td><td>right · open</td><td>right · open</td><td>6 of 7 parts</td></tr>
+  <tr><td>Spacing</td><td>inspector (part selected)</td><td>right · open</td><td>right · open</td><td>Stroke · rule 5 → 120</td></tr>
+  <tr><td>Centering</td><td>inspector</td><td>right · folded</td><td>right · folded</td><td>↕ on 4 parts · ⇆ off</td></tr>
+  <tr><td>Glyphs (tray)</td><td>under canvas</td><td>bottom · open</td><td>bottom · open</td><td>16 · 勾 selected</td></tr>
+  <tr><td>Tester</td><td>under canvas</td><td>bottom · open</td><td>bottom · folded (tab)</td><td>8 words</td></tr>
+</table>
+</div>
+
+<h3>i · Things that change state on their own (kept to a minimum)</h3>
+<ul>
+  <li><b>No more auto-fold.</b> Today Structure and Centering fold when you select a part and come back when you deselect. With movable panels that would be surprising, and the new Structure is short enough to stay open. Only you fold and unfold.</li>
+  <li><b>Rule editor:</b> opening a rule still swaps the Spacing panel's body for the editor, wherever Spacing is docked, and the canvas goes into edit mode. Glyphs and Tester grey out (but stay in place) until Confirm/Cancel, as they are hidden today.</li>
+  <li><b>"N skipped ▸"</b> on a word type opens the skipped-shapes list inside the Word types panel, under that type, instead of at the top of the inspector.</li>
+  <li><b>Selecting a part</b> while Spacing is folded unfolds it once, with a short highlight on its header. Folding it again sticks until the next selection.</li>
+</ul>
+
+<!-- =================================================================== LEFT OUT -->
+<h2>3 · Left out on purpose, and open questions</h2>
+<div class="kc">
+  <div><h3>Left out on purpose</h3><ul>
+    <li>Floating or detached windows; panels side by side inside one dock.</li>
+    <li>Tabs inside the side columns (the bottom tab bar is the only tabs).</li>
+    <li>Closing/hiding a panel entirely: folding is enough, and nothing can get lost.</li>
+    <li>Resizing single panels inside a column (the column scrolls instead).</li>
+    <li>Different arrangements per word type, or per screen other than Layouts.</li>
+    <li>Undo for panel moves (Reset covers it).</li>
+    <li>Merging the two Chord halves into one Structure (needs a data change).</li>
+  </ul></div>
+  <div><h3>Open questions</h3><ul>
+    <li>"In this word" and normal-mode Structure overlap (leave out + preview glyph). Keep both, or make In this word the folded form of Structure?</li>
+    <li>OK to drop the auto-fold of Structure/Centering on selection?</li>
+    <li>Advanced switch in the canvas toolbar: fine, or in the app header?</li>
+    <li>Two saved arrangements (wide/narrow), or one?</li>
+    <li>Should Page center be editable without Advanced, now that it has its own folded panel?</li>
+    <li>The tie-break list is ordered in the engine (first wins), but today's checkboxes just append in click order. The redesign shows the order and lets you drag it. Is that worth having, or is one chip per word type always enough?</li>
+  </ul></div>
+</div>
+
+</main>
+</body>
+</html>

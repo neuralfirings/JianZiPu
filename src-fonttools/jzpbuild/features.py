@@ -13,7 +13,8 @@ below is the one place that order is spelled out.
 
 from . import config
 from .data import (
-    GlyphRow, load_components, load_char_to_glyph_name_rows, resolve_char_to_glyph_name,
+    GlyphRow, load_components, load_char_to_glyph_name_rows, load_design,
+    resolve_char_to_glyph_name,
 )
 from .validate import validate_or_raise
 
@@ -54,25 +55,24 @@ def decimals(spell) -> list[tuple[str, int]]:
     return [(spell(d), d) for d in range(1, 10)] + [("ch_ban", 5)]
 
 
+_LEGACY_AREA = {"area_char": "char", "area_chord": "chord", "area_fy": "fy", "area_left": "left",
+                "area_hui": "hui", "area_mod_jc": "jc", "area_mod_zhu": "zhu",
+                "area_right": "right", "area_string": "string"}
+
+
 def hui_class_glyphs(rows: list[GlyphRow]) -> list[str]:
-    base = [r.glyph_name for r in rows if r.in_area("area_hui")]
-    decimals = []
-    for n in range(1, 14):
-        decimals.append(f"md_{n}.blank")
-        decimals.extend(f"md_{n}.{d}" for d in range(1, 10))
-    return base + decimals + ["blank"]
+    return list(load_design().areas["hui"].glyphs)
 
 
-def area_glyphs(rows: list[GlyphRow], col: str) -> list[str]:
-    return [r.glyph_name for r in rows if r.in_area(col)]
+def area_glyphs(rows: list[GlyphRow], area: str) -> list[str]:
+    """Member glyphs of a design.json area (legacy column names accepted)."""
+    return list(load_design().areas[_LEGACY_AREA.get(area, area)].glyphs)
 
 
 def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
     """Everything that can appear inside a composed word (@area_wild)."""
     names = {r.glyph_name for r in rows}
-    for n in range(1, 14):
-        names.add(f"md_{n}.blank")
-        names.update(f"md_{n}.{d}" for d in range(1, 10))
+    names.update(load_design().all_glyphs())
     names.update(["blank", "blank_bar", "blank_colon"])
     return sorted(names)
 
@@ -82,20 +82,14 @@ def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
 
 
 def gen_classes(rows: list[GlyphRow]) -> list[str]:
-    hui = hui_class_glyphs(rows)
-    char_glyphs = area_glyphs(rows, "area_char")
     vert_pairs = [(r.glyph_name, r.vert_variant) for r in rows if r.vert_variant]
-    lines = [
-        "# base classes (generated from components.csv)",
-        f"  @area_fy = [ {' '.join(area_glyphs(rows, 'area_fy'))} ];",
-        f"  @area_left = [ {' '.join(area_glyphs(rows, 'area_left'))} ];",
-        f"  @area_hui = [ {' '.join(hui)} ];",
-        f"  @area_jc = [ {' '.join(area_glyphs(rows, 'area_mod_jc'))} ];",
-        f"  @area_zhu = [ {' '.join(area_glyphs(rows, 'area_mod_zhu'))} ];",
-        f"  @area_right_all = [ {' '.join(area_glyphs(rows, 'area_right'))} ];",
-        f"  @area_string = [ {' '.join(area_glyphs(rows, 'area_string'))} ];",
-        "",
-        "  @area_cuo_bar = [ blank_bar ];",
+    lines = ["# area classes (generated from design.json)"]
+    for name, area in load_design().areas.items():
+        lines.append(f"  @area_{name} = [ {' '.join(area.glyphs)} ];")
+    lines += [
+        "  # legacy aliases (classic gpos.py, edge_cases.fea)",
+        "  @area_right_all = @area_right;",
+        "  @area_cuo_bar = @area_bar;",
         "  @area_left_rt = @area_left;",
         "  @area_hui_rt = @area_hui;",
         "  @area_jc_rt = @area_jc;",
@@ -106,8 +100,7 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
         "",
         f"  @area_period_subs = [ {' '.join(PERIOD_SUBS)} ];",
         "",
-        "  @area_char_colon = [ blank_colon ];",
-        f"  @area_char = [ {' '.join(char_glyphs)} ];",
+        "  @area_char_colon = @area_colon;",
     ]
     for i in (1, 2, 3, 4):
         lines += [
@@ -128,7 +121,7 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
     for key, members in config.RIGHT_SELECTORS.items():
         lines.append(f"  @area_right__{key} = [ {' '.join(members)} ];")
     lines += [
-        f"  @area_chord__cuo = [ {' '.join(area_glyphs(rows, 'area_chord'))} ];",
+        "  @area_chord__cuo = @area_chord;",
         "",
         "  # special characters",
         "  @new_word_char = [ numbersign blank_colon ];",
