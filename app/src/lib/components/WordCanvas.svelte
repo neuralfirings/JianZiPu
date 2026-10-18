@@ -5,6 +5,7 @@
   // selected box that can be dragged onto another box's edge to link them.
   import { parseSvg } from '$lib/svg';
   import { app } from '$lib/state.svelte';
+  import { canvasBox } from '$lib/shape';
 
   type El = { name: string; area: string; glyph?: string | null; x: number | null; y: number | null; size: [number, number]; error?: boolean; anchor?: boolean };
   type ArrowBase = { id?: string; label: string; axis: 'x' | 'y'; ghost?: boolean; title?: string };
@@ -29,18 +30,7 @@
   } = $props();
 
   // viewBox in canvas units (y flipped: sy = -y)
-  let box = $derived.by(() => {
-    let x0 = showPage ? page[0] : Infinity, x1 = showPage ? page[1] : -Infinity;
-    let y0 = showPage ? pageHeight[0] : Infinity, y1 = showPage ? pageHeight[1] : -Infinity;
-    for (const e of elements) {
-      if (e.x == null || e.y == null) continue;
-      x0 = Math.min(x0, e.x); x1 = Math.max(x1, e.x + e.size[0]);
-      y0 = Math.min(y0, e.y); y1 = Math.max(y1, e.y + e.size[1]);
-    }
-    if (!isFinite(x0)) { x0 = 0; x1 = 1000; y0 = -500; y1 = 1100; }
-    const m = fit ? 60 : 0;
-    return { x: x0 - m, y: -(y1 + m), w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
-  });
+  let box = $derived(canvasBox(elements, { page, pageHeight, showPage, fit }, (g) => !!app.svgs[g]));
   let w = $derived(maxHeight > 0 ? Math.min(width, Math.round((maxHeight * box.w) / box.h)) : width);
   let h = $derived(height ?? Math.round((w * box.h) / box.w));
   const fs = $derived(Math.max(14, box.w / 30));
@@ -211,8 +201,8 @@
   .el.hoverable:hover .box { stroke: var(--accent); }
   .el.selected .box { stroke: var(--accent); stroke-width: 3; fill: var(--box); }
   .el.error .box { stroke: var(--danger); }
-  .el.anchor .box { stroke: var(--arrow); stroke-width: 3; fill: rgba(217,56,56,.08); }
-  .el.anchor.selected .box { stroke: var(--arrow); stroke-width: 4; }
+  .el.anchor .box:not(.hidden) { stroke: var(--arrow); stroke-width: 3; fill: rgba(217,56,56,.08); }
+  .el.anchor.selected .box:not(.hidden) { stroke: var(--arrow); stroke-width: 4; }
   .el.target .box { stroke: var(--ok); stroke-width: 3; }
   .el.dim { opacity: .28; }
   .el.locked { cursor: default; }

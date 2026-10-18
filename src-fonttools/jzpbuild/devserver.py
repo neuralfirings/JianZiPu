@@ -13,7 +13,11 @@ API (all JSON):
   POST /api/resolve                {design?, layout, choice, pinned?, center?} -> positions
   POST /api/words                  {design?, words:[...]} -> per word: glyphs, layout, positions
   GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
-  PUT  /api/glyphs                 {rows:[...]} -> rewrite components.csv
+  PUT  /api/glyphs                 {rows, base_hash, design?} -> rewrite components.csv (409 if it changed
+                                   on disk, 400 with `errors` if a spelling clashes or is malformed)
+  POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
+                                   compiled into the last build (GSUB only): typed words, round trip,
+                                   clashes, characters the font doesn't carry yet, words that change
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   PUT  /api/svg/<name>             {svg, base_hash?, overwrite?} -> write inputs/svg/<name>.svg; 409 when the file
@@ -44,7 +48,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from . import config, data, glyphs
+from . import config, data, glyphs, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -166,9 +170,9 @@ class WordShaper:
 WORDS = WordShaper()
 
 
-def words_payload(design: schema.Design, words: list[str]) -> dict:
+def words_payload(design: schema.Design, words: list[str], runs: list[list[str]] | None = None) -> dict:
     rules, _, reg = emit.build_rules(design)
-    runs = WORDS.glyph_runs(words)
+    runs = WORDS.glyph_runs(words) if runs is None else runs
     out = []
     for word, glyphs in zip(words, runs):
         pieces = []
@@ -315,15 +319,26 @@ def write_svg(name: str, svg_text: str, overwrite: bool, base_hash: str | None =
 
 # ---------------------------------------------------------------- glyph catalog
 
-CSV_FIELDS = ["ID", "keys", "filename", "glyph_name", "vert_variant", "common", "latin", "latin_alt",
-              "simplified", "traditional", "pinyin"]
+CSV_FIELDS = list(typing_preview.ROW_FIELDS)
+
+
+class CsvConflict(Exception):
+    pass
+
+
+class SpellingErrors(Exception):
+    def __init__(self, errors):
+        super().__init__(f"{len(errors)} spelling problem(s)")
+        self.errors = errors
+
+
+def _read_csv_text() -> str:
+    return config.COMPONENTS_CSV.read_text(encoding="utf-8-sig")
 
 
 def glyphs_payload() -> dict:
-    with open(config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        fields = reader.fieldnames
-        rows = list(reader)
+    text = _read_csv_text()
+    rows = list(csv.DictReader(io.StringIO(text)))
     design = data.load_design()
     svgs = {p.stem for p in config.COMPONENTS_DIR.glob("*.svg")}
     by_glyph = {r["glyph_name"].strip(): r for r in rows}
@@ -334,20 +349,72 @@ def glyphs_payload() -> dict:
     catalog = []
     for g in sorted(svgs | set(by_glyph) | set(areas_of)):
         r = by_glyph.get(g, {})
-        catalog.append({"glyph": g, "svg": g in svgs, "areas": areas_of.get(g, []),
-                        **{k: (r.get(k) or "") for k in CSV_FIELDS if k != "glyph_name"}})
-    return {"fields": fields, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS)}
+        catalog.append({"glyph": g, "svg": g in svgs, "areas": areas_of.get(g, []), "row": g in by_glyph,
+                        **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
+    return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
+            "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text)}
 
 
-def write_glyph_rows(rows: list[dict]) -> int:
+def write_glyph_rows(rows: list[dict], base_hash: str | None = None, design: dict | None = None) -> dict:
+    """Rewrite components.csv from the app's rows. Refuses when the file changed on disk since
+    `base_hash`, and when any spelling clashes or can't be generated (the build would fail).
+    Rows keep the file's order; new glyphs go at the end; rows with nothing to say are dropped."""
+    current = _read_csv_text()
+    if base_hash and base_hash != _hash(current):
+        raise CsvConflict("components.csv changed on disk since it was loaded")
+    recs = [typing_preview.clean_record(r) for r in rows]
+    recs = [r for r in recs if r["glyph_name"] and any(r[k] for k in CSV_FIELDS if k != "glyph_name")]
+    d = design if design is not None else json.loads(_read_design_text())
+    errors = typing_preview.issues(typing_preview.rows_from(recs, d), typing_preview.known_glyphs(d))["errors"]
+    if errors:
+        raise SpellingErrors(errors)
+    order = {r["glyph_name"].strip(): i for i, r in enumerate(csv.DictReader(io.StringIO(current)))}
+    recs.sort(key=lambda r: order.get(r["glyph_name"], len(order)))
     buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=CSV_FIELDS)
+    w = csv.DictWriter(buf, fieldnames=CSV_FIELDS, lineterminator="\n")
     w.writeheader()
-    for r in rows:
-        w.writerow({k: r.get(k, "") for k in CSV_FIELDS})
+    for r in recs:
+        w.writerow(r)
     config.COMPONENTS_CSV.write_text(buf.getvalue(), encoding="utf-8")
     data.cache_clear_all()
-    return len(rows)
+    return {"ok": True, "rows": len(recs), "hash": _hash(buf.getvalue())}
+
+
+
+def _preview_base_font() -> Path | None:
+    for p in (BUILD.latest, config.OUTPUT_FONT, config.CURRENT_FONT):
+        if p and Path(p).exists():
+            return Path(p)
+    return None
+
+
+def typing_payload(body: dict) -> dict:
+    """Unsaved spellings -> preview font -> typed words, the spelling round trip,
+    clashes, and which sample words change against the saved spellings."""
+    design = body.get("design") or json.loads(_read_design_text())
+    rows = typing_preview.rows_from(body.get("rows", []), design)
+    out = {"ok": True, **typing_preview.issues(rows, typing_preview.known_glyphs(design))}
+    base = _preview_base_font()
+    if base is None:
+        return {**out, "ok": False, "error": "Build the font once to preview spellings."}
+    prev = typing_preview.FONTS.get(base, rows, design)
+    out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars,
+               roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
+    words = [w for w in body.get("words", []) if w]
+    if words:
+        shaped = typing_preview.shape(prev, words)
+        sd = schema.parse_design(design)
+        laid = words_payload(sd, words, runs=[s["glyphs"] for s in shaped])["words"]
+        for w, s in zip(laid, shaped):
+            w["texts"] = s["texts"]
+        out["words"] = laid
+    compare = [w for w in body.get("compare_words", []) if w]
+    if compare and body.get("base_rows") is not None:
+        before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design), compare)
+        after = typing_preview.shape(prev, compare)
+        out["changed"] = [{"word": a["word"], "before": a["glyphs"], "after": b["glyphs"], "after_texts": b["texts"]}
+                          for a, b in zip(before, after) if a["glyphs"] != b["glyphs"]]
+    return out
 
 
 # ---------------------------------------------------------------- HTTP
@@ -454,6 +521,8 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/words":
                 design = _design_from(body)
                 return self._json(words_payload(design, list(body.get("words", []))))
+            if path == "/api/typing/preview":
+                return self._json(typing_payload(body))
             if path == "/api/svg/check":
                 try:
                     return self._json({"ok": True, **glyphs.flatten_svg_text(body["svg"])})
@@ -485,8 +554,12 @@ class Handler(SimpleHTTPRequestHandler):
                 data.cache_clear_all()
                 return self._json({"ok": True, **{k: v for k, v in _design_payload(body["design"], text).items() if k != "design"}})
             if path == "/api/glyphs":
-                n = write_glyph_rows(body["rows"])
-                return self._json({"ok": True, "rows": n})
+                try:
+                    return self._json(write_glyph_rows(body["rows"], body.get("base_hash"), body.get("design")))
+                except CsvConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_csv_text())}, 409)
+                except SpellingErrors as err:
+                    return self._json({"ok": False, "error": str(err), "errors": err.errors}, 400)
             if path.startswith("/api/svg/"):
                 name = path[len("/api/svg/"):]
                 try:

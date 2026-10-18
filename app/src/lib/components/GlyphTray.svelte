@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { searchText } from '$lib/typing';
   // All glyphs of the selected part's area, under the canvas: click = preview glyph;
   // Manage = remove / add (edits the area, shared by every word type that uses it).
   import { app } from '$lib/state.svelte';
@@ -18,8 +19,7 @@
   let sharedBy = $derived(el ? app.design!.layouts.filter((l) => l.slots.some((s) => s.alternatives.some((a) => a.some((t) => (t.includes(':') ? t.split(':')[1] : t) === el!.area)))).map((l) => l.label ?? l.name) : []);
   function matches(g: string) {
     if (!q) return true;
-    const r = app.glyphs.find((x) => x.glyph === g);
-    return [g, r?.keys, r?.simplified, r?.traditional, r?.pinyin].join(' ').toLowerCase().includes(q.toLowerCase());
+    return searchText(app.typing, g).includes(q.toLowerCase());
   }
   let filtered = $derived(glyphs.filter(matches));
   let shown = $derived(showAll || filtered.length <= LIMIT ? filtered : filtered.slice(0, LIMIT));

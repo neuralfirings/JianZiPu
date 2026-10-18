@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app } from '$lib/state.svelte';
-  import { api, type GlyphRow } from '$lib/api';
+  import * as TY from '$lib/typing';
   import Glyph from '$lib/components/Glyph.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
   import { page } from '$app/state';
@@ -13,11 +13,10 @@
   let member = $state<string | null>(page.url.searchParams.get('g'));
   let advanced = $state(false);
   let picker = $state(false);
-  let csvErr = $state<string | null>(null);
 
   let usedIn = $derived(d.layouts.filter((l) => l.slots.some((s) => s.alternatives.some((alt) => alt.some((t) => (t.includes(':') ? t.split(':')[1] : t) === current)))));
-  let rowOf = $derived((g: string) => app.glyphs.find((r) => r.glyph === g));
-  let memberRow = $derived(member ? rowOf(member) : undefined);
+  const label = (g: string) => TY.firstSpelling(app.typing, g)?.text || g.replace(/^(md|lg|xl|mod)_/, '');
+  const typedAs = (g: string) => TY.TYPED.map((f) => TY.shown(app.typing, g, f).value).filter(Boolean);
 
   function remove(g: string) { app.removeFromArea(current, g); }
   function setSize(i: 0 | 1, v: number) {
@@ -27,27 +26,6 @@
   function setLabel(v: string) { app.edit(`Area ${current}: label "${v}"`, (x) => { x.areas[current].label = v; }); }
   function setAdvance(v: number) { app.edit(`Area ${current}: advance ${v}`, (x) => { if (v) x.areas[current].advance = v; else delete x.areas[current].advance; }); }
 
-  // typing keys -> components.csv (saved immediately; not part of the design file)
-  type KeyField = "keys" | "common" | "latin" | "latin_alt" | "simplified" | "traditional" | "vert_variant";
-  const KEY_FIELDS: [KeyField, string][] = [['keys', 'key'], ['common', 'common'], ['latin', 'latin'], ['latin_alt', 'alt'], ['simplified', '简'], ['traditional', '繁'], ['vert_variant', 'vert variant']];
-  async function saveKey(g: string, field: KeyField, value: string) {
-    csvErr = null;
-    const rows = app.glyphs.map((r) => (r.glyph === g ? { ...r, [field]: value } : r));
-    const hasCsv = (r: GlyphRow) => r.ID || r.keys || r.common || r.latin || r.latin_alt || r.simplified || r.traditional || r.pinyin || r.filename || r.vert_variant;
-    const csvRows = rows.filter(hasCsv).map((r) => ({ ...r, glyph_name: r.glyph, filename: r.filename || r.glyph }));
-    let next = 1;
-    for (const r of csvRows) { const n = parseInt(r.ID); if (!isNaN(n)) next = Math.max(next, n + 1); }
-    for (const r of csvRows) if (!r.ID) r.ID = String(next++);
-    csvRows.sort((a, b) => parseInt(a.ID) - parseInt(b.ID));
-    const res = await api.saveGlyphs(csvRows);
-    if (!res.ok) { csvErr = res.error ?? 'could not write components.csv'; return; }
-    app.glyphs = rows;
-  }
-  function collisions(g: string, field: KeyField, value: string): string[] {
-    if (!value) return [];
-    return app.glyphs.filter((r) => r.glyph !== g && ((r.keys === value) || (r.common === value) || (r.latin === value) || (r.latin_alt === value) || (r.simplified === value) || (r.traditional === value)))
-      .map((r) => `${r.glyph} (${r.areas.join(', ') || 'no area'})`);
-  }
   let newName = $state('');
   function newArea() {
     const n = newName.trim();
@@ -104,7 +82,7 @@
           <div class="mem" class:on={member === g}>
             <button class="art" onclick={() => (member = g)} title={g}><Glyph name={g} size={56} /></button>
             <div class="row" style="justify-content: space-between">
-              <span class="id">{rowOf(g)?.keys || g.replace(/^(md|lg|xl|mod)_/, '')}</span>
+              <span class="id">{label(g)}</span>
               <button class="x" title="Remove from area" onclick={() => remove(g)}>×</button>
             </div>
           </div>
@@ -112,25 +90,12 @@
       </div>
 
       {#if member && area.glyphs.includes(member)}
-        <div class="keys panel">
-          <h3>Typing keys for {member} <span class="muted">· saved to components.csv immediately</span></h3>
-          {#if memberRow}
-            <div class="row wrap">
-              {#each KEY_FIELDS as [f, label]}
-                <label>{label} <input type="text" value={memberRow[f]} style="width: 80px"
-                  onchange={(e) => saveKey(member!, f, (e.target as HTMLInputElement).value)} /></label>
-              {/each}
-              <span class="muted">pinyin {memberRow.pinyin || '—'}</span>
-            </div>
-            {#each KEY_FIELDS as [f]}
-              {@const c = collisions(member, f, memberRow[f])}
-              {#if c.length}<div class="muted">⚠ “{memberRow[f]}” is also a key for {c.join(', ')} — fine, substitution picks by context.</div>{/if}
-            {/each}
-          {:else}
-            <p class="muted">No row in components.csv yet; type a key to create one.</p>
-            <div class="row wrap">{#each KEY_FIELDS as [f, label]}<label>{label} <input type="text" style="width: 80px" onchange={(e) => saveKey(member!, f, (e.target as HTMLInputElement).value)} /></label>{/each}</div>
-          {/if}
-          {#if csvErr}<p class="error">{csvErr}</p>{/if}
+        <div class="keys panel row wrap">
+          <span class="art-sm"><Glyph name={member} size={40} /></span>
+          <strong class="mono">{member}</strong>
+          <span>Typed as {#if typedAs(member).length}{typedAs(member).join(' · ')}{:else if TY.isDecimal(member)}{TY.decimalPatterns(member).join(' · ')} <span class="muted">(by pattern)</span>{:else}<span class="muted">nothing yet</span>{/if}
+            {#if app.typing[member]?.pinyin}<span class="muted">({app.typing[member].pinyin})</span>{/if}</span>
+          <a href="/glyphs?g={encodeURIComponent(member)}&view=typing">Edit in Glyphs →</a>
         </div>
       {/if}
     </section>
@@ -155,5 +120,4 @@
   .mem.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .art { height: auto; width: 100%; padding: 2px; display: flex; justify-content: center; border: 0; background: transparent; }
   .x { height: 18px; padding: 0 4px; border: 0; background: transparent; color: var(--fg-2); }
-  .spacer { flex: 1; }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { searchText } from '$lib/typing';
   // Pick glyphs (not yet in `area`) to add to it. Shared by Areas and the glyph tray.
   import { app } from '$lib/state.svelte';
   import Glyph from './Glyph.svelte';
@@ -6,7 +7,7 @@
   let q = $state('');
   let picked = $state<string[]>([]);
   let members = $derived(app.design!.areas[area]?.glyphs ?? []);
-  let candidates = $derived(app.glyphs.filter((r) => !members.includes(r.glyph) && (!q || [r.glyph, r.keys, r.simplified, r.pinyin].join(' ').toLowerCase().includes(q.toLowerCase()))));
+  let candidates = $derived(app.glyphs.filter((r) => !members.includes(r.glyph) && (!q || searchText(app.typing, r.glyph).includes(q.toLowerCase()))));
   function add() { app.addToArea(area, picked); onclose(); }
 </script>
 

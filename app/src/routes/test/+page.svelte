@@ -2,10 +2,11 @@
   import { onMount } from 'svelte';
   import { app } from '$lib/state.svelte';
   import { api, type BuildStatus, type WordPayload } from '$lib/api';
-  import { anchorNames } from '$lib/shape';
+  import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from '$lib/components/WordCanvas.svelte';
   import { SAMPLE_SETS, DEFAULT_STRIP } from '$lib/words';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
+  import { segments } from '$lib/cmap';
 
   let text = $state(localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' '));
   let mode = $state<'live' | 'font' | 'both'>('live');
@@ -121,16 +122,18 @@
   {#if err}<p class="error" style="padding: 0 var(--s-4)">{err}</p>{/if}
   <div class="words">
     {#each result?.words ?? [] as w (w.word)}
+      {@const pg = wordPage(w)}
+      {@const cellW = Math.round((pg[1] / 1000) * size)}
       <div class="word">
         {#if mode !== 'font'}
           <a href="/layouts?word={encodeURIComponent(w.word)}" title="Open in Layouts">
             <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })}
-              width={size} height={Math.round(size * 1.6)} showBoxes={showBoxes} showPage={true} page={[0, Math.max(1000, w.advance + 1000)]} fit={false} />
+              width={cellW} height={Math.round(size * 1.6)} showBoxes={showBoxes} showPage={true} page={pg} fit={false} />
           </a>
         {/if}
         {#if mode !== 'live'}
           {#key fontVersion}
-            <div class="font" style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {Math.max(1, Math.round((w.advance + 1000) / 1000)) * size}px">{w.word}</div>
+            <div class="font" style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font?.chars ?? null) as s}{#if s.missing}<span class="miss" title="Not in the built font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
           {/key}
         {/if}
         <div class="keys muted">{w.word}{#if w.pieces.some((p) => p.layout === null && p.glyphs.some((g) => !['space', 'numbersign', 'advance'].includes(g)))} <span class="badge-warn" title="Some glyphs matched no word type">⚠</span>{/if}</div>
@@ -156,6 +159,7 @@
   .word a { display: block; }
   .font { font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--canvas); border-radius: var(--radius); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }
   .keys { font-family: var(--mono); }
+  .miss { color: var(--danger); }
   .built { padding: var(--s-2) var(--s-3); background: var(--bg-2); border-radius: var(--radius); }
   .small { font-size: var(--t-xs); }
   .older summary { cursor: pointer; font-size: var(--t-sm); }

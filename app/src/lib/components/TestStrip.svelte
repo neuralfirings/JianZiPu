@@ -2,7 +2,7 @@
   import { api, type WordPayload } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
-  import { anchorNames } from '$lib/shape';
+  import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from './WordCanvas.svelte';
   import { SAMPLE_SETS, DEFAULT_STRIP } from '$lib/words';
   let text = $state(localStorage.getItem('jzp-strip-words') ?? DEFAULT_STRIP);
@@ -36,7 +36,7 @@
     {#each result?.words ?? [] as w (w.word)}
       {@const piece = w.pieces.find((p) => p.layout)}
       <button class="word" title={piece ? `Open ${piece.layout} with this word` : 'No word type matched'} onclick={() => piece && editor.loadWord(piece)}>
-        <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })} width={72} height={116} showBoxes={editor.showBoxes} showGlyphs={true} showPage={true} page={[0, Math.max(1000, w.advance + 1000)]} fit={false} />
+        <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })} width={72} height={116} showBoxes={editor.showBoxes} showGlyphs={true} showPage={true} page={wordPage(w)} fit={false} />
         <span class="id">{w.word}</span>
       </button>
     {/each}

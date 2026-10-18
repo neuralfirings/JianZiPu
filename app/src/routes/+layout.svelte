@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
+  import { goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
   import { editor } from '$lib/editor.svelte';
   import { panels } from '$lib/panels.svelte';
@@ -81,7 +82,7 @@
         <span class="chip">{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
       {/if}
     </span>
-    <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json (the glyph has its own Save, ⌘S)' : 'Write design.json (⌘S)'}>
+    <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json and components.csv (the glyph has its own Save, ⌘S)' : 'Write design.json and components.csv (⌘S)'}>
       {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
     </button>
     <span class="menu-wrap">
@@ -116,10 +117,29 @@
   {#if app.error}
     <div class="banner error">{app.error} <button onclick={() => app.load()}>Retry</button></div>
   {/if}
+  {#if app.paused}
+    <div class="modal-bg">
+      <div class="modal">
+        <h3>Save is waiting</h3>
+        <p>{app.paused.length === 1 ? 'This spelling problem' : `These ${app.paused.length} spelling problems`} must be fixed first: the font can't build with {app.paused.length === 1 ? 'it' : 'them'}.</p>
+        <ul class="paused">
+          {#each app.paused.slice(0, 6) as e}<li>{e.message}</li>{/each}
+          {#if app.paused.length > 6}<li class="muted">… and {app.paused.length - 6} more</li>{/if}
+        </ul>
+        <p class="muted">{app.changes.length === 1 ? 'Your unsaved change is kept in this browser and stays undoable.' : `Your ${app.changes.length} unsaved changes are kept in this browser and stay undoable.`}</p>
+        <div class="row">
+          <button onclick={() => { app.paused = null; app.undo(); }} disabled={!app.undoStack.length} title={app.undoStack.at(-1)?.label}>Undo last change</button>
+          <span class="spacer"></span>
+          <button onclick={() => (app.paused = null)}>Close</button>
+          <button class="primary" onclick={() => { app.paused = null; goto('/glyphs?view=typing&f=attention'); }}>Show {app.paused.length === 1 ? 'it' : 'them'}</button>
+        </div>
+      </div>
+    </div>
+  {/if}
   {#if app.conflict}
     <div class="modal-bg">
       <div class="modal">
-        <h3>design.json changed on disk</h3>
+        <h3>{app.conflictFile} changed on disk</h3>
         <p>{app.conflict}</p>
         <div class="row">
           <button onclick={() => { app.conflict = null; app.reloadFromDisk(); }}>Reload from disk (lose my {app.changes.length} changes)</button>
@@ -165,4 +185,5 @@
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
   .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-5); max-width: 560px; }
   .chip { text-decoration: none; color: inherit; border: 0; }
+  .paused { margin: 0 0 var(--s-2); padding-left: 20px; color: var(--danger); }
 </style>

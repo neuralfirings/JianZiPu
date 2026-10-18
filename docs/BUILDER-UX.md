@@ -29,8 +29,8 @@ drag-to-set-gap, exception list, typing-order list and budget badge are kept.
 
 | Section | Question it answers | Writes |
 |---|---|---|
-| **Glyphs** | What shapes exist on disk? Which are unused? | the glyph editor (`/glyphs/<name>/edit`, `/glyphs/new`): outlines, imports, traces |
-| **Areas** | Which glyphs can stand in which part of a word, and how are they typed? | `components.csv` |
+| **Glyphs** | What shapes exist on disk? Which are unused? How is each typed? | the glyph editor (`/glyphs/<name>/edit`, `/glyphs/new`): outlines, imports, traces; the Typing view: `components.csv` (see `docs/KEY-ENTRY-UX.md`) |
+| **Areas** | Which glyphs can stand in which part of a word? | `design.json` |
 | **Layouts** | How are parts stacked and spaced for each word type? | `layouts_data.json` |
 | **Test & Build** | Does it look right in real words, in the real font? | `JianZiPu.ttf` (build output) |
 
@@ -140,9 +140,9 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
   `×` (remove from area; confirm only if the glyph is referenced by a spacing exception:
   "lg_gou is named in 7 spacing exceptions in Standard word — remove anyway? Those rows will
   be dropped.").
-- Selecting a member reveals its typing keys (the `common/latin/latin_alt/simplified/
-  traditional` columns, labelled key / alt / 简 / 繁). Pinyin is read-only. Key collisions
-  across areas are *shown*, not blocked, because GSUB disambiguates by context today.
+- Selecting a member shows how it is typed, read-only, with "Edit in Glyphs →". *(Superseded
+  2026-10-17: the typing-keys editor that was here moved to Glyphs → Typing, where a clash
+  holds Save; see `docs/KEY-ENTRY-UX.md`.)*
 - Box size is edited here and only here ("Used in" tells the user what will move). Changing it
   re-resolves every open preview; the Layouts screen shows the change immediately.
 - "+ New area" is under an "Advanced" divider: new areas need a new `components.csv` column

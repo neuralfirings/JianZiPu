@@ -62,9 +62,17 @@ export type WordPiece = {
   elements: { name: string; area: string; glyph: string; x: number; y: number; size: [number, number] }[];
 };
 export type WordPayload = { ok: boolean; words: { word: string; glyphs: string[]; pieces: WordPiece[]; advance: number }[] };
-export type GlyphRow = {
-  glyph: string; svg: boolean; areas: string[]; ID: string; keys: string; filename: string; vert_variant: string;
-  common: string; latin: string; latin_alt: string; simplified: string; traditional: string; pinyin: string;
+/** A glyph the app knows about: its SVG and the areas it is in. Its spellings live in `app.typing`. */
+export type GlyphRow = { glyph: string; svg: boolean; areas: string[]; row?: boolean };
+/** What the server sends per glyph: the catalog row plus its components.csv spelling fields. */
+export type CatalogRow = GlyphRow & Record<string, unknown>;
+export type TypingIssue = import('./typing').Issue;
+export type RoundTrip = { glyph: string; field: string; value: string; got: string[]; texts: string[]; message: string };
+export type TypingPreview = {
+  ok: boolean; error?: string; errors: TypingIssue[]; seconds?: number;
+  not_built?: string[]; missing_chars?: Record<string, string[]>; roundtrip?: RoundTrip[];
+  words?: (WordPayload['words'][number] & { texts: string[] })[];
+  changed?: { word: string; before: string[]; after: string[]; after_texts: string[] }[];
 };
 /** One finished build: its exact TTF lives in a temp dir on the server while it runs. */
 export type Build = { id: string; time: number; bytes: number; ok: boolean; seconds: number | null; url: string; file: string };
@@ -98,8 +106,13 @@ export const api = {
   resolve: (design: Design, layout: string, choice: (number | number[] | null)[], pinned: Record<string, string>, center = true) =>
     call<ResolvePayload>('POST', '/api/resolve', { design, layout, choice, pinned, center }),
   words: (design: Design, words: string[]) => call<WordPayload & { error?: string }>('POST', '/api/words', { design, words }),
-  glyphs: () => call<{ fields: string[]; glyphs: GlyphRow[]; control: string[] }>('GET', '/api/glyphs'),
-  saveGlyphs: (rows: Record<string, unknown>[]) => call<{ ok: boolean; rows: number; error?: string }>('PUT', '/api/glyphs', { rows }),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string }>('GET', '/api/glyphs'),
+  /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
+  saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
+    call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),
+  /** Unsaved spellings compiled into the last build (GSUB only): typed words, round trip, words that change. */
+  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean }) =>
+    call<TypingPreview>('POST', '/api/typing/preview', body),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),

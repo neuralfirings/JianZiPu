@@ -1,9 +1,12 @@
+import { cmapCodepoints } from './cmap';
+
 // Load a TTF into the page under a family name of its own, so what renders is that
 // file and nothing else: no fallback to an installed JianZiPu, no stale cache.
 let n = 0;
 const loaded = new Map<string, FontFace>();
 
-export type LoadedFont = { family: string; label: string; bytes: number; source: 'build' | 'file'; id?: string };
+/** `chars`: the code points the font maps, so previews can mark the rest in red. */
+export type LoadedFont = { family: string; label: string; bytes: number; source: 'build' | 'file'; id?: string; chars: Set<number> | null };
 
 export async function loadFontFrom(source: string | Blob, label: string, kind: 'build' | 'file', id?: string): Promise<LoadedFont> {
   const key = typeof source === 'string' ? source : `${label}:${(source as File).lastModified ?? ''}:${source.size}`;
@@ -16,7 +19,9 @@ export async function loadFontFrom(source: string | Blob, label: string, kind: '
   await ff.load();
   document.fonts.add(ff);
   loaded.set(key, ff);
-  return { family, label, bytes: buf.byteLength, source: kind, id };
+  let chars: Set<number> | null;
+  try { chars = cmapCodepoints(buf); } catch { chars = null; }
+  return { family, label, bytes: buf.byteLength, source: kind, id, chars };
 }
 
 export const fmtBytes = (b: number) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);

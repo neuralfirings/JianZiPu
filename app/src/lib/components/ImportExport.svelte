@@ -84,7 +84,7 @@
         <li>Areas: box sizes &amp; glyph members ({Object.keys(d.areas).length})</li>
         <li>Test word sets ({Object.keys(d.test_sets ?? {}).length})</li>
       </ul>
-      <p class="muted">Typing keys live in components.csv and are saved there directly. SVG files are not included.</p>
+      <p class="muted">Spellings live in components.csv: import or export them from Glyphs ⋯ (they save with the same Save). SVG files are not included.</p>
       <div class="row"><button class="primary" onclick={download}>Download JSON</button><button onclick={onclose}>Close</button></div>
     {:else}
       <h3>Import</h3>

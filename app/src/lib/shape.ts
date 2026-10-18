@@ -95,3 +95,36 @@ export function choiceForNames(layout: Layout, names: string[]): Choice {
     return k >= 0 ? k : s.optional ? null : 0;
   });
 }
+
+/** The page span a word preview shows: 0 to the right edge of its rightmost part, at least one em.
+ *  Not `advance + 1000`: a vertical word's colon box already spans its em (advance 1000), so that
+ *  doubled its canvas and drew it at half the size of a standard word. */
+export function wordPage(w: { advance: number; pieces: { elements: { x: number | null; size: [number, number] }[] }[] }): [number, number] {
+  let right = Math.max(1000, w.advance);
+  for (const p of w.pieces) for (const e of p.elements) if (e.x != null) right = Math.max(right, e.x + e.size[0]);
+  return [0, right];
+}
+
+type Placed = { x: number | null; y: number | null; size: [number, number]; glyph?: string | null };
+
+/** A word canvas's viewBox, in canvas units with y flipped (svg y = -y).
+ *  `fit`: frame the elements with a margin (the editors). Otherwise a fixed page, like a line of
+ *  the font, grown only by parts that draw something: an inkless spacer (blank_colon, which the
+ *  build makes with no SVG) would otherwise stretch a vertical word's page and shrink the word. */
+export function canvasBox(
+  elements: Placed[],
+  o: { page: [number, number]; pageHeight: [number, number]; showPage: boolean; fit: boolean },
+  hasInk: (glyph: string) => boolean
+): { x: number; y: number; w: number; h: number } {
+  let x0 = o.showPage ? o.page[0] : Infinity, x1 = o.showPage ? o.page[1] : -Infinity;
+  let y0 = o.showPage ? o.pageHeight[0] : Infinity, y1 = o.showPage ? o.pageHeight[1] : -Infinity;
+  for (const e of elements) {
+    if (e.x == null || e.y == null) continue;
+    if (!o.fit && e.glyph && !hasInk(e.glyph)) continue;
+    x0 = Math.min(x0, e.x); x1 = Math.max(x1, e.x + e.size[0]);
+    y0 = Math.min(y0, e.y); y1 = Math.max(y1, e.y + e.size[1]);
+  }
+  if (!isFinite(x0)) { x0 = 0; x1 = 1000; y0 = -500; y1 = 1100; }
+  const m = o.fit ? 60 : 0;
+  return { x: x0 - m, y: -(y1 + m), w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
+}

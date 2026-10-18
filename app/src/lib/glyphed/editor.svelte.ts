@@ -406,7 +406,7 @@ export class GlyphEditor {
       s.markSaved();
       this.savedText = text; this.savedAt = new Date(); this.loadedHash = r.hash ?? (await sha16(text)); this.conflictDisk = null;
       app.svgs = { ...app.svgs, [this.name]: text };
-      if (!app.glyphs.some((g) => g.glyph === this.name)) app.glyphs = [...app.glyphs, { glyph: this.name, svg: true, areas: [], ID: '', keys: '', filename: `${this.name}.svg`, vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '' }];
+      if (!app.glyphs.some((g) => g.glyph === this.name)) app.glyphs = [...app.glyphs, { glyph: this.name, svg: true, areas: [] }];
       else app.glyphs = app.glyphs.map((g) => (g.glyph === this.name ? { ...g, svg: true } : g));
       if (this.isNew && this.area && app.design?.areas[this.area] && !app.design.areas[this.area].glyphs.includes(this.name)) app.addToArea(this.area, [this.name]);
       this.isNew = false;

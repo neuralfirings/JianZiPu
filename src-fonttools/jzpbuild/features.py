@@ -11,6 +11,8 @@ Rule ORDER within the hui lookups is load-bearing (a 2-token hui like
 below is the one place that order is spelled out.
 """
 
+import contextvars
+
 from . import config
 from .data import (
     GlyphRow, load_components, load_char_to_glyph_name_rows, load_design,
@@ -39,6 +41,15 @@ def hui_ch(n: int) -> str:
 
 PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad", "ch_hui"]
 
+# The Builder's spelling preview generates GSUB from an unsaved design and unsaved
+# rows; it sets this for the duration of one call (per thread, so concurrent
+# requests don't see each other's design).
+_DESIGN_OVERRIDE: contextvars.ContextVar = contextvars.ContextVar("design_override", default=None)
+
+
+def _design():
+    return _DESIGN_OVERRIDE.get() or load_design()
+
 
 def hui_sequence(spell, wai: str = "ch_wai", last: int = 10) -> list[tuple[str, int]]:
     """(input token sequence, hui number) pairs in the order every hui lookup
@@ -61,18 +72,18 @@ _LEGACY_AREA = {"area_char": "char", "area_chord": "chord", "area_fy": "fy", "ar
 
 
 def hui_class_glyphs(rows: list[GlyphRow]) -> list[str]:
-    return list(load_design().areas["hui"].glyphs)
+    return list(_design().areas["hui"].glyphs)
 
 
 def area_glyphs(rows: list[GlyphRow], area: str) -> list[str]:
     """Member glyphs of a design.json area (legacy column names accepted)."""
-    return list(load_design().areas[_LEGACY_AREA.get(area, area)].glyphs)
+    return list(_design().areas[_LEGACY_AREA.get(area, area)].glyphs)
 
 
 def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
     """Everything that can appear inside a composed word (@area_wild)."""
     names = {r.glyph_name for r in rows}
-    names.update(load_design().all_glyphs())
+    names.update(_design().all_glyphs())
     names.update(["blank", "blank_bar", "blank_colon"])
     return sorted(names)
 
@@ -84,7 +95,7 @@ def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
 def gen_classes(rows: list[GlyphRow]) -> list[str]:
     vert_pairs = [(r.glyph_name, r.vert_variant) for r in rows if r.vert_variant]
     lines = ["# area classes (generated from design.json)"]
-    for name, area in load_design().areas.items():
+    for name, area in _design().areas.items():
         lines.append(f"  @area_{name} = [ {' '.join(area.glyphs)} ];")
     lines += [
         "  # legacy aliases (classic gpos.py, edge_cases.fea)",
@@ -219,6 +230,27 @@ def gen_l2j_liga(rows: list[GlyphRow]) -> list[str]:
     lines = ["lookup l2j_liga {"]
     lines += [f"  sub {spell_latin(k)} by {g};" for k, g in multi]
     lines.append("} l2j_liga;")
+    return lines
+
+
+def digit_entries(rows: list[GlyphRow]) -> list[tuple[str, str]]:
+    """Latin spellings that contain a digit (zhi4, xi4, fu4), longest first.
+
+    The number lookups (s2j_*) run before latin input and would read the digit
+    as a string or position number (xi4 -> 息 + string 4), so these spellings
+    get their own lookup that runs ahead of the number lookups."""
+    out = [(k, g) for k, g in latin_entries(rows).items() if any(c.isdigit() for c in k)]
+    out.sort(key=lambda kg: (-len(kg[0]), kg[0]))
+    return out
+
+
+def gen_l2j_digit_liga(rows: list[GlyphRow]) -> list[str]:
+    entries = digit_entries(rows)
+    if not entries:
+        return []
+    lines = ["lookup l2j_digit_liga { # spellings with a digit, ahead of the number lookups"]
+    lines += [f"  sub {spell_latin(k)} by {g}; # {k}" for k, g in entries]
+    lines.append("} l2j_digit_liga;")
     return lines
 
 
@@ -398,7 +430,7 @@ def gen_hui_and_commas(rows: list[GlyphRow]) -> list[str]:
 # feature block
 
 
-def gen_liga_feature() -> list[str]:
+def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
     wild_repeat = lambda n: " ".join(["@area_wild"] * n)
     lines = [
         "feature liga {",
@@ -416,9 +448,13 @@ def gen_liga_feature() -> list[str]:
         "  sub plus by advance; # for music programs where space separates words per note",
         "",
         "  # special cases (hand-maintained, see edge_cases.fea)",
-        "  lookup lat_zhi4_sub;",
         "  lookup ch_dc_sub;",
         "",
+    ]
+    if digit_lookup:
+        lines += ["  # latin spellings with a digit (zhi4, xi4): before the numbers read the digit",
+                  "  lookup l2j_digit_liga;", ""]
+    lines += [
         "  # common inputs",
         "  lookup s2j_lat_ch_period_liga; # 7点6",
         "  lookup s2j_liga; # 7.6",
@@ -462,9 +498,12 @@ def gen_liga_feature() -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def gen_gsub() -> list[str]:
-    rows = load_components()
-    validate_or_raise(rows, load_char_to_glyph_name_rows())
+def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[str]:
+    """The GSUB feature file. `rows` defaults to components.csv; the Builder's
+    preview passes unsaved rows (and validate=False: it reports clashes itself)."""
+    rows = load_components() if rows is None else rows
+    if validate:
+        validate_or_raise(rows, load_char_to_glyph_name_rows())
     c2g = resolve_char_to_glyph_name(rows)
     edge_cases = config.EDGE_CASES_FEA.read_text().splitlines()
 
@@ -474,6 +513,8 @@ def gen_gsub() -> list[str]:
          "languagesystem latn dflt;", ""],
         gen_classes(rows), [""],
         edge_cases, [""],
+        # defined before the number lookups: lookups run in definition order
+        gen_l2j_digit_liga(rows), [""],
         gen_s2j_lat_ch_period_liga(),
         gen_s2j_liga(),
         gen_s2j_single(), [""],
@@ -489,7 +530,7 @@ def gen_gsub() -> list[str]:
         gen_c2j_single(rows, c2g, "traditional", "c2j_trad_single"), [""],
         gen_char_deci_liga_parts(),
         gen_hui_and_commas(rows), [""],
-        gen_liga_feature(),
+        gen_liga_feature(digit_lookup=bool(digit_entries(rows))),
     ]
     out = []
     for s in sections:

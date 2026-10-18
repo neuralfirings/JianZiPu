@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import { api, type Build } from '$lib/api';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
+  import { segments } from '$lib/cmap';
   import { SAMPLE_SETS } from '$lib/words';
 
   let builds = $state<Build[]>([]);
@@ -100,15 +101,15 @@
 
   <div class="sheets" class:two={compare}>
     <div class="sheet" class:vertical style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-      {#if !font}<p class="muted" style="font: var(--t-md) var(--font)">Load a build or a .ttf file to see the text in it.</p>{:else}{text}{/if}
+      {#if !font}<p class="muted" style="font: var(--t-md) var(--font)">Load a build or a .ttf file to see the text in it.</p>{:else}{#each segments(text, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
     </div>
     {#if compare}
       <div class="sheet" class:vertical style="font-family: {secondFont ? `'${secondFont.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-        {#if !secondFont}<p class="muted" style="font: var(--t-md) var(--font)">Pick a second font to compare.</p>{:else}{text}{/if}
+        {#if !secondFont}<p class="muted" style="font: var(--t-md) var(--font)">Pick a second font to compare.</p>{:else}{#each segments(text, secondFont.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
       </div>
     {/if}
   </div>
-  <p class="muted small">Each font is loaded into this page under a name of its own, so an installed JianZiPu never stands in for it. A character the file doesn't have is still drawn by a system font, so check new characters against a build.</p>
+  <p class="muted small">Each font is loaded into this page under a name of its own, so an installed JianZiPu never stands in for it. A character the file doesn't have is drawn by an installed font <span class="miss">in red</span>, so it can't pass for part of the font.</p>
 </div>
 
 <style>
@@ -123,4 +124,5 @@
   .sheet.vertical { writing-mode: vertical-rl; text-orientation: upright; white-space: pre; }
   .small { font-size: var(--t-xs); padding: 0 var(--s-4) var(--s-3); }
   .error { color: var(--danger); margin: 0; }
+  .miss { color: var(--danger); }
 </style>

@@ -3,7 +3,7 @@
   // (Glyph.svelte reads app.preview first). Defaults to sample words that use the glyph.
   import { api, type WordPayload } from '$lib/api';
   import { app } from '$lib/state.svelte';
-  import { anchorNames } from '$lib/shape';
+  import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from './WordCanvas.svelte';
   import { SAMPLE_SETS } from '$lib/words';
   let { glyph }: { glyph: string } = $props();
@@ -37,7 +37,7 @@
   <div class="words">
     {#each result?.words ?? [] as w (w.word)}
       <div class="word" class:uses={w.glyphs.includes(glyph)}>
-        <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })} width={Math.round(size * 0.62)} height={size} showBoxes={false} showGlyphs={true} showPage={true} page={[0, Math.max(1000, w.advance + 1000)]} fit={false} />
+        <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })} width={Math.round(size * 0.62)} height={size} showBoxes={false} showGlyphs={true} showPage={true} page={wordPage(w)} fit={false} />
         <span class="id">{w.word}</span>
       </div>
     {/each}

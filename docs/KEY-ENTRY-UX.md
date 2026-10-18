@@ -5,6 +5,10 @@ Wireframes: `docs/key-entry-ux.html` (open it in a browser; it uses no external 
 How each glyph is typed: the editable columns of `src-fonttools/inputs/components.csv`, edited on the
 Glyphs screen. It replaces the small "Typing keys" editor on the Areas screen. Design only: no code or data changed.
 
+**Implemented 2026-10-17** (Glyphs screen, `app/src/lib/typing.ts`, `POST /api/typing/preview`). Where the build
+differs from this spec: the blank decimals (md_N.blank) have one pattern, `N.` (七徽 and 七点 type md_7); the
+new-glyph prompt is a "give it a spelling →" link on the glyph editor's Typed-as line, not a first-save toast.
+
 **Revised 2026-10-17.** The first version proposed a separate **Typing** nav tab. That is superseded:
 spellings now live on the Glyphs screen (decision 1). Everything else from the first version still holds unless marked.
 

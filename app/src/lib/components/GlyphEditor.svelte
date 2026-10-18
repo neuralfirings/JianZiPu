@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as TY from '$lib/typing';
   // The glyph editor screen (docs/GLYPH-EDITOR-UX.md): glyph bar, tool rail, action bar,
   // canvas, status line, in-context strip and the side panel. Owns ⌘Z/⌘S while mounted.
   import { onMount } from 'svelte';
@@ -32,6 +33,7 @@
   function say(t: string) { toast = t; if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast = null), 4000); }
 
   let row = $derived(app.glyphs.find((g) => g.glyph === name) ?? null);
+  let typedAs = $derived(TY.TYPED.map((f) => TY.shown(app.typing, name, f).value).filter(Boolean).join(' · '));
   let areaName = $derived(isNew && area ? area : (Object.entries(app.design?.areas ?? {}).find(([, a]) => a.glyphs.includes(name))?.[0] ?? row?.areas[0] ?? null));
   let areaObj = $derived(areaName ? app.design?.areas[areaName] ?? null : null);
   let sameArea = $derived((areaObj?.glyphs ?? []).filter((g) => g !== name && app.svgs[g]).slice(0, 8));
@@ -201,7 +203,7 @@
     <a href="/glyphs?g={encodeURIComponent(name)}" class="back">← Glyphs</a>
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
-    {#if row?.common || row?.traditional}<span class="char">{row?.traditional || row?.common}</span>{/if}
+    {#if app.charOf(name)}<span class="char">{app.charOf(name)}</span>{/if}
     {#if areaName}<a class="chip" href="/areas?area={areaName}" title="Area (sets the box)">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
@@ -375,7 +377,7 @@
           <h4>Glyph</h4>
           <div class="f"><span>File</span><span class="mono small">inputs/svg/{name}.svg{#if ed.isNew} <span class="muted">(new)</span>{/if}</span></div>
           <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/areas?area={areaName}">{app.areaLabel(areaName)}</a>{/if}</span></div>
-          <div class="f"><span>Keys</span><span>{[row?.keys, row?.simplified, row?.traditional].filter(Boolean).join(' · ') || '—'} <a href="/areas?area={areaName ?? ''}&g={encodeURIComponent(name)}" class="small">edit on Areas →</a></span></div>
+          <div class="f"><span>Typed as</span><span>{typedAs || '—'} <a href="/glyphs?g={encodeURIComponent(name)}" class="small">{typedAs ? 'edit in Glyphs →' : 'give it a spelling →'}</a></span></div>
           {#if ed.isNew && areaName}<p class="muted small">Joins the area <strong>{app.areaLabel(areaName)}</strong> on the first save (a design change: save the design too).</p>{/if}
         </section>
 

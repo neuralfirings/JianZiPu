@@ -124,7 +124,8 @@ concatenated:
   be unique" above) before generating anything, so a bad CSV aborts here,
   before any lookup text is even built. Then, in order: `gen_classes()`
   builds every `@area_*` glyph class from `design.json`'s area membership;
-  the hand-written `edge_cases.fea` is spliced in verbatim; then one lookup
+  the hand-written `edge_cases.fea` is spliced in verbatim; then
+  `l2j_digit_liga` (Latin spellings that contain a digit, see below); then one lookup
   per input pathway — ASCII/decimal (`s2j_*`), latin (`l2j_*`), Chinese
   (`c2j_*`, several passes since Safari can't do single-step contextual
   ligatures — see `gen_c2j_char_deci_liga_parts()`'s docstring), the
@@ -194,7 +195,7 @@ read what's already sitting in `src-fonttools/inputs/`.
 | glyph shapes                       | Figma GLYPH pages (then `--figma_pull`), or drop SVGs in `inputs/svg/` |
 | which glyphs belong to which part  | Builder → Areas (writes `inputs/design.json`)                  |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
-| input keys / spellings             | Builder → Areas → typing keys, or `inputs/components.csv`      |
+| input keys / spellings             | Builder → Glyphs → Typing (writes `inputs/components.csv`)     |
 | Han char glyph names               | `src-fonttools/inputs/glyphRename.csv`                         |
 | disambiguation rules               | `src-fonttools/inputs/edge_cases.fea`                          |
 | metrics / naming / config          | `jzpbuild/config.py`                                           |
@@ -308,9 +309,12 @@ glyph names, so they never need rows in this file.
 Raw FEA `lookup { ... }` blocks, included verbatim into the generated
 feature file's `liga` feature. This is the one place where hand-written
 substitution logic is allowed to bypass the CSV-driven generator — reserved
-for disambiguation that the generic rules can't express, e.g. `z h i 4`
-normally ligates greedily as `zhi` + `four`, but `lat_zhi4_sub` special-cases
-it to `md_zhi4` first. Keep this file small; anything expressible as a
+for disambiguation that the generic rules can't express (today only
+`ch_dc_sub`). Latin spellings with a digit in them (`zhi4`, `xi4`, `fu4`) used
+to need a hand rule here, since the number lookups read the `4` first; they
+are now generated (`features.py::gen_l2j_digit_liga`, one lookup defined
+before the number lookups: OpenType runs lookups in the order they are
+*defined*, not the order a feature lists them). Keep this file small; anything expressible as a
 CSV row (a new spelling, a new area membership) belongs there instead, since
 CSV-driven rules get maintained (reordered, regenerated) automatically while
 hand-written FEA does not.
@@ -375,7 +379,7 @@ identity/metrics change or a new right-hand technique family is added to
 
 Two worked examples of adding new content. Both follow the same shape: get
 the SVG into `src-fonttools/inputs/svg/`, add the glyph to an area and give
-it typing keys in the Builder (Areas screen), rebuild. Neither needs a
+it spellings in the Builder (Glyphs → Typing), rebuild. Neither needs a
 code change: a new *member* of an existing area is positionable everywhere
 that area already appears. New word types, parts and spacing rules are
 edited in the Builder's Layouts screen (Advanced toggle for structure).
@@ -392,7 +396,10 @@ underlying mechanism explains what "conflict" means here:
 
 - **Any spelling key** (`latin`, `latin_alt`, `common`, `simplified`,
   `traditional`) in `components.csv` must not already be used by another
-  row, *anywhere in the file* — not just within the same column.
+  row: Latin Entry, Latin Entry (Alt) and alphabetic Number/Symbol values
+  share one namespace, 简体 and 繁體 each have their own. The Builder checks
+  this as you type and holds Save until a clash is fixed
+  (`typing_preview.issues()`, the same check `PUT /api/glyphs` runs).
   `latin_entries()`/`chinese_entries()` in `features.py` resolve raw
   collisions with a "non-`char`-only row wins" preference rule; the
   validator now catches any collision that isn't the known
@@ -432,8 +439,8 @@ underlying mechanism explains what "conflict" means here:
 1. Export the glyph as `inputs/svg/md_<name>.svg` (a 350×350 box, like the
    other `md_*` glyphs).
 2. Builder → Areas → **Character** (`char`) → **Add glyphs** → pick it.
-   Select it and fill in its typing keys (`key`, `简`, `繁`, …); those go
-   straight to `components.csv`.
+   Then Glyphs → select it → fill in its spellings (Latin Entry, 简体, 繁體,
+   …) in the inspector or the Typing table; Save writes `components.csv`.
 3. **Save**, then Test & Build → **Build font**. Type `:<key>` in the test
    box: the live preview shows it as a row of a vertical word before the
    build finishes; the built font afterwards.
@@ -513,7 +520,9 @@ python3 -m jzpbuild.devserver --port 9000
 | `POST /api/design/check` | validate + stats for an unsaved design (the app calls this after every edit) |
 | `POST /api/resolve` | `{design?, layout, choice, pinned?, center?}` → positions of one word shape; `choice` is per slot `null` / alternative index / list per row |
 | `POST /api/words` | `{design?, words}` → each typed word shaped through GSUB (HarfBuzz on the last built font) and positioned by the unsaved design — the live preview |
-| `GET/PUT /api/glyphs` | the `components.csv` catalog merged with SVG presence and area membership; PUT rewrites the CSV |
+| `GET /api/glyphs` | every glyph (SVGs + CSV rows) with its spellings, areas and SVG, plus the CSV's row order and content hash |
+| `PUT /api/glyphs` | `{rows, base_hash, design}` → checks the spellings (400 with `errors` on a clash or invalid spelling), rewrites `components.csv` keeping its row order and dropping empty rows; 409 if the file changed since `base_hash` |
+| `POST /api/typing/preview` | `{design, rows, words, base_rows?, compare_words?, roundtrip?}` → GSUB from the *unsaved* spellings compiled into a copy of the last build (≈0.5 s, cached): each word's glyphs, `issues`, a round trip of every spelling, `changed` sample words vs `base_rows`, `not_built` glyphs and `missing_chars` |
 | `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
 | `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
@@ -528,12 +537,16 @@ npm run dev      # Vite dev server on :5173, proxies /api etc. to the Python ser
 npm run build    # writes app/build/, which the Python server then serves at /
 ```
 
-Screens: **Glyphs** (every SVG on disk, grouped, with the unassigned ones
-called out; the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
+Screens: **Glyphs** (every SVG on disk, grouped by area, with the
+unassigned ones called out; a **Tiles | Typing** switch, where Typing is a
+spreadsheet of every glyph's spellings — the `components.csv` columns —
+with paste-a-range, CSV import/export, clash checks as you type, and an
+inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
+the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
 edits outlines on a Paper.js canvas, imports SVGs, traces images with
 potrace, and writes the file through `PUT /api/svg/<name>`; see
 `docs/GLYPH-EDITOR-UX.md`), **Areas** (members, box
-size, typing keys), **Layouts** (word types; eight dockable, foldable,
+size; spellings shown read-only, edited in Glyphs), **Layouts** (word types; eight dockable, foldable,
 resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
 Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
 rule editor with live canvas preview), Centering; a live test strip;
@@ -542,9 +555,9 @@ the built font, sample sets, Build button with log; each build is a
 separate file in a temp folder with Download and Open in Tester), **Tester**
 (type anything in one exact TTF: a build from this session or a `.ttf`
 opened from disk, loaded under its own font name so an installed JianZiPu
-never stands in; characters the file lacks still fall back to a system font; optional second font side by side). Edits are held in the
-browser until **Save (⌘S)**; Save refuses to clobber a `design.json` that
-changed on disk. **⋯ → Import/Export** moves the whole design as one JSON
+never stands in; characters the file lacks are drawn in red by a system font; optional second font side by side). Edits are held in the
+browser until **Save (⌘S)**, which writes `design.json` and/or `components.csv`; Save refuses to clobber a file that
+changed on disk, and waits while a spelling clashes. **⋯ → Import/Export** moves the whole design as one JSON
 file. `.claude/launch.json` has a `builder` entry that starts the server.
 
 ## Helpful Tools
@@ -595,9 +608,12 @@ quirks, see `docs/ROADMAP.md`).
   `src-fontforge/input/figma.css`, hand-maintained `src-fontforge/input/fontForgeFeatures.fea`,
   and the wide `src-fontforge/input/*.csv` files) is deprecated and kept only for
   reference. The builder's slimmed CSVs (`src-fonttools/inputs/components.csv`,
-  `src-fonttools/inputs/glyphRename.csv`) are the live sources of truth: dead columns
-  (ID/keys/filename/area_hui_deci/pinyin, identity ASCII rename rows) were
-  dropped, and the per-glyph exceptions that used to be Python constants in
-  `features.py` now live in the CSV (md_8/md_9 tagged `area_string`, md_jiu
-  tagged `area_char`, and a `vert_variant` column pairing left-aligned
-  glyphs with their centered vert-mode variants).
+  `src-fonttools/inputs/glyphRename.csv`) are the live sources of truth.
+  `components.csv` is now `glyph_name,vert_variant,common,latin,latin_alt,
+  simplified,traditional,pinyin`: `glyph_name` is the ID (the old
+  ID/keys/filename columns duplicated it and were dropped), area membership
+  lives in `design.json`, `pinyin` is reference only (the build doesn't read
+  it), and `vert_variant` pairs a left-aligned glyph with its centered
+  vert-mode form. A vertical form needs no row of its own: it is typed with
+  its partner's spellings after a colon, and only spellings of its own
+  (`md_san2`'s `san`) are stored for it.
