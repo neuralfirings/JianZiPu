@@ -15,27 +15,36 @@ API (all JSON):
   GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
   PUT  /api/glyphs                 {rows:[...]} -> rewrite components.csv
   GET  /api/svgs                   {name: svg text}
-  POST /api/build                  start a build (one at a time)
-  GET  /api/build/status           {state, log, started, finished, ok}
-  GET  /JianZiPu.ttf               the last build (cache-busted by the client)
+  POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
+  PUT  /api/svg/<name>             {svg, base_hash?, overwrite?} -> write inputs/svg/<name>.svg; 409 when the file
+                                   exists (no base_hash) or changed on disk since it was loaded (hash mismatch)
+  POST /api/build                  start a build (one at a time); each build goes to its own temp dir
+  GET  /api/build/status           {state, log, started, finished, ok, build, builds}
+  GET  /api/builds/<id>/JianZiPu.ttf   that exact build (?download=1 sets Content-Disposition)
+  GET  /JianZiPu.ttf               the latest build (cache-busted by the client)
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import atexit
+import signal
 import hashlib
 import io
 import json
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from . import config, data
+from . import config, data, glyphs
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -110,7 +119,7 @@ class WordShaper:
 
     def glyph_runs(self, words: list[str]) -> list[list[str]] | None:
         import uharfbuzz as hb
-        path = config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else config.CURRENT_FONT
+        path = BUILD.latest or (config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else config.CURRENT_FONT)
         mtime = path.stat().st_mtime
         if self._font is None or self._font_mtime != mtime:
             self._font = hb.Font(hb.Face(hb.Blob.from_file_path(str(path))))
@@ -191,12 +200,22 @@ def words_payload(design: schema.Design, words: list[str]) -> dict:
 # ---------------------------------------------------------------- build runner
 
 class BuildRunner:
+    """Runs `python3 -m jzpbuild` one at a time. Every build writes its own JianZiPu.ttf into a
+    fresh temporary directory (never the repo), and the last few builds stay available for
+    download and for the Tester at /api/builds/<id>/JianZiPu.ttf."""
+
+    KEEP = 8
+
     def __init__(self):
         self.lock = threading.Lock()
         self.state = "idle"
         self.log: list[str] = []
         self.started = self.finished = None
         self.ok = None
+        self.builds: list[dict] = []        # newest last: {id, path, time, bytes, ok, seconds}
+        self._seq = 0
+        self._current: Path | None = None
+        atexit.register(self.cleanup)
 
     def start(self) -> bool:
         with self.lock:
@@ -204,28 +223,94 @@ class BuildRunner:
                 return False
             self.state, self.log, self.ok = "running", [], None
             self.started, self.finished = time.time(), None
+            self._seq += 1
+            self._current = Path(tempfile.mkdtemp(prefix=f"jzp-build-{self._seq}-")) / "JianZiPu.ttf"
         threading.Thread(target=self._run, daemon=True).start()
         return True
 
     def _run(self):
-        cmd = [sys.executable, "-m", "jzpbuild", "--fea-out", ""]
+        out = self._current
+        cmd = [sys.executable, "-m", "jzpbuild", "-o", str(out), "--fea-out", ""]
         proc = subprocess.Popen(cmd, cwd=str(config.BUILDER_DIR), stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, text=True)
         for line in proc.stdout:
             self.log.append(line.rstrip("\n"))
         rc = proc.wait()
         with self.lock:
-            self.ok = rc == 0
+            self.ok = rc == 0 and out.exists()
             self.state = "done"
             self.finished = time.time()
+            if self.ok:
+                self.register(out, seconds=self.finished - self.started)
+
+    def register(self, path: Path, seconds: float | None = None) -> dict:
+        """Keep a finished font: list it, prune old ones."""
+        b = {"id": f"b{self._seq}", "path": path, "time": time.time(), "bytes": path.stat().st_size,
+             "ok": True, "seconds": seconds}
+        self.builds.append(b)
+        for old in self.builds[:-self.KEEP]:
+            shutil.rmtree(old["path"].parent, ignore_errors=True)
+        self.builds = self.builds[-self.KEEP:]
+        return b
+
+    def get(self, build_id: str) -> dict | None:
+        return next((b for b in self.builds if b["id"] == build_id), None)
+
+    @property
+    def latest(self) -> Path | None:
+        return self.builds[-1]["path"] if self.builds else None
+
+    def cleanup(self):
+        for b in self.builds:
+            shutil.rmtree(b["path"].parent, ignore_errors=True)
+        self.builds = []
+
+    def public(self, b: dict) -> dict:
+        return {"id": b["id"], "time": b["time"], "bytes": b["bytes"], "ok": b["ok"], "seconds": b["seconds"],
+                "url": f"/api/builds/{b['id']}/JianZiPu.ttf", "file": str(b["path"])}
 
     def status(self) -> dict:
+        latest = self.builds[-1] if self.builds else None
         return {"state": self.state, "log": self.log, "started": self.started, "finished": self.finished,
-                "ok": self.ok, "font_exists": config.OUTPUT_FONT.exists(),
-                "font_mtime": config.OUTPUT_FONT.stat().st_mtime if config.OUTPUT_FONT.exists() else None}
+                "ok": self.ok, "font_exists": latest is not None,
+                "font_mtime": latest["time"] if latest else None,
+                "build": self.public(latest) if latest else None,
+                "builds": [self.public(b) for b in reversed(self.builds)]}
 
 
 BUILD = BuildRunner()
+
+
+# ---------------------------------------------------------------- glyph SVG files
+
+SVG_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+
+
+def svg_path_for(name: str) -> Path:
+    if not SVG_NAME.match(name) or name.endswith("."):
+        raise ValueError("glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou")
+    return config.COMPONENTS_DIR / f"{name}.svg"
+
+
+class SvgConflict(Exception):
+    pass
+
+
+def write_svg(name: str, svg_text: str, overwrite: bool, base_hash: str | None = None) -> dict:
+    """Write one glyph file. A new file needs `overwrite` to be false and no file on disk; an
+    existing file is replaced only when `base_hash` matches what is on disk (or `overwrite`)."""
+    path = svg_path_for(name)
+    existed = path.exists()
+    if existed and not overwrite:
+        if base_hash is None:
+            raise FileExistsError(f"{path.name} already exists")
+        if _hash(path.read_text(encoding="utf-8")) != base_hash:
+            raise SvgConflict(f"{path.name} changed on disk since it was loaded")
+    info = glyphs.flatten_svg_text(svg_text)       # validates: raises on anything the build can't use
+    path.write_text(svg_text if svg_text.endswith("\n") else svg_text + "\n", encoding="utf-8")
+    return {"ok": True, "name": name, "file": f"inputs/svg/{path.name}", "bytes": len(svg_text.encode("utf-8")),
+            "existed": existed, "hash": _hash(path.read_text(encoding="utf-8")),
+            **{k: v for k, v in info.items() if k != "d"}}
 
 
 # ---------------------------------------------------------------- glyph catalog
@@ -281,6 +366,17 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _font(self, path: Path, attachment: bool = False):
+        body = path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "font/ttf")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        if attachment:
+            self.send_header("Content-Disposition", 'attachment; filename="JianZiPu.ttf"')
+        self.end_headers()
+        self.wfile.write(body)
+
     def _body(self) -> dict:
         n = int(self.headers.get("Content-Length") or 0)
         return json.loads(self.rfile.read(n).decode("utf-8")) if n else {}
@@ -321,12 +417,22 @@ class Handler(SimpleHTTPRequestHandler):
                                    for p in sorted(config.COMPONENTS_DIR.glob("*.svg"))})
             if path == "/api/build/status":
                 return self._json(BUILD.status())
+            m = re.match(r"^/api/builds/([A-Za-z0-9]+)/JianZiPu\.ttf$", path)
+            if m:
+                b = BUILD.get(m.group(1))
+                if not b or not b["path"].exists():
+                    return self._json({"ok": False, "error": f"no build {m.group(1)} (builds live only while this server runs)"}, 404)
+                return self._font(b["path"], attachment="download=1" in (urlparse(self.path).query or ""))
             if path.startswith("/api/"):
                 return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
         except Exception as err:  # noqa: BLE001
             return self._json({"ok": False, "error": str(err)}, 500)
-        if path == "/JianZiPu.ttf" or path.startswith("/inputs/") or path.startswith("/tests/") \
-                or path.startswith("/tools/") or path.startswith("/app/"):
+        if path == "/JianZiPu.ttf":
+            font = BUILD.latest or (config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None)
+            if font is None:
+                return self._json({"ok": False, "error": "no build yet"}, 404)
+            return self._font(font)
+        if path.startswith("/inputs/") or path.startswith("/tests/") or path.startswith("/tools/") or path.startswith("/app/"):
             return super().do_GET()
         if self._serve_app(path):
             return
@@ -348,6 +454,11 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/words":
                 design = _design_from(body)
                 return self._json(words_payload(design, list(body.get("words", []))))
+            if path == "/api/svg/check":
+                try:
+                    return self._json({"ok": True, **glyphs.flatten_svg_text(body["svg"])})
+                except Exception as err:  # noqa: BLE001 — anything the build would choke on
+                    return self._json({"ok": False, "error": str(err)})
             if path == "/api/build":
                 started = BUILD.start()
                 return self._json({"ok": started, "status": BUILD.status(),
@@ -376,6 +487,17 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/glyphs":
                 n = write_glyph_rows(body["rows"])
                 return self._json({"ok": True, "rows": n})
+            if path.startswith("/api/svg/"):
+                name = path[len("/api/svg/"):]
+                try:
+                    return self._json(write_svg(name, body["svg"], bool(body.get("overwrite")), body.get("base_hash")))
+                except FileExistsError as err:
+                    return self._json({"ok": False, "error": str(err), "exists": True}, 409)
+                except SvgConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True,
+                                       "disk": svg_path_for(name).read_text(encoding="utf-8")}, 409)
+                except Exception as err:  # noqa: BLE001
+                    return self._json({"ok": False, "error": str(err)}, 400)
             return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
         except schema.DesignError as err:
             return self._json({"ok": False, "error": str(err)}, 400)
@@ -391,10 +513,15 @@ def main(argv=None):
     srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"JZP Font Builder: http://127.0.0.1:{args.port}/  "
           f"(app: {'built' if APP_BUILD_DIR.exists() else 'not built -- run npm run build in app/, or npm run dev'})")
+    # A plain `kill` (or a launcher stopping the server) skips atexit; turn it into a normal
+    # exit so the temp build folders are removed either way.
+    signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        BUILD.cleanup()
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ hand-edited feature files.
    ```bash
    cd src-fonttools
    pip install -e .          # fonttools, picosvg, requests, skia-pathops
-   pip install -e '.[test]'  # + uharfbuzz, pytest — needed for tests/test_shaping.py
+   pip install -e '.[test]'  # + pytest (uharfbuzz is a main dependency: the dev server shapes test words with it)
    ```
 3. **Base font.** The pipeline subsets glyphs from a base Kai typeface, and
    expects it at `src-fonttools/src_font/TW-Kai-98.ttf`. This file is **gitignored
@@ -498,7 +498,7 @@ unless the classic path is revived.
 `jzpbuild/devserver.py` is a stdlib-only local HTTP server (no extra
 dependency). It serves the built Builder app (`app/build/`, SPA fallback)
 at `/`, `src-fonttools/` as static files (`/inputs/svg/...`, `/tools/...`,
-`/JianZiPu.ttf`), and the JSON API the app uses:
+`/JianZiPu.ttf`, which is the latest UI build when there is one), and the JSON API the app uses:
 
 ```bash
 cd src-fonttools
@@ -514,8 +514,11 @@ python3 -m jzpbuild.devserver --port 9000
 | `POST /api/resolve` | `{design?, layout, choice, pinned?, center?}` → positions of one word shape; `choice` is per slot `null` / alternative index / list per row |
 | `POST /api/words` | `{design?, words}` → each typed word shaped through GSUB (HarfBuzz on the last built font) and positioned by the unsaved design — the live preview |
 | `GET/PUT /api/glyphs` | the `components.csv` catalog merged with SVG presence and area membership; PUT rewrites the CSV |
+| `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
+| `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
-| `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild` (one at a time) and poll its log |
+| `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the session's builds (`build` = latest, `builds` = newest first, last 8 kept) |
+| `GET /api/builds/<id>/JianZiPu.ttf` | that exact build; `?download=1` sends it as an attachment. Build folders live in the system temp dir and are removed when the server stops |
 
 The app itself lives in `app/` (SvelteKit 2 + Svelte 5, static build):
 
@@ -526,20 +529,28 @@ npm run build    # writes app/build/, which the Python server then serves at /
 ```
 
 Screens: **Glyphs** (every SVG on disk, grouped, with the unassigned ones
-called out; SVG upload/edit are placeholders), **Areas** (members, box
+called out; the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
+edits outlines on a Paper.js canvas, imports SVGs, traces images with
+potrace, and writes the file through `PUT /api/svg/<name>`; see
+`docs/GLYPH-EDITOR-UX.md`), **Areas** (members, box
 size, typing keys), **Layouts** (word types; eight dockable, foldable,
 resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
 Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
 rule editor with live canvas preview), Centering; a live test strip;
 Advanced toggle for structural edits), **Test & Build** (live preview vs
-the built font, sample sets, Build button with log). Edits are held in the
+the built font, sample sets, Build button with log; each build is a
+separate file in a temp folder with Download and Open in Tester), **Tester**
+(type anything in one exact TTF: a build from this session or a `.ttf`
+opened from disk, loaded under its own font name so an installed JianZiPu
+never stands in; characters the file lacks still fall back to a system font; optional second font side by side). Edits are held in the
 browser until **Save (⌘S)**; Save refuses to clobber a `design.json` that
 changed on disk. **⋯ → Import/Export** moves the whole design as one JSON
 file. `.claude/launch.json` has a `builder` entry that starts the server.
 
 ## Helpful Tools
 
-`tools/font_tester.html` — works with **no server at all** (open directly
+The Builder's **Tester** screen (`/tester`) is the same idea inside the app,
+tied to the builds of the running server. `tools/font_tester.html` — works with **no server at all** (open directly
 with a plain `file://` double-click) since it only reads a built `.ttf`.
 Points at `../JianZiPu.ttf` by default; a "Load / reload font" button
 cache-busts with a timestamp so it always picks up your latest build.
@@ -553,7 +564,9 @@ a side-by-side of the live preview and the built font.
 
 ```bash
 python3 tests/test_positioning.py                  # unit tests for positioning/ (no pytest needed)
-pytest tests/test_positioning.py tests/test_shaping.py
+python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_devserver.py   # all unit tests: positioning, SVG flattening, SVG endpoints
+python3 -m pytest tests/test_shaping.py            # shaping regression against the golden font (needs a build)
+(cd ../app && npm test)                            # Vitest: rules, shapes, gap helpers, panels store, glyph editor scene / ops / tools
 python3 tests/test_shaping.py NEW.ttf              # compare an existing NEW.ttf vs tests/JianZiPu.ttf (golden)
 python3 tests/test_shaping.py OLD.ttf NEW.ttf      # or compare two specific fonts directly
 python3 -m jzpbuild --classic_pos -o /tmp/classic.ttf --fea-out "" && python3 -m jzpbuild -o /tmp/cursive.ttf --fea-out ""

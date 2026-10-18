@@ -31,7 +31,8 @@ cd src-fonttools && python3 -m jzpbuild --fea-only  # regenerate feature file on
 cd src-fonttools && python3 -m jzpbuild -o /path/to/JianZiPu.ttf  # write the font somewhere else
 cd src-fonttools && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
 cd src-fonttools && python3 -m jzpbuild --classic_pos  # legacy positioning from inputs/layouts.json + gpos.py (parity only)
-cd src-fonttools && python3 tests/test_positioning.py  # unit tests for the positioning model
+cd src-fonttools && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_devserver.py  # unit tests (positioning model, SVG flattening, SVG endpoints)
+cd app && npm test                    # Vitest unit tests (rules, shapes, gaps, panels store, glyph editor scene/ops/tools)
 cd src-fonttools && python3 -m jzpbuild.devserver      # API + Builder app at http://127.0.0.1:5713/
 cd app && npm install && npm run build                 # build the Builder app (served by the devserver); npm run dev for HMR on :5173
 ```
@@ -53,6 +54,10 @@ fallback): `src-fontforge/` — `scripts/scripts.cjs` (--compile /
 FontForge, the `.sfd` sources and the hand-maintained `input/` files. See
 src-fonttools/README.md for the current architecture.
 
+Run both test suites after any code change (`npm test` in `app/`, `python3 -m pytest tests` in
+`src-fonttools/`; `tests/test_shaping.py` additionally needs a freshly built font and compares it
+with the golden).
+
 ## Architecture
 
 ### Repo layout
@@ -60,7 +65,7 @@ src-fonttools/README.md for the current architecture.
 - **`src-fonttools/`** — the font build pipeline (below). `README.md` there is the detailed reference.
 - **`src-fonttools/jzpbuild/positioning/`** — the positioning model: `schema.py` (design file) → `shapes.py` (word shapes) → `resolve.py` (x/y) → `emit.py` (cursive-attachment GPOS). `tests/test_positioning.py` covers it.
 - **`src-fonttools/jzpbuild/devserver.py`** — stdlib HTTP server: JSON API (`/api/design`, `/api/resolve`, `/api/words`, `/api/glyphs`, `/api/build`…) plus the built app at `/`.
-- **`app/`** — the JZP Font Builder (SvelteKit 2 / Svelte 5, static build, no backend of its own). Screens: Glyphs, Areas, Layouts (canvas + Structure/Spacing/Centering), Test & Build; Import/Export of `design.json`. Edits stay in the browser until Save; Save checks the on-disk hash.
+- **`app/`** — the JZP Font Builder (SvelteKit 2 / Svelte 5, static build, no backend of its own). Screens: Glyphs (+ the glyph editor at `/glyphs/<name>/edit` and `/glyphs/new`: Paper.js canvas, paperjs-offset for thicken/outline, esm-potrace-wasm for tracing; writes `inputs/svg/<name>.svg` via `PUT /api/svg/<name>`), Areas, Layouts (canvas + dockable panels: Structure/Spacing/Centering…), Test & Build (each build goes to its own temp dir, served at `/api/builds/<id>/JianZiPu.ttf`, downloadable), Tester (`/tester`: one exact TTF loaded via FontFace under its own family, from a build or a local file); Import/Export of `design.json`. Design edits stay in the browser until Save (hash-checked); glyph files save from the editor at once.
 - **`src-fontforge/`** — legacy FontForge pipeline plus the old demo page (`demo/index.html`).
 - **`mockups/`** — lo-fi wireframes for the web editor roles; `docs/BUILDER-UX.md` is the UX spec the app follows (written against the previous data model; the app maps its Areas/Layouts screens onto `design.json`).
 - `package.json`'s Parcel targets (`web/`, `dist/`) still point at a `src/` folder that was renamed to `src-fontforge/`; `npm run dev`/`build` are broken until that's re-pointed.

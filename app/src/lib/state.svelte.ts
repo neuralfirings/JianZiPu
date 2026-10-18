@@ -27,6 +27,8 @@ class DesignState {
 
   glyphs = $state<GlyphRow[]>([]);
   svgs = $state<Record<string, string>>({});
+  /** Unsaved outlines from the glyph editor, shown in place of the file wherever glyphs render. */
+  preview = $state<Record<string, string>>({});
 
   get dirty() {
     return this.design !== null && JSON.stringify(this.design) !== this.savedJson;

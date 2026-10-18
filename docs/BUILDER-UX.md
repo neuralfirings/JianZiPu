@@ -29,7 +29,7 @@ drag-to-set-gap, exception list, typing-order list and budget badge are kept.
 
 | Section | Question it answers | Writes |
 |---|---|---|
-| **Glyphs** | What shapes exist on disk? Which are unused? | nothing (future: SVG upload/edit) |
+| **Glyphs** | What shapes exist on disk? Which are unused? | the glyph editor (`/glyphs/<name>/edit`, `/glyphs/new`): outlines, imports, traces |
 | **Areas** | Which glyphs can stand in which part of a word, and how are they typed? | `components.csv` |
 | **Layouts** | How are parts stacked and spaced for each word type? | `layouts_data.json` |
 | **Test & Build** | Does it look right in real words, in the real font? | `JianZiPu.ttf` (build output) |
@@ -93,10 +93,23 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
   ~222 items; render progressively, don't block on all).
 - Error: `inputs/svg/` unreadable → full-panel notice "Can't read inputs/svg/ — is the dev
   server running from src-fonttools/?" with a Retry button.
-- Future controls (`Upload SVG`, `Edit design`, `Replace SVG`): rendered at 45 % opacity, a
-  small lock glyph and the word "soon" inside the button, `aria-disabled`, tooltip
-  "Coming soon — glyph upload and editing will live here." They keep their place in the
-  layout so the screen does not reflow when they ship.
+- **Glyph editor (built 2026-10-17, design in `docs/GLYPH-EDITOR-UX.md` /
+  `glyph-editor-ux.html`).** Every tile has an **Edit** button (hover / selected; double-click or
+  Enter also opens it); the inspector has **Edit outline**, **Replace from file…** and **Trace from
+  image…**; the toolbar has **+ New glyph** (name, area = box, start from blank / SVG / image) and the
+  font-wide **Reference weight** (`design.json` → `glyph_weight`, units; today's glyphs sit around
+  28–45). The editor takes over the main window as a route and keeps the app header; the glyph has its
+  own undo and **Save glyph** (⌘S, writes `inputs/svg/<name>.svg` at once, hash-checked, conflict
+  dialog); the header's Save reads "Save design" there. One pointer tool (a selected shape shows its
+  points), Pen, Pencil, Rectangle, Ellipse, Hand, Zoom. Open paths are lines at the reference weight and
+  are outlined on save. Combine ∪ − ∩ ⊕ (hover previews), Simplify and Thicken popovers with live
+  preview, Outline line, Clean up, flips, numeric position / size / scale / rotate. Compare overlays in
+  translucent blue: reference dot (D), another glyph (G, same-area chips), last saved (L). Import SVG
+  (file, drop, paste) with fit / keep-size and replace / add; trace JPG / PNG with potrace (threshold +
+  Auto, specks, corners, simplify, light-on-dark, placement). In-context strip renders the unsaved outline
+  in real words. Checks: empty, outside the box, open lines, specks, "as built" flatten. Leave guard on
+  every way out; a browser draft per glyph survives reloads. New glyphs join their area on first save
+  (a design change).
 
 ### 2.2 Areas
 
@@ -207,8 +220,9 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Two render modes, same word list, same size slider. "Built font" loads the TTF via
-  `FontFace` with cache-busting (what `font_tester.html` does); "Live preview" draws
+- Two render modes, same word list, same size slider. "Built font" loads the latest build's
+  exact file (`/api/builds/<id>/JianZiPu.ttf`) via `FontFace` under a family name of its own
+  (`JZP-build-b3`), with no fallback family, so an installed JianZiPu can never stand in; "Live preview" draws
   boxes/glyphs from the resolver (what the Layouts strip does). "Compare both" renders each
   word twice, side by side, so a drift between preview and font is visible.
 - **Build font** is the one long action in the app. States: idle → running (progress steps as
@@ -217,6 +231,13 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
   limit 64 KB). Remove some ‘depends on glyph’ rows in Standard word." then the raw log).
   Build does not require saving first; it builds from the saved files and says so. If there
   are unsaved changes, the button reads "Save & build".
+- Every build writes to its own temp folder. A row under the toolbar shows the latest one
+  (id, size, time) with **Download JianZiPu.ttf** and **Open in Tester ↗**; "N earlier builds"
+  folds out the rest of the session's builds (last 8 kept, removed when the server stops).
+- **Tester** (`/tester?build=<id>`, in the nav): free text in one exact font, picked from this
+  session's builds or opened from a `.ttf` on disk, with size, liga/kern switches, vertical
+  columns, sample sets and an optional second font beside it. The chip names the file that is
+  rendering.
 - Sample sets are the groups in `font_tester.html`; "My set" is stored in the app's local
   draft and included in export.
 - Phone-usable (this is the only section that needs to be).
@@ -672,6 +693,6 @@ Each step ships usable; acceptance = what the font author can do without reading
    *Accept:* export, change a gap, import with "Pick per item", keep only the area changes;
    reorder is impossible with Advanced off.
 
-Deferred (visible as soon-buttons or absent by design): SVG upload/edit/trace, Pyodide
+Deferred (absent by design): Pyodide
 in-browser resolve (the dev server is local, so latency is not a problem here), multi-user
 anything.

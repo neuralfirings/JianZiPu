@@ -12,6 +12,11 @@ Decided 2026-10-12. Wireframes: `mockups/lofi-wireframes.html` (9 frames).
 | First end-to-end slice | **Local-first Builder** (done 2026-10-15): the SvelteKit app in `app/` served by the Python dev server, reading/writing repo files directly. Logins, proposals and hosting come later. |
 | Front end | SvelteKit. |
 | Roles | Calligrapher, Layout Manager, Requester (implicitly every signed-in user), Admin. One person can hold several. Roles are entry points, not separate logins. |
+| Sign-up (2026-10-17) | Open: anyone can sign up and is a Requester. Contributor roles are granted by an admin. |
+| Review (2026-10-17) | Every proposal goes through admin approval; there may be several admins later. No self-merge. |
+| Repo visibility | Public (`neuralfirings/JianZiPu`): Actions minutes and preview hosting are free. |
+| Hosting (2026-10-17) | TBD, leaning towards a separate site from guqintabs.com. |
+| Runtime (2026-10-17) | Stay on Python, no Node migration. The hosted app is static; positioning runs in the browser via Pyodide (the `positioning/` package is pure stdlib); the font builds in GitHub Actions; only the GitHub glue (commit to a proposal branch, open / merge the PR) is TypeScript, in Supabase Edge Functions. Typed-word preview needs harfbuzzjs in the browser instead of uharfbuzz. |
 | Proposal state machine | draft → submitted → in review → approved → merged. Reject returns to draft (work is kept). Build failure does not un-approve: the proposal stays approved with a failed-build badge and an admin can retry. |
 
 ## Answers to the wireframe's open questions
@@ -71,6 +76,7 @@ proposal detail page — as in the original plan, on top of the local app.
 
 - Glyph library (frame 3) over `inputs/svg/` + `components.csv`.
 - Glyph editor (frame 4): upload SVG, trace from image (client-side, e.g. a Potrace port), path editing, "in context" preview. Saves land in the same proposal model (SVG + `components.csv` row changes on the branch).
+  **Local-first version done 2026-10-17** (`app/src/lib/glyphed/`, `docs/GLYPH-EDITOR-UX.md`): Paper.js editing, SVG import, potrace tracing, compare overlays, in-context strip, direct save to `inputs/svg/`. The proposal model is the hosted part that remains.
 
 ### Phase 3: Requester slice and Admin
 

@@ -1,8 +1,13 @@
 <script lang="ts">
   import { app } from '$lib/state.svelte';
   import Glyph from '$lib/components/Glyph.svelte';
-  import Soon from '$lib/components/Soon.svelte';
+  import NewGlyphDialog from '$lib/components/NewGlyphDialog.svelte';
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { DEFAULT_WEIGHT } from '$lib/glyphed/editor.svelte';
+  let newDialog = $state(false);
+  const editUrl = (g: string, from?: string) => `/glyphs/${encodeURIComponent(g)}/edit${from ? `?from=${from}` : ''}`;
+  function setWeight(v: number) { if (v > 0) app.edit(`Reference stroke weight ${Math.round(v)}`, (d) => { d.glyph_weight = Math.round(v); }); }
 
   let q = $state('');
   let group = $state('all');
@@ -48,7 +53,10 @@
     <input type="text" placeholder="Search  gou · k · 勾 · pinyin" bind:value={q} style="width: 260px" />
     <label><input type="checkbox" bind:checked={unassignedOnly} /> Unassigned only</label>
     <span class="spacer"></span>
-    <Soon label="Upload SVG" hint="Coming soon — glyph upload will live here. For now, drop files in src-fonttools/inputs/svg/." />
+    <label class="weight" title="The stroke thickness every glyph should sit around, in units (= font units). The editor's compare dot and new lines use it. Match the body of main strokes, not the tapers.">
+      Reference weight <input type="number" min="1" max="200" value={app.design?.glyph_weight ?? DEFAULT_WEIGHT} onchange={(e) => setWeight(+(e.target as HTMLInputElement).value)} /> <span class="muted">units</span>
+    </label>
+    <button class="primary" onclick={() => (newDialog = true)}>+ New glyph</button>
   </div>
   <div class="body">
     <aside class="groups">
@@ -66,15 +74,19 @@
       {/if}
       <div class="grid">
         {#each shown as r (r.glyph)}
-          <button class="tile" class:on={selected === r.glyph} class:unassigned={r.areas.length === 0} onclick={() => (selected = r.glyph)}>
+          <div class="tile" class:on={selected === r.glyph} class:unassigned={r.areas.length === 0} role="button" tabindex="0"
+            onclick={() => (selected = r.glyph)} ondblclick={() => goto(editUrl(r.glyph))}
+            onkeydown={(e) => { if (e.key === 'Enter') goto(editUrl(r.glyph)); }}>
             <div class="art"><Glyph name={r.glyph} size={72} /></div>
             <div class="name">{r.glyph}</div>
             <div class="sub muted">{r.areas.length ? `${keysOf(r) || '—'} · ${r.areas.join(', ')}` : 'no area yet'}</div>
-          </button>
+            <a class="edit" href={editUrl(r.glyph)} title="Edit the outline" onclick={(e) => e.stopPropagation()}>Edit</a>
+          </div>
         {/each}
       </div>
     </section>
   </div>
+  {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? ''} />{/if}
   {#if sel}
     <section class="inspector">
       <div class="big"><Glyph name={sel.glyph} size={120} /></div>
@@ -91,9 +103,9 @@
         <div><span class="k">Box</span> {#if sel.areas[0]}{app.design!.areas[sel.areas[0]].size.join(' × ')} <span class="muted">(from area "{sel.areas[0]}")</span>{:else}<span class="muted">set by the area it joins</span>{/if}</div>
         <div><span class="k">File</span> {#if sel.svg}inputs/svg/{sel.glyph}.svg{#if svgInfo} · {svgInfo.paths} paths · {svgInfo.kb} KB{/if}{:else}<span class="muted">none</span>{/if}</div>
         <div class="row" style="margin-top: var(--s-2)">
-          <Soon label="Edit design" hint="Coming soon — edit the glyph outline in the browser." />
-          <Soon label="Replace SVG" hint="Coming soon — upload a new SVG for this glyph." />
-          <Soon label="Trace from image" hint="Coming soon." />
+          <a href={editUrl(sel.glyph)}><button class="primary">Edit outline</button></a>
+          <a href={editUrl(sel.glyph, 'file')}><button title="Open the editor with a new SVG loaded (nothing is written until you save)">Replace from file…</button></a>
+          <a href={editUrl(sel.glyph, 'image')}><button title="Open the editor in trace mode">Trace from image…</button></a>
           {#if sel.svg}<a href="/inputs/svg/{sel.glyph}.svg" download><button>Download SVG</button></a>{/if}
           <a href="/areas?area={sel.areas[0] ?? ''}&g={sel.glyph}"><button>Typing keys →</button></a>
         </div>
@@ -113,8 +125,13 @@
   .groups hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-2) 0; }
   .grid-wrap { flex: 1; overflow: auto; padding: var(--s-3); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 120px); gap: var(--s-2); }
-  .tile { height: auto; width: 120px; padding: var(--s-2); display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); }
+  .tile { position: relative; height: auto; width: 120px; padding: var(--s-2) var(--s-2) 26px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+  .tile:hover { background: var(--bg-3); }
   .tile.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .tile .edit { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: none; height: 18px; line-height: 18px; padding: 0 10px; border-radius: 9px; background: var(--accent-bg); color: var(--accent); font-size: var(--t-xs); text-decoration: none; }
+  .tile:hover .edit, .tile:focus-within .edit, .tile.on .edit { display: block; }
+  .weight { display: flex; align-items: center; gap: var(--s-1); font-size: var(--t-sm); }
+  .weight input { width: 60px; }
   .tile.unassigned .art { outline: 1px dashed var(--line); outline-offset: 2px; border-radius: 4px; }
   .name { font-family: var(--mono); font-size: var(--t-xs); }
   .sub { font-size: var(--t-xs); max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

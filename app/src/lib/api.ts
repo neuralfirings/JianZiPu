@@ -5,7 +5,10 @@ export type Design = {
   areas: Record<string, Area>;
   layouts: Layout[];
   test_sets?: Record<string, string[]>;
+  /** Reference stroke weight in SVG/font units: the thickness every glyph should sit around (glyph editor). */
+  glyph_weight?: number;
 };
+export type SvgCheck = { ok: boolean; error?: string; d?: string; contours?: number; points?: number; bounds?: [number, number, number, number] | null; viewBox?: [number, number, number, number] };
 export type Area = { label?: string; size: [number, number]; glyphs: string[]; advance?: number };
 export type Slot = {
   name: string;
@@ -63,9 +66,13 @@ export type GlyphRow = {
   glyph: string; svg: boolean; areas: string[]; ID: string; keys: string; filename: string; vert_variant: string;
   common: string; latin: string; latin_alt: string; simplified: string; traditional: string; pinyin: string;
 };
+/** One finished build: its exact TTF lives in a temp dir on the server while it runs. */
+export type Build = { id: string; time: number; bytes: number; ok: boolean; seconds: number | null; url: string; file: string };
 export type BuildStatus = {
   state: 'idle' | 'running' | 'done'; log: string[]; started: number | null; finished: number | null;
   ok: boolean | null; font_exists: boolean; font_mtime: number | null;
+  build: Build | null;      // the latest finished build
+  builds: Build[];          // newest first
 };
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -94,6 +101,12 @@ export const api = {
   glyphs: () => call<{ fields: string[]; glyphs: GlyphRow[]; control: string[] }>('GET', '/api/glyphs'),
   saveGlyphs: (rows: Record<string, unknown>[]) => call<{ ok: boolean; rows: number; error?: string }>('PUT', '/api/glyphs', { rows }),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
+  /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
+  checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),
+  /** Write inputs/svg/<name>.svg. A new file must not exist; an existing one must still match `baseHash` (else 409 conflict) unless `overwrite`. */
+  saveSvg: (name: string, svg: string, baseHash: string | null, overwrite = false) =>
+    call<{ ok: boolean; error?: string; exists?: boolean; conflict?: boolean; disk?: string; file?: string; bytes?: number; existed?: boolean; hash?: string; contours?: number; points?: number }>(
+      'PUT', `/api/svg/${encodeURIComponent(name)}`, { svg, base_hash: baseHash, overwrite }),
   build: () => call<{ ok: boolean; error: string | null; status: BuildStatus }>('POST', '/api/build'),
   buildStatus: () => call<BuildStatus>('GET', '/api/build/status')
 };

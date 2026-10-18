@@ -2,7 +2,7 @@
   import { app } from '$lib/state.svelte';
   import { parseSvg } from '$lib/svg';
   let { name, size = 48, title = name }: { name: string; size?: number; title?: string } = $props();
-  let parsed = $derived(parseSvg(app.svgs[name]));
+  let parsed = $derived(parseSvg(app.preview[name] ?? app.svgs[name]));
 </script>
 
 {#if parsed}

@@ -15,7 +15,8 @@
     ['/glyphs', 'Glyphs'],
     ['/areas', 'Areas'],
     ['/layouts', 'Layouts'],
-    ['/test', 'Test & Build']
+    ['/test', 'Test & Build'],
+    ['/tester', 'Tester']
   ];
 
   onMount(() => {
@@ -23,6 +24,7 @@
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
+      if (/^\/glyphs\/(new$|[^/]+\/edit)/.test(location.pathname)) return;   // the glyph editor handles ⌘S / ⌘Z itself
       if (e.key === 's') { e.preventDefault(); app.save(); }
       else if (e.key === 'z') {
         const t = e.target as HTMLElement;
@@ -37,6 +39,8 @@
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick); };
   });
 
+  // on the glyph editor routes the glyph owns undo and ⌘S; the header keeps only the design's Save
+  let inGlyphEditor = $derived(/^\/glyphs\/(new$|[^/]+\/edit)/.test(page.url.pathname));
   let budget = $derived.by(() => {
     const s = app.stats;
     if (!s) return null;
@@ -50,7 +54,7 @@
     <div class="brand">JZP Font Builder</div>
     <nav>
       {#each nav as [href, label]}
-        <a {href} class:active={page.url.pathname.startsWith(href)}>{label}</a>
+        <a {href} class:active={page.url.pathname === href || page.url.pathname.startsWith(href + '/')}>{label}</a>
       {/each}
     </nav>
     <div class="spacer"></div>
@@ -62,21 +66,23 @@
         <span class="badge-{budget.level}">●</span> {budget.rules} rules · {budget.kb.toFixed(0)} KB
       </a>
     {/if}
-    <button class="ghost" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
-      title={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label}` : 'Nothing to undo'}>↶</button>
-    <button class="ghost" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
-      title={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'}>↷</button>
+    {#if !inGlyphEditor}
+      <button class="ghost" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
+        title={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label}` : 'Nothing to undo'}>↶</button>
+      <button class="ghost" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
+        title={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'}>↷</button>
+    {/if}
     <span class="status" role="status">
       {#if app.dirty}
-        <button class="chip accent" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● Unsaved ({app.changes.length})</button>
+        <button class="chip accent" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● {inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
       {:else if app.lastSaved}
-        <span class="chip">Saved {app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span class="chip">{inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
       {:else if !app.loading}
-        <span class="chip">Saved</span>
+        <span class="chip">{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
       {/if}
     </span>
-    <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title="Write design.json (⌘S)">
-      {app.saving ? 'Saving…' : 'Save'}
+    <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json (the glyph has its own Save, ⌘S)' : 'Write design.json (⌘S)'}>
+      {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
     </button>
     <span class="menu-wrap">
       <button onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>

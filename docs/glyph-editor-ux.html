@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glyph Editor UX</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one long column of wireframes, each with numbered notes beside it (same family as panel-layout-ux.html). */
+  :root {
+    color-scheme: light;
+    --bg: #faf8f3;
+    --fg: #2b2a28;
+    --fg-2: #6b6760;
+    --line: #8d887f;
+    --line-soft: #c9c4ba;
+    --wf-bg: #ffffff;
+    --wf-fill: #ebe8e1;
+    --wf-fill-2: #dcd8cf;
+    --accent: #d23b2f;
+    --accent-bg: #fbe3e0;
+    --ok: #3b7d4f;
+    --ok-bg: #dcefe0;
+    --sel: #2f5fa8;
+    --sel-bg: #dde7f7;
+    --cmp: rgba(40, 110, 235, .32);
+    --cmp-line: #2f6fe0;
+    --warn: #a86500;
+    --warn-bg: #fbefd9;
+    --scrim: rgba(43, 42, 40, .28);
+    --scrib: repeating-linear-gradient(0deg, transparent 0 5px, var(--line-soft) 5px 7px);
+    --hand: "Patrick Hand", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive, sans-serif;
+    --cjk: "Noto Serif TC", "Songti TC", "PingFang TC", "Microsoft JhengHei", serif;
+    --mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+      --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+      --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+      --sel: #8fb4f0; --sel-bg: #263650;
+      --cmp: rgba(110, 160, 255, .40); --cmp-line: #8fb4ff;
+      --warn: #f0a93b; --warn-bg: #3d2e14; --scrim: rgba(0, 0, 0, .45);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+    --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+    --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+    --sel: #8fb4f0; --sel-bg: #263650;
+    --cmp: rgba(110, 160, 255, .40); --cmp-line: #8fb4ff;
+    --warn: #f0a93b; --warn-bg: #3d2e14; --scrim: rgba(0, 0, 0, .45);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 var(--hand);
+    padding-block: 28px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 1120px; margin: 0 auto; }
+  h1 { font-size: 34px; margin: 0 0 6px; font-weight: 400; line-height: 1.15; text-wrap: balance; }
+  h2 { font-size: 26px; margin: 48px 0 8px; font-weight: 400; border-bottom: 2px solid var(--line); padding-bottom: 2px; text-wrap: balance; }
+  h3 { font-size: 20px; margin: 22px 0 6px; font-weight: 400; }
+  p { margin: 6px 0 10px; max-width: 72ch; }
+  ul, ol { margin: 4px 0 10px; padding-left: 22px; max-width: 76ch; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; }
+  b { font-weight: 700; }
+  .sub { color: var(--fg-2); }
+  .cjk { font-family: var(--cjk); }
+
+  /* ---- wireframe primitives (same family as rule-builder-ux.html / panel-layout-ux.html) ---- */
+  .scroll { overflow-x: auto; padding: 14px 2px 8px; margin: 6px 0 12px; }
+  .wf { background: var(--wf-bg); border: 2px solid var(--line); border-radius: 6px; padding: 10px; position: relative; }
+  .wf.bare { padding: 0; border: 0; background: transparent; }
+  .wf .cap { position: absolute; top: -12px; left: 12px; background: var(--bg); padding: 0 6px; font-size: 14px; color: var(--fg-2); white-space: nowrap; }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 4px; }
+  .grow { flex: 1; }
+  .btn { border: 1.5px solid var(--line); border-radius: 5px; padding: 0 8px; background: var(--wf-fill); font-size: 14px; white-space: nowrap; line-height: 22px; display: inline-block; }
+  .btn.pri { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .btn.lnk { border-style: dashed; background: transparent; }
+  .btn.danger { color: var(--accent); border-color: var(--accent); background: transparent; }
+  .btn.off { opacity: .45; }
+  .btn.hot { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .sel-dd { border: 1.5px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--wf-bg); font-size: 14px; white-space: nowrap; line-height: 22px; display: inline-block; }
+  .sel-dd::after { content: " ▾"; color: var(--fg-2); }
+  .fld { display: inline-block; border: 1.5px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--wf-bg); font-family: var(--mono); font-size: 12px; line-height: 21px; min-width: 120px; }
+  .fld.err { border-color: var(--accent); background: var(--accent-bg); }
+  .num { display: inline-block; min-width: 34px; text-align: right; border: 1.5px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--wf-bg); font-family: var(--mono); font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
+  .num.hot { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .muted { color: var(--fg-2); font-size: 14px; }
+  .tiny { font-size: 12px; color: var(--fg-2); }
+  .id { font-family: var(--mono); font-size: 11px; color: var(--fg-2); }
+  .red { color: var(--accent); }
+  .green { color: var(--ok); }
+  .blue { color: var(--sel); }
+  .warn { color: var(--warn); }
+  .chip { display: inline-flex; align-items: center; gap: 3px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 8px; font-size: 13px; line-height: 20px; background: var(--wf-bg); white-space: nowrap; }
+  .chip.dirty { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); }
+  .chip.ok { border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+  .chip.cmp { border-color: var(--cmp-line); color: var(--cmp-line); }
+  .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 5px; overflow: hidden; font-size: 13px; }
+  .seg span { padding: 0 7px; line-height: 20px; background: var(--wf-bg); white-space: nowrap; }
+  .seg span + span { border-left: 1.5px solid var(--line); }
+  .seg span.on { background: var(--fg); color: var(--bg); }
+  .hint { font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--line-soft); padding-left: 8px; margin: 6px 0; max-width: 76ch; }
+  .switch { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }
+  .switch i { display: inline-block; width: 24px; height: 13px; border: 1.5px solid var(--line); border-radius: 8px; position: relative; background: var(--wf-bg); flex: none; }
+  .switch i::after { content: ""; position: absolute; top: 1px; left: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .switch.on i { background: var(--sel); border-color: var(--sel); }
+  .switch.on i::after { left: auto; right: 1px; background: var(--bg); }
+  .slider { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); }
+  .slider .tr { position: relative; width: 110px; height: 4px; background: var(--wf-fill-2); border-radius: 2px; flex: none; }
+  .slider .tr i { position: absolute; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--wf-bg); border: 2px solid var(--fg); }
+  .rad { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line); vertical-align: -1px; flex: none; }
+  .rad.on { background: radial-gradient(var(--fg) 0 3px, var(--wf-bg) 3.5px); }
+  .menu { border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); box-shadow: 5px 6px 0 var(--line-soft); padding: 4px 0; font-size: 14px; min-width: 190px; }
+  .menu div { padding: 0 12px; line-height: 25px; white-space: nowrap; }
+  .menu hr { border: 0; border-top: 1.5px dashed var(--line-soft); margin: 3px 0; }
+  .menu .k { float: right; color: var(--fg-2); font-size: 12px; margin-left: 16px; }
+  .menu .on { background: var(--sel-bg); }
+  svg { max-width: 100%; height: auto; display: block; }
+
+  /* callouts */
+  .co { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 12px; align-items: center; justify-content: center; font-family: var(--mono); flex: none; }
+  .co.s { width: 17px; height: 17px; font-size: 11px; }
+  .co.abs { position: absolute; z-index: 2; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 18px; margin: 8px 0; }
+  .notes > div { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; min-width: 0; }
+  .side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (min-width: 900px) { .side { grid-template-columns: 470px minmax(0, 1fr); } }
+  .side .notes { grid-template-columns: minmax(0, 1fr); margin: 0; }
+  .pair2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  @media (min-width: 820px) { .pair2 { grid-template-columns: 1fr 1fr; } }
+  .trio { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  @media (min-width: 900px) { .trio { grid-template-columns: 1fr 1fr 1fr; } }
+
+  /* ---- app chrome ---- */
+  .apphdr { display: flex; align-items: center; gap: 10px; border-bottom: 1.5px solid var(--line); padding: 2px 8px; font-size: 14px; background: var(--wf-fill); border-radius: 5px 5px 0 0; flex-wrap: wrap; }
+  .apphdr .brand { font-weight: 700; }
+  .apphdr .nav span { padding: 0 6px; }
+  .apphdr .nav span.on { border-bottom: 2px solid var(--fg); }
+  .shell { border: 2px solid var(--line); border-radius: 6px; background: var(--wf-bg); position: relative; }
+
+  /* Glyphs screen */
+  .gtool { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1.5px dashed var(--line-soft); flex-wrap: wrap; font-size: 14px; }
+  .gbody { display: grid; grid-template-columns: 150px minmax(0, 1fr); }
+  .groups { border-right: 1.5px dashed var(--line-soft); padding: 6px; font-size: 13px; display: flex; flex-direction: column; gap: 1px; }
+  .groups div { display: flex; justify-content: space-between; padding: 0 4px; border-radius: 3px; }
+  .groups div.on { background: var(--sel-bg); color: var(--sel); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, 92px); gap: 6px; padding: 8px; }
+  .tile { border: 1.5px solid var(--line-soft); border-radius: 5px; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; background: var(--wf-bg); }
+  .tile .art { width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; font-family: var(--cjk); font-size: 38px; line-height: 1; }
+  .tile .nm { font-family: var(--mono); font-size: 10px; }
+  .tile .sb { font-size: 10px; color: var(--fg-2); white-space: nowrap; }
+  .tile.on { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .tile.hov { border-color: var(--line); background: var(--wf-fill); }
+  .tile.un .art { outline: 1.5px dashed var(--line-soft); outline-offset: 1px; border-radius: 3px; }
+  .tile .ed { font-size: 12px; line-height: 18px; border: 1.5px solid var(--line); border-radius: 4px; padding: 0 8px; background: var(--wf-bg); margin-top: 2px; }
+  .tile.on .ed { border-color: var(--sel); color: var(--sel); }
+  .tile.new { border-style: dashed; justify-content: center; color: var(--fg-2); font-size: 13px; min-height: 104px; }
+  .insp { display: flex; gap: 12px; border-top: 1.5px solid var(--line); background: var(--wf-fill); padding: 8px; flex-wrap: wrap; border-radius: 0 0 5px 5px; }
+  .insp .big { width: 96px; height: 96px; border: 1.5px solid var(--line); background: var(--wf-bg); border-radius: 4px; flex: none; }
+  .insp .facts { font-size: 13px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .insp .k { display: inline-block; width: 66px; color: var(--fg-2); }
+
+  /* Editor */
+  .ebar { display: flex; align-items: center; gap: 8px; padding: 3px 8px; border-bottom: 1.5px solid var(--line); font-size: 14px; flex-wrap: wrap; position: relative; }
+  .ebar .crumb { color: var(--fg-2); }
+  .ebar .gname { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .egrid { display: grid; grid-template-columns: 42px minmax(0, 1fr) 250px; min-height: 420px; }
+  .rail { border-right: 1.5px dashed var(--line-soft); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; position: relative; }
+  .tool { width: 30px; height: 30px; border: 1.5px solid transparent; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 15px; position: relative; }
+  .tool.on { background: var(--fg); color: var(--bg); }
+  .tool .k { position: absolute; right: 1px; bottom: -1px; font-size: 8px; font-family: var(--mono); color: var(--fg-2); }
+  .tool.on .k { color: var(--bg); }
+  .rail hr { width: 22px; border: 0; border-top: 1.5px dashed var(--line-soft); margin: 2px 0; }
+  .center { display: flex; flex-direction: column; min-width: 0; border-right: 1.5px dashed var(--line-soft); position: relative; }
+  .abar { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-bottom: 1.5px dashed var(--line-soft); font-size: 13px; flex-wrap: wrap; position: relative; }
+  .abar .grp { display: inline-flex; border: 1.5px solid var(--line); border-radius: 5px; overflow: hidden; }
+  .abar .grp span { padding: 0 6px; line-height: 21px; border-right: 1.5px solid var(--line-soft); background: var(--wf-bg); }
+  .abar .grp span:last-child { border-right: 0; }
+  .abar .grp span.hot { background: var(--sel-bg); color: var(--sel); }
+  .abar .lab { color: var(--fg-2); font-size: 12px; }
+  .canvas { flex: 1; background: var(--wf-fill); position: relative; min-height: 340px; }
+  .canvas svg { width: 100%; height: 100%; }
+  .stat { border-top: 1.5px dashed var(--line-soft); padding: 1px 8px; font-size: 12px; color: var(--fg-2); display: flex; gap: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .ctx { border-top: 1.5px solid var(--line); padding: 4px 8px 6px; position: relative; }
+  .ctx .words { display: flex; gap: 18px; align-items: flex-end; padding-top: 4px; flex-wrap: wrap; }
+  .ctx .w { display: flex; flex-direction: column; align-items: center; font-family: var(--cjk); line-height: 1.02; }
+  .ctx .w small { font-family: var(--mono); font-size: 10px; color: var(--fg-2); margin-top: 2px; }
+  .rp { display: flex; flex-direction: column; font-size: 13px; position: relative; min-width: 0; }
+  .sec { border-bottom: 1.5px dashed var(--line-soft); padding: 4px 8px 6px; display: flex; flex-direction: column; gap: 4px; }
+  .sec h5 { margin: 0; font-size: 14px; font-weight: 400; display: flex; align-items: center; gap: 5px; }
+  .sec h5::before { content: "▾"; font-size: 10px; color: var(--fg-2); }
+  .sec.fold h5::before { content: "▸"; }
+  .sec h5 .sum { color: var(--fg-2); font-size: 12px; margin-left: auto; }
+  .kv { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 2px 6px; align-items: center; }
+  .kv > span:nth-child(odd) { color: var(--fg-2); font-size: 12px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--cmp); border: 1.5px solid var(--cmp-line); vertical-align: -2px; flex: none; }
+  .sw.dot { border-radius: 50%; }
+  .sw.ln { background: transparent; border-style: dashed; }
+  .check { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; }
+  .check .ic { width: 14px; flex: none; text-align: center; }
+
+  /* dialogs, popovers, toasts */
+  .stage { position: relative; background: var(--scrim); border-radius: 6px; padding: 26px 18px; display: flex; justify-content: center; align-items: flex-start; }
+  .dlg { background: var(--wf-bg); border: 2px solid var(--line); border-radius: 7px; box-shadow: 6px 7px 0 var(--line-soft); padding: 10px 12px; width: 100%; max-width: 470px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; position: relative; }
+  .dlg h4 { margin: 0; font-size: 19px; font-weight: 400; }
+  .dlg .foot { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; border-top: 1.5px dashed var(--line-soft); padding-top: 8px; }
+  .pop { background: var(--wf-bg); border: 1.5px solid var(--line); border-radius: 6px; box-shadow: 5px 6px 0 var(--line-soft); padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+  .pop .foot { display: flex; gap: 6px; justify-content: flex-end; }
+  .toast { display: inline-flex; gap: 8px; align-items: center; border: 1.5px solid var(--ok); background: var(--ok-bg); border-radius: 6px; padding: 3px 10px; font-size: 14px; flex-wrap: wrap; }
+  .banner { display: flex; gap: 8px; align-items: center; border: 1.5px solid var(--warn); background: var(--warn-bg); border-radius: 5px; padding: 3px 10px; font-size: 14px; flex-wrap: wrap; }
+  .start { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .start > div { border: 1.5px solid var(--line); border-radius: 6px; padding: 6px; text-align: center; font-size: 13px; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .start > div.on { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); background: var(--sel-bg); }
+  .start .ic { font-size: 22px; line-height: 1.1; }
+  .drop { border: 2px dashed var(--line); border-radius: 6px; padding: 12px; text-align: center; color: var(--fg-2); font-size: 14px; }
+  .thumb { width: 92px; height: 92px; border: 1.5px solid var(--line); border-radius: 4px; background: var(--wf-fill); flex: none; }
+
+  table.map { border-collapse: collapse; font-size: 15px; min-width: 660px; background: var(--wf-bg); }
+  table.map th, table.map td { border: 1.5px solid var(--line); padding: 3px 9px; text-align: left; vertical-align: top; }
+  table.map th { background: var(--wf-fill); font-weight: 400; }
+  table.map td.k { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+  .kc { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+  .kc > div { border: 1.5px solid var(--line); border-radius: 6px; padding: 6px 12px; background: var(--wf-bg); min-width: 0; }
+  .kc h3 { margin: 2px 0 4px; font-size: 19px; }
+  .kc ul, .kc ol { padding-left: 20px; font-size: 15px; }
+  .verdict { border: 2px solid var(--fg); border-radius: 8px; padding: 8px 14px; background: var(--wf-bg); margin: 14px 0; }
+  .verdict h3 { margin: 0 0 4px; }
+  .vs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  @media (min-width: 760px) { .vs { grid-template-columns: 1fr 1fr; gap: 16px; } }
+  .vs table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .vs td, .vs th { border-bottom: 1.5px dashed var(--line-soft); padding: 2px 4px; text-align: left; vertical-align: top; }
+  .vs th { font-weight: 400; color: var(--fg-2); }
+  .win { color: var(--ok); }
+  .lose { color: var(--fg-2); }
+</style>
+</head>
+<body>
+<main>
+
+<!-- Shared drawing parts. Paths are the real lg_gou and lg_da outlines from inputs/svg/, in font units. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="p-gou" d="M158.93 129.656L200.754 126.336C310.6 117.886 379.237 100.297 489.221 92.2832C500.842 90.0697 508.313 88.6862 511.633 88.1328L530.725 81.4922C540.132 78.1719 546.496 76.5117 549.816 76.5117C552.583 75.9583 555.074 75.6816 557.287 75.6816C560.607 76.235 565.588 78.1719 572.229 81.4922C578.316 84.8125 586.893 89.793 597.961 96.4336C608.475 102.521 616.223 108.608 621.203 114.695C625.63 120.229 627.844 124.933 627.844 128.807V129.637C627.844 131.85 626.737 134.894 624.523 138.768C622.31 143.195 620.096 147.898 617.883 152.879C616.776 157.859 615.669 163.117 614.563 168.65C613.456 174.738 612.902 184.422 612.902 197.703L610.412 269.92C609.859 285.968 609.305 313.361 608.752 352.098C608.199 389.728 607.369 419.334 606.262 440.916C605.155 461.945 602.941 486.294 599.621 513.963C596.301 541.632 589.66 567.365 579.699 591.16C569.738 614.402 558.671 633.771 546.496 649.266C533.768 664.76 523.254 674.445 514.953 678.318C508.866 681.085 503.885 682.469 500.012 682.469H497.522C493.094 681.915 488.944 678.318 485.07 671.678C480.643 665.59 468.469 649.819 448.547 624.363L420.324 587.01L412.023 577.879C409.81 576.219 408.703 574.559 408.703 572.898C408.703 572.345 408.98 571.792 409.533 571.238C410.087 570.685 411.193 570.408 412.853 570.408C415.067 570.408 417.834 570.962 421.154 572.068L432.775 576.219L455.187 586.18C469.022 591.714 480.367 594.48 489.221 594.48H493.371C498.352 593.374 504.716 590.607 512.463 586.18C520.21 580.646 526.851 570.685 532.385 556.297C538.472 541.909 543.176 524.201 546.496 503.172C549.816 482.143 552.86 459.178 555.627 434.275C558.394 409.373 560.054 379.214 560.607 343.797V256.639C560.607 208.494 559.501 185.014 557.287 166.199C555.074 150.704 551.477 140.743 546.496 136.316C541.516 132.443 534.598 129.952 525.744 128.846H521.594C514.953 128.846 505.822 129.676 494.201 131.336L453.527 136.316L290.48 150.277C249.956 153.861 208.257 161.238 167.551 161.238C157.574 161.238 147.193 158.477 137.328 157.088L101.145 183.611C70.0293 212.316 53.0002 209.816 53 189.422C79.616 160.677 105.465 132.328 128.537 100.604C138.167 85.721 144.836 79.1 149.963 56.8828C151.07 51.349 151.623 46.6452 151.623 42.7715V38.6211C151.623 34.194 152.176 31.1504 153.283 29.4902C154.39 27.8301 156.88 27 160.754 27H162.414C164.628 27 167.671 27.5534 171.545 28.6602C176.525 29.7669 182.059 31.9805 188.147 35.3008C194.234 37.5143 200.598 40.8346 207.238 45.2617C213.879 49.6888 218.859 54.6693 222.18 60.2031C224.393 64.0768 225.5 67.1204 225.5 69.334C225.5 71.5475 224.947 73.2077 223.84 74.3145C223.286 75.4212 220.796 77.3581 216.369 80.125C212.495 83.4453 207.792 88.4258 202.258 95.0664L158.93 129.656Z"/>
+    <path id="p-da" d="M544.109 122.576C419.461 129.436 274.396 124.199 150.701 149.969C138.527 152.182 127.459 154.949 117.498 158.27C108.644 160.483 102.003 161.59 97.5762 161.59H94.2559C87.6152 161.59 81.528 160.206 75.9941 157.439C69.3535 154.673 62.1595 150.522 54.4121 144.988C46.6647 140.008 40.8542 135.027 36.9805 130.047C33.6602 126.727 32 123.683 32 120.916C32 120.363 32.2767 119.533 32.8301 118.426C33.9368 115.105 37.2572 113.169 42.791 112.615L65.2031 111.785L106.707 108.465L178.094 101.824C314.5 85.2227 511 80.5 620.643 61.9805L648.865 57.8301C656.059 57.2767 661.593 57 665.467 57C687.549 57 695.428 70.5333 710.232 83.2227C715.049 86.6631 722.684 91.486 722.684 98.1641C722.684 100.931 721.577 104.251 719.363 108.125C716.3 112.72 711.096 113.105 706.082 113.105L691.199 113.445L648.865 110.125C629.5 110.125 612.005 117.007 593.084 118.426C600.278 121.193 606.365 124.236 611.346 127.557C616.88 130.324 619.923 133.367 620.477 136.688V140.008C620.477 142.775 620.2 146.095 619.646 149.969C617.433 159.93 615.773 169.891 614.666 179.852C613.559 190.919 612.729 210.288 612.176 237.957V301.043L615.496 483.777V503.699C615.496 516.98 615.219 531.645 614.666 547.693C613.559 571.489 612.176 590.027 610.516 603.309C608.855 616.036 606.365 626.551 603.045 634.852C599.171 643.706 594.191 652.007 588.104 659.754C581.463 667.501 575.099 673.589 569.012 678.016C564.031 680.783 559.327 682.166 554.9 682.166H553.24C549.92 681.613 546.6 680.229 543.279 678.016C540.512 675.249 535.809 668.331 529.168 657.264C521.974 646.749 514.78 637.065 507.586 628.211C500.392 619.357 494.028 611.886 488.494 605.799L466.912 583.387C465.252 581.727 464.422 580.066 464.422 578.406C464.422 577.299 464.699 576.469 465.252 575.916C466.359 574.809 468.296 574.256 471.062 574.256C472.169 574.256 473.829 574.533 476.043 575.086L496.795 580.896L516.717 586.707C522.804 588.921 528.615 590.581 534.148 591.688C536.915 592.241 539.129 592.518 540.789 592.518C543.003 592.518 544.663 592.241 545.77 591.688C549.643 590.581 552.687 586.707 554.9 580.066C557.114 573.426 558.774 560.698 559.881 541.883C560.988 523.068 562.094 505.913 563.201 490.418C563.755 474.923 564.308 455.001 564.861 430.652L565.691 271.16C565.691 267.84 565.138 252.622 564.031 225.506C563.478 198.39 562.094 179.575 559.881 169.061C558.774 158.546 556.007 148.862 551.58 140.008L544.109 122.576Z"/>
+    <rect id="nd" x="-6" y="-6" width="12" height="12"/>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="var(--accent-bg)"/><rect width="3" height="8" fill="var(--accent)"/>
+    </pattern>
+    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M10 0H0V10" fill="none" stroke="var(--line-soft)" stroke-width=".5"/>
+    </pattern>
+    <filter id="scan" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="7"/></filter>
+    <clipPath id="below660"><rect x="-400" y="660" width="1600" height="400"/></clipPath>
+    <clipPath id="right660"><rect x="660" y="-400" width="400" height="1600"/></clipPath>
+  </defs>
+</svg>
+
+<h1>Glyph Editor</h1>
+<p class="sub">Wireframes for editing, importing and tracing glyph outlines in the JZP Font Builder. It is a touch-up and import tool, a small Figma vector-edit mode built on Paper.js, and not a drawing app. It writes <code>inputs/svg/&lt;name&gt;.svg</code> and nothing else. Same look as <code>panel-layout-ux.html</code>.</p>
+
+<div class="notes" style="margin-top:14px">
+  <div><span class="co">A</span><span><b>Edit</b> appears under a glyph tile when you point at it or select it. It opens the editor at <code>/glyphs/lg_gou/edit</code>, which takes over the main area. The app header stays.</span></div>
+  <div><span class="co">B</span><span><b>One canvas, one pointer tool.</b> Select a shape and its points are already editable. There is no separate point mode. Pen, pencil and two basic shapes make up the rest of the tools.</span></div>
+  <div><span class="co">C</span><span><b>Compare in translucent blue:</b> a dot at the font's reference weight, any other glyph, or this glyph's last saved version. You can't select them and they are never saved.</span></div>
+  <div><span class="co">D</span><span><b>Save glyph</b> writes the SVG file at once. It is separate from the app's Save, which writes <code>design.json</code>. Layouts and the Tester show the new outline right away. The built font changes after the next Build.</span></div>
+</div>
+
+<!-- =================================================================== VERDICT -->
+<div class="verdict">
+  <h3>Your question: take over the main window, or open as a modal?</h3>
+  <p style="max-width:none"><b>Take over the main window</b>, as its own route: <code>/glyphs/&lt;name&gt;/edit</code> and <code>/glyphs/new</code>. The app header and section nav stay visible. A modal would work for a quick nudge of one point, but it fails on most of the points below.</p>
+  <div class="vs">
+    <table>
+      <tr><th></th><th>Route (takeover)</th></tr>
+      <tr><td>Working area</td><td class="win">Full width. A 660 box fits at 1 unit = 0.6 px next to a 250 px panel at 1280.</td></tr>
+      <tr><td>Esc</td><td class="win">Used only on the canvas (finish a path, deselect, close a popover). It never throws work away.</td></tr>
+      <tr><td>Undo</td><td class="win">⌘Z belongs to the glyph while you are here. Leaving the route ends that history.</td></tr>
+      <tr><td>Link / reload</td><td class="win">You can bookmark the URL, Back works, and a reload restores the browser draft.</td></tr>
+      <tr><td>Unsaved guard</td><td class="win">One leave guard covers nav clicks, Back, ← Glyphs and closing the tab.</td></tr>
+      <tr><td>Rest of the app</td><td class="win">Nav stays usable. Go to Layouts and come back, with the guard asking first.</td></tr>
+      <tr><td>Figma habit</td><td class="win">Like Figma's vector edit mode, which fills the canvas instead of opening a dialog.</td></tr>
+    </table>
+    <table>
+      <tr><th></th><th>Modal</th></tr>
+      <tr><td>Working area</td><td class="lose">Inset by margins. Trace settings and Compare get squeezed.</td></tr>
+      <tr><td>Esc</td><td class="lose">Convention says Esc closes a modal. That clashes with "finish path" and risks losing edits.</td></tr>
+      <tr><td>Undo</td><td class="lose">Two undo stacks live on one screen (the modal's, and design.json's behind it).</td></tr>
+      <tr><td>Link / reload</td><td class="lose">No URL. A reload drops you back on the grid.</td></tr>
+      <tr><td>Unsaved guard</td><td class="lose">Close ×, a backdrop click and Esc each need their own guard.</td></tr>
+      <tr><td>Rest of the app</td><td class="lose">Blocked until you close it.</td></tr>
+      <tr><td>Figma habit</td><td class="lose">Figma uses dialogs only for settings.</td></tr>
+    </table>
+  </div>
+  <p class="tiny" style="max-width:none">Small, short tasks inside the editor do use dialogs: New glyph, the SVG import options, the leave guard and the disk conflict. They hold a few fields and one decision, so Esc = Cancel is safe there.</p>
+</div>
+
+<!-- =================================================================== 1 GLYPHS -->
+<h2>1 · The Glyphs screen: where editing starts</h2>
+<div class="scroll"><div class="shell" style="min-width:860px">
+  <div class="apphdr"><span class="brand">JZP Font Builder</span><span class="nav"><span class="on">Glyphs</span><span>Areas</span><span>Layouts</span><span>Test &amp; Build</span></span><span class="grow"></span><span class="chip">Saved</span><span class="btn">Save</span><span class="btn">⋯</span></div>
+  <div class="gtool"><span class="fld" style="min-width:220px; font-family:var(--hand); font-size:13px; color:var(--fg-2)">Search  gou · k · 勾 · pinyin</span><span>☐ Unassigned only</span><span class="grow"></span>
+    <span class="row" style="gap:4px; position:relative">Reference weight <span class="num">38</span> units <span class="tiny">today's glyphs: about 30–45</span><span class="co s">5</span></span>
+    <span class="btn pri">+ New glyph</span><span class="co s">4</span></div>
+  <div class="gbody">
+    <div class="groups"><div>All <span>222</span></div><div class="on">Right-hand strokes (lg_) <span>16</span></div><div>Fingers, numbers (md_) <span>64</span></div><div>Position decimals <span>130</span></div><div>Chords (xl_) <span>8</span></div><div>Modifiers (mod_) <span>4</span></div></div>
+    <div class="tiles">
+      <div class="tile on"><div class="art"><svg viewBox="0 0 660 690" width="58" height="58"><use href="#p-gou" fill="var(--fg)"/></svg></div><div class="nm">lg_gou</div><div class="sb">k · 勾 · right</div><span class="ed">Edit</span><span class="co s abs" style="right:-8px; top:-8px">1</span></div>
+      <div class="tile hov"><div class="art"><svg viewBox="0 0 740 690" width="58" height="58"><use href="#p-da" fill="var(--fg)"/></svg></div><div class="nm">lg_da</div><div class="sb">l · 大 · right</div><span class="ed">Edit</span><span class="co s abs" style="right:-8px; top:-8px">2</span></div>
+      <div class="tile"><div class="art">剔</div><div class="nm">lg_ti</div><div class="sb">i · 剔 · right</div></div>
+      <div class="tile"><div class="art">摘</div><div class="nm">lg_zhai</div><div class="sb">o · 摘 · right</div></div>
+      <div class="tile"><div class="art">歷</div><div class="nm">lg_li</div><div class="sb">U · 歷 · right</div></div>
+      <div class="tile"><div class="art">挑</div><div class="nm">lg_tiao</div><div class="sb">j · 挑 · right</div></div>
+      <div class="tile"><div class="art">抹</div><div class="nm">lg_mo</div><div class="sb">m · 抹 · right</div></div>
+      <div class="tile new">+ New<br>glyph<span class="co s abs" style="right:-8px; top:-8px">4</span></div>
+    </div>
+  </div>
+  <div class="insp">
+    <div class="big"><svg viewBox="-20 -20 700 720" width="96" height="96"><rect x="0" y="0" width="660" height="660" fill="none" stroke="var(--line-soft)" stroke-width="6" stroke-dasharray="20 14"/><use href="#p-gou" fill="var(--fg)"/></svg></div>
+    <div class="facts">
+      <div><b style="font-family:var(--mono)">lg_gou</b></div>
+      <div><span class="k">Typed as</span>k · 勾 <span class="tiny">(gōu)</span></div>
+      <div><span class="k">In areas</span><span class="chip">Stroke <span class="id">right</span> ×</span> <span class="sel-dd">+ Add to area…</span></div>
+      <div><span class="k">Box</span>660 × 660 <span class="tiny">(from area "right")</span></div>
+      <div><span class="k">File</span>inputs/svg/lg_gou.svg · 1 shape · 2.7 KB</div>
+      <div class="row" style="margin-top:4px; position:relative"><span class="btn pri">Edit outline</span><span class="btn">Replace from file…</span><span class="btn">Trace from image…</span><span class="btn">Download SVG</span><span class="btn">Typing keys →</span><span class="co s">3</span></div>
+    </div>
+  </div>
+</div></div>
+<div class="notes">
+  <div><span class="co">1</span><span><b>Selected tile:</b> <b>Edit</b> stays visible under the name. This is the "edit button under the glyph" you asked for. Double-click a tile, or press Enter on a focused tile, to do the same.</span></div>
+  <div><span class="co">2</span><span><b>Pointed-at tile:</b> <b>Edit</b> appears on hover and keyboard focus. The other 220 tiles stay quiet. If you want it on every tile all the time, that is a one-line CSS change; we suggest trying hover + selected first.</span></div>
+  <div><span class="co">3</span><span>The inspector's three "soon" buttons become real. <b>Edit outline</b> opens the editor. <b>Replace from file…</b> opens it with an SVG loaded (§4), and <b>Trace from image…</b> opens it in trace mode (§5). Either way the result is unsaved until you Save glyph.</span></div>
+  <div><span class="co">4</span><span><b>+ New glyph</b> replaces the "Upload SVG (soon)" button. A dashed tile at the end of each group does the same and pre-fills that group's prefix and area. Dropping an .svg, .jpg or .png file on the grid opens the same dialog with that file chosen.</span></div>
+  <div><span class="co">5</span><span><b>Reference weight</b> is one setting for the whole font, kept in <code>design.json</code>. Changing it is a normal design edit and goes through the app's Save. The editor's reference dot uses this number. See §6 for why one number works.</span></div>
+</div>
+
+<!-- =================================================================== 2 ANATOMY -->
+<h2>2 · The editor: editing an existing glyph</h2>
+<p>Editing <code>lg_gou</code>, with one point selected and the reference dot on. Every region is numbered.</p>
+<div class="scroll"><div class="shell" style="min-width:1000px">
+  <div class="apphdr"><span class="brand">JZP Font Builder</span><span class="nav"><span class="on">Glyphs</span><span>Areas</span><span>Layouts</span><span>Test &amp; Build</span></span><span class="grow"></span><span class="chip">Design: saved</span><span class="btn">Save design</span><span class="btn">⋯</span><span class="co s abs" style="right:-8px; top:-8px">1</span></div>
+  <div class="ebar">
+    <span class="crumb">← Glyphs</span><span class="crumb">/</span>
+    <svg viewBox="0 0 660 690" width="22" height="22"><use href="#p-gou" fill="var(--fg)"/></svg>
+    <span class="gname">lg_gou</span><span class="cjk">勾</span>
+    <span class="chip">Stroke <span class="id">right</span> · 660 × 660</span>
+    <span class="grow"></span>
+    <span class="chip dirty">● Edited · 6 changes</span>
+    <span class="btn">↶</span><span class="btn">↷</span>
+    <span class="btn">Discard</span><span class="btn pri">Save glyph ⌘S</span>
+    <span class="co s abs" style="left:-8px; top:-8px">2</span>
+  </div>
+  <div class="egrid">
+    <div class="rail">
+      <span class="co s abs" style="left:-8px; top:-8px">3</span>
+      <span class="tool on" title="Select">➤<span class="k">V</span></span>
+      <span class="tool" title="Pen">✒<span class="k">P</span></span>
+      <span class="tool" title="Pencil">✎<span class="k">⇧P</span></span>
+      <span class="tool" title="Rectangle / Ellipse">▭<span class="k">R</span></span>
+      <hr>
+      <span class="tool" title="Hand">✋<span class="k">H</span></span>
+      <span class="tool" title="Zoom">⌕<span class="k">Z</span></span>
+    </div>
+    <div class="center">
+      <div class="abar">
+        <span class="co s abs" style="left:-8px; top:-8px">4</span>
+        <span class="lab">Combine</span><span class="grp"><span class="tiny" style="opacity:.45">∪ Union</span><span class="tiny" style="opacity:.45">− Subtract</span><span class="tiny" style="opacity:.45">∩ Intersect</span><span class="tiny" style="opacity:.45">⊕ Exclude</span></span>
+        <span class="btn" style="font-size:13px">Simplify…</span><span class="btn" style="font-size:13px">Thicken…</span><span class="btn off" style="font-size:13px">Outline line</span>
+        <span class="btn" style="font-size:13px">⇆</span><span class="btn" style="font-size:13px">⇅</span>
+        <span class="grow"></span>
+        <span class="btn" style="font-size:13px">Import ▾</span>
+      </div>
+      <div class="canvas">
+        <span class="co s abs" style="left:6px; top:6px">5</span>
+        <svg viewBox="0 0 640 450" preserveAspectRatio="xMidYMid meet">
+          <g transform="translate(140 30) scale(0.56)">
+            <rect x="0" y="0" width="660" height="660" fill="var(--wf-bg)" stroke="var(--line)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+            <rect x="0" y="0" width="660" height="660" fill="url(#grid)" opacity=".0"/>
+            <text x="6" y="-10" font-size="20" fill="var(--fg-2)" font-family="Menlo, monospace">0,0</text>
+            <text x="560" y="-10" font-size="20" fill="var(--fg-2)" font-family="Menlo, monospace">660</text>
+            <text x="-62" y="666" font-size="20" fill="var(--fg-2)" font-family="Menlo, monospace">660</text>
+            <use href="#p-gou" fill="var(--fg)"/>
+            <use href="#p-gou" fill="url(#hatch)" clip-path="url(#below660)"/>
+            <!-- outline + points of the selected shape -->
+            <use href="#p-gou" fill="none" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+            <g fill="var(--wf-bg)" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke">
+              <use href="#nd" x="158.9" y="129.7"/><use href="#nd" x="489.2" y="92.3"/><use href="#nd" x="557.3" y="75.7"/>
+              <use href="#nd" x="627.8" y="128.8"/><use href="#nd" x="612.9" y="197.7"/><use href="#nd" x="606.3" y="440.9"/>
+              <use href="#nd" x="546.5" y="649.3"/><use href="#nd" x="497.5" y="682.5"/><use href="#nd" x="408.7" y="572.9"/>
+              <use href="#nd" x="489.2" y="594.5"/><use href="#nd" x="557.3" y="166.2"/><use href="#nd" x="525.7" y="128.8"/>
+              <use href="#nd" x="290.5" y="150.3"/><use href="#nd" x="137.3" y="157.1"/><use href="#nd" x="53" y="189.4"/>
+              <use href="#nd" x="151.6" y="42.8"/><use href="#nd" x="162.4" y="27"/><use href="#nd" x="225.5" y="69.3"/>
+              <use href="#nd" x="202.3" y="95.1"/>
+            </g>
+            <!-- the selected point at 560.6, 343.8 and its handles -->
+            <g stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke">
+              <line x1="560.6" y1="343.8" x2="563.4" y2="270" /><line x1="560.6" y1="343.8" x2="557.6" y2="418"/>
+              <circle cx="563.4" cy="270" r="7" fill="var(--wf-bg)"/><circle cx="557.6" cy="418" r="7" fill="var(--wf-bg)"/>
+              <rect x="553.6" y="336.8" width="14" height="14" fill="var(--sel)"/>
+            </g>
+            <!-- reference dot, 38 units -->
+            <circle cx="380" cy="330" r="19" fill="var(--cmp)"/>
+            <text x="350" y="380" font-size="22" fill="var(--cmp-line)" font-family="Menlo, monospace">38</text>
+          </g>
+          <g font-family="Menlo, monospace" font-size="11" fill="var(--accent)"><text x="378" y="438">22 outside the box</text></g>
+          <g font-family="Menlo, monospace" font-size="11" fill="var(--sel)"><text x="496" y="226">560.6, 343.8</text></g>
+        </svg>
+        <span class="co s abs" style="left:52%; top:66%">6</span>
+        <span class="co s abs" style="left:70%; top:92%">7</span>
+      </div>
+      <div class="stat"><span>x 560.6 · y 343.8 units</span><span>1 shape · 57 points · 1 selected</span><span class="red">⚠ 22 units below the box</span><span class="grow"></span><span>Fit · 56 %</span></div>
+      <div class="ctx">
+        <span class="co s abs" style="left:-8px; top:-8px">8</span>
+        <div class="row" style="font-size:13px"><b style="font-weight:400">In context</b><span class="tiny">your unsaved outline, in real words, with the current layout rules</span><span class="grow"></span><span class="fld" style="min-width:200px">k5 · s7k5 · fys9k5 · 大七勾一</span><span class="seg"><span>32</span><span class="on">64</span><span>120 px</span></span><span class="btn" style="font-size:13px">Open in Tester ↗</span></div>
+        <div class="words">
+          <div class="w" style="font-size:22px"><svg viewBox="0 0 660 690" width="34" height="34"><use href="#p-gou" fill="var(--fg)"/></svg><span style="font-size:13px">五</span><small>k5</small></div>
+          <div class="w" style="font-size:16px"><span>名七</span><svg viewBox="0 0 660 690" width="34" height="34"><use href="#p-gou" fill="var(--fg)"/></svg><span style="font-size:13px">五</span><small>s7k5</small></div>
+          <div class="w" style="font-size:16px"><span style="font-size:12px">泛</span><span>名九</span><svg viewBox="0 0 660 690" width="34" height="34"><use href="#p-gou" fill="var(--fg)"/></svg><span style="font-size:13px">五</span><small>fys9k5</small></div>
+          <div class="w" style="font-size:16px"><span>大七</span><svg viewBox="0 0 660 690" width="34" height="34"><use href="#p-gou" fill="var(--fg)"/></svg><span style="font-size:13px">一</span><small>大七勾一</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="rp">
+      <span class="co s abs" style="right:-8px; top:-8px">9</span>
+      <div class="sec"><h5>Selection <span class="sum">1 point</span></h5>
+        <div class="kv"><span>Point</span><span><span class="num">560.6</span> <span class="num">343.8</span></span>
+          <span>Type</span><span><span class="seg"><span>Corner</span><span class="on">Smooth</span><span>Free</span></span></span></div>
+        <div class="tiny">Double-click a point to switch corner / smooth. ⌥-drag a handle to move it alone.</div>
+      </div>
+      <div class="sec"><h5>Compare <span class="sum">dot on</span></h5>
+        <div class="row"><span class="sw dot"></span><span class="switch on"><i></i>Reference dot</span><span class="grow"></span><span class="num">38</span><span class="tiny">u</span></div>
+        <div class="row"><span class="sw"></span><span class="switch"><i></i>Another glyph</span><span class="grow"></span><span class="sel-dd" style="font-size:12px">choose…</span></div>
+        <div class="row"><span class="sw ln"></span><span class="switch"><i></i>Last saved</span></div>
+      </div>
+      <div class="sec fold"><h5>Image <span class="sum">none</span></h5></div>
+      <div class="sec"><h5>Glyph</h5>
+        <div class="kv"><span>File</span><span class="id" style="font-size:12px">inputs/svg/lg_gou.svg</span>
+          <span>Box</span><span>660 × 660 <span class="tiny">area Stroke</span></span>
+          <span>Typed</span><span>k · 勾 <span class="tiny">Areas →</span></span>
+          <span>Saved</span><span>14:02 today</span></div>
+      </div>
+      <div class="sec" style="border-bottom:0"><h5>Checks <span class="sum">1 note</span></h5>
+        <div class="check"><span class="ic warn">⚠</span><span>22 units below the box. The build keeps it. Layouts places the glyph by its box, so it may touch the string below. <span class="blue">Show</span></span></div>
+        <div class="check"><span class="ic green">✓</span><span>All shapes closed</span></div>
+        <div class="check"><span class="ic green">✓</span><span>No specks</span></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="notes">
+  <div><span class="co">1</span><span><b>App header</b> stays the same as on other screens. Its Save chip and button refer to <code>design.json</code>. On this route they read "Design: saved" and "Save design", and the header ↶ ↷ buttons are hidden, so there is only one undo here and one ⌘S.</span></div>
+  <div><span class="co">2</span><span><b>Glyph bar:</b> ← Glyphs, a thumbnail, the name and character, and the area chip with its box size, which is why the box is 660. Then the edit state, glyph undo/redo, <b>Discard</b> and <b>Save glyph</b>. In the editor, ⌘S saves the glyph.</span></div>
+  <div><span class="co">3</span><span><b>Tool rail:</b> Select (V), Pen (P), Pencil (⇧P), Rectangle/Ellipse (R/O, one slot that shows the last one used), Hand (H or Space), Zoom (Z). Six tools in all, because the job is touch-ups.</span></div>
+  <div><span class="co">4</span><span><b>Action bar</b> works on the selection: Combine (needs 2 or more shapes), Simplify…, Thicken…, Outline line (only for an open line), flip ⇆ ⇅. <b>Import ▾</b> adds an SVG file, an image to trace, or pasted SVG. Greyed buttons show a tooltip with the reason ("select 2 shapes").</span></div>
+  <div><span class="co">5</span><span><b>Canvas:</b> the area box is the white square, and everything around it is grey. Coordinates are SVG units shown 1:1 (0,0 at top left, same as the file). There is no grid by default; G turns on a 10-unit grid.</span></div>
+  <div><span class="co">6</span><span><b>Selected shape:</b> its outline and all its points show in selection blue. Click a point to select it, ⇧ to add more, drag to move. Selected points show their handles. With the pen over a segment, click to add a point. Pen over a point, or Delete, removes it.</span></div>
+  <div><span class="co">7</span><span><b>Outside the box</b> is hatched red and named in the status line and Checks. It is a warning, not an error. The real <code>lg_gou</code> goes 22 units below its box today.</span></div>
+  <div><span class="co">8</span><span><b>In context:</b> the unsaved outline placed in 3–5 real words with the live layout rules (<code>/api/words</code> with the edited outline swapped in). The default words are the Tester words that use this glyph; you can edit the list. 32 / 64 / 120 px. Folds to a single line.</span></div>
+  <div><span class="co">9</span><span><b>Side panel</b> (fixed, sections fold): Selection (numbers for the point or shape), Compare (§6), Image (only after an import to trace, §5), Glyph (read-only facts and links), Checks (the same list Save shows, kept live).</span></div>
+</div>
+
+<h3>What Selection shows for other selections</h3>
+<div class="trio">
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">one shape</span>
+    <div class="kv" style="font-size:13px"><span>Position</span><span><span class="num">53</span> <span class="num">27</span></span><span>Size</span><span><span class="num">575</span> <span class="num">655</span> 🔗</span><span>Scale</span><span><span class="num">100</span> %</span><span>Rotate</span><span><span class="num">0</span> °</span></div>
+    <div class="tiny" style="margin-top:4px">There is no transform box on the canvas, because it would cover the points. Type a number, or ↑↓ to nudge (⇧ = 10).</div>
+  </div></div>
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">an open line (pen or pencil)</span>
+    <div class="kv" style="font-size:13px"><span>Line</span><span><span class="num">38</span> units <span class="tiny">= reference</span></span><span>Ends</span><span><span class="seg"><span class="on">Round</span><span>Flat</span></span></span></div>
+    <div class="row" style="margin-top:4px"><span class="btn" style="font-size:13px">Outline line ⌥⌘O</span></div>
+    <div class="tiny">An open path is drawn as a line of this weight and turns into a filled shape when you outline it or Save. The build ignores strokes, so the file only ever holds shapes.</div>
+  </div></div>
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">nothing selected</span>
+    <div class="tiny">Glyph: 1 shape · 57 points · 22 units outside the box.</div>
+    <div class="row" style="margin-top:4px"><span class="btn" style="font-size:13px">Fit to box</span><span class="btn" style="font-size:13px">Center in box</span></div>
+    <div class="tiny">Fit scales the whole glyph into the box, keeping proportions. Center moves it without scaling. Both are one undo step.</div>
+  </div></div>
+</div>
+
+<!-- =================================================================== 3 NEW -->
+<h2>3 · New glyph: blank, from an SVG file, or from an image</h2>
+<div class="side">
+  <div class="stage"><div class="dlg">
+    <h4>New glyph</h4>
+    <div class="row">Name <span class="fld" style="min-width:150px">md_7.25</span><span class="tiny">letters, digits, _ . -</span></div>
+    <div class="tiny" style="margin-top:-4px">Prefixes are a habit, not a rule: lg_ stroke · md_ finger, number, position · xl_ chord · mod_ modifier</div>
+    <div class="row">Area <span class="sel-dd">Position <span class="id">hui</span> · 350 × 350</span><span class="co s">1</span></div>
+    <div class="tiny" style="margin-top:-4px">The area sets the box. "No area yet" gives 350 × 350, and you can add the glyph to an area later.</div>
+    <div>Start from <span class="co s">2</span></div>
+    <div class="start">
+      <div class="on"><span class="ic">□</span>Blank<span class="tiny">draw with pen or shapes</span></div>
+      <div><span class="ic">⟨/⟩</span>SVG file<span class="tiny">from Figma, Illustrator…</span></div>
+      <div><span class="ic">▨</span>Image to trace<span class="tiny">JPG or PNG scan</span></div>
+    </div>
+    <div class="row"><span class="tiny">Reference glyph to compare with:</span><span class="sel-dd" style="font-size:12px">md_7.5 (similar name)</span><span class="co s">3</span></div>
+    <div class="foot"><span class="btn">Cancel</span><span class="btn pri">Create</span></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span><b>Name + area</b> is all a new glyph needs. The area pick only sets the box until the first <b>Save glyph</b>. That save writes the file and adds the glyph to the area as a design change (it shows in the header's unsaved chip). That way design.json never names a file that doesn't exist yet.</span></div>
+    <div><span class="co">2</span><span><b>Start from:</b> Blank opens the editor with an empty box and the Pen tool on. SVG file and Image show a drop zone in the dialog, then open the editor with the import options (§4) or the trace panel (§5).</span></div>
+    <div><span class="co">3</span><span>The editor opens with Compare → Another glyph already on, using a sibling (similar name, or the area's first member). A new glyph is never drawn without a reference. Turn it off in one click.</span></div>
+    <div><span class="tiny" style="margin-left:28px">Typing keys are not asked for here; they belong to the Areas screen. After the first save, the toast offers "Set typing keys →".</span></div>
+  </div>
+</div>
+
+<h3>If the name is taken</h3>
+<div class="side">
+  <div class="scroll"><div class="wf" style="min-width:420px"><span class="cap">name check, as you type</span>
+    <div class="row">Name <span class="fld err" style="min-width:150px">md_9</span></div>
+    <div class="row red" style="font-size:14px">md_9 already exists. <span class="btn" style="font-size:13px">Open md_9</span> <span class="tiny">or choose another name, e.g.</span> <span class="chip">md_9_alt</span></div>
+    <div class="row" style="margin-top:6px">Create stays disabled.</div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">!</span><span><b>Nothing is ever overwritten from the New dialog.</b> To replace an existing glyph, open it and use Import or Replace from file. The name check is case-insensitive (macOS file systems are) and also rejects names with spaces or slashes.</span></div>
+    <div><span class="co">↓</span><span><b>Dropping <code>md_9.svg</code> on the grid</b> when md_9 exists asks: <b>Replace md_9's outline</b> (opens md_9's editor with the file loaded, unsaved), <b>Save as a new glyph</b> (New dialog with <code>md_9_2</code>), or Cancel.</span></div>
+  </div>
+</div>
+
+<h3>Blank: drawing with the pen</h3>
+<div class="side">
+  <div class="scroll"><div class="wf bare" style="min-width:440px"><div class="shell">
+    <div class="ebar"><span class="crumb">← Glyphs /</span><span class="gname">md_7.25</span><span class="chip">Position <span class="id">hui</span> · 350 × 350</span><span class="chip">new</span><span class="grow"></span><span class="btn">Discard</span><span class="btn pri">Save glyph</span></div>
+    <div class="canvas" style="min-height:300px">
+      <svg viewBox="0 0 440 300">
+        <g transform="translate(95 20) scale(0.74)">
+          <rect width="350" height="350" fill="var(--wf-bg)" stroke="var(--line)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+          <!-- reference glyph ghost: a stand-in for md_7.5 -->
+          <g fill="var(--cmp)"><rect x="60" y="70" width="230" height="36" rx="12"/><path d="M150 106 L196 106 L176 300 L132 300 Z"/><circle cx="240" cy="250" r="22"/></g>
+          <!-- pen path in progress -->
+          <path d="M70 160 C 140 130, 220 128, 290 150" fill="none" stroke="var(--fg)" stroke-width="38" stroke-linecap="round" opacity=".85"/>
+          <path d="M70 160 C 140 130, 220 128, 290 150" fill="none" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+          <g fill="var(--wf-bg)" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke"><use href="#nd" x="70" y="160"/><use href="#nd" x="290" y="150"/></g>
+          <line x1="290" y1="150" x2="330" y2="166" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+          <circle cx="330" cy="166" r="6" fill="var(--wf-bg)" stroke="var(--sel)" vector-effect="non-scaling-stroke"/>
+          <line x1="290" y1="150" x2="320" y2="200" stroke="var(--sel)" stroke-dasharray="4 4" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+        </g>
+        <text x="300" y="194" font-family="Menlo, monospace" font-size="11" fill="var(--sel)">+ next point</text>
+      </svg>
+    </div>
+    <div class="stat"><span>Pen · click = corner · drag = curve · click the first point to close · Enter = finish as a line · Esc = stop</span></div>
+  </div></div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span>The <b>Pen</b> works like Figma's. An open path is shown as a <b>line at the reference weight</b> with round ends, so a calligrapher can draw a centre line and see a real stroke at once. Click the first point to close the path; it then becomes a filled shape you edit by its outline.</span></div>
+    <div><span class="co">2</span><span>The <b>Pencil (⇧P)</b> draws freehand. When you let go, the path is simplified with the current Simplify setting (Paper.js <code>simplify</code>) and becomes the same kind of line. This is the "draw curves / simplify" you asked for.</span></div>
+    <div><span class="co">3</span><span>The ghost behind is the reference glyph (translucent blue, §6), so a new decimal sits in the same place and at the same size as its neighbours.</span></div>
+    <div><span class="co">4</span><span><b>Save glyph</b> is disabled while the box is empty ("Nothing to save yet"). Discard on a new glyph that was never saved goes back to the grid, and no file is created.</span></div>
+  </div>
+</div>
+
+<!-- =================================================================== 4 SVG IMPORT -->
+<h2>4 · From an SVG file (new, or replacing an outline)</h2>
+<div class="side">
+  <div class="stage"><div class="dlg">
+    <h4>Import gou-v2.svg</h4>
+    <div class="row" style="align-items:flex-start; gap:10px">
+      <svg class="thumb" viewBox="-30 -30 720 760" width="92" height="92"><rect width="660" height="660" fill="var(--wf-bg)" stroke="var(--line)" stroke-width="6"/><g transform="translate(40 30) scale(.86)"><use href="#p-gou" fill="var(--fg)"/></g></svg>
+      <div class="col" style="font-size:13px">
+        <div>File is <b>1024 × 1024</b>. This box is <b>660 × 660</b>.</div>
+        <div class="row"><span class="rad on"></span>Scale to fit the box <span class="tiny">(64 %, keeps proportions, centred)</span></div>
+        <div class="row"><span class="rad"></span>Keep the file's size <span class="tiny">(1 unit = 1 unit, top-left)</span></div>
+      </div>
+    </div>
+    <div class="col" style="font-size:13px; border-top:1.5px dashed var(--line-soft); padding-top:6px">
+      <div class="check"><span class="ic green">✓</span><span>2 filled shapes</span></div>
+      <div class="check"><span class="ic warn">⚠</span><span>1 stroked line (width 24). The build ignores strokes. <span class="row" style="display:inline-flex">☑ Turn it into a shape 24 units wide</span></span></div>
+      <div class="check"><span class="ic">·</span><span>Colours, opacity and 1 text element are dropped. Everything becomes black fill.</span></div>
+    </div>
+    <div class="row" style="font-size:13px"><span>Into lg_gou:</span><span class="seg"><span class="on">Replace the outline</span><span>Add to it</span></span></div>
+    <div class="foot"><span class="btn">Cancel</span><span class="btn pri">Import</span></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="co">1</span><span>Reached from <b>Import ▾ → SVG file</b>, <b>Replace from file…</b>, the New dialog, or a file dropped on the canvas or the grid. Paper.js <code>importSVG</code> does the reading.</span></div>
+    <div><span class="co">2</span><span><b>Size:</b> if the file's viewBox matches the box, nothing is asked. Otherwise the choice is fit (default) or keep. Figma exports at the frame size, so files from the old Figma frames match and skip this question.</span></div>
+    <div><span class="co">3</span><span><b>What the build would lose</b> is said up front: stroked lines are outlined by default (paperjs-offset), while colours, opacity, text and images are dropped. Groups, transforms and overlaps are flattened, as the build does.</span></div>
+    <div><span class="co">4</span><span><b>Replace / Add</b> only appears for a glyph that already has shapes. The import is one undo step and is unsaved until Save glyph, so Discard brings the old outline back.</span></div>
+    <div><span class="co">5</span><span><b>Paste:</b> ⌘V with SVG text on the clipboard (Figma: Copy as SVG) goes through the same dialog. Pasting shapes copied inside the editor skips it.</span></div>
+  </div>
+</div>
+
+<!-- =================================================================== 5 TRACE -->
+<h2>5 · Trace from an image (JPG / PNG)</h2>
+<div class="scroll"><div class="shell" style="min-width:900px">
+  <div class="ebar"><span class="crumb">← Glyphs /</span><span class="gname">lg_gou</span><span class="chip">Stroke <span class="id">right</span> · 660 × 660</span><span class="chip" style="border-color:var(--sel); color:var(--sel)">Tracing gou-brush.jpg</span><span class="grow"></span><span class="btn off">Discard</span><span class="btn pri off">Save glyph</span></div>
+  <div class="egrid" style="grid-template-columns: 42px minmax(0,1fr) 270px; min-height:360px">
+    <div class="rail"><span class="tool on">➤<span class="k">V</span></span><span class="tool" style="opacity:.4">✒</span><span class="tool" style="opacity:.4">✎</span><span class="tool" style="opacity:.4">▭</span><hr><span class="tool">✋</span><span class="tool">⌕</span></div>
+    <div class="center">
+      <div class="canvas" style="min-height:360px">
+        <span class="co s abs" style="left:6px; top:6px">1</span>
+        <svg viewBox="0 0 560 380">
+          <g transform="translate(110 22) scale(0.5)">
+            <rect width="660" height="660" fill="var(--wf-bg)" stroke="var(--line)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+            <!-- the image: a soft grey brush scan, placed with a frame -->
+            <g transform="translate(-40 -50) scale(1.1)"><rect x="0" y="0" width="720" height="720" fill="var(--wf-fill-2)" opacity=".55"/><use href="#p-gou" fill="var(--line)" filter="url(#scan)" opacity=".7"/></g>
+            <rect x="-40" y="-50" width="792" height="792" fill="none" stroke="var(--sel)" stroke-dasharray="8 6" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+            <g fill="var(--wf-bg)" stroke="var(--sel)" stroke-width="1.2" vector-effect="non-scaling-stroke"><use href="#nd" x="-40" y="-50"/><use href="#nd" x="752" y="-50"/><use href="#nd" x="-40" y="742"/><use href="#nd" x="752" y="742"/></g>
+            <!-- traced preview -->
+            <use href="#p-gou" fill="var(--fg)" opacity=".88"/>
+          </g>
+          <text x="20" y="372" font-family="Menlo, monospace" font-size="11" fill="var(--fg-2)">drag the image (frame) to place it · ⇧ keeps proportions · the preview re-traces as you go</text>
+        </svg>
+      </div>
+    </div>
+    <div class="rp">
+      <div class="sec"><h5>Trace <span class="co s" style="margin-left:auto">2</span></h5>
+        <div class="row"><span class="thumb" style="width:44px; height:44px"></span><span class="col"><span>gou-brush.jpg</span><span class="tiny">2400 × 2400 · placed at 110 %</span></span></div>
+        <div class="row"><span style="width:76px">Threshold</span><span class="slider"><span class="tr"><i style="left:48%"></i></span><span class="num">128</span></span></div>
+        <div class="row"><span style="width:76px"></span><span class="btn" style="font-size:12px">Auto</span><span class="tiny">picks a level from the image</span></div>
+        <div class="row"><span style="width:76px">Clean specks</span><span class="slider"><span class="tr"><i style="left:22%"></i></span><span class="num">4</span> px</span></div>
+        <div class="row"><span style="width:76px">Corners</span><span class="slider">sharper <span class="tr"><i style="left:62%"></i></span> rounder</span></div>
+        <div class="row"><span style="width:76px">Simplify</span><span class="slider"><span class="tr"><i style="left:35%"></i></span><span class="num">1.5</span> u</span></div>
+        <div class="row">☐ Light ink on dark paper</div>
+        <div class="row"><span style="width:76px">Image</span><span class="slider"><span class="tr"><i style="left:55%"></i></span>55 % visible</span></div>
+        <div class="tiny">Result: 1 shape · 64 points</div>
+        <div class="row"><span class="seg"><span class="on">Replace the outline</span><span>Add to it</span></span></div>
+        <div class="row"><span class="btn">Cancel</span><span class="grow"></span><span class="btn pri">Use this outline</span></div>
+      </div>
+      <div class="sec" style="border-bottom:0"><h5>Compare <span class="sum">off while tracing</span></h5></div>
+    </div>
+  </div>
+</div></div>
+<div class="notes">
+  <div><span class="co">1</span><span><b>Place, then trace.</b> The image lands fitted to the box, faded under a live preview of the traced outline. Drag the frame to move it and its corners to scale. Drawing tools are paused while tracing, so the canvas has one job.</span></div>
+  <div><span class="co">2</span><span><b>Settings are potrace's,</b> renamed: Threshold (black/white cut-off, with Auto), Clean specks (<code>turdsize</code>, in image pixels), Corners (<code>alphamax</code>), Simplify (<code>opttolerance</code>, in units), Light on dark (invert). Each change re-traces after 150 ms.</span></div>
+  <div><span class="co">3</span><span><b>Use this outline</b> ends tracing in one undo step and returns to normal editing, ready for touch-ups. Cancel leaves the glyph as it was.</span></div>
+  <div><span class="co">4</span><span><b>The image is kept in this browser</b> for this glyph, not in the repo. The Image section then shows <i>gou-brush.jpg · ☐ show under the outline · Re-trace… · Remove</i>. Re-trace reopens this panel with the last settings. If you edited the traced shape since, it warns that re-tracing replaces those edits.</span></div>
+</div>
+<p class="hint">Why not save the image next to the SVG? The build would ignore it, and scans are large. Keeping them in the repo (say in <code>inputs/sources/</code>) is an open question below.</p>
+
+<!-- =================================================================== 6 COMPARE -->
+<h2>6 · Compare: reference dot, another glyph, last saved</h2>
+<div class="side">
+  <div class="scroll"><div class="wf" style="min-width:440px"><span class="cap">all three on · comparing lg_gou with lg_da</span>
+    <svg viewBox="0 0 460 400">
+      <g transform="translate(40 20) scale(0.5)">
+        <rect width="660" height="660" fill="var(--wf-bg)" stroke="var(--line)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        <use href="#p-gou" fill="var(--fg)"/>
+        <use href="#p-da" fill="var(--cmp)"/>
+        <use href="#p-da" fill="url(#hatch)" opacity=".0"/>
+        <!-- last saved: a dashed outline, slightly different from the edited one -->
+        <g transform="translate(6 -4)"><use href="#p-gou" fill="none" stroke="var(--cmp-line)" stroke-dasharray="10 8" stroke-width="1.4" vector-effect="non-scaling-stroke"/></g>
+        <circle cx="595" cy="300" r="19" fill="var(--cmp)"/>
+        <circle cx="595" cy="300" r="19" fill="none" stroke="var(--cmp-line)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+        <line x1="595" y1="300" x2="700" y2="300" stroke="var(--cmp-line)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      </g>
+      <g font-family="Menlo, monospace" font-size="11"><text x="395" y="174" fill="var(--cmp-line)">dot 38</text><text x="395" y="188" fill="var(--fg-2)">drag it onto</text><text x="395" y="202" fill="var(--fg-2)">any stroke</text>
+      <text x="330" y="378" fill="var(--cmp-line)">lg_da sticks out 62 units →</text></g>
+    </svg>
+  </div></div>
+  <div class="col">
+    <div class="scroll" style="padding-top:12px"><div class="wf" style="min-width:300px"><span class="cap">Compare section</span>
+      <div class="col" style="font-size:13px; gap:6px">
+        <div class="row"><span class="sw dot"></span><span class="switch on"><i></i>Reference dot</span><span class="grow"></span><span class="num">38</span> units <span class="tiny">D</span></div>
+        <div class="tiny" style="margin:-4px 0 0 18px">Font setting: 38. Changed here = this session only. <span class="blue">Reset</span></div>
+        <div class="row"><span class="sw"></span><span class="switch on"><i></i>Another glyph</span><span class="grow"></span><span class="tiny">G</span></div>
+        <div class="row" style="margin-left:18px"><span class="fld" style="min-width:110px">lg_da</span><span class="tiny">search name · key · 勾 · pinyin</span></div>
+        <div class="row" style="margin-left:18px"><span class="tiny">Same area:</span><span class="chip">大</span><span class="chip">剔</span><span class="chip">摘</span><span class="chip">挑</span><span class="tiny">…</span></div>
+        <div class="row" style="margin-left:18px"><span class="tiny">Line up by</span><span class="seg"><span class="on">box top-left</span><span>centre</span></span></div>
+        <div class="row"><span class="sw ln"></span><span class="switch on"><i></i>Last saved</span><span class="grow"></span><span class="tiny">L</span></div>
+      </div>
+    </div></div>
+    <div class="notes">
+      <div><span class="co">1</span><span><b>Reference dot:</b> a circle as wide as the reference weight, filled translucent blue. Drag it over a stroke: if the stroke shows past the dot on both sides, it is heavier than the font's norm. One dot, placed in the middle of the view the first time and remembered after that.</span></div>
+      <div><span class="co">2</span><span><b>Another glyph:</b> ghosted at 1:1 units from the box's top-left (or centred, for boxes of different sizes). Because units are the same everywhere, a 350 glyph next to a 660 glyph shows a true weight comparison. Defaults to a sibling from the same area.</span></div>
+      <div><span class="co">3</span><span><b>Last saved:</b> a dashed blue outline of the file on disk, showing what you changed. It is an outline rather than a fill so it doesn't hide the other two.</span></div>
+      <div><span class="co">4</span><span>All three are drawn <b>on top</b> of the glyph, translucent, and ignore clicks, so points stay editable through them. They are never saved and never exported. Blue fill always means "compare". Selection uses lines and handles only.</span></div>
+    </div>
+  </div>
+</div>
+<div class="verdict" style="border-width:1.5px">
+  <h3>Does one reference weight make sense? Yes, with one caveat.</h3>
+  <p style="max-width:none">SVG units are font units for every glyph (the build doesn't scale), so 38 units is the same ink width on the page whether the glyph sits in a 200, 350, 660 or 1000 box. A single number therefore keeps all glyphs the same colour on the page. The caveat: brush strokes swell and taper. The reference is for the <b>body of a stroke</b> (where the dot should just cover it), not for entry points, hooks or hairline tails. The hint says so: <i>"Match the middle of main strokes. Tapers can be thinner."</i></p>
+</div>
+
+<!-- =================================================================== 7 OPS -->
+<h2>7 · Shape operations: simplify, thicken, combine</h2>
+<p>All three follow the same pattern. A small popover appears under the button, the canvas shows the result live, and a thin grey dashed line shows the "before" (not blue, which is for compare). Apply makes one undo step. Esc or Cancel leaves everything as it was.</p>
+
+<div class="pair2">
+  <div>
+    <h3>Simplify</h3>
+    <div class="scroll"><div class="wf" style="min-width:380px"><span class="cap">Simplify… with 1 shape selected</span>
+      <div class="row" style="align-items:flex-start; gap:10px">
+        <svg viewBox="0 0 200 200" width="170" height="170" style="flex:none; border:1.5px solid var(--line-soft); background:var(--wf-bg)">
+          <g transform="translate(5 2) scale(.29)"><use href="#p-gou" fill="var(--fg)"/><g transform="translate(4 -3)"><use href="#p-gou" fill="none" stroke="var(--fg-2)" stroke-dasharray="6 5" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+          <g fill="var(--wf-bg)" stroke="var(--sel)" stroke-width="1" vector-effect="non-scaling-stroke"><use href="#nd" x="158.9" y="129.7"/><use href="#nd" x="557.3" y="75.7"/><use href="#nd" x="627.8" y="128.8"/><use href="#nd" x="606.3" y="440.9"/><use href="#nd" x="497.5" y="682.5"/><use href="#nd" x="408.7" y="572.9"/><use href="#nd" x="560.6" y="343.8"/><use href="#nd" x="290.5" y="150.3"/><use href="#nd" x="53" y="189.4"/><use href="#nd" x="162.4" y="27"/><use href="#nd" x="225.5" y="69.3"/></g></g>
+        </svg>
+        <div class="pop" style="min-width:180px">
+          <div class="row"><span class="slider">fewer points <span class="tr"><i style="left:40%"></i></span> closer</span></div>
+          <div class="row"><span class="tiny">Tolerance</span><span class="num">2.5</span><span class="tiny">units</span></div>
+          <div class="row"><b style="font-weight:400">57 → 11 points</b></div>
+          <div class="foot"><span class="btn">Cancel</span><span class="btn pri">Apply</span></div>
+        </div>
+      </div>
+    </div></div>
+    <ul>
+      <li>One slider (Paper.js <code>simplify(tolerance)</code>, 0.5–10 units) with live preview and the point count before → after. The number field lets you type an exact value.</li>
+      <li>Works on the selected shapes, or on the whole glyph when nothing is selected. Lines from the Pencil are simplified automatically with the last value used.</li>
+      <li>There is no separate "smooth" command. Switching a point to Smooth in Selection covers that.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Thicken / thin</h3>
+    <div class="scroll"><div class="wf" style="min-width:380px"><span class="cap">Thicken… on the whole glyph</span>
+      <div class="row" style="align-items:flex-start; gap:10px">
+        <svg viewBox="0 0 200 200" width="170" height="170" style="flex:none; border:1.5px solid var(--line-soft); background:var(--wf-bg)">
+          <g transform="translate(5 2) scale(.29)"><use href="#p-gou" fill="var(--fg)" stroke="var(--fg)" stroke-width="8" stroke-linejoin="round"/><use href="#p-gou" fill="none" stroke="var(--wf-bg)" stroke-dasharray="6 5" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        </svg>
+        <div class="pop" style="min-width:190px">
+          <div class="row">Make strokes <span class="num hot">+4</span> units</div>
+          <div class="tiny">= 2 on each side. Negative numbers thin.</div>
+          <div class="row"><span class="tiny">Applies to</span><span class="seg"><span>selection</span><span class="on">whole glyph</span></span></div>
+          <div class="row"><span class="tiny">Corners</span><span class="seg"><span class="on">round</span><span>sharp</span></span></div>
+          <div class="tiny">Reference dot stays visible for checking.</div>
+          <div class="foot"><span class="btn">Cancel</span><span class="btn pri">Apply</span></div>
+        </div>
+      </div>
+    </div></div>
+    <ul>
+      <li>One number for the total change in stroke width, which is what a calligrapher means by "4 thicker". The popover says how much goes on each side (paperjs-offset <code>offset(path, n/2)</code>).</li>
+      <li>Thinning past a narrow part would make it vanish, so the popover warns before you apply: <span class="warn">"2 places are thinner than 8 units and will disappear."</span></li>
+      <li>Not on lines: a line's weight is its own field, and Outline line converts it.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Combine (boolean): cutting a straight end off a stroke</h3>
+<div class="trio">
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">a · draw a rectangle over the end, ⇧-click the stroke</span>
+    <svg viewBox="0 0 260 170">
+      <path d="M30 120 C 80 40, 160 30, 230 70 L 220 95 C 160 62, 90 70, 52 136 Z" fill="var(--fg)"/>
+      <rect x="196" y="40" width="60" height="70" fill="var(--fg)" opacity=".9"/>
+      <path d="M30 120 C 80 40, 160 30, 230 70 L 220 95 C 160 62, 90 70, 52 136 Z" fill="none" stroke="var(--sel)" stroke-width="1.5"/>
+      <rect x="196" y="40" width="60" height="70" fill="none" stroke="var(--sel)" stroke-width="1.5"/>
+      <text x="8" y="164" font-family="Menlo, monospace" font-size="10" fill="var(--fg-2)">2 shapes selected</text>
+    </svg>
+  </div></div>
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">b · point at Subtract: preview</span>
+    <div class="abar" style="border:0; padding:0 0 4px"><span class="lab">Combine</span><span class="grp"><span>∪</span><span class="hot">− Subtract</span><span>∩</span><span>⊕</span></span></div>
+    <svg viewBox="0 0 260 150">
+      <path d="M30 110 C 80 30, 160 20, 196 41 L 196 79 C 150 56, 90 62, 52 126 Z" fill="var(--fg)"/>
+      <path d="M30 110 C 80 30, 160 20, 230 60 L 220 85 C 160 52, 90 60, 52 126 Z" fill="none" stroke="var(--fg-2)" stroke-dasharray="4 4"/>
+      <rect x="196" y="30" width="60" height="70" fill="none" stroke="var(--fg-2)" stroke-dasharray="4 4"/>
+      <text x="8" y="146" font-family="Menlo, monospace" font-size="10" fill="var(--fg-2)">the newest shape cuts the others</text>
+    </svg>
+  </div></div>
+  <div class="scroll"><div class="wf" style="min-width:250px"><span class="cap">c · click: one shape, flat end</span>
+    <svg viewBox="0 0 260 150">
+      <path d="M30 110 C 80 30, 160 20, 196 41 L 196 79 C 150 56, 90 62, 52 126 Z" fill="var(--fg)"/>
+      <path d="M30 110 C 80 30, 160 20, 196 41 L 196 79 C 150 56, 90 62, 52 126 Z" fill="none" stroke="var(--sel)" stroke-width="1.5"/>
+      <g fill="var(--wf-bg)" stroke="var(--sel)"><rect x="193" y="38" width="6" height="6"/><rect x="193" y="76" width="6" height="6"/><rect x="27" y="107" width="6" height="6"/><rect x="49" y="123" width="6" height="6"/></g>
+      <text x="8" y="146" font-family="Menlo, monospace" font-size="10" fill="var(--fg-2)">⌘Z puts both back</text>
+    </svg>
+  </div></div>
+</div>
+<ul>
+  <li><b>Union, Subtract, Intersect, Exclude</b> from Paper.js (<code>unite</code>, <code>subtract</code>, <code>intersect</code>, <code>exclude</code>). They are enabled only with 2 or more shapes selected. Pointing at a button previews the result in the canvas before you click.</li>
+  <li><b>Which shape cuts?</b> With no layers panel, the rule is drawing order: <b>the newest shape cuts the older ones</b>, which is almost always the shape you just drew to cut with. If the preview looks backwards, <b>⇧ while pointing</b> swaps which one cuts.</li>
+  <li>Unlike Figma, the result is final (a new outline, not a live boolean group). Undo is the way back. That keeps the file a plain list of shapes and matches what the build does anyway.</li>
+  <li>The build already merges overlapping shapes, so Union is never <i>required</i>. It is for tidying the outline before editing points.</li>
+</ul>
+
+<!-- =================================================================== 8 SAVE -->
+<h2>8 · Unsaved, save, discard</h2>
+<div class="side">
+  <div class="col">
+    <div class="scroll"><div class="wf" style="min-width:440px"><span class="cap">glyph bar, in its four states</span>
+      <div class="col" style="gap:8px; font-size:14px">
+        <div class="row"><span class="gname" style="font-family:var(--mono)">lg_gou</span><span class="grow"></span><span class="chip ok">Saved 14:02</span><span class="btn off">Discard</span><span class="btn off">Save glyph</span></div>
+        <div class="row"><span class="gname" style="font-family:var(--mono)">lg_gou</span><span class="grow"></span><span class="chip dirty">● Edited · 6 changes</span><span class="btn">Discard</span><span class="btn pri">Save glyph ⌘S</span></div>
+        <div class="row"><span class="gname" style="font-family:var(--mono)">lg_gou</span><span class="grow"></span><span class="chip">Saving…</span><span class="btn off">Discard</span><span class="btn pri off">Save glyph</span></div>
+        <div class="toast">✓ Saved lg_gou.svg. Layouts and the Tester use it now. <span class="btn">Build font</span><span class="tiny">to see it in the font</span></div>
+      </div>
+    </div></div>
+    <div class="scroll"><div class="wf" style="min-width:440px"><span class="cap">first save of a new glyph with an area</span>
+      <div class="toast">✓ Saved md_7.25.svg and added it to Position. <span class="btn">Set typing keys →</span></div>
+      <div class="row" style="margin-top:6px"><span class="grow"></span><span class="chip dirty">● Design: 1 unsaved</span><span class="btn">Save design</span><span class="tiny">← header</span></div>
+    </div></div>
+    <div class="scroll"><div class="wf" style="min-width:440px"><span class="cap">on reopening, with a draft newer than the file</span>
+      <div class="banner">You have unsaved edits to lg_gou from 14:20 in this browser. <span class="btn">Restore</span><span class="btn">Discard them</span></div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div><span class="co">1</span><span><b>The editor has its own Save.</b> Save glyph writes <code>inputs/svg/lg_gou.svg</code> at once, through a new <code>PUT /api/svg/&lt;name&gt;</code> that includes the hash of the file as it was loaded. A file is its own unit, and a draft of curve geometry has no place in design.json's undo history. The cost: two Saves exist. The labels (Save glyph / Save design) and the header chip keep them apart.</span></div>
+    <div><span class="co">2</span><span><b>Undo</b> is per editing session: every point drag, tool stroke, import, trace and operation is one step, and the tooltip names it ("Undo: Thicken +4"). Saving doesn't clear it, so you can save, look at Layouts and still undo. Leaving the editor clears it.</span></div>
+    <div><span class="co">3</span><span><b>Discard</b> goes back to the last saved file. It can be undone: a toast says "Discarded 6 changes · Undo".</span></div>
+    <div><span class="co">4</span><span><b>A browser draft</b> (IndexedDB, one per glyph) keeps unsaved edits through a crash or reload, with the same Restore/Discard banner as the design draft.</span></div>
+    <div><span class="co">5</span><span><b>What gets written:</b> one <code>&lt;path fill="black"&gt;</code> per shape, the area box as <code>viewBox</code>/<code>width</code>/<code>height</code>, coordinates rounded to 0.1 unit, open lines outlined. Nothing else: no ids, no Paper.js metadata. Git is the history; the editor keeps no versions.</span></div>
+  </div>
+</div>
+
+<div class="pair2">
+  <div class="stage"><div class="dlg">
+    <h4>Leave lg_gou with unsaved edits?</h4>
+    <div>You have 6 changes that are not in the file yet.</div>
+    <div class="foot"><span class="btn">Keep editing</span><span class="btn danger">Discard and leave</span><span class="btn pri">Save and leave</span></div>
+  </div></div>
+  <div class="stage"><div class="dlg">
+    <h4>lg_gou.svg changed on disk</h4>
+    <div>Something else wrote this file after you opened it (a Figma pull, git, another tab).</div>
+    <div class="col" style="gap:4px"><span class="btn" style="align-self:flex-start">Compare: show the disk version as the reference glyph</span>
+    <span class="btn" style="align-self:flex-start">Load the disk version (drop my 6 changes)</span>
+    <span class="btn danger" style="align-self:flex-start">Overwrite with mine</span></div>
+    <div class="foot"><span class="btn">Cancel</span></div>
+  </div></div>
+</div>
+<ul>
+  <li>The leave guard runs on every way out: ← Glyphs, a nav tab, Back, a link in the In-context strip, closing the tab (native prompt). Esc on the canvas never leaves the editor.</li>
+  <li><b>Checks before saving</b> are the Checks section, so Save never surprises you. Only an empty glyph stops a save. These are notes, and Save goes ahead with them: outside the box, open lines (they are outlined), specks smaller than 6 units (with a <i>Remove them</i> button).</li>
+</ul>
+
+<!-- =================================================================== 9 KEYS -->
+<h2>9 · Keyboard shortcuts</h2>
+<p class="sub">Figma's keys wherever Figma has one. <b>?</b> shows this table in the editor.</p>
+<div class="scroll">
+<table class="map">
+  <tr><th>Key</th><th>What it does</th><th>Key</th><th>What it does</th></tr>
+  <tr><td class="k">V</td><td>Select (shapes, and the points of selected shapes)</td><td class="k">⌘Z / ⇧⌘Z</td><td>Undo / redo (glyph edits)</td></tr>
+  <tr><td class="k">P</td><td>Pen</td><td class="k">⌘S</td><td>Save glyph</td></tr>
+  <tr><td class="k">⇧P</td><td>Pencil (freehand line)</td><td class="k">Esc</td><td>Finish the path · deselect · close a popover (never leaves)</td></tr>
+  <tr><td class="k">R / O</td><td>Rectangle / Ellipse</td><td class="k">Enter</td><td>Pen: finish as a line · popover: Apply</td></tr>
+  <tr><td class="k">H, hold Space</td><td>Pan</td><td class="k">Delete</td><td>Delete selected points (the path stays closed) or shapes</td></tr>
+  <tr><td class="k">Z, ⌘+ / ⌘−</td><td>Zoom</td><td class="k">⌘A</td><td>Select all shapes</td></tr>
+  <tr><td class="k">⇧1</td><td>Fit the box</td><td class="k">⌘C / ⌘V / ⌘D</td><td>Copy / paste (SVG text too) / duplicate</td></tr>
+  <tr><td class="k">⇧0</td><td>100 % (1 unit = 1 px)</td><td class="k">↑ ↓ ← →</td><td>Nudge 1 unit · with ⇧ 10 units</td></tr>
+  <tr><td class="k">⇧2</td><td>Zoom to selection</td><td class="k">⇧ drag</td><td>Keep to 45° / keep proportions</td></tr>
+  <tr><td class="k">D</td><td>Reference dot on/off</td><td class="k">⌥ drag a handle</td><td>Move one handle alone (break the mirror)</td></tr>
+  <tr><td class="k">G</td><td>Reference glyph on/off</td><td class="k">double-click a point</td><td>Corner ↔ smooth</td></tr>
+  <tr><td class="k">L</td><td>Last saved on/off</td><td class="k">⌥⇧U / S / I / E</td><td>Union / Subtract / Intersect / Exclude</td></tr>
+  <tr><td class="k">⇧G</td><td>10-unit grid on/off</td><td class="k">⌥⌘O</td><td>Outline line</td></tr>
+  <tr><td class="k">⇧H / ⇧V</td><td>Flip horizontal / vertical</td><td class="k">?</td><td>Show shortcuts</td></tr>
+</table>
+</div>
+<p class="hint">There is no A (Figma's point-select) because there is no separate point mode. If A is in your fingers, it does the same as V.</p>
+
+<!-- =================================================================== DECISIONS -->
+<h2>10 · Decisions, left out on purpose, open questions</h2>
+<div class="kc">
+  <div><h3>Decisions</h3><ol>
+    <li><b>Takeover route</b> <code>/glyphs/&lt;name&gt;/edit</code> and <code>/glyphs/new</code>, with the app header kept. Dialogs only for small, single-decision steps.</li>
+    <li><b>Edit</b> under the tile on hover/focus and on the selected tile. Double-click or Enter also opens it. The inspector gets Edit outline, Replace from file…, Trace from image….</li>
+    <li><b>Own Save.</b> Save glyph writes the SVG at once (hash-checked). Glyph undo is separate, and the header's undo is hidden on this route.</li>
+    <li><b>One pointer tool.</b> Selected shapes show live points. No point mode, no transform box (numbers instead), no layers panel.</li>
+    <li><b>Open paths are lines</b> at the reference weight with round ends. Outlined on demand or on save. The file only holds filled shapes.</li>
+    <li><b>Reference weight</b> is one font-wide number in <code>design.json</code>, set on the Glyphs screen. The editor's dot can change it for the session only.</li>
+    <li><b>Compare = translucent blue</b>: dot (filled), other glyph (filled), last saved (dashed outline). On top, click-through, never saved.</li>
+    <li><b>Ops preview live</b> with a grey dashed "before". Simplify = 1 slider. Thicken = total width change, selection or whole glyph. Booleans: the newest shape cuts.</li>
+    <li><b>New glyph = name + area + start.</b> Names never overwrite. The area is joined on first save, as a design change.</li>
+    <li><b>Trace images stay in the browser</b> (per glyph) for re-tracing, not in the repo.</li>
+    <li><b>In-context strip</b> in the editor (3–5 words, live rules, unsaved outline) plus a link to the Tester.</li>
+  </ol></div>
+  <div><h3>Left out on purpose</h3><ul>
+    <li>Layers, groups, colour, opacity, text, gradients, images in the output.</li>
+    <li>Pressure or variable-width brushes. The pencil draws a line of one weight.</li>
+    <li>A separate point-edit mode and Figma's live boolean groups.</li>
+    <li>A transform box on the canvas (scale/rotate via numbers and Fit to box).</li>
+    <li>Renaming a glyph (it touches the file, components.csv and design.json; it belongs to the Areas screen later).</li>
+    <li>Changing area membership or typing keys inside the editor.</li>
+    <li>Versions, proposals and review (the hosted phase).</li>
+    <li>Batch import of many SVGs at once (see questions).</li>
+    <li>Auto-measuring stroke weight.</li>
+  </ul></div>
+  <div><h3>Open questions</h3><ol>
+    <li>Edit button on <b>every</b> tile all the time, or hover + selected as drawn?</li>
+    <li>Default reference weight: which number? (Today's glyphs sit around 30–45 units. Your measurements will settle it.)</li>
+    <li>Should trace sources be kept in the repo (<code>inputs/sources/</code>) so the brush originals survive a browser reset?</li>
+    <li>Is the pencil (freehand + simplify) worth having next to the pen, or is "trace a scan, then tidy" the real workflow?</li>
+    <li>Drop many SVGs at once (a Figma export of a whole set): a batch import list, or one at a time?</li>
+    <li>Should the Glyphs tile show a small weight badge (measured stroke width vs the reference)? It needs a raster measurement, which is more than Paper.js gives for free.</li>
+    <li>Subtract by drawing order, with ⇧ to swap: clear enough without a layers panel?</li>
+  </ol></div>
+</div>
+
+</main>
+</body>
+</html>

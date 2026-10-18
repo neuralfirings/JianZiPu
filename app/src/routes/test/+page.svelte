@@ -5,6 +5,7 @@
   import { anchorNames } from '$lib/shape';
   import WordCanvas from '$lib/components/WordCanvas.svelte';
   import { SAMPLE_SETS, DEFAULT_STRIP } from '$lib/words';
+  import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
 
   let text = $state(localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' '));
   let mode = $state<'live' | 'font' | 'both'>('live');
@@ -16,6 +17,7 @@
   let status = $state<BuildStatus | null>(null);
   let fontVersion = $state(0);
   let fontLoaded = $state(false);
+  let font = $state<LoadedFont | null>(null);     // the exact build rendered in "Built font" mode
   let logOpen = $state(false);
   let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -37,19 +39,18 @@
   });
 
   async function loadFont() {
+    const b = status?.build;
+    if (!b) { fontLoaded = false; font = null; return; }
     try {
-      const ff = new FontFace('JianZiPuBuilt', `url(/JianZiPu.ttf?t=${Date.now()})`);
-      await ff.load();
-      document.fonts.add(ff);
+      font = await loadFontFrom(b.url, `build ${b.id}`, 'build', b.id);
       fontLoaded = true; fontVersion++;
-    } catch { fontLoaded = false; }
+    } catch { fontLoaded = false; font = null; }
   }
   async function refreshStatus() {
     status = await api.buildStatus();
     if (status.state === 'running') setTimeout(refreshStatus, 700);
-    else if (status.state === 'done' && status.ok && fontMtimeSeen !== status.font_mtime) { fontMtimeSeen = status.font_mtime; loadFont(); }
+    else if (status.build && font?.id !== status.build.id) loadFont();
   }
-  let fontMtimeSeen: number | null = null;
   async function build() {
     if (app.dirty && !(await app.save())) return;
     logOpen = true;
@@ -78,10 +79,10 @@
     <div class="row wrap">
       <span>Render with</span>
       <label><input type="radio" bind:group={mode} value="live" /> Live preview <span class="muted">(boxes, unsaved rules)</span></label>
-      <label><input type="radio" bind:group={mode} value="font" disabled={!fontLoaded} /> Built font <span class="muted">JianZiPu.ttf</span></label>
+      <label><input type="radio" bind:group={mode} value="font" disabled={!fontLoaded} /> Built font {#if font}<span class="muted">{font.label}</span>{/if}</label>
       <label><input type="radio" bind:group={mode} value="both" disabled={!fontLoaded} /> Compare both</label>
       <span class="muted">
-        {#if status?.font_mtime}built {new Date(status.font_mtime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} from saved files{:else}no build yet{/if}
+        {#if status?.build}built {fmtTime(status.build.time)} from saved files{:else}no build yet{/if}
         {#if app.dirty} · ⚠ {app.changes.length} unsaved change{app.changes.length === 1 ? '' : 's'} not in the font{/if}
       </span>
       <span class="spacer"></span>
@@ -90,6 +91,20 @@
         <span class={status.ok ? 'badge-ok' : 'badge-danger'}>{status.ok ? '✓ last build ok' : '✗ last build failed'}{#if status.finished && status.started} · {(status.finished - status.started).toFixed(1)} s{/if}</span>
       {/if}
     </div>
+    {#if status?.build}
+      {@const b = status.build}
+      <div class="row wrap built">
+        <span><strong>{b.id}</strong> · JianZiPu.ttf · {fmtBytes(b.bytes)} · {fmtTime(b.time)}</span>
+        <span class="muted small" title={b.file}>in a temporary folder on the dev server, kept while it runs</span>
+        <a href="{b.url}?download=1" download="JianZiPu.ttf"><button>Download JianZiPu.ttf</button></a>
+        <a href="/tester?build={b.id}"><button>Open in Tester ↗</button></a>
+        {#if status.builds.length > 1}
+          <details class="older"><summary>{status.builds.length - 1} earlier build{status.builds.length > 2 ? 's' : ''}</summary>
+            <table><tbody>{#each status.builds.slice(1) as o}<tr><td>{o.id}</td><td>{fmtTime(o.time)}</td><td>{fmtBytes(o.bytes)}</td><td><a href="{o.url}?download=1" download="JianZiPu.ttf">download</a></td><td><a href="/tester?build={o.id}">test</a></td></tr>{/each}</tbody></table>
+          </details>
+        {/if}
+      </div>
+    {/if}
     <div class="row wrap">
       <input type="text" style="flex: 1; min-width: 300px; font-family: var(--mono)" bind:value={text} placeholder="type words: s7k5 名七勾五 :fenkai C03|s6,5"
         oncompositionstart={() => (composing = true)} oncompositionend={() => { composing = false; text = text + ''; }} />
@@ -115,7 +130,7 @@
         {/if}
         {#if mode !== 'live'}
           {#key fontVersion}
-            <div class="font" style="font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {Math.max(1, Math.round((w.advance + 1000) / 1000)) * size}px">{w.word}</div>
+            <div class="font" style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {Math.max(1, Math.round((w.advance + 1000) / 1000)) * size}px">{w.word}</div>
           {/key}
         {/if}
         <div class="keys muted">{w.word}{#if w.pieces.some((p) => p.layout === null && p.glyphs.some((g) => !['space', 'numbersign', 'advance'].includes(g)))} <span class="badge-warn" title="Some glyphs matched no word type">⚠</span>{/if}</div>
@@ -139,8 +154,12 @@
   .words { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: var(--s-3); padding: var(--s-4); align-content: flex-start; }
   .word { display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .word a { display: block; }
-  .font { font-family: 'JianZiPuBuilt', 'JianZiPu', serif; font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--canvas); border-radius: var(--radius); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }
+  .font { font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--canvas); border-radius: var(--radius); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }
   .keys { font-family: var(--mono); }
+  .built { padding: var(--s-2) var(--s-3); background: var(--bg-2); border-radius: var(--radius); }
+  .small { font-size: var(--t-xs); }
+  .older summary { cursor: pointer; font-size: var(--t-sm); }
+  .older td { padding: 2px 10px 2px 0; font-size: var(--t-sm); }
   .log { border-top: 1px solid var(--line); padding: var(--s-2) var(--s-4); max-height: 40vh; overflow: auto; }
   pre { font: var(--t-xs)/1.4 var(--mono); white-space: pre-wrap; }
 </style>
