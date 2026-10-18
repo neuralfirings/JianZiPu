@@ -51,3 +51,14 @@ describe('bumpGapOwn', () => {
     expect(rel.gap).toEqual([{ when_elem: ['e1'], value: 16 }, { when_elem: ['e2'], value: 22 }, { when_elem: ['e2', 'e3'], value: 20 }, { value: 10 }]);
   });
 });
+
+describe('else gaps toggle', () => {
+  it('is off by default and remembered in this browser', async () => {
+    const { editor } = await import('./editor.svelte');
+    expect(editor.showElse).toBe(false);
+    editor.showElse = true;
+    expect(localStorage.getItem('jzp-show-else')).toBe('1');
+    editor.showElse = false;
+    expect(localStorage.getItem('jzp-show-else')).toBe('0');
+  });
+});

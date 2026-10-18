@@ -141,6 +141,9 @@
   <div class="tabs">
     <button class="tab" class:on={axis === 'y'} onclick={() => { editor.axis = 'y'; editor.viewedRel = null; }}>↕ Vertical</button>
     <button class="tab" class:on={axis === 'x'} onclick={() => { editor.axis = 'x'; editor.viewedRel = null; }}>⇆ Horizontal</button>
+    <label class="elsegaps" title="Draw the else entries as gray dashed arrows on the canvas: the gap this part gets in words without the bases before them. Hover an else pill to see just its arrow.">
+      <input type="checkbox" bind:checked={editor.showElse} /> <svg width="16" height="8" aria-hidden="true"><line x1="0" x2="16" y1="4" y2="4" /></svg> else gaps
+    </label>
   </div>
 
   <div class="chain">
@@ -148,6 +151,7 @@
     {#each chain as c, k (c.index)}
       {#if k > 0}<span class="else">else</span>{/if}
       <button class="pill" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)}
+        onpointerenter={() => (editor.hoverRel = c.index)} onpointerleave={() => { if (editor.hoverRel === c.index) editor.hoverRel = null; }}
         draggable="true" ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
         title={c.index === active ? 'In effect for the preview word' : basePresent(c.rel) ? 'Not in effect: an earlier base wins. Click to look at its rules (the preview drops the parts before it).' : 'Not in effect: this part is not in the word. Click to add it to the preview.'}
         onclick={() => viewPill(c.index)}>{c.index === active ? '● ' : ''}{pillLabel(c.rel)}</button>
@@ -167,12 +171,12 @@
   {:else if rel}
     <div class="sentence muted">
       {#if rel.base == null}
-        {label}'s {axis === 'y' ? 'bottom' : 'left'} edge sits at {axis === 'y' ? 'height' : 'x'} = gap
+        <span class="em-me" onpointerenter={() => (editor.hoverEdge = { id: `${axis}:${viewed}`, side: 'me' })} onpointerleave={() => (editor.hoverEdge = null)} role="note">{label}'s {axis === 'y' ? 'bottom' : 'left'} edge</span> sits at {axis === 'y' ? 'height' : 'x'} = gap
       {:else}
-        {label}'s
+        <span class="em-me" onpointerenter={() => (editor.hoverEdge = { id: `${axis}:${viewed}`, side: 'me' })} onpointerleave={() => (editor.hoverEdge = null)} role="note">{label}'s
         {#if editor.advanced}<select value={rel.elem_edge ?? (axis === 'y' ? 'top' : 'right')} onchange={(e) => setEdge('elem_edge', (e.target as HTMLSelectElement).value)}>{#each EDGES as ed}<option value={ed}>{ed}</option>{/each}</select>{:else}{rel.elem_edge ?? (axis === 'y' ? 'top' : 'right')}{/if}
-        edge sits at {pillLabel(rel)}'s
-        {#if editor.advanced}<select value={rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')} onchange={(e) => setEdge('base_edge', (e.target as HTMLSelectElement).value)}>{#each EDGES as ed}<option value={ed}>{ed}</option>{/each}</select>{:else}{rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')}{/if}
+        edge</span> sits at <span class="em-base" onpointerenter={() => (editor.hoverEdge = { id: `${axis}:${viewed}`, side: 'base' })} onpointerleave={() => (editor.hoverEdge = null)} role="note">{pillLabel(rel)}'s
+        {#if editor.advanced}<select value={rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')} onchange={(e) => setEdge('base_edge', (e.target as HTMLSelectElement).value)}>{#each EDGES as ed}<option value={ed}>{ed}</option>{/each}</select>{:else}{rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')}{/if}</span>
         + gap{#if axis === 'y'} <span title="Positive pulls it up into the base's box; negative leaves space">(+ overlaps, − leaves space)</span>{/if}
       {/if}
       <button class="tiny" title="Remove this base from the chain" onclick={removeViewed}>remove ×</button>
@@ -222,7 +226,9 @@
 <style>
   .rp { display: flex; flex-direction: column; gap: var(--s-2); }
   .spacer { flex: 1; }
-  .tabs { display: flex; border-bottom: 1px solid var(--line); gap: 4px; }
+  .tabs { display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); gap: 4px; }
+  .elsegaps { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--fg-2); white-space: nowrap; }
+  .elsegaps line { stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 3 2; }
   .tab { border-bottom: 0; border-radius: 6px 6px 0 0; height: 26px; }
   .tab.on { background: var(--bg); position: relative; top: 1px; }
   .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
@@ -232,6 +238,10 @@
   .pill.absent { border-style: dashed; color: var(--fg-2); }
   .pill.add { border-style: dashed; color: var(--fg-2); background: transparent; }
   .else { font-size: var(--t-xs); color: var(--fg-2); }
+  /* the two edges, highlighted in the colours of the canvas edge bars (a key, not a link) */
+  .em-me, .em-base { color: var(--fg); border-radius: 2px; padding: 0 2px; }
+  .em-me { background: color-mix(in srgb, var(--edge-me) 22%, transparent); }
+  .em-base { background: color-mix(in srgb, var(--edge-base) 22%, transparent); }
   .addwrap { position: relative; }
   .menu { position: absolute; z-index: 20; top: 100%; right: 0; margin-top: 4px; min-width: 220px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; display: flex; flex-direction: column; }
   .mi { text-align: left; border: 0; background: transparent; }

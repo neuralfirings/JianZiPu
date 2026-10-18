@@ -190,3 +190,50 @@ describe('tools (direct calls)', () => {
     tools.destroy();
   });
 });
+
+describe('compare overlays', () => {
+  const GHOST = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M200 200h100v100h-100z" fill="black"/></svg>';
+  it('picks the dot first, then the compare glyph only where it has ink', () => {
+    scene.loadSvg(SQUARE);
+    scene.setGhostGlyph(GHOST);
+    scene.dotPos = [250, 250];
+    scene.setDot(true);
+    expect(scene.overlayAt(new paper.Point(250, 250))).toBe('dot');
+    expect(scene.overlayAt(new paper.Point(210, 290))).toBe('ghost');
+    expect(scene.overlayAt(new paper.Point(150, 150))).toBeNull();
+  });
+  it('moves the selected overlays together, outside undo, and remembers where', () => {
+    scene.loadSvg(SQUARE);
+    scene.setGhostGlyph(GHOST);
+    scene.setDot(true);
+    const dot0 = [...scene.dotPos!];
+    expect(scene.moveOverlays(5, 5)).toBe(false);          // nothing picked
+    scene.selectOverlay('ghost');
+    scene.selectOverlay('dot', true);
+    expect(scene.moveOverlays(10, -4)).toBe(true);
+    expect(scene.dotPos).toEqual([dot0[0] + 10, dot0[1] - 4]);
+    expect(scene.ghostOffset).toEqual([10, -4]);
+    expect(scene.canUndo).toBe(false);
+    expect(scene.dirty).toBe(false);
+    scene.setGhostGlyph(GHOST);                             // rebuilt (another glyph, a new weight…): stays moved
+    expect(scene.overlayAt(new paper.Point(305, 250))).toBe('ghost');
+    scene.setDot(false);                                    // a hidden overlay drops out of the selection
+    expect([...scene.overlaySel]).toEqual(['ghost']);
+  });
+  it('tools: arrows nudge picked overlays instead of the outline; clearing lets go', () => {
+    scene.loadSvg(SQUARE);
+    scene.setGhostGlyph(GHOST);
+    const tools = new Tools(scene);
+    scene.selectOverlay('ghost');
+    tools.nudge(1, 0);
+    expect(scene.ghostOffset).toEqual([1, 0]);
+    expect(scene.paths[0].bounds.left).toBe(10);           // the outline didn't move
+    tools.selectPaths([scene.paths[0]]);                    // picking a shape lets go of the overlays
+    expect(scene.overlaySel.size).toBe(0);
+    scene.selectOverlay('ghost');
+    tools.clearSelection();
+    expect(scene.overlaySel.size).toBe(0);
+    tools.destroy();
+  });
+});
+

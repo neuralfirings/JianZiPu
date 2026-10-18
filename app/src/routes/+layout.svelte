@@ -6,7 +6,7 @@
   import { goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
   import { editor } from '$lib/editor.svelte';
-  import { panels } from '$lib/panels.svelte';
+  import { panels, editorPanels } from '$lib/panels.svelte';
   let { children } = $props();
   let menu = $state(false);
   let dialog = $state<'import' | 'export' | null>(null);
@@ -14,7 +14,6 @@
 
   const nav = [
     ['/glyphs', 'Glyphs'],
-    ['/areas', 'Areas'],
     ['/layouts', 'Layouts'],
     ['/test', 'Test & Build'],
     ['/tester', 'Tester']
@@ -94,7 +93,7 @@
           <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
           <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
           <hr />
-          <button onclick={() => panels.reset()} disabled={panels.isDefault} title="Put the Layouts panels back where they started">Reset panel layout</button>
+          <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault} title="Put the panels of Layouts and the glyph editor back where they started">Reset panel layouts</button>
         </div>
       {/if}
     </span>

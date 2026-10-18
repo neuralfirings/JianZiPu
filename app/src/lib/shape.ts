@@ -128,3 +128,77 @@ export function canvasBox(
   const m = o.fit ? 60 : 0;
   return { x: x0 - m, y: -(y1 + m), w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
 }
+
+/** Rough width of a canvas label in font units: CJK characters are a full em, the rest ~0.55 em. */
+export function labelWidth(text: string, fs: number): number {
+  let w = 0;
+  for (const ch of text) w += /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(ch) ? fs : fs * 0.55;
+  return w;
+}
+
+export type LabelBox = { x: number; y: number; w: number; h: number; fixed?: boolean };
+
+/** Vertical shifts (down, in the same units) that keep labels from overlapping: fixed boxes stay put
+ *  and are placed first, then each other box moves down a line at a time until it is clear. */
+export function placeLabels(boxes: LabelBox[], maxSteps = 12): number[] {
+  const placed: LabelBox[] = [];
+  const hit = (a: LabelBox, b: LabelBox) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const dy = boxes.map(() => 0);
+  const order = boxes.map((_, i) => i).sort((i, j) => Number(!!boxes[j].fixed) - Number(!!boxes[i].fixed));
+  for (const i of order) {
+    const b = boxes[i];
+    if (!b.fixed) {
+      let n = 0;
+      while (n < maxSteps && placed.some((p) => hit({ ...b, y: b.y + dy[i] }, p))) { dy[i] += b.h * 1.15; n++; }
+    }
+    placed.push({ ...b, y: b.y + dy[i] });
+  }
+  return dy;
+}
+
+/** Canvas zoom, as a multiple of "fit the panel": 1 = fit. */
+export const ZOOM_MIN = 0.25, ZOOM_MAX = 8;
+export function clampZoom(z: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 1000) / 1000));
+}
+/** The scroll offset that keeps the content point under the pointer still when the content
+ *  scales by `factor` (`pointer` is measured from the scroller's visible edge). */
+export function zoomScroll(scroll: number, pointer: number, factor: number): number {
+  return Math.max(0, (scroll + pointer) * factor - pointer);
+}
+
+export type Seg = { x1: number; y1: number; x2: number; y2: number };
+export type BoxEdge = 'top' | 'bottom' | 'left' | 'right';
+type Rect = { x: number; y: number; size: [number, number] };
+const edgeLen = (b: Rect, e: BoxEdge) => (e === 'top' || e === 'bottom' ? b.size[0] : b.size[1]);
+
+/** A highlight bar for one edge of a box (font units, y up): `len` long (at most the edge),
+ *  centred on `at` (where the rule's arrow crosses) but kept inside the edge, and moved `inset`
+ *  into the box so it reads as that box's edge, not a neighbour's, and clears the outline. */
+export function edgeBar(b: Rect, edge: BoxEdge, at: number, len: number, inset = 0): Seg {
+  const [w, h] = b.size;
+  if (edge === 'top' || edge === 'bottom') {
+    const y = edge === 'top' ? b.y + h - inset : b.y + inset, L = Math.min(len, w);
+    const c = Math.min(b.x + w - L / 2, Math.max(b.x + L / 2, at));
+    return { x1: c - L / 2, y1: y, x2: c + L / 2, y2: y };
+  }
+  const x = edge === 'right' ? b.x + w - inset : b.x + inset, L = Math.min(len, h);
+  const c = Math.min(b.y + h - L / 2, Math.max(b.y + L / 2, at));
+  return { x1: x, y1: c - L / 2, x2: x, y2: c + L / 2 };
+}
+
+/** One length for both bars of a rule, so the pair reads as the arrow's two ends:
+ *  60 % of the shorter edge, capped at `cap` (the on-screen cap in font units). */
+export function barLength(edges: { box: Rect; edge: BoxEdge }[], cap: number): number {
+  return Math.min(cap, 0.6 * Math.min(...edges.map((e) => edgeLen(e.box, e.edge))));
+}
+
+/** True when two edge bars lie on the same line and overlap (a rule with a gap of ~0 between
+ *  touching edges): they then need splitting apart, each into its own box. */
+export function barsCoincide(a: Seg, b: Seg, tol: number): boolean {
+  const horiz = (s: Seg) => Math.abs(s.y1 - s.y2) < 1e-9;
+  if (horiz(a) !== horiz(b)) return false;
+  return horiz(a)
+    ? Math.abs(a.y1 - b.y1) <= tol && a.x1 < b.x2 && b.x1 < a.x2
+    : Math.abs(a.x1 - b.x1) <= tol && a.y1 < b.y2 && b.y1 < a.y2;
+}

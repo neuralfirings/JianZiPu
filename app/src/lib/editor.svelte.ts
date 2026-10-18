@@ -1,9 +1,20 @@
 // Layout editor state: which word type is open, which optional parts the
 // preview includes, which glyph each part previews with, and the selection.
 import type { Design, GapEntry, Layout, Relationship, ResolvePayload, WordPiece } from './api';
-import { app } from './state.svelte';
+import { app, parseElement } from './state.svelte';
 import { choiceForNames, defaultChoice, shapeElements, type Choice, type ShapeElement } from './shape';
 import { entriesOf, isOtherwise } from './rules';
+
+export type BoxEdit = { area: string; size: [number, number]; before: { x: number; y: number; size: [number, number] }[] };
+
+/** Does any option of any part of `l` hold `area`? */
+export function layoutUsesArea(l: Layout, area: string): boolean {
+  return l.slots.some((s) => s.alternatives.some((alt) => alt.some((t) => parseElement(t).area === area)));
+}
+
+function readFlag(key: string): boolean {
+  try { return typeof localStorage !== 'undefined' && localStorage.getItem(key) === '1'; } catch { return false; }
+}
 
 class Editor {
   layoutName = $state('');
@@ -21,7 +32,18 @@ class Editor {
   selectedArrow = $state<string | null>(null);   // `${axis}:${relIndex}` of a selected rule arrow
   axis = $state<'x' | 'y'>('y');                 // rule panel tab
   viewedRel = $state<number | null>(null);        // relationship index whose rows the panel shows
+  hoverEdge = $state<{ id: string; side: 'base' | 'me' } | null>(null);   // Spacing sentence phrase under the pointer
+  hoverRel = $state<number | null>(null);         // chain pill under the pointer: its arrow shows even when else gaps are hidden
+  #showElse = $state(readFlag('jzp-show-else'));
+  /** Draw the chain's fallback ("else") gaps as gray arrows on the canvas. Kept in this browser. */
+  get showElse() { return this.#showElse; }
+  set showElse(v: boolean) { this.#showElse = v; try { localStorage.setItem('jzp-show-else', v ? '1' : '0'); } catch { /* storage off */ } }
   ruleEdit = $state<RuleEdit | null>(null);        // the rule editor, when open
+  /** The area the Area Properties panel shows when it isn't the selected part's
+   *  (picked in its switcher, or an area no part of this word type shows). */
+  areaView = $state<string | null>(null);
+  /** A box size being typed in Area Properties: previewed (through dragDesign), not applied yet. */
+  boxEdit = $state<BoxEdit | null>(null);
 
   get design(): Design | null {
     return this.dragDesign ?? app.design;
@@ -38,7 +60,33 @@ class Editor {
   select(name: string | null) {
     if (name !== this.selected) { this.viewedRel = null; this.ruleEdit = null; this.selectedArrow = null; }
     this.selected = name;
+    this.areaView = null;
   }
+
+  /** The area Area Properties shows: the picked one, else the selected part's. */
+  get shownArea(): string | null {
+    if (this.areaView) return this.areaView;
+    const e = this.selected ? this.elements.find((x) => x.name === this.selected) : null;
+    return e?.area ?? null;
+  }
+
+  /** Show an area: select a part that has it in this word type, else open the first word
+   *  type that has it and select that part; an area no shown part has is shown on its own.
+   *  `glyph` previews that member too. */
+  showArea(area: string, glyph: string | null = null) {
+    const d = app.design;
+    if (!d?.areas[area]) return;
+    let el = this.elements.find((e) => e.area === area);
+    if (!el && !(this.layout && layoutUsesArea(this.layout, area))) {
+      const l = d.layouts.find((x) => layoutUsesArea(x, area));
+      if (l) { this.setLayout(l.name); el = this.elements.find((e) => e.area === area); }
+    }
+    if (el) {
+      this.select(el.name);
+      if (glyph && d.areas[area].glyphs.includes(glyph)) this.pin(el.name, glyph);
+    } else this.areaView = area;
+  }
+
 
   setLayout(name: string) {
     const l = app.design?.layouts.find((x) => x.name === name);
@@ -46,6 +94,7 @@ class Editor {
     this.layoutName = name;
     this.choice = defaultChoice(l);
     this.selected = null;
+    this.areaView = null;
     this.resolved = null;
     this.ensurePins();
   }

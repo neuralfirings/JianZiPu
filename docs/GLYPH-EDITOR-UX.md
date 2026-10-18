@@ -60,7 +60,7 @@ leave guard, disk conflict) are dialogs.
    and never overwrites), Area (sets the box; "No area yet" = 350 × 350), Start from: Blank /
    SVG file / Image to trace. The editor opens with a sibling glyph already ghosted. The area is
    joined on **first save**, as a design change in the header's unsaved set, so design.json never
-   names a missing file. Typing keys stay on the Areas screen (the toast links there).
+   names a missing file. Typing keys are set in the editor's Typing panel or Glyphs → Typing (the Areas screen these lines once pointed to was folded into Layouts → Area Properties, 2026-10-18).
 10. **SVG import** (Import ▾, Replace from file, drop on canvas or grid, ⌘V of SVG text):
     asked only when the viewBox differs from the box (fit, default / keep size); stroked lines outlined
     by default; colours, opacity, text and images dropped, and the dialog says so; Replace or Add for existing glyphs.
@@ -83,14 +83,13 @@ leave guard, disk conflict) are dialogs.
 | Region | Contents |
 |---|---|
 | App header | Nav (Glyphs active), "Design: saved / N unsaved", Save design, ⋯. Undo buttons hidden on this route. |
-| Glyph bar | ← Glyphs · thumbnail · name · character · area chip with box size · state chip (Saved 14:02 / ● Edited · N changes / Saving… / new) · ↶ ↷ · Discard · **Save glyph** |
+| Glyph bar | ← Glyphs (or ← Layouts when opened from there, `?back=`) · thumbnail · name · character · area chip with box size · state chip (Saved 14:02 / ● Edited · N changes / Saving… / new) · ↶ ↷ · Discard · **Save glyph** |
 | Tool rail (left) | V · P · ⇧P · R/O · H · Z |
 | Action bar (top of canvas) | Combine ∪ − ∩ ⊕ · Simplify… · Thicken… · Outline line · ⇆ ⇅ · Import ▾ (SVG file / Image to trace / Paste) |
 | Canvas | Area box (white) on grey, units 1:1 from 0,0 top-left, selected shape's outline + points + handles, overlays, red hatch outside the box, optional 10-unit grid |
 | Status line | cursor x/y in units · shapes · points · selected · outside-box warning · zoom |
-| In context (bottom, folds) | word list field, 32/64/120 px, rendered words with keys under them, Open in Tester ↗ |
-| Side panel (right, fixed, sections fold) | **Selection** (point x/y + Corner/Smooth/Free; shape position/size/scale/rotate; line weight + ends + Outline line; nothing selected: glyph totals + Fit/Center) · **Compare** · **Image** (only after an image import) · **Glyph** (file, box, keys → Areas, last saved) · **Checks** |
-| Trace mode | the side panel shows Trace settings, the canvas shows image + frame + preview, drawing tools paused, Save disabled until Use/Cancel |
+| Panels (built 2026-10-18) | Dockable like the Layouts screen (`PanelWorkspace`, store `editorPanels`, localStorage `jzp-editor-panels-v1`): fold, drag between the right column / left column / bottom strip, resize, ⋯ menu. Default: right = **Selection** (point x/y + Corner/Smooth/Free; shape position/size/scale/rotate; picked compare overlays; nothing selected: glyph totals + Fit/Center) · **Compare** (dot, compare glyph, Line up, last saved; dot and compare glyph drag and nudge on the canvas) · **Glyph** (areas with × / + Add to area, file, box) · **Typing** (the Glyphs screen's spelling fields) · **Checks**; bottom = **Tester** (the shared `WordTester`: words that use the glyph, sample sets, 40/72/116 px, Test & Build ↗) · **Try it** (spelling checks). ⋯ → Reset panel layouts puts them back. |
+| Trace mode | a **Trace** panel appears (opened and shown wherever it sits), the canvas shows image + frame + preview, drawing tools paused, Save disabled until Use/Cancel |
 
 ## Interaction notes
 

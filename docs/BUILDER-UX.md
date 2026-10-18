@@ -113,6 +113,10 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
 
 ### 2.2 Areas
 
+> **Superseded (2026-10-18):** the Areas screen is gone. Box size, members and new areas live in the
+> **Area Properties** panel on Layouts; the Glyphs screen's area groups hold the big member grid. See
+> `docs/AREAS-PLACEMENT-UX.md`. The section below is kept as the original design.
+
 ```
 ┌ Areas ───────────────────────────────────────────────────────────────────────┐
 │ ┌ Areas ────────────┐ ┌ left · Finger ──────────────────────────────────────┐│
@@ -482,7 +486,28 @@ Gap above 注, after ★ Stroke                                    [plain number
 - Dependants move with the dragged box (positions are derived); the status line under the
   canvas says "also moves: Stroke, String".
 - Dragging the ★ main glyph or the first part edits "Start height".
-- Box **resize** is not on the canvas (box sizes are shared; edit them in Areas).
+- Box **resize** is not on the canvas (box sizes are shared; edit them in Area Properties, which previews the change on the canvas).
+- **Edge bars** (2026-10-18; sketched by the owner, colours and weights by Kat): each rule in effect
+  marks the two edges it ties. The selected part is blue (`--edge-me` = `--accent`, 3 px outline,
+  7 px bar); its base is **amber** (`--edge-base` #c08a00 / dark #f2c14e: blue vs amber is the most
+  colour-blind-safe pair and stays clear of the red arrows and the brown `--warn`): the base's whole
+  outline turns amber (2 px solid, over the pale blue and over the anchor's red), with a 6 px bar.
+  Bars are centred on the outline (outline width + 4 px, opacity 1, round caps, under the glyph ink);
+  only when the two bars would cover each other (touching edges, gap ≈ 0) does each step 3 px into
+  its own box. Both bars of a rule have one length: 60 % of the shorter edge, at most 160 px on
+  screen, centred on the arrow and kept inside the edge. Every base of a shown rule is outlined; with
+  an arrow selected, the other rules' bars and base outlines drop to .35. The Spacing sentence
+  highlights the two phrases with 22 % tints of the same colours (a key, not a link); hovering a
+  phrase thickens its bar. A hovered or opened else pill shows its bars and outlines its base.
+  Alternatives Kat offered, not taken: a violet "me" colour; no "me" bar; orange #e07b00 for the base.
+- **else gaps** (2026-10-18, Spacing panel tab row, off by default, kept per browser): draws the
+  chain's fallback entries as gray dashed arrows (`else −35 after 徽 position`: the gap in words
+  without the bases before it). Off, hovering or opening an else pill still draws that one arrow.
+  Label picked by Kat from: else gaps / show else gaps / fallback gaps / gaps in other words.
+- Zoom (2026-10-18; replaced the old width slider): − / % / + / **Fit** in the canvas toolbar,
+  ⌘ + scroll or pinch zooms at the pointer, `+` / `−` keys, `⇧1` fits. 100 % = the word fits the
+  canvas area; zoomed in, the area scrolls. A faint 1000 × 1000 square centred on the page center
+  shows the size of a typical character.
 - Keyboard: ↑↓←→ nudge the active number by 1, ⇧ by 10; `Tab`/`⇧Tab` cycle parts in stack
   order; `Esc` cancels a drag and restores; `Enter` in a number field commits; `⌘Z`/`⇧⌘Z`
   undo/redo; `B` toggles boxes/glyphs; `Space` held = peek at the built font rendering of the
@@ -552,9 +577,9 @@ switch line; repeated parts get `− n +` and one line per row. Left-out parts s
 would-be glyphs dimmed. Advanced adds plain tags (*optional*, *1–4 rows*, *2 options*,
 *needs …*) and **edit ▸**, a card with every structural edit: optional, repeats + range,
 "only when … is also there", option blocks (area select + id + × per chip, `+` area, `+
-another option`, **area ↗** to the Areas screen), **Remove part…** (lists the rules it takes
-along). `+ Add part ▾` picks an area; areas themselves (name, box, glyphs) are made on the
-Areas screen (Advanced → + New). **Recognition** is a fold at the bottom: toggle chips for
+another option`, **area ↗** shows it in Area Properties), **Remove part…** (lists the rules it takes
+along). `+ Add part ▾` picks an area; `+ Add part ▾ → New area…` makes the area and the part in one step;
+areas themselves (name, box, glyphs) are edited in Area Properties (+ New area… in its switcher, Advanced). **Recognition** is a fold at the bottom: toggle chips for
 `requires_any` and `priority` (rank shown in tick order).
 
 **Always visible vs Advanced.** Always: Structure (preview checkboxes, glyph chips, drag
@@ -649,7 +674,7 @@ Component list (one Svelte file each, no library): `AppHeader`, `SaveChip`, `Bud
 id), `Inspector`, `AreaList`, `MemberGrid`, `KeyFields`, `WordTypeList`, `Canvas`
 (`AreaBox`, `GapArrow`, `PreviewGlyphBar`), `StackPanel` (`StackRow`), `RowTemplate`
 (Vertical), `SegmentPanel` (Chord), `WordStrip`, `RulePanel`, `RuleEditor` (replaced the
-planned `SpacingPanel`/`GapRow`/`ExceptionList`), `CenteringPanel`, `TestStrip`, `RenderedWord`, `SampleSets`, `BuildPanel`,
+planned `SpacingPanel`/`GapRow`/`ExceptionList`), `CenteringPanel`, `TestStrip` (built as the shared `WordTester`), `RenderedWord`, `SampleSets`, `BuildPanel`,
 `ImportExportDialog`, `ConflictDialog`, `Toast`, `Tooltip`, `SoonButton`, `NumberField`
 (arrow-key nudge, ⇧×10, scrub on drag), `Disclosure`.
 

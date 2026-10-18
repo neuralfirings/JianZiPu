@@ -1,11 +1,14 @@
 <script lang="ts">
   // One dockable panel: the shared header (drag grip, fold chevron, title,
   // badge, summary when folded, ⋯ menu) and the body.
-  import { panels, DOCKS, DOCK_LABEL, type PanelId, type Dock } from '$lib/panels.svelte';
+  import { panels as layoutPanels, DOCKS, DOCK_LABEL, type AnyPanels } from '$lib/panels.svelte';
   import type { Snippet } from 'svelte';
-  let { id, title, badge = null, warn = false, summary = '', tag = '', children }: {
-    id: PanelId; title: string; badge?: string | number | null; warn?: boolean; summary?: string; tag?: string; children: Snippet;
+  let { id, title, badge = null, warn = false, summary = '', tag = '', store, children }: {
+    id: string; title: string; badge?: string | number | null; warn?: boolean; summary?: string; tag?: string;
+    /** The screen's panel store (Layouts' by default). */
+    store?: AnyPanels; children: Snippet;
   } = $props();
+  let panels = $derived(store ?? (layoutPanels as unknown as AnyPanels));
   let folded = $derived(panels.isFolded(id));
   let dock = $derived(panels.dockOf(id));
   let menu = $state(false);

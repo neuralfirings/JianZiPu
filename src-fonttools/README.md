@@ -193,7 +193,7 @@ read what's already sitting in `src-fonttools/inputs/`.
 | To change...                       | Edit...                                                       |
 |------------------------------------|---------------------------------------------------------------|
 | glyph shapes                       | Figma GLYPH pages (then `--figma_pull`), or drop SVGs in `inputs/svg/` |
-| which glyphs belong to which part  | Builder → Areas (writes `inputs/design.json`)                  |
+| which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
 | input keys / spellings             | Builder → Glyphs → Typing (writes `inputs/components.csv`)     |
 | Han char glyph names               | `src-fonttools/inputs/glyphRename.csv`                         |
@@ -223,7 +223,7 @@ Columns:
 - *(area membership is no longer a CSV column.)* Which glyphs belong to
   which area (`left`, `hui`, `right`, `char`, …) lives in
   `inputs/design.json` → `areas.<name>.glyphs`, edited in the Builder's
-  Areas screen. A glyph can belong to more than one area, e.g. the
+  Area Properties panel (Layouts) or from a glyph's "In areas" chips. A glyph can belong to more than one area, e.g. the
   hui-number glyphs (`md_1`..`md_13`) are both `hui` and `char` (chars for
   vertical-word mode, hui for normal word layout). `gen_classes()` in
   `features.py` turns each area into an `@area_*` glyph class (plus the
@@ -438,7 +438,9 @@ underlying mechanism explains what "conflict" means here:
 
 1. Export the glyph as `inputs/svg/md_<name>.svg` (a 350×350 box, like the
    other `md_*` glyphs).
-2. Builder → Areas → **Character** (`char`) → **Add glyphs** → pick it.
+2. Builder → Glyphs → **Character** (`char`) in the sidebar → **+ Add glyphs**
+   → pick it (or Layouts → Area Properties → switch to Character →
+   Manage → + Add glyphs).
    Then Glyphs → select it → fill in its spellings (Latin Entry, 简体, 繁體,
    …) in the inspector or the Typing table; Save writes `components.csv`.
 3. **Save**, then Test & Build → **Build font**. Type `:<key>` in the test
@@ -451,7 +453,8 @@ add it to those areas too; one glyph can be in several.
 ### Case 2: add a new SVG for the `jc` area (a third 急/绰-style marker)
 
 1. `inputs/svg/mod_<name>.svg`, 200×200 like `mod_chuo`/`mod_ji`.
-2. Areas → **急/绰 modifier** (`jc`) → Add glyphs; set its typing key.
+2. Glyphs → **急/绰 modifier** (`jc`) → + Add glyphs; set its typing key
+   (Glyphs → Typing).
 3. Save and build. It is positioned by the existing `jc` rules in every
    word type that has a `jc` part; if it needs its own gap, open Layouts,
    select the part whose gap depends on it, and add an exception row
@@ -545,11 +548,13 @@ inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
 the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
 edits outlines on a Paper.js canvas, imports SVGs, traces images with
 potrace, and writes the file through `PUT /api/svg/<name>`; see
-`docs/GLYPH-EDITOR-UX.md`), **Areas** (members, box
-size; spellings shown read-only, edited in Glyphs), **Layouts** (word types; eight dockable, foldable,
+`docs/GLYPH-EDITOR-UX.md`), **Layouts** (word types; eight dockable, foldable,
 resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
 Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
-rule editor with live canvas preview), Centering; a live test strip;
+rule editor with live canvas preview), Centering, Area Properties (the
+shared areas: switcher, box size previewed on the canvas until Enter,
+members with the position decimals as a grid, + New area under Advanced;
+see `docs/AREAS-PLACEMENT-UX.md`; the old Areas screen is gone); a live test strip;
 Advanced toggle for structural edits), **Test & Build** (live preview vs
 the built font, sample sets, Build button with log; each build is a
 separate file in a temp folder with Download and Open in Tester), **Tester**

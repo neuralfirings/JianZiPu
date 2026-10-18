@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
   import { api, type BuildStatus, type WordPayload } from '$lib/api';
   import { anchorNames, wordPage } from '$lib/shape';
@@ -8,7 +9,7 @@
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
   import { segments } from '$lib/cmap';
 
-  let text = $state(localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' '));
+  let text = $state(page.url.searchParams.get('words') || (localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' ')));
   let mode = $state<'live' | 'font' | 'both'>('live');
   let size = $state(96);
   let showBoxes = $state(false);

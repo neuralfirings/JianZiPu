@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DOCK_HIDE_BELOW, DOCK_MIN, panels } from './panels.svelte';
+import { DOCK_HIDE_BELOW, DOCK_MIN, panels, editorPanels } from './panels.svelte';
 
 beforeEach(() => { localStorage.clear(); panels.reset(); panels.mode = 'wide'; });
 
@@ -72,3 +72,26 @@ describe('panels store', () => {
     expect(all).toEqual(['budget', 'centering', 'glyphs', 'pagecenter', 'spacing', 'structure', 'tester', 'types']);
   });
 });
+
+describe('glyph editor panels', () => {
+  beforeEach(() => { editorPanels.reset(); editorPanels.mode = 'wide'; });
+  it('keeps its own arrangement under its own key, apart from Layouts', () => {
+    expect(editorPanels.dockOf('typing')).toBe('right');
+    expect(editorPanels.dockOf('tester')).toBe('bottom');
+    editorPanels.move('typing', 'bottom', 0);
+    expect(editorPanels.a.docks.bottom[0]).toBe('typing');
+    expect(JSON.parse(localStorage.getItem('jzp-editor-panels-v1')!).wide.docks.bottom[0]).toBe('typing');
+    expect(panels.isDefault).toBe(true);                       // Layouts untouched
+  });
+  it('loads a saved arrangement, dropping unknown ids and adding new panels back', () => {
+    localStorage.setItem('jzp-editor-panels-v1', JSON.stringify({ wide: { docks: { left: ['checks', 'nope'], right: ['selection'], bottom: [] }, folded: { checks: false } } }));
+    editorPanels.loaded = false;
+    editorPanels.load();
+    editorPanels.mode = 'wide';
+    expect(editorPanels.a.docks.left).toEqual(['checks']);
+    expect(editorPanels.a.docks.right[0]).toBe('selection');
+    const all = [...editorPanels.a.docks.left, ...editorPanels.a.docks.right, ...editorPanels.a.docks.bottom].sort();
+    expect(all).toEqual(['checks', 'compare', 'glyph', 'selection', 'tester', 'trace', 'tryit', 'typing']);
+  });
+});
+

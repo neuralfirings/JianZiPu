@@ -3,7 +3,7 @@
 // sketches, Rect/Ellipse stamp, Hand pans, Zoom zooms. One paper.Tool
 // dispatches on `mode`; keyboard shortcuts live in the Svelte component.
 import paper from 'paper';
-import type { Scene, PathLike } from './scene';
+import type { Scene, PathLike, Overlay } from './scene';
 
 export type Mode = 'select' | 'pen' | 'pencil' | 'rect' | 'ellipse' | 'hand' | 'zoom';
 
@@ -11,7 +11,8 @@ export type Mode = 'select' | 'pen' | 'pencil' | 'rect' | 'ellipse' | 'hand' | '
 const native = <T extends Event>(e: paper.ToolEvent | paper.KeyEvent) => (e as unknown as { event: T }).event;
 
 type Drag =
-  | { kind: 'pan' | 'dot'; moved: boolean }
+  | { kind: 'pan'; moved: boolean }
+  | { kind: 'overlay'; moved: boolean; last: paper.Point; start: paper.Point }
   | { kind: 'move'; moved: boolean; last: paper.Point; start: paper.Point }
   | { kind: 'points'; moved: boolean; last: paper.Point; start: paper.Point }
   | { kind: 'handle'; moved: boolean; seg: paper.Segment; which: 'handleIn' | 'handleOut'; alone: boolean; smooth: boolean }
@@ -69,12 +70,13 @@ export class Tools {
   get targets(): PathLike[] { const s = this.selectedPaths; return s.length ? s : this.scene.paths; }
 
   selectPaths(items: PathLike[], add = false) {
+    this.scene.selectOverlay(null);
     if (!add) for (const p of this.scene.paths) p.selected = false;
     for (const p of items) p.selected = true;
     this.onChange();
   }
   selectAll() { for (const p of this.scene.paths) p.selected = true; this.onChange(); }
-  clearSelection() { for (const p of this.scene.paths) p.selected = false; this.onChange(); }
+  clearSelection() { for (const p of this.scene.paths) p.selected = false; this.scene.selectOverlay(null); this.onChange(); }
   private clearPoints() { for (const s of this.selectedSegments) s.selected = false; }
 
   setMode(m: Mode) {
@@ -100,8 +102,7 @@ export class Tools {
     const p = e.point;
     const ev = native<MouseEvent>(e);
     if (this.mode === 'hand' || ev.button === 1) { this.drag = { kind: 'pan', moved: false }; return; }
-    const dot = this.scene.dotItem;
-    if (dot && dot.contains(p) && this.mode === 'select') { this.drag = { kind: 'dot', moved: false }; return; }
+    if (this.mode === 'select' && this.scene.overlayAt(p) === 'dot') return this.grabOverlay('dot', e);
     switch (this.mode) {
       case 'select': return this.downSelect(e);
       case 'pen': return this.downPen(e);
@@ -141,9 +142,24 @@ export class Tools {
       this.drag = { kind: 'move', moved: false, last: p, start: p };
       return;
     }
-    // 4. empty: marquee (shift adds)
+    // 4. the compare glyph (under the outline, so the outline stays editable where they overlap)
+    const ov = this.scene.overlayAt(p);
+    if (ov) return this.grabOverlay(ov, e);
+    // 5. empty: marquee (shift adds)
     if (!e.modifiers.shift) this.clearSelection();
     this.drag = { kind: 'marquee', moved: false, start: p, add: e.modifiers.shift };
+  }
+
+  /** Pick the dot or the compare glyph (⇧ adds to the picked ones) and start dragging them. */
+  private grabOverlay(o: Overlay, e: paper.ToolEvent) {
+    // the mouse event's own shift flag too: Paper only tracks modifiers from key events
+    if (e.modifiers.shift || native<MouseEvent>(e)?.shiftKey) this.scene.selectOverlay(o, true);
+    else if (!this.scene.overlaySel.has(o)) {
+      for (const p of this.scene.paths) p.selected = false;
+      this.scene.selectOverlay(o);
+    }
+    this.drag = { kind: 'overlay', moved: false, last: e.point, start: e.point };
+    this.onChange();
   }
 
   private downPen(e: paper.ToolEvent) {
@@ -205,7 +221,14 @@ export class Tools {
     const p = e.point;
     switch (d.kind) {
       case 'pan': this.scene.pan(e.delta.x * paper.view.zoom, e.delta.y * paper.view.zoom); this.onPan(); break;
-      case 'dot': { const dot = this.scene.dotItem!; dot.position = dot.position.add(e.delta); this.scene.dotPos = [dot.position.x, dot.position.y]; break; }
+      case 'overlay': {
+        let target = p;
+        if (e.modifiers.shift) { const t = p.subtract(d.start); target = Math.abs(t.x) > Math.abs(t.y) ? new paper.Point(p.x, d.start.y) : new paper.Point(d.start.x, p.y); }
+        const delta = target.subtract(d.last);
+        this.scene.moveOverlays(delta.x, delta.y);
+        d.last = target;
+        break;
+      }
       case 'move': case 'points': {
         let target = p;
         if (e.modifiers.shift) { const t = p.subtract(d.start); target = Math.abs(t.x) > Math.abs(t.y) ? new paper.Point(p.x, d.start.y) : new paper.Point(d.start.x, p.y); }
@@ -262,7 +285,7 @@ export class Tools {
       }
       case 'shape': if (d.path) { d.path.selected = true; this.scene.commit(d.ellipse ? 'ellipse' : 'rectangle'); } break;
       case 'zoom': this.scene.zoomAt(e.modifiers.alt || e.modifiers.option ? 1 / 1.5 : 1.5, paper.view.projectToView(d.start)); break;
-      case 'dot': this.onChange(); break;
+      case 'overlay': this.onChange(); break;
       case 'marquee': {
         this.marquee?.remove(); this.marquee = null;
         if (!d.moved) break;
@@ -343,6 +366,7 @@ export class Tools {
   }
 
   nudge(dx: number, dy: number) {
+    if (this.scene.moveOverlays(dx, dy)) { this.onChange(); return; }   // overlays are never saved: no undo step
     const delta = new paper.Point(dx, dy);
     const segs = this.selectedSegments;
     if (segs.length) { for (const s of segs) s.point = s.point.add(delta); this.scene.commit('nudge point'); }

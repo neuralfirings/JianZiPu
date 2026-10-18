@@ -1,27 +1,54 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
+  import { replaceState } from '$app/navigation';
   import { api, type Design, type Layout, type Relationship } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { editor, bumpGap, gapValue, gapEntryIndex } from '$lib/editor.svelte';
-  import { elementLabel, anchorNames, elementNames } from '$lib/shape';
+  import { elementLabel, anchorNames, elementNames, clampZoom, zoomScroll } from '$lib/shape';
   import { applyRuleEdit, combosOf, entriesOf } from '$lib/rules';
   import WordCanvas, { type Arrow, type Edge } from '$lib/components/WordCanvas.svelte';
   import CenterPanel from '$lib/components/CenterPanel.svelte';
-  import TestStrip from '$lib/components/TestStrip.svelte';
-  import GlyphTray from '$lib/components/GlyphTray.svelte';
+  import WordTester from '$lib/components/WordTester.svelte';
+  import AreaPanel from '$lib/components/AreaPanel.svelte';
   import RulePanel from '$lib/components/RulePanel.svelte';
   import RuleEditor from '$lib/components/RuleEditor.svelte';
   import StructurePanel from '$lib/components/StructurePanel.svelte';
   import WordTypesPanel from '$lib/components/WordTypesPanel.svelte';
   import PageCenterPanel from '$lib/components/PageCenterPanel.svelte';
   import FontBudgetPanel from '$lib/components/FontBudgetPanel.svelte';
-  import Panel from '$lib/components/Panel.svelte';
-  import PanelDock, { type Meta } from '$lib/components/PanelDock.svelte';
-  import { panels, DOCK_LABEL, type Dock, type PanelId } from '$lib/panels.svelte';
+  import PanelWorkspace from '$lib/components/PanelWorkspace.svelte';
+  import { usedIn } from '$lib/areas';
+  import { panels, type Meta, type PanelId } from '$lib/panels.svelte';
 
   const d = $derived(app.design!);
-  let canvasWidth = $state(560);
+  // canvas zoom: 1 = the word fits the canvas area; more scrolls
+  let zoom = $state(1);
+  let wrapW = $state(0);
+  let wrapEl = $state<HTMLDivElement>();
+  async function setZoom(z: number, at?: { x: number; y: number }) {
+    const nz = clampZoom(z), el = wrapEl;
+    if (!el || nz === zoom) return;
+    const f = nz / zoom, r = el.getBoundingClientRect();
+    const px = at ? at.x - r.left : el.clientWidth / 2, py = at ? at.y - r.top : el.clientHeight / 2;
+    const sx = el.scrollLeft, sy = el.scrollTop;
+    zoom = nz;
+    await tick();
+    el.scrollLeft = zoomScroll(sx, px, f); el.scrollTop = zoomScroll(sy, py, f);
+  }
+  function onWheel(e: WheelEvent) {
+    if (!e.ctrlKey && !e.metaKey) return;   // ⌘ + wheel, or a trackpad pinch (sent as ctrl + wheel)
+    e.preventDefault();
+    setZoom(zoom * Math.exp(-e.deltaY / 300), { x: e.clientX, y: e.clientY });
+  }
+  function onZoomKey(e: KeyboardEvent) {
+    const t = e.target as HTMLElement;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === '!' || (e.shiftKey && e.code === 'Digit1')) { e.preventDefault(); setZoom(1); }
+    else if (e.key === '=' || e.key === '+') { e.preventDefault(); setZoom(zoom * 1.25); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(zoom / 1.25); }
+  }
   let wrapH = $state(0);
   let canvasEl: WordCanvas;
   let status = $state<string>('');
@@ -62,11 +89,6 @@
   onMount(() => {
     panels.load();
     if (page.url.searchParams.get('budget') === '1') panels.setFolded('budget', false);
-    const onResize = () => panels.syncMode();
-    window.addEventListener('resize', onResize);
-    window.addEventListener('pointermove', dragMove);
-    window.addEventListener('pointerup', dragUp);
-    return () => { window.removeEventListener('resize', onResize); window.removeEventListener('pointermove', dragMove); window.removeEventListener('pointerup', dragUp); };
   });
   onMount(async () => {
     const want = page.url.searchParams.get('layout');
@@ -78,7 +100,14 @@
     }
     if (want && d.layouts.some((l) => l.name === want)) editor.setLayout(want);
     else if (!editor.layout) editor.setLayout(d.layouts[0]?.name ?? '');
+    // ?area=<id>&g=<glyph>: show that area (and preview the glyph) in Area Properties
+    const area = page.url.searchParams.get('area');
+    if (area && d.areas[area]) { editor.showArea(area, page.url.searchParams.get('g')); panels.setFolded('glyphs', false); }
     else editor.syncChoice();
+    if (area) {   // one-shot: a reload after switching areas shouldn't jump back
+      const u = new URL(page.url); u.searchParams.delete('area'); u.searchParams.delete('g');
+      replaceState(u, page.state);
+    }
   });
 
   $effect(() => { void app.design; if (editor.layoutName && !app.design?.layouts.some((l) => l.name === editor.layoutName)) editor.setLayout(app.design?.layouts[0]?.name ?? ''); else editor.syncChoice(); });
@@ -112,7 +141,8 @@
   let selectedEl = $derived(editor.selected ? editor.elements.find((e) => e.name === editor.selected) ?? null : null);
   const areaLabel = (a: string) => app.areaLabel(a);
 
-  /** Arrow geometry for one rule of the selected part, if both ends are drawable. */
+  type Box = { x: number; y: number; size: [number, number] };
+  /** Arrow geometry for one rule of the selected part, if both ends are drawable, plus bars on the two edges it ties. */
   function arrowFor(axis: 'x' | 'y', index: number, rel: Relationship, me: (typeof elements)[number], ghost: boolean, k = 0): Arrow | null {
     if (me.x == null || me.y == null) return null;
     const bn = editor.baseName(me.name, rel);
@@ -123,23 +153,28 @@
     const ei = gapEntryIndex(rel.gap, bg, eg);
     const cond = ei >= 0 ? ` (rule ${entriesOf(rel.gap)[ei].when_base || entriesOf(rel.gap)[ei].when_elem ? ei + 1 : 'otherwise'})` : '';
     const who = rel.base == null ? '' : rel.base === 'prev' ? ' after previous row' : ` after ${elementLabel(editor.layout!, bn ?? rel.base, areaLabel)}`;
-    const label = ghost ? `${v ?? '?'} after ${bn ?? rel.base}` : `${v ?? '?'}${cond}`;
-    const title = ghost ? `${v ?? '?'}${who}: not in effect for this word. Click to look at its rules.` : `${v ?? '?'}${who}: in effect. Click to edit this rule; drag the part to change its gap.`;
+    // a ghost is a fallback in the part's chain ("relative to A, else B…"): the gap it would get if the bases before it were missing
+    const label = ghost ? `else ${v ?? '?'}${who}` : `${v ?? '?'}${cond}`;
+    const title = ghost ? `Fallback: ${v ?? '?'}${who}, used only in words without the parts before it in the chain. Not in effect for this word. Click to look at its rules.` : `${v ?? '?'}${who}: in effect. Click to edit this rule; drag the part to change its gap.`;
     const id = `${axis}:${index}`;
     if (axis === 'y') {
       const myEdge = (rel.elem_edge ?? 'top') === 'top' ? me.y + me.size[1] : me.y;
-      if (rel.base == null) return ghost ? null : { id, x: me.x + me.size[0] / 2, y1: 0, y2: me.y, label: `start ${Math.round(me.y)}`, axis, title };
+      if (rel.base == null) { const x = me.x + me.size[0] / 2; return ghost ? null : { id, x, y1: 0, y2: me.y, label: `start ${Math.round(me.y)}`, axis, title, bars: { at: x, me: { name: me.name, box: me as Box, edge: 'bottom' } } }; }
       if (!base || base.x == null || base.y == null) return null;
-      const baseEdge = (rel.base_edge ?? 'bottom') === 'bottom' ? base.y : base.y + base.size[1];
+      const be = (rel.base_edge ?? 'bottom') as Edge, mine = (rel.elem_edge ?? 'top') as Edge;
+      const baseEdge = be === 'bottom' ? base.y : base.y + base.size[1];
       const x = ghost ? Math.min(me.x, base.x) - 30 - 70 * k : Math.max(me.x, base.x) + Math.min(me.size[0], base.size[0]) / 2;
-      return { id, x, y1: baseEdge, y2: myEdge, label, axis, ghost, title };
+      const mid = Math.max(me.x, base.x) + Math.min(me.size[0], base.size[0]) / 2;
+      return { id, x, y1: baseEdge, y2: myEdge, label, axis, ghost, title, bars: { at: mid, base: { name: base.name, box: base as Box, edge: be }, me: { name: me.name, box: me as Box, edge: mine } } };
     }
     const myEdge = (rel.elem_edge ?? 'right') === 'right' ? me.x + me.size[0] : me.x;
-    if (rel.base == null) return ghost ? null : { id, y: me.y + me.size[1] / 2, x1: 0, x2: me.x, label: `x ${Math.round(me.x)}`, axis, title };
+    const midY = me.y + me.size[1] / 2;
+    if (rel.base == null) return ghost ? null : { id, y: midY, x1: 0, x2: me.x, label: `x ${Math.round(me.x)}`, axis, title, bars: { at: midY, me: { name: me.name, box: me as Box, edge: 'left' } } };
     if (!base || base.x == null || base.y == null) return null;
-    const baseEdge = (rel.base_edge ?? 'left') === 'left' ? base.x : base.x + base.size[0];
-    const y = ghost ? Math.max(me.y + me.size[1], base.y + base.size[1]) + 30 + 50 * k : me.y + me.size[1] / 2;
-    return { id, y, x1: baseEdge, x2: myEdge, label, axis, ghost, title };
+    const be = (rel.base_edge ?? 'left') as Edge, mine = (rel.elem_edge ?? 'right') as Edge;
+    const baseEdge = be === 'left' ? base.x : base.x + base.size[0];
+    const y = ghost ? Math.max(me.y + me.size[1], base.y + base.size[1]) + 30 + 50 * k : midY;
+    return { id, y, x1: baseEdge, x2: myEdge, label, axis, ghost, title, bars: { at: midY, base: { name: base.name, box: base as Box, edge: be }, me: { name: me.name, box: me as Box, edge: mine } } };
   }
 
   let arrows = $derived.by(() => {
@@ -162,7 +197,10 @@
       l.relationships.forEach((r, i) => {
         if (r.axis !== axis || (r.elem !== el.el && r.elem !== el.slot)) return;
         const ghost = i !== active;
+        // else gaps: all of them when the panel's checkbox is on, otherwise only the one whose pill is hovered or viewed
+        if (ghost && !editor.showElse && i !== editor.hoverRel && !(axis === editor.axis && i === editor.viewedRel) && editor.selectedArrow !== `${axis}:${i}`) return;
         const a = arrowFor(axis, i, r, me, ghost, k);
+        if (a && ghost) a.emph = i === editor.hoverRel || (axis === editor.axis && i === editor.viewedRel);
         if (a) { out.push(a); if (ghost) k++; }
       });
     }
@@ -296,6 +334,7 @@
   function onkey(e: KeyboardEvent) {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+    onZoomKey(e); if (e.defaultPrevented) return;
     const step = e.shiftKey ? 10 : 1;
     if (e.key === 'ArrowUp') { e.preventDefault(); nudge(0, step); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); nudge(0, -step); }
@@ -312,7 +351,7 @@
     }
   }
 
-  // ---- panels: meta, drag between docks, dock resizing
+  // ---- panels: what each one shows in its header (the frame is PanelWorkspace)
   let perLayout = $derived(app.stats?.per_layout ?? {});
   let lastSel: string | null = null;
   $effect(() => {
@@ -336,48 +375,13 @@
         return { title: `Spacing · ${label}`, summary: a ? `${editor.axis === 'y' ? '↕' : '⇆'} ${a.rel.base == null ? 'page' : bn ?? a.rel.base} → ${v ?? '?'}` : 'no rule in effect', tag: elements.find((e) => e.name === selectedEl!.name)?.anchor ? 'anchor' : '' };
       }
       case 'centering': { const c = l?.center; return { title: 'Centering', summary: c ? `↕ ${c.y?.length ? `on ${c.y.length} parts` : 'off'} · ⇆ ${c.x?.length ? 'on' : 'off'}` : '' }; }
-      case 'glyphs': { const n = selectedEl ? d.areas[selectedEl.area]?.glyphs.length ?? 0 : 0; return { title: label ? `Glyphs of ${label}` : 'Glyphs', badge: selectedEl ? n : null, summary: selectedEl ? `${editor.pinned[selectedEl.name] ?? ''} selected` : 'click a part' }; }
+      case 'glyphs': {
+        const a = editor.shownArea, ar = a ? d.areas[a] : null;
+        return { title: 'Area Properties', badge: ar ? ar.glyphs.length : null, summary: ar ? `${ar.label || a} · ${ar.size[0]} × ${ar.size[1]}${selectedEl ? ` · ${editor.pinned[selectedEl.name] ?? ''} previewed` : ''}` : 'click a part' };
+      }
       case 'tester': return { title: 'Tester', summary: '' };
     }
   }
-  function dragMove(e: PointerEvent) {
-    if (!panels.dragging) return;
-    panels.pointer = { x: e.clientX, y: e.clientY };
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const dockEl = el?.closest('[data-dock]') as HTMLElement | null;
-    if (!dockEl) { panels.over = null; return; }
-    const dock = dockEl.dataset.dock as Dock;
-    const ids = panels.a.docks[dock];
-    const slots = [...dockEl.querySelectorAll<HTMLElement>('[data-panel-slot]')];
-    let index = ids.length;
-    for (const sl of slots) {
-      const r = sl.getBoundingClientRect();
-      const before = dock === 'bottom' && sl.tagName === 'BUTTON' ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-      if (before) { index = ids.indexOf(sl.dataset.panelSlot as PanelId); break; }
-    }
-    panels.over = { dock, index: Math.max(0, index) };
-  }
-  function dragUp() {
-    if (!panels.dragging) return;
-    if (panels.over) panels.move(panels.dragging, panels.over.dock, panels.over.index);
-    panels.dragging = null; panels.over = null;
-  }
-  function startResize(dock: Dock, e: PointerEvent) {
-    e.preventDefault();
-    const start = { x: e.clientX, y: e.clientY, size: panels.a.size[dock] };
-    const move = (ev: PointerEvent) => {
-      const d = dock === 'left' ? ev.clientX - start.x : dock === 'right' ? start.x - ev.clientX : start.y - ev.clientY;
-      panels.setSize(dock, start.size + d, start.size);
-    };
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
-  }
-  let cols = $derived.by(() => {
-    const a = panels.a;
-    const side = (dock: 'left' | 'right') => (panels.visible(dock) ? (dock === 'left' ? `${a.size.left}px 6px` : `6px ${a.size.right}px`) : a.docks[dock].length || panels.dragging ? '24px' : '');
-    return `${side('left')} minmax(360px, 1fr) ${side('right')}`.trim();
-  });
-  const dockNames = (dock: Dock) => panels.a.docks[dock].map((id) => meta(id).title).join(' · ');
 </script>
 
 <svelte:window onkeydown={onkey} />
@@ -392,96 +396,59 @@
     {:else if editor.layout && selectedEl}<RulePanel />
     {:else}<div class="muted small">Click a part on the canvas to see and edit its spacing rules.</div>{/if}
   {:else if id === 'centering'}{#if editor.layout}<CenterPanel />{/if}
-  {:else if id === 'glyphs'}<div class:greyed={editing}><GlyphTray /></div>
-  {:else if id === 'tester'}<div class:greyed={editing}><TestStrip /></div>
+  {:else if id === 'glyphs'}<div class:greyed={editing}><AreaPanel /></div>
+  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p) => editor.loadWord(p)} /></div>
   {/if}
 {/snippet}
-{#snippet panel(id: PanelId)}
-  {@const m = meta(id)}
-  <Panel {id} title={m.title} badge={m.badge} warn={m.warn} summary={m.summary} tag={m.tag}>{@render body(id)}</Panel>
-{/snippet}
-{#snippet sideDock(dock: 'left' | 'right')}
-  {#if panels.visible(dock)}
-    {#if dock === 'right'}<div class="split v" title="Drag to resize; drag shut to hide" onpointerdown={(e) => startResize(dock, e)}></div>{/if}
-    <PanelDock {dock} {panel} {meta} />
-    {#if dock === 'left'}<div class="split v" title="Drag to resize; drag shut to hide" onpointerdown={(e) => startResize(dock, e)}></div>{/if}
-  {:else if panels.a.docks[dock].length}
-    <button class="rail" data-dock={dock} title="Show the {DOCK_LABEL[dock]}" onclick={() => panels.show(dock)}><span>{dockNames(dock)}</span></button>
-  {:else if panels.dragging}
-    <div class="rail drop" data-dock={dock}><span>drop: new {DOCK_LABEL[dock]}</span></div>
+<PanelWorkspace store={panels} {meta} {body}>
+  {#if editor.layout}
+    <div class="toolbar row wrap">
+      <label><input type="checkbox" bind:checked={editor.showBoxes} /> boxes</label>
+      <label><input type="checkbox" bind:checked={editor.showGlyphs} /> glyphs</label>
+      <span class="spacer"></span>
+      <span class="zoom" title="Zoom: ⌘ + scroll or pinch on the canvas, + / − keys; ⇧1 fits">
+        <button class="ghost" onclick={() => setZoom(zoom / 1.25)} disabled={zoom <= 0.25} aria-label="Zoom out">−</button>
+        <span class="pct">{Math.round(zoom * 100)}%</span>
+        <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in">+</button>
+        <button class="ghost" onclick={() => setZoom(1)} disabled={zoom === 1} title="Fit the word to the canvas (⇧1)">Fit</button>
+      </span>
+      {#if editor.resolving}<span class="muted">Updating…</span>{/if}
+    </div>
+    <div class="canvas-wrap" bind:this={wrapEl} bind:clientHeight={wrapH} bind:clientWidth={wrapW} onwheel={onWheel}>
+      <WordCanvas bind:this={canvasEl} {elements} width={Math.max(240, wrapW - 26) * zoom} maxHeight={Math.max(240, wrapH - 26) * zoom} showBoxes={editor.showBoxes} showGlyphs={editor.showGlyphs} showPage={true}
+        emBox={d.center}
+        center={{ x: editor.layout.center.x_target ?? d.center.x, y: editor.layout.center.y_target ?? d.center.y }}
+        selected={editor.selected} hoverable={true} {arrows} hotBar={editor.hoverEdge} labels={editor.showBoxes} handles={!editing} selectedArrow={editing ? null : editor.selectedArrow}
+        dimmed={editing ? elements.map((e) => e.name).filter((n) => n !== editor.selected && n !== editBase) : []}
+        dragOnly={editing ? editor.selected : null} lockAxis={editing ? editing.axis : null} {overlay} baseMark={editing ? editBase : null}
+        marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
+        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
+    </div>
+    <div class="status">
+      {#if editor.boxEdit && editor.dragDesign}{@const be = editor.boxEdit}{@const old = d.areas[be.area]?.size ?? be.size}Box of {app.areaLabel(be.area)} {old[0]} × {old[1]} → <b>{be.size[0]} × {be.size[1]}</b>, not applied: moves parts in {usedIn(d, be.area).length} word type{usedIn(d, be.area).length === 1 ? '' : 's'}. <b>Enter</b> applies · <b>Esc</b> cancels.
+    {:else if editor.dragLabel}{editor.dragLabel}
+      {:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
+      {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
+      {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
+      {:else}Click a part to see and edit its spacing. {status}{/if}
+    </div>
+  {:else}
+    <p class="muted" style="padding: var(--s-5)">No word types yet. Turn on Advanced and add one in the Word types panel.</p>
   {/if}
-{/snippet}
-
-<div class="page" class:dragging={!!panels.dragging} style="grid-template-columns: {cols}">
-  {@render sideDock('left')}
-
-  <section class="center">
-    {#if editor.layout}
-      <div class="toolbar row wrap">
-        <label><input type="checkbox" bind:checked={editor.showBoxes} /> boxes</label>
-        <label><input type="checkbox" bind:checked={editor.showGlyphs} /> glyphs</label>
-        <span class="spacer"></span>
-        <label>width <input type="range" min="320" max="900" bind:value={canvasWidth} /></label>
-        {#if editor.resolving}<span class="muted">Updating…</span>{/if}
-      </div>
-      <div class="canvas-wrap" bind:clientHeight={wrapH}>
-        <WordCanvas bind:this={canvasEl} {elements} width={canvasWidth} maxHeight={Math.max(300, wrapH - 24)} showBoxes={editor.showBoxes} showGlyphs={editor.showGlyphs} showPage={true}
-          center={{ x: editor.layout.center.x_target ?? d.center.x, y: editor.layout.center.y_target ?? d.center.y }}
-          selected={editor.selected} hoverable={true} {arrows} labels={editor.showBoxes} handles={!editing} selectedArrow={editing ? null : editor.selectedArrow}
-          dimmed={editing ? elements.map((e) => e.name).filter((n) => n !== editor.selected && n !== editBase) : []}
-          dragOnly={editing ? editor.selected : null} lockAxis={editing ? editing.axis : null} {overlay} baseMark={editing ? editBase : null}
-          onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
-      </div>
-      <div class="status">
-        {#if editor.dragLabel}{editor.dragLabel}
-        {:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
-        {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
-        {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
-        {:else}Click a part to see and edit its spacing. {status}{/if}
-      </div>
-    {:else}
-      <p class="muted" style="padding: var(--s-5)">No word types yet. Turn on Advanced and add one in the Word types panel.</p>
-    {/if}
-    {#if panels.visible('bottom')}
-      <div class="split h" title="Drag to resize; drag shut to hide" onpointerdown={(e) => startResize('bottom', e)}></div>
-      <div class="bottom" style="height: {panels.a.size.bottom}px"><PanelDock dock="bottom" {panel} {meta} /></div>
-    {:else if panels.a.docks.bottom.length}
-      <button class="rail hrail" data-dock="bottom" title="Show the bottom strip" onclick={() => panels.show('bottom')}>{dockNames('bottom')}</button>
-    {:else if panels.dragging}
-      <div class="rail hrail drop" data-dock="bottom">drop: new bottom strip</div>
-    {/if}
-  </section>
-
-  {@render sideDock('right')}
-</div>
-{#if panels.dragging}
-  <div class="ghost" style="left: {panels.pointer.x + 12}px; top: {panels.pointer.y - 12}px">⠿ {meta(panels.dragging).title}</div>
-{/if}
+</PanelWorkspace>
 
 <style>
-  .page { display: grid; height: 100%; min-width: 0; }
-  .page.dragging { user-select: none; cursor: grabbing; }
-  .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   .toolbar { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); gap: var(--s-3); }
   .spacer { flex: 1; }
-  .canvas-wrap { flex: 1 1 auto; min-height: 240px; padding: var(--s-3); display: flex; justify-content: center; align-items: flex-start; overflow: auto; }
+  /* the canvas centres with auto margins, not justify-content: a zoomed canvas wider than the area must still scroll to its left edge */
+  .canvas-wrap { flex: 1 1 auto; min-height: 240px; padding: var(--s-3); display: flex; align-items: flex-start; overflow: auto; }
+  .canvas-wrap > :global(svg) { margin: 0 auto; flex: none; }
+  .zoom { display: inline-flex; align-items: center; gap: 2px; }
+  .zoom button { min-width: 28px; }
+  .zoom .pct { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--t-sm); }
   .status { padding: 4px var(--s-3); border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--fg-2); min-height: 26px; }
-  .bottom { flex: none; min-height: 0; overflow: hidden; border-top: 1px solid var(--line); background: var(--bg); }
-  .split { background: transparent; touch-action: none; }
-  .split.v { cursor: col-resize; border-left: 1px solid var(--line); }
-  .split.v:hover { background: var(--accent-bg); }
-  .split.h { height: 6px; cursor: row-resize; border-top: 1px solid var(--line); flex: none; }
-  .split.h:hover { background: var(--accent-bg); }
-  .rail { border: 0; border-radius: 0; background: var(--bg-2); color: var(--fg-2); font-size: var(--t-xs); padding: 0; height: auto; width: 24px; display: flex; align-items: flex-start; justify-content: center; border-right: 1px solid var(--line); }
-  .rail span { writing-mode: vertical-rl; padding: var(--s-2) 0; white-space: nowrap; }
-  .rail:hover { background: var(--accent-bg); color: var(--accent); }
-  .rail.drop { border: 2px dashed var(--accent); background: var(--accent-bg); color: var(--accent); }
-  .rail.hrail { width: auto; height: 24px; flex: none; align-items: center; border-right: 0; border-top: 1px solid var(--line); }
-  .rail.hrail span { writing-mode: horizontal-tb; }
-  .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 3px 8px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--bg); color: var(--accent); font-size: var(--t-sm); font-weight: 600; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
   .greyed { opacity: .45; pointer-events: none; }
   .small { font-size: var(--t-xs); }
   .wrap { flex-wrap: wrap; }
   .anchor-word { color: var(--arrow); font-weight: 600; }
-  :global(.page.dragging [data-dock]) { min-height: 48px; }
 </style>

@@ -20,7 +20,8 @@ export async function sha16(text: string): Promise<string> {
 export type Selection =
   | { kind: 'none' }
   | { kind: 'points'; n: number; x: number; y: number; pointKind: 'corner' | 'smooth' | 'free' | 'mixed' }
-  | { kind: 'shapes'; n: number; x: number; y: number; w: number; h: number; lines: number };
+  | { kind: 'shapes'; n: number; x: number; y: number; w: number; h: number; lines: number }
+  | { kind: 'overlay'; dot: boolean; ghost: boolean };
 
 export type PreviewOp = { kind: 'simplify'; value: number; from: number; to: number } | { kind: 'thicken'; value: number; sharp: boolean } | { kind: 'combine'; op: ops.BoolOp; swap: boolean };
 
@@ -49,6 +50,8 @@ export class GlyphEditor {
   ghostName = $state<string | null>(null);
   ghostAlign = $state<'origin' | 'center'>('origin');
   ghostSaved = $state(false);
+  /** The compare glyph was dragged away from its Line up position. */
+  ghostMoved = $state(false);
   sessionWeight = $state<number | null>(null);     // reference weight for this session only
   // ops with live preview
   preview = $state<PreviewOp | null>(null);
@@ -128,7 +131,9 @@ export class GlyphEditor {
     } else if (sel.length) {
       const b = ops.bounds(sel)!;
       this.selection = { kind: 'shapes', n: sel.length, x: r1(b.x), y: r1(b.y), w: r1(b.width), h: r1(b.height), lines: sel.filter(isOpen).length };
-    } else this.selection = { kind: 'none' };
+    } else if (s.overlaySel.size) this.selection = { kind: 'overlay', dot: s.overlaySel.has('dot'), ghost: s.overlaySel.has('ghost') };
+    else this.selection = { kind: 'none' };
+    this.ghostMoved = s.ghostOffset[0] !== 0 || s.ghostOffset[1] !== 0;
     this.weightEstimate = ops.estimateWeight(s.paths);
     this.drawing = !!t.drawing;
     this.box = s.box;
@@ -351,7 +356,12 @@ export class GlyphEditor {
     s.setGhostSaved(this.ghostSaved ? this.savedText : null);
   }
   setDot(on: boolean) { this.dot = on; this.applyOverlays(); }
-  setGhost(name: string | null, align?: 'origin' | 'center') { this.ghostName = name; if (align) this.ghostAlign = align; this.applyOverlays(); }
+  /** Choose the compare glyph; passing `align` (the Line up buttons) also puts it back where that lines it up. */
+  setGhost(name: string | null, align?: 'origin' | 'center') {
+    this.ghostName = name;
+    if (align) { this.ghostAlign = align; if (this.scene) this.scene.ghostOffset = [0, 0]; }
+    this.applyOverlays(); this.sync();
+  }
   setGhostSaved(on: boolean) { this.ghostSaved = on; this.applyOverlays(); }
   /** Session-only reference weight (null = back to the design's). */
   setSessionWeight(w: number | null) { this.sessionWeight = w && w > 0 ? Math.round(w) : null; this.applyOverlays(); this.scene?.commit('line weight'); }

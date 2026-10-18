@@ -32,6 +32,8 @@ export function isOpen(p: PathLike): boolean {
   return p instanceof paper.Path ? !p.closed : (p.children as paper.Path[]).some((c) => !c.closed);
 }
 
+export type Overlay = 'dot' | 'ghost';
+
 export class Scene {
   canvas: HTMLCanvasElement;
   bg!: paper.Layer;
@@ -246,6 +248,7 @@ export class Scene {
     const after = v.viewToProject(vp);
     v.center = v.center.add(before.subtract(after));
     this.drawBox();
+    this.drawOverlaySel();
     this.onChange();
   }
   pan(dx: number, dy: number) { paper.view.center = paper.view.center.subtract(new paper.Point(dx, dy).divide(paper.view.zoom)); }
@@ -258,7 +261,12 @@ export class Scene {
   private dot: paper.Path | null = null;
   private ghostGlyph: paper.Item | null = null;
   private ghostSaved: paper.Item | null = null;
+  private overlayFrame: paper.Item | null = null;
   dotPos: [number, number] | null = null;
+  /** Where the compare glyph was dragged to, relative to its Line up position. */
+  ghostOffset: [number, number] = [0, 0];
+  /** The overlays picked with the pointer: they drag and nudge together, never into undo. */
+  overlaySel = new Set<Overlay>();
   /** A filled circle of the reference weight's diameter; drag it over a stroke to compare thickness. */
   setDot(on: boolean) {
     this.dot?.remove(); this.dot = null;
@@ -268,6 +276,7 @@ export class Scene {
       this.dot = new paper.Path.Circle({ parent: this.ghost, center: c, radius: this.weight / 2, fillColor: ghostColor(0.4) });
       this.glyph.activate();
     }
+    this.drawOverlaySel();
   }
   get dotItem() { return this.dot; }
   /** Another glyph's SVG, filled blue, lined up by box top-left or centred on this box. */
@@ -280,7 +289,43 @@ export class Scene {
       const [gw, gh] = vb && vb.length === 4 ? [vb[2], vb[3]] : [this.box[0], this.box[1]];
       g.translate(new paper.Point((this.box[0] - gw) / 2, (this.box[1] - gh) / 2));
     }
+    g.translate(new paper.Point(this.ghostOffset[0], this.ghostOffset[1]));
     this.ghostGlyph = g;
+    this.drawOverlaySel();
+  }
+  /** The overlay under a point: the dot first (it is meant to sit on a stroke), then the compare glyph's ink. */
+  overlayAt(p: paper.Point): Overlay | null {
+    if (this.dot?.contains(p)) return 'dot';
+    if (this.ghostGlyph && this.ghostGlyph.bounds.contains(p) && collectPaths(this.ghostGlyph).some((c) => c.contains(p))) return 'ghost';
+    return null;
+  }
+  selectOverlay(o: Overlay | null, add = false) {
+    if (!add) this.overlaySel.clear();
+    if (o) { if (add && this.overlaySel.has(o)) this.overlaySel.delete(o); else this.overlaySel.add(o); }
+    this.drawOverlaySel();
+  }
+  /** Move the selected overlays; returns false when none is selected. */
+  moveOverlays(dx: number, dy: number): boolean {
+    if (!this.overlaySel.size) return false;
+    const d = new paper.Point(dx, dy);
+    if (this.overlaySel.has('dot') && this.dot) { this.dot.translate(d); this.dotPos = [this.dot.position.x, this.dot.position.y]; }
+    if (this.overlaySel.has('ghost') && this.ghostGlyph) { this.ghostGlyph.translate(d); this.ghostOffset = [this.ghostOffset[0] + dx, this.ghostOffset[1] + dy]; }
+    this.drawOverlaySel();
+    return true;
+  }
+  /** A dashed frame around each selected overlay. */
+  drawOverlaySel() {
+    this.overlayFrame?.remove(); this.overlayFrame = null;
+    for (const o of [...this.overlaySel]) if (!(o === 'dot' ? this.dot : this.ghostGlyph)) this.overlaySel.delete(o);
+    if (!this.overlaySel.size) return;
+    const z = paper.view.zoom, pad = 4 / z;
+    const g = new paper.Group({ parent: this.ui });
+    for (const o of this.overlaySel) {
+      const b = (o === 'dot' ? this.dot! : this.ghostGlyph!).bounds.expand(pad * 2);
+      new paper.Path.Rectangle({ parent: g, rectangle: b, strokeColor: this.accent, strokeWidth: 1, strokeScaling: false, dashArray: [4 / z, 3 / z] });
+    }
+    this.overlayFrame = g;
+    this.glyph.activate();
   }
   /** The last-saved version of this glyph as a dashed blue outline (shows what changed). */
   setGhostSaved(svg: string | null) {

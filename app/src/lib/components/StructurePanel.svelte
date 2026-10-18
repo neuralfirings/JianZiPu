@@ -5,6 +5,8 @@
   // the structural settings, add part, recognition fold.
   import { app, parseElement } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
+  import { panels } from '$lib/panels.svelte';
+  import { addArea, areaIdProblem } from '$lib/areas';
   import { slotIsSimple, elementNames, anchorNames, shapeElements, type ShapeElement } from '$lib/shape';
   import type { Layout, Slot } from '$lib/api';
   import Glyph from './Glyph.svelte';
@@ -161,6 +163,24 @@
     });
     editing = n;
   }
+  // + Add part → New area…: the area and the part in one step (one undo step)
+  let newArea = $state<{ id: string; label: string } | null>(null);
+  let newAreaProblem = $derived(newArea ? areaIdProblem(app.design!, newArea.id.trim()) : null);
+  function addNewAreaPart() {
+    if (!newArea || newAreaProblem) return;
+    const id = newArea.id.trim(), label = newArea.label, n = freshName(id), lname = layout.name;
+    app.edit(`New area ${id} + part in ${lname}`, (x) => {
+      addArea(x, id, label, [350, 350]);
+      const l = x.layouts.find((y) => y.name === lname)!;
+      l.slots.push({ name: n, optional: true, alternatives: [[token(n, id)]] });
+      l.relationships.push({ axis: 'y', elem: n, base: null, gap: 0 }, { axis: 'x', elem: n, base: null, gap: 0 });
+    });
+    newArea = null;
+    editing = n;
+    editor.syncChoice();
+    editor.showArea(id);
+    panels.setFolded('glyphs', false);
+  }
   let allNames = $derived([...new Set([...layout.slots.map((s) => s.name), ...elementNames(layout).map((e) => e.name)])]);
   const nameLabel = (n: string) => { const s = layout.slots.find((x) => x.name === n); if (s) return slotLabel(s); const e = elementNames(layout).find((x) => x.name === n); return e ? (e.name === e.area ? areaLabel(e.area) : `${areaLabel(e.area)} (${n})`) : n; };
   function toggleList(key: 'requires_any' | 'priority', n: string) {
@@ -264,7 +284,7 @@
                 <select value={pe.area} title="area" onchange={(e) => changeArea(i, a, k, (e.target as HTMLSelectElement).value)}>{#each areaKeys as ak}<option value={ak}>{areaLabel(ak)}</option>{/each}</select>
                 <input type="text" class="idin" value={pe.name} title="element id (used by spacing rules)" onchange={(e) => renameEl(i, a, k, (e.target as HTMLInputElement).value)} />
                 <button class="x" title="Remove from this option" onclick={() => removeFromAlt(i, a, k)}>×</button>
-                <a class="lnk" href="/areas?area={pe.area}" title="Rename this area, change its box or its glyphs (Areas screen)">area ↗</a>
+                <button class="arealink" title="Show this area in Area Properties (name, box, glyphs)" onclick={() => { editor.showArea(pe.area); panels.setFolded('glyphs', false); }}>area ↗</button>
               </span>
             {/each}
             <select class="add" value="" title="Add an area to this option" onchange={(e) => { addToAlt(i, a, (e.target as HTMLSelectElement).value); (e.target as HTMLSelectElement).value = ''; }}>
@@ -283,11 +303,21 @@
   {#if layout.slots.length === 0}<p class="muted">No parts yet. {advanced ? 'Add one below.' : 'Turn on Advanced to add parts.'}</p>{/if}
 
   {#if advanced}
-    <select class="addpart" value="" onchange={(e) => { addSlot((e.target as HTMLSelectElement).value); (e.target as HTMLSelectElement).value = ''; }}>
+    <select class="addpart" value="" onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') newArea = { id: '', label: '' }; else addSlot(v); (e.target as HTMLSelectElement).value = ''; }}>
       <option value="">+ Add part ▾ (pick an area; it lands at the bottom)</option>
       {#each areaKeys as ak}<option value={ak}>{areaLabel(ak)} ({ak})</option>{/each}
+      <option value="__new">New area… (makes the area and the part)</option>
     </select>
-    <div class="tiny">Areas (their names, boxes and glyphs) are shared by every word type: <a href="/areas">Areas screen</a> · Advanced · + New.</div>
+    {#if newArea}
+      <div class="newarea">
+        <label>id <input type="text" bind:value={newArea.id} placeholder="thumb" style="width: 90px" /></label>
+        <label>Shown as <input type="text" bind:value={newArea.label} placeholder="Thumb mark" style="width: 110px" /></label>
+        <span class="tiny">box 350 × 350, change it in Area Properties</span>
+        {#if newArea.id && newAreaProblem}<span class="tiny err">{newAreaProblem}</span>{/if}
+        <button onclick={() => (newArea = null)}>Cancel</button><button class="primary" disabled={!!newAreaProblem} onclick={addNewAreaPart}>Create</button>
+      </div>
+    {/if}
+    <div class="tiny">Areas (their names, boxes and glyphs) are shared by every word type: their properties are in the Area Properties panel; New area… is in its switcher (Advanced).</div>
     <details class="rec">
       <summary>Recognition <span class="tiny">which typed words become a {lname}</span></summary>
       <div class="tiny">Used when the typed word has at least one of:</div>
@@ -344,8 +374,8 @@
   .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--fg-2); font-size: 12px; }
   .add { height: 22px; font-size: var(--t-xs); padding: 0 4px; border-style: dashed; background: transparent; width: auto; }
   .lnk { height: 22px; font-size: var(--t-xs); border-style: dashed; background: transparent; }
-  a.lnk { border: 0; color: var(--accent); text-decoration: none; padding: 0 2px; white-space: nowrap; }
-  a.lnk:hover { text-decoration: underline; }
+  .arealink { height: 22px; border: 0; background: transparent; color: var(--accent); padding: 0 2px; white-space: nowrap; font-size: var(--t-xs); }
+  .arealink:hover { text-decoration: underline; background: transparent; }
   .danger { height: 22px; font-size: var(--t-xs); color: var(--danger); border-color: var(--danger); background: transparent; }
   .addpart { width: 100%; border-style: dashed; background: transparent; font-size: var(--t-sm); color: var(--fg-2); }
   .rec { border-top: 1px dashed var(--line); padding-top: 4px; margin-top: 2px; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-sm); }
@@ -354,4 +384,7 @@
   .tg { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: var(--t-xs); background: var(--bg); }
   .tg.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
   .tg .rk { font-family: var(--mono); font-size: 10px; opacity: .8; }
+  .newarea { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px dashed var(--line); border-radius: var(--radius); }
+  .newarea label { display: inline-flex; gap: 4px; align-items: center; font-size: var(--t-sm); }
+  .err { color: var(--danger); }
 </style>

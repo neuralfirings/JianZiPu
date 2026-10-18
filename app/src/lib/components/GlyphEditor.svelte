@@ -1,7 +1,9 @@
 <script lang="ts">
   import * as TY from '$lib/typing';
   // The glyph editor screen (docs/GLYPH-EDITOR-UX.md): glyph bar, tool rail, action bar,
-  // canvas, status line, in-context strip and the side panel. Owns ⌘Z/⌘S while mounted.
+  // canvas and status line in the center; everything else in dockable panels (Selection,
+  // Compare, Glyph, Typing, Try it, Checks, Tester, Trace while tracing) arranged like the
+  // Layouts screen's, kept per browser. Owns ⌘Z/⌘S while mounted.
   import { onMount } from 'svelte';
   import { beforeNavigate, goto } from '$app/navigation';
   import { app } from '$lib/state.svelte';
@@ -9,9 +11,20 @@
   import type { Mode } from '$lib/glyphed/tools';
   import Glyph from './Glyph.svelte';
   import GlyphPopover from './GlyphPopover.svelte';
-  import InContext from './InContext.svelte';
+  import PanelWorkspace from './PanelWorkspace.svelte';
+  import GlyphFacts from './GlyphFacts.svelte';
+  import TypingFields from './TypingFields.svelte';
+  import TryIt from './TryIt.svelte';
+  import WordTester from './WordTester.svelte';
+  import { editorPanels, type EditorPanelId, type Meta } from '$lib/panels.svelte';
 
-  let { name, isNew = false, area = null, from = null }: { name: string; isNew?: boolean; area?: string | null; from?: 'file' | 'image' | null } = $props();
+  let { name, isNew = false, area = null, from = null, back = null }: {
+    name: string; isNew?: boolean; area?: string | null; from?: 'file' | 'image' | null;
+    /** Where "←" returns to (an app path, e.g. the Layouts screen it was opened from). */
+    back?: string | null;
+  } = $props();
+  let backHref = $derived(back && /^\/(?!\/)/.test(back) ? back : `/glyphs?g=${encodeURIComponent(name)}`);
+  let backLabel = $derived(backHref.startsWith('/layouts') ? 'Layouts' : 'Glyphs');
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
   let svgInput: HTMLInputElement;
@@ -27,7 +40,6 @@
   let importAsk = $state<null | { text: string; box: [number, number] | null; dropped: string[]; strokes: number; fit: boolean; replace: boolean }>(null);
   let shortcuts = $state(false);
   let toast = $state<string | null>(null);
-  let context = $state(true);
   let starting = $state<'file' | 'image' | null>(from);
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   function say(t: string) { toast = t; if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast = null), 4000); }
@@ -40,6 +52,29 @@
   let ghostGlyphs = $derived(app.glyphs.filter((g) => g.svg && g.glyph !== name).map((g) => g.glyph));
   let sel = $derived(ed.selection);
   let canCombine = $derived(ed.preview?.kind === 'combine' || (sel.kind === 'shapes' && sel.n >= 2));
+
+  // ---- panels: header of each (the frame is PanelWorkspace, the bodies the `body` snippet)
+  let glyphErrors = $derived(app.typingErrors.filter((e) => (e.kind === 'clash' ? e.glyphs.includes(name) : e.glyph === name)).length);
+  let checkWarnings = $derived((ed.stats.paths === 0 ? 1 : 0) + (ed.stats.outside ? 1 : 0) + (ed.stats.open ? 1 : 0) + (ed.stats.specks ? 1 : 0));
+  function meta(id: EditorPanelId): Meta {
+    switch (id) {
+      case 'trace': return { title: ed.trace ? `Trace ${ed.trace.file.name}` : 'Trace', hidden: !ed.trace, summary: ed.trace ? `${ed.trace.img.width} × ${ed.trace.img.height}px` : '' };
+      case 'selection': return { title: 'Selection', summary: sel.kind === 'points' ? `${sel.n} point${sel.n === 1 ? '' : 's'}` : sel.kind === 'shapes' ? `${sel.n} shape${sel.n === 1 ? '' : 's'}` : sel.kind === 'overlay' ? 'compare overlay' : `${ed.stats.paths} shapes · ${ed.stats.nodes} points` };
+      case 'compare': return { title: 'Compare', summary: [ed.dot && 'dot', ed.ghostName, ed.ghostSaved && 'last saved'].filter(Boolean).join(' · ') || 'off' };
+      case 'glyph': return { title: 'Glyph', summary: `${areaName ? app.areaLabel(areaName) : 'no area'} · ${ed.box[0]} × ${ed.box[1]}` };
+      case 'typing': return { title: 'Typing', badge: glyphErrors ? `${glyphErrors} ✕` : null, warn: !!glyphErrors, summary: typedAs || 'no spelling yet' };
+      case 'tryit': return { title: 'Try it', summary: 'live, saved or not' };
+      case 'checks': return { title: 'Checks', badge: checkWarnings || null, warn: !!checkWarnings, summary: checkWarnings ? `${checkWarnings} to look at` : 'all fine' };
+      case 'tester': return { title: 'Tester', summary: 'words with this glyph' };
+    }
+  }
+  // tracing opens the Trace panel, wherever it sits
+  $effect(() => {
+    if (!ed.trace) return;
+    if (editorPanels.isFolded('trace')) editorPanels.setFolded('trace', false);
+    const dock = editorPanels.dockOf('trace');
+    if (editorPanels.a.hidden[dock]) editorPanels.show(dock);
+  });
 
   function boxFor(): [number, number] {
     const d = app.design!;
@@ -197,14 +232,101 @@
   const ICON: Record<Mode, string> = { select: '↖', pen: '✒', pencil: '✎', rect: '▭', ellipse: '◯', hand: '✋', zoom: '🔍' };
 </script>
 
+{#snippet body(id: EditorPanelId)}
+  <div class="sec">
+  {#if id === 'trace' && ed.trace}
+    {@const t = ed.trace}
+    <label class="f"><span>Threshold</span><input type="range" min="0" max="255" value={t.opts.threshold} oninput={(e) => ed.updateTrace({ threshold: num(e) })} /><span class="mono">{t.opts.threshold}</span><button class="sm" onclick={autoThreshold}>Auto</button></label>
+    <label class="f"><span>Clean specks</span><input type="range" min="0" max="50" value={t.opts.despeckle} oninput={(e) => ed.updateTrace({ despeckle: num(e) })} /><span class="mono">{t.opts.despeckle}px</span></label>
+    <label class="f"><span>Corners</span><input type="range" min="0" max="1.34" step="0.02" value={t.opts.smoothing} oninput={(e) => ed.updateTrace({ smoothing: num(e) })} /><span class="muted">{t.opts.smoothing < 0.5 ? 'sharp' : t.opts.smoothing < 1 ? 'mixed' : 'round'}</span></label>
+    <label class="f"><span>Simplify</span><input type="range" min="0" max="2" step="0.05" value={t.opts.tolerance} oninput={(e) => ed.updateTrace({ tolerance: num(e) })} /><span class="mono">{t.opts.tolerance}</span></label>
+    <label><input type="checkbox" checked={t.opts.invert} onchange={(e) => ed.updateTrace({ invert: (e.target as HTMLInputElement).checked })} /> light on dark</label>
+    <label><input type="checkbox" checked={t.showImage} onchange={(e) => ed.updateTrace({ showImage: (e.target as HTMLInputElement).checked })} /> show image</label>
+    <div class="f"><span>Place</span><label>scale <input type="number" step="1" value={Math.round(t.scale * 100)} onchange={(e) => ed.updateTrace({ scale: num(e) / 100 })} style="width:64px" />%</label></div>
+    <div class="f"><span></span><label>x <input type="number" value={Math.round(t.dx)} onchange={(e) => ed.updateTrace({ dx: num(e) })} style="width:64px" /></label><label>y <input type="number" value={Math.round(t.dy)} onchange={(e) => ed.updateTrace({ dy: num(e) })} style="width:64px" /></label></div>
+    <div class="row" style="margin-top: 8px">
+      {#if ed.stats.paths}<button class="primary" disabled={!t.svg || t.busy} onclick={() => ed.useTrace(true)}>Use: replace</button><button disabled={!t.svg || t.busy} onclick={() => ed.useTrace(false)}>Use: add</button>
+      {:else}<button class="primary" disabled={!t.svg || t.busy} onclick={() => ed.useTrace(true)}>Use this outline</button>{/if}
+      <button onclick={() => ed.endTrace()}>Cancel</button>
+    </div>
+    <p class="muted small">{t.busy ? 'tracing…' : 'The image stays in this browser only; it is not written to the repo.'}</p>
+  {:else if id === 'selection'}
+    {#if sel.kind === 'points'}
+      <div class="f"><span>{sel.n} point{sel.n === 1 ? '' : 's'}</span>
+        <label>x <input type="number" value={sel.x} onchange={(e) => ed.setPointPos(num(e), sel.kind === 'points' ? sel.y : 0)} /></label>
+        <label>y <input type="number" value={sel.y} onchange={(e) => ed.setPointPos(sel.kind === 'points' ? sel.x : 0, num(e))} /></label></div>
+      <div class="f"><span>Kind</span>
+        <span class="seg"><button class:on={sel.pointKind === 'corner'} onclick={() => ed.setPointKind('corner')}>Corner</button><button class:on={sel.pointKind === 'smooth'} onclick={() => ed.setPointKind('smooth')}>Smooth</button><button class:on={sel.pointKind === 'free'} disabled title="Drag a handle with ⌥ to free it">Free</button></span></div>
+      <p class="muted small">Drag a handle to bend the curve; ⌥-drag moves one handle alone. Double-click a point to toggle corner / smooth. Pen over the shape adds a point; pen over a point removes it.</p>
+    {:else if sel.kind === 'shapes'}
+      <div class="f"><span>{sel.n} shape{sel.n === 1 ? '' : 's'}</span>
+        <label>x <input type="number" value={sel.x} onchange={(e) => ed.transform({ dx: num(e) - (sel.kind === 'shapes' ? sel.x : 0) }, 'move')} /></label>
+        <label>y <input type="number" value={sel.y} onchange={(e) => ed.transform({ dy: num(e) - (sel.kind === 'shapes' ? sel.y : 0) }, 'move')} /></label></div>
+      <div class="f"><span>Size</span>
+        <label>w <input type="number" value={sel.w} onchange={(e) => sel.kind === 'shapes' && sel.w && ed.transform({ sx: num(e) / sel.w }, 'resize')} /></label>
+        <label>h <input type="number" value={sel.h} onchange={(e) => sel.kind === 'shapes' && sel.h && ed.transform({ sy: num(e) / sel.h }, 'resize')} /></label></div>
+      <div class="f"><span>Scale</span><label><input type="number" value={100} onchange={(e) => { const v = num(e); if (v > 0) ed.transform({ sx: v / 100, sy: v / 100 }, 'scale'); (e.target as HTMLInputElement).value = '100'; }} />%</label>
+        <label>rotate <input type="number" value={0} onchange={(e) => { ed.transform({ rotate: num(e) }, 'rotate'); (e.target as HTMLInputElement).value = '0'; }} />°</label></div>
+      {#if sel.lines}<div class="f"><span>{sel.lines} line{sel.lines === 1 ? '' : 's'}</span><span class="muted small">drawn at {ed.referenceWeight} units, round ends</span><button class="sm" onclick={() => ed.outlineLines()}>Outline line</button></div>{/if}
+      <div class="row"><button class="sm" onclick={() => ed.center()}>Center in box</button><button class="sm" onclick={() => ed.deleteSelection()}>Delete</button></div>
+    {:else if sel.kind === 'overlay'}
+      <div class="f"><span>Compare</span><span>{[sel.dot && 'reference dot', sel.ghost && `${ed.ghostName ?? 'glyph'}`].filter(Boolean).join(' + ')}</span></div>
+      <p class="muted small">Drag to move, arrows nudge (⇧ 10). ⇧-click the other to move both. Never saved; Esc lets go.</p>
+    {:else}
+      <div class="f"><span>Glyph</span><span>{ed.stats.paths} shape{ed.stats.paths === 1 ? '' : 's'} · {ed.stats.nodes} points</span></div>
+      <div class="f"><span>Weight</span><span title="2 × area ÷ perimeter of the filled outline: right for long strokes, rough for blobs">≈ {ed.weightEstimate?.toFixed(0) ?? '—'} units <span class="muted">(reference {ed.referenceWeight})</span></span></div>
+      <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.fitToBox()}>Fit to box</button><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.center()}>Center</button></div>
+      <p class="muted small">Click a shape to see its points. Drag the fill to move it, a point to move the point.</p>
+    {/if}
+  {:else if id === 'compare'}
+    <label><input type="checkbox" checked={ed.dot} onchange={(e) => ed.setDot((e.target as HTMLInputElement).checked)} /> Reference dot <span class="muted">(D) · drag it over a stroke</span></label>
+    <div class="f"><span>Line weight</span><input type="number" min="1" max="200" value={ed.referenceWeight} onchange={(e) => ed.setSessionWeight(num(e))} />
+      {#if ed.sessionWeight != null}<button class="sm" onclick={() => ed.setSessionWeight(null)} title="Back to the design's reference weight">Reset</button>{:else}<span class="muted small">design's reference</span>{/if}</div>
+    <p class="muted small">Match the body of main strokes to the reference, not the tapers.</p>
+    <div class="f"><span>Glyph</span>
+      <button class="sm" data-gpop-anchor onclick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); ghostPick = ghostPick ? null : { x: r.left, y: r.bottom + 4 }; }}>{ed.ghostName ?? 'choose…'} ▾</button>
+      {#if ed.ghostName}<button class="sm" onclick={() => ed.setGhost(null)}>×</button>{/if}
+    </div>
+    {#if ed.ghostName}<p class="muted small">Drag the blue glyph to move it; the outline stays editable where they overlap.</p>{/if}
+    {#if sameArea.length}<div class="chips">{#each sameArea as g}<button class="gchip" class:on={ed.ghostName === g} onclick={() => ed.setGhost(ed.ghostName === g ? null : g)} title={g}><Glyph name={g} size={22} /></button>{/each}</div>{/if}
+    {#if ed.ghostName}<div class="f"><span>Line up</span><span class="seg"><button class:on={!ed.ghostMoved && ed.ghostAlign === 'origin'} onclick={() => ed.setGhost(ed.ghostName, 'origin')}>box top-left</button><button class:on={!ed.ghostMoved && ed.ghostAlign === 'center'} onclick={() => ed.setGhost(ed.ghostName, 'center')}>centred</button></span>{#if ed.ghostMoved}<span class="muted small">moved · click to put back</span>{/if}</div>{/if}
+    <label><input type="checkbox" checked={ed.ghostSaved} disabled={!ed.savedText} onchange={(e) => ed.setGhostSaved((e.target as HTMLInputElement).checked)} /> Last saved <span class="muted">(L) · dashed outline</span></label>
+  {:else if id === 'glyph'}
+    {#if ed.isNew}
+      <div class="f"><span>File</span><span class="mono small">inputs/svg/{name}.svg <span class="muted">(new)</span></span></div>
+      {#if areaName}<p class="muted small">Joins the area <strong>{app.areaLabel(areaName)}</strong> on the first save (a design change: save the design too).</p>{/if}
+    {:else}
+      <GlyphFacts glyph={name} showName={false} showBox={false} />
+    {/if}
+    <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area Properties on the Layouts screen (box size)">{app.areaLabel(areaName)}</a>{/if}</span></div>
+  {:else if id === 'typing'}
+    <TypingFields glyph={name} />
+  {:else if id === 'tryit'}
+    <TryIt glyph={name} />
+  {:else if id === 'checks'}
+    <ul class="checks">
+      <li class:bad={ed.stats.paths === 0}>{ed.stats.paths === 0 ? 'Empty: nothing to save yet' : 'Has an outline'}</li>
+      <li class:warn={ed.stats.outside}>{ed.stats.outside ? 'Sticks out of the box (the Layouts screen positions by the box)' : 'Inside the box'}</li>
+      <li class:warn={ed.stats.open > 0}>{ed.stats.open ? `${ed.stats.open} open line${ed.stats.open === 1 ? '' : 's'}: outlined on save` : 'No open lines'} {#if ed.stats.open}<button class="sm" onclick={() => ed.outlineLines()}>Outline now</button>{/if}</li>
+      <li class:warn={ed.stats.specks > 0}>{ed.stats.specks ? `${ed.stats.specks} speck${ed.stats.specks === 1 ? '' : 's'} under 6 units` : 'No specks'} {#if ed.stats.specks}<button class="sm" onclick={() => ed.removeSpecks()}>Remove them</button>{/if}</li>
+    </ul>
+    <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.check()}>Check as built</button>
+      {#if ed.built}<span class="small">{ed.built.ok ? `${ed.built.contours} contours · ${ed.built.points} points` : ed.built.error}</span>{/if}</div>
+    {#if ed.error}<p class="error small">{ed.error}</p>{/if}
+  {:else if id === 'tester'}
+    <WordTester glyph={name} size={72} />
+  {/if}
+  </div>
+{/snippet}
+
 <div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()} onpaste={onPaste}>
   <!-- glyph bar -->
   <div class="gbar">
-    <a href="/glyphs?g={encodeURIComponent(name)}" class="back">← Glyphs</a>
+    <a href={backHref} class="back">← {backLabel}</a>
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
     {#if app.charOf(name)}<span class="char">{app.charOf(name)}</span>{/if}
-    {#if areaName}<a class="chip" href="/areas?area={areaName}" title="Area (sets the box)">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
+    {#if areaName}<a class="chip" href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area (sets the box): open it on the Layouts screen">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
       {:else if ed.isNew && !ed.dirty}<span class="chip">new · not saved yet</span>
@@ -230,7 +352,7 @@
       <button onclick={() => (shortcuts = true)} title="Keyboard shortcuts (?)">?</button>
     </div>
 
-    <div class="main">
+    <PanelWorkspace store={editorPanels} {meta} {body} centerMin={320}>
       <!-- action bar -->
       <div class="actions">
         <span class="grp" title={canCombine ? 'Combine the selected shapes (point at a button to preview; ⇧ swaps the subtract order)' : 'Select 2 shapes to combine them'}>
@@ -290,7 +412,7 @@
       <div class="wrap" bind:this={wrap}>
         <canvas bind:this={canvas} class="m-{ed.mode}" onwheel={(e) => ed.wheel(e)} ondblclick={(e) => ed.doubleClick(e)}></canvas>
         {#if toast}<div class="toast">{toast}</div>{/if}
-        {#if ed.trace}<div class="tracehint">Trace mode · adjust on the right, then <strong>Use this outline</strong></div>{/if}
+        {#if ed.trace}<div class="tracehint">Trace mode · adjust in the Trace panel, then <strong>Use this outline</strong></div>{/if}
       </div>
 
       <div class="status">
@@ -301,100 +423,7 @@
         <span class="spacer"></span>
         <span class="muted">{Math.round(ed.zoom * 100)}%</span>
       </div>
-
-      <div class="context">
-        <button class="fold" onclick={() => (context = !context)}>{context ? '▾' : '▸'} In context</button>
-        {#if context}<InContext glyph={name} />{/if}
-      </div>
-    </div>
-
-    <!-- side panel -->
-    <aside class="side">
-      {#if ed.trace}
-        {@const t = ed.trace}
-        <section>
-          <h4>Trace {t.file.name} <span class="muted">{t.img.width} × {t.img.height}px</span></h4>
-          <label class="f"><span>Threshold</span><input type="range" min="0" max="255" value={t.opts.threshold} oninput={(e) => ed.updateTrace({ threshold: num(e) })} /><span class="mono">{t.opts.threshold}</span><button class="sm" onclick={autoThreshold}>Auto</button></label>
-          <label class="f"><span>Clean specks</span><input type="range" min="0" max="50" value={t.opts.despeckle} oninput={(e) => ed.updateTrace({ despeckle: num(e) })} /><span class="mono">{t.opts.despeckle}px</span></label>
-          <label class="f"><span>Corners</span><input type="range" min="0" max="1.34" step="0.02" value={t.opts.smoothing} oninput={(e) => ed.updateTrace({ smoothing: num(e) })} /><span class="muted">{t.opts.smoothing < 0.5 ? 'sharp' : t.opts.smoothing < 1 ? 'mixed' : 'round'}</span></label>
-          <label class="f"><span>Simplify</span><input type="range" min="0" max="2" step="0.05" value={t.opts.tolerance} oninput={(e) => ed.updateTrace({ tolerance: num(e) })} /><span class="mono">{t.opts.tolerance}</span></label>
-          <label><input type="checkbox" checked={t.opts.invert} onchange={(e) => ed.updateTrace({ invert: (e.target as HTMLInputElement).checked })} /> light on dark</label>
-          <label><input type="checkbox" checked={t.showImage} onchange={(e) => ed.updateTrace({ showImage: (e.target as HTMLInputElement).checked })} /> show image</label>
-          <div class="f"><span>Place</span><label>scale <input type="number" step="1" value={Math.round(t.scale * 100)} onchange={(e) => ed.updateTrace({ scale: num(e) / 100 })} style="width:64px" />%</label></div>
-          <div class="f"><span></span><label>x <input type="number" value={Math.round(t.dx)} onchange={(e) => ed.updateTrace({ dx: num(e) })} style="width:64px" /></label><label>y <input type="number" value={Math.round(t.dy)} onchange={(e) => ed.updateTrace({ dy: num(e) })} style="width:64px" /></label></div>
-          <div class="row" style="margin-top: 8px">
-            {#if ed.stats.paths}<button class="primary" disabled={!t.svg || t.busy} onclick={() => ed.useTrace(true)}>Use: replace</button><button disabled={!t.svg || t.busy} onclick={() => ed.useTrace(false)}>Use: add</button>
-            {:else}<button class="primary" disabled={!t.svg || t.busy} onclick={() => ed.useTrace(true)}>Use this outline</button>{/if}
-            <button onclick={() => ed.endTrace()}>Cancel</button>
-          </div>
-          <p class="muted small">{t.busy ? 'tracing…' : 'The image stays in this browser only; it is not written to the repo.'}</p>
-        </section>
-      {:else}
-        <section>
-          <h4>Selection</h4>
-          {#if sel.kind === 'points'}
-            <div class="f"><span>{sel.n} point{sel.n === 1 ? '' : 's'}</span>
-              <label>x <input type="number" value={sel.x} onchange={(e) => ed.setPointPos(num(e), sel.kind === 'points' ? sel.y : 0)} /></label>
-              <label>y <input type="number" value={sel.y} onchange={(e) => ed.setPointPos(sel.kind === 'points' ? sel.x : 0, num(e))} /></label></div>
-            <div class="f"><span>Kind</span>
-              <span class="seg"><button class:on={sel.pointKind === 'corner'} onclick={() => ed.setPointKind('corner')}>Corner</button><button class:on={sel.pointKind === 'smooth'} onclick={() => ed.setPointKind('smooth')}>Smooth</button><button class:on={sel.pointKind === 'free'} disabled title="Drag a handle with ⌥ to free it">Free</button></span></div>
-            <p class="muted small">Drag a handle to bend the curve; ⌥-drag moves one handle alone. Double-click a point to toggle corner / smooth. Pen over the shape adds a point; pen over a point removes it.</p>
-          {:else if sel.kind === 'shapes'}
-            <div class="f"><span>{sel.n} shape{sel.n === 1 ? '' : 's'}</span>
-              <label>x <input type="number" value={sel.x} onchange={(e) => ed.transform({ dx: num(e) - (sel.kind === 'shapes' ? sel.x : 0) }, 'move')} /></label>
-              <label>y <input type="number" value={sel.y} onchange={(e) => ed.transform({ dy: num(e) - (sel.kind === 'shapes' ? sel.y : 0) }, 'move')} /></label></div>
-            <div class="f"><span>Size</span>
-              <label>w <input type="number" value={sel.w} onchange={(e) => sel.kind === 'shapes' && sel.w && ed.transform({ sx: num(e) / sel.w }, 'resize')} /></label>
-              <label>h <input type="number" value={sel.h} onchange={(e) => sel.kind === 'shapes' && sel.h && ed.transform({ sy: num(e) / sel.h }, 'resize')} /></label></div>
-            <div class="f"><span>Scale</span><label><input type="number" value={100} onchange={(e) => { const v = num(e); if (v > 0) ed.transform({ sx: v / 100, sy: v / 100 }, 'scale'); (e.target as HTMLInputElement).value = '100'; }} />%</label>
-              <label>rotate <input type="number" value={0} onchange={(e) => { ed.transform({ rotate: num(e) }, 'rotate'); (e.target as HTMLInputElement).value = '0'; }} />°</label></div>
-            {#if sel.lines}<div class="f"><span>{sel.lines} line{sel.lines === 1 ? '' : 's'}</span><span class="muted small">drawn at {ed.referenceWeight} units, round ends</span><button class="sm" onclick={() => ed.outlineLines()}>Outline line</button></div>{/if}
-            <div class="row"><button class="sm" onclick={() => ed.center()}>Center in box</button><button class="sm" onclick={() => ed.deleteSelection()}>Delete</button></div>
-          {:else}
-            <div class="f"><span>Glyph</span><span>{ed.stats.paths} shape{ed.stats.paths === 1 ? '' : 's'} · {ed.stats.nodes} points</span></div>
-            <div class="f"><span>Weight</span><span title="2 × area ÷ perimeter of the filled outline: right for long strokes, rough for blobs">≈ {ed.weightEstimate?.toFixed(0) ?? '—'} units <span class="muted">(reference {ed.referenceWeight})</span></span></div>
-            <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.fitToBox()}>Fit to box</button><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.center()}>Center</button></div>
-            <p class="muted small">Click a shape to see its points. Drag the fill to move it, a point to move the point.</p>
-          {/if}
-        </section>
-
-        <section>
-          <h4>Compare <span class="muted">translucent blue, never saved</span></h4>
-          <label><input type="checkbox" checked={ed.dot} onchange={(e) => ed.setDot((e.target as HTMLInputElement).checked)} /> Reference dot <span class="muted">(D) · drag it over a stroke</span></label>
-          <div class="f"><span>Line weight</span><input type="number" min="1" max="200" value={ed.referenceWeight} onchange={(e) => ed.setSessionWeight(num(e))} />
-            {#if ed.sessionWeight != null}<button class="sm" onclick={() => ed.setSessionWeight(null)} title="Back to the design's reference weight">Reset</button>{:else}<span class="muted small">design's reference</span>{/if}</div>
-          <p class="muted small">Match the body of main strokes to the reference, not the tapers.</p>
-          <div class="f"><span>Glyph</span>
-            <button class="sm" data-gpop-anchor onclick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); ghostPick = ghostPick ? null : { x: r.left, y: r.bottom + 4 }; }}>{ed.ghostName ?? 'choose…'} ▾</button>
-            {#if ed.ghostName}<button class="sm" onclick={() => ed.setGhost(null)}>×</button>{/if}
-          </div>
-          {#if sameArea.length}<div class="chips">{#each sameArea as g}<button class="gchip" class:on={ed.ghostName === g} onclick={() => ed.setGhost(ed.ghostName === g ? null : g)} title={g}><Glyph name={g} size={22} /></button>{/each}</div>{/if}
-          {#if ed.ghostName}<div class="f"><span>Line up</span><span class="seg"><button class:on={ed.ghostAlign === 'origin'} onclick={() => ed.setGhost(ed.ghostName, 'origin')}>box top-left</button><button class:on={ed.ghostAlign === 'center'} onclick={() => ed.setGhost(ed.ghostName, 'center')}>centred</button></span></div>{/if}
-          <label><input type="checkbox" checked={ed.ghostSaved} disabled={!ed.savedText} onchange={(e) => ed.setGhostSaved((e.target as HTMLInputElement).checked)} /> Last saved <span class="muted">(L) · dashed outline</span></label>
-        </section>
-
-        <section>
-          <h4>Glyph</h4>
-          <div class="f"><span>File</span><span class="mono small">inputs/svg/{name}.svg{#if ed.isNew} <span class="muted">(new)</span>{/if}</span></div>
-          <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/areas?area={areaName}">{app.areaLabel(areaName)}</a>{/if}</span></div>
-          <div class="f"><span>Typed as</span><span>{typedAs || '—'} <a href="/glyphs?g={encodeURIComponent(name)}" class="small">{typedAs ? 'edit in Glyphs →' : 'give it a spelling →'}</a></span></div>
-          {#if ed.isNew && areaName}<p class="muted small">Joins the area <strong>{app.areaLabel(areaName)}</strong> on the first save (a design change: save the design too).</p>{/if}
-        </section>
-
-        <section>
-          <h4>Checks</h4>
-          <ul class="checks">
-            <li class:bad={ed.stats.paths === 0}>{ed.stats.paths === 0 ? 'Empty: nothing to save yet' : 'Has an outline'}</li>
-            <li class:warn={ed.stats.outside}>{ed.stats.outside ? 'Sticks out of the box (the Layouts screen positions by the box)' : 'Inside the box'}</li>
-            <li class:warn={ed.stats.open > 0}>{ed.stats.open ? `${ed.stats.open} open line${ed.stats.open === 1 ? '' : 's'}: outlined on save` : 'No open lines'} {#if ed.stats.open}<button class="sm" onclick={() => ed.outlineLines()}>Outline now</button>{/if}</li>
-            <li class:warn={ed.stats.specks > 0}>{ed.stats.specks ? `${ed.stats.specks} speck${ed.stats.specks === 1 ? '' : 's'} under 6 units` : 'No specks'} {#if ed.stats.specks}<button class="sm" onclick={() => ed.removeSpecks()}>Remove them</button>{/if}</li>
-          </ul>
-          <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.check()}>Check as built</button>
-            {#if ed.built}<span class="small">{ed.built.ok ? `${ed.built.contours} contours · ${ed.built.points} points` : ed.built.error}</span>{/if}</div>
-          {#if ed.error}<p class="error small">{ed.error}</p>{/if}
-        </section>
-      {/if}
-    </aside>
+    </PanelWorkspace>
   </div>
 </div>
 
@@ -484,7 +513,6 @@
   .rail button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
   .rail .ic { font-size: 16px; line-height: 18px; }
   .rail .k { font-size: 9px; color: var(--fg-2); }
-  .main { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
   .actions { display: flex; align-items: center; gap: var(--s-2); padding: 6px var(--s-3); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .actions button { height: 26px; padding: 0 8px; font-size: var(--t-sm); }
   .actions button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
@@ -501,12 +529,7 @@
   .toast { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 6px 12px; border-radius: 6px; font-size: var(--t-sm); max-width: 80%; }
   .tracehint { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); background: var(--accent-bg); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: var(--t-sm); }
   .status { display: flex; gap: var(--s-3); align-items: center; padding: 4px var(--s-3); border-top: 1px solid var(--line); font-size: var(--t-xs); color: var(--fg-2); }
-  .context { border-top: 1px solid var(--line); padding: 4px var(--s-3) var(--s-2); }
-  .fold { border: 0; background: transparent; height: 22px; padding: 0; font-weight: 600; }
-  .side { width: 300px; border-left: 1px solid var(--line); overflow: auto; background: var(--bg-2); display: flex; flex-direction: column; }
-  .side section { padding: var(--s-3) var(--s-3); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-size: var(--t-sm); }
-  .side h4 { margin: 0 0 2px; font-size: var(--t-md); }
-  .side h4 .muted { font-weight: 400; font-size: var(--t-xs); }
+  .sec { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-sm); min-width: 0; }
   .f { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .f > span:first-child { width: 72px; color: var(--fg-2); flex-shrink: 0; }
   .f input[type=number] { width: 64px; height: 24px; }

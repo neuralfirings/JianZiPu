@@ -1,11 +1,13 @@
 <script lang="ts">
   // A dock: the panels it holds in order, drop markers while a panel is
   // dragged, and (bottom strip only) a tab bar collecting the folded panels.
-  import { panels, type Dock, type PanelId } from '$lib/panels.svelte';
+  import { panels as layoutPanels, type Dock, type AnyPanels, type Meta } from '$lib/panels.svelte';
   import type { Snippet } from 'svelte';
-  export type Meta = { title: string; badge?: string | number | null; warn?: boolean; summary?: string; tag?: string };
-  let { dock, panel, meta }: { dock: Dock; panel: Snippet<[PanelId]>; meta: (id: PanelId) => Meta } = $props();
-  let ids = $derived(panels.a.docks[dock]);
+  let { dock, panel, meta, store }: { dock: Dock; panel: Snippet<[any]>; meta: (id: any) => Meta; store?: AnyPanels } = $props();
+  let panels = $derived(store ?? (layoutPanels as unknown as AnyPanels));
+  // a panel whose meta says `hidden` (nothing to show right now) takes no room
+  let all = $derived(panels.a.docks[dock]);
+  let ids = $derived(all.filter((id) => !meta(id).hidden));
   let dragging = $derived(!!panels.dragging);
   let over = $derived(panels.over?.dock === dock ? panels.over.index : -1);
   let open = $derived(dock === 'bottom' ? ids.filter((id) => !panels.isFolded(id)) : ids);
@@ -14,10 +16,10 @@
 
 <div class="dock {dock}" class:hot={dragging} data-dock={dock}>
   {#each open as id, i (id)}
-    {#if dragging && over === ids.indexOf(id)}<div class="ins"></div>{/if}
+    {#if dragging && over === all.indexOf(id)}<div class="ins"></div>{/if}
     <div class="slot" data-panel-slot={id}>{@render panel(id)}</div>
   {/each}
-  {#if dragging && over >= 0 && (over >= ids.length || (dock === 'bottom' && panels.isFolded(ids[over])))}<div class="ins"></div>{/if}
+  {#if dragging && over >= 0 && (over >= all.length || !open.includes(all[over]))}<div class="ins"></div>{/if}
   {#if dock === 'bottom' && tabs.length}
     <div class="tabbar">
       {#each tabs as id (id)}

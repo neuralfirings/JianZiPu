@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { anchorNames, choiceForNames, defaultChoice, elementLabel, elementNames, shapeElements, slotIsSimple, wordPage, canvasBox } from './shape';
+import { anchorNames, choiceForNames, defaultChoice, elementLabel, elementNames, shapeElements, slotIsSimple, wordPage, canvasBox, labelWidth, placeLabels, clampZoom, zoomScroll, edgeBar, barLength, barsCoincide } from './shape';
 import type { Layout } from './api';
 
 const vert: Layout = {
@@ -81,5 +81,71 @@ describe('canvasBox', () => {
   });
   it('still frames the spacer box in the editors', () => {
     expect(canvasBox(vertical, { ...page, showPage: false, fit: true }, ink).h).toBe(1510 + 260 + 120);
+  });
+});
+
+describe('canvas labels', () => {
+  it('measures CJK at a full em and the rest narrower', () => {
+    expect(labelWidth('徽', 20)).toBe(20);
+    expect(labelWidth('ab', 20)).toBeCloseTo(22);
+  });
+  it('keeps fixed labels in place and steps others down until clear', () => {
+    const dy = placeLabels([
+      { x: 0, y: 0, w: 100, h: 10, fixed: true },
+      { x: 50, y: 0, w: 100, h: 10 },
+      { x: 60, y: 0, w: 100, h: 10 },
+      { x: 500, y: 0, w: 100, h: 10 }
+    ]);
+    expect(dy[0]).toBe(0);
+    expect(dy[1]).toBeCloseTo(11.5);
+    expect(dy[2]).toBeCloseTo(23);
+    expect(dy[3]).toBe(0);
+  });
+  it('places fixed labels first even when listed later', () => {
+    const dy = placeLabels([{ x: 0, y: 0, w: 10, h: 10 }, { x: 0, y: 0, w: 10, h: 10, fixed: true }]);
+    expect(dy).toEqual([11.5, 0]);
+  });
+});
+
+describe('canvas zoom', () => {
+  it('clamps to 25 %–800 %', () => {
+    expect(clampZoom(0.1)).toBe(0.25);
+    expect(clampZoom(20)).toBe(8);
+    expect(clampZoom(1.25 * 1.25)).toBe(1.563);
+  });
+  it('keeps the point under the pointer still', () => {
+    // content x under the pointer: 100 scrolled + 50 in = 150; doubled → 300, minus 50 visible = 250
+    expect(zoomScroll(100, 50, 2)).toBe(250);
+    expect(zoomScroll(0, 50, 0.5)).toBe(0);
+  });
+});
+
+describe('edge bars', () => {
+  const b = { x: 100, y: 0, size: [400, 200] as [number, number] };
+  it('sits just inside the named edge, centred on the arrow', () => {
+    expect(edgeBar(b, 'top', 300, 240)).toEqual({ x1: 180, y1: 200, x2: 420, y2: 200 });
+    expect(edgeBar(b, 'top', 300, 240, 5)).toEqual({ x1: 180, y1: 195, x2: 420, y2: 195 });
+    expect(edgeBar(b, 'left', 100, 100, 5)).toEqual({ x1: 105, y1: 50, x2: 105, y2: 150 });
+  });
+  it('stays inside the edge near a corner and never outgrows it', () => {
+    expect(edgeBar(b, 'bottom', 110, 240)).toEqual({ x1: 100, y1: 0, x2: 340, y2: 0 });
+    expect(edgeBar(b, 'right', 500, 120)).toEqual({ x1: 500, y1: 80, x2: 500, y2: 200 });
+    expect(edgeBar(b, 'right', 100, 999)).toEqual({ x1: 500, y1: 0, x2: 500, y2: 200 });
+  });
+  it('gives both bars of a rule one length: 60 % of the shorter edge, capped', () => {
+    const small = { x: 0, y: 0, size: [100, 300] as [number, number] };
+    expect(barLength([{ box: b, edge: 'top' }, { box: small, edge: 'top' }], 1000)).toBe(60);
+    expect(barLength([{ box: b, edge: 'left' }, { box: small, edge: 'left' }], 1000)).toBe(120);
+    expect(barLength([{ box: b, edge: 'top' }], 50)).toBe(50);
+  });
+});
+
+describe('touching edge bars', () => {
+  it('coincide only on the same line with overlapping spans', () => {
+    const a = { x1: 0, y1: 100, x2: 50, y2: 100 };
+    expect(barsCoincide(a, { x1: 40, y1: 101, x2: 90, y2: 101 }, 2)).toBe(true);
+    expect(barsCoincide(a, { x1: 40, y1: 110, x2: 90, y2: 110 }, 2)).toBe(false);
+    expect(barsCoincide(a, { x1: 60, y1: 100, x2: 90, y2: 100 }, 2)).toBe(false);
+    expect(barsCoincide(a, { x1: 10, y1: 0, x2: 10, y2: 200 }, 2)).toBe(false);
   });
 });

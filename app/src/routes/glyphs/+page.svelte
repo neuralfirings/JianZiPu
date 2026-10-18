@@ -12,6 +12,9 @@
   import TypingTable, { type Section } from '$lib/components/TypingTable.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
   import TryIt from '$lib/components/TryIt.svelte';
+  import GlyphFacts from '$lib/components/GlyphFacts.svelte';
+  import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
+  import { usedIn } from '$lib/areas';
   import { page } from '$app/state';
   import { goto, replaceState } from '$app/navigation';
   import { DEFAULT_WEIGHT } from '$lib/glyphed/editor.svelte';
@@ -58,6 +61,7 @@
   function setWeight(v: number) { if (v > 0) app.edit(`Reference stroke weight ${Math.round(v)}`, (d) => { d.glyph_weight = Math.round(v); }); }
 
   let d = $derived(app.design!);
+  let addTo = $state<string | null>(null);
   let areaNames = $derived(Object.keys(d.areas));
   let all = $derived(app.glyphs.map((r) => r.glyph));
   let areasOf = $derived(Object.fromEntries(app.glyphs.map((r) => [r.glyph, areaNames.filter((a) => d.areas[a].glyphs.includes(r.glyph))])));
@@ -121,12 +125,6 @@
   });
 
   let sel = $derived(app.glyphs.find((r) => r.glyph === selected) ?? null);
-  let svgInfo = $derived.by(() => {
-    if (!sel) return null;
-    const t = app.svgs[sel.glyph];
-    if (!t) return null;
-    return { paths: (t.match(/<path/g) ?? []).length, kb: (new Blob([t]).size / 1024).toFixed(1) };
-  });
   const mark = (g: string) => (errGlyphs.has(g) ? '✕' : warnGlyphs.has(g) ? '⚠' : '');
 
   // CSV import / export of the spellings
@@ -202,6 +200,7 @@
   <div class="body">
     <aside class="groups">
       <button class:on={group === 'all'} onclick={() => (group = 'all')}><span>All</span><span class="muted">{all.length}</span></button>
+      <div class="gh">Areas</div>
       {#each areaNames as a}
         {@const n = d.areas[a].glyphs.length}
         <button class:on={group === a} onclick={() => (group = a)} title={a}><span>{app.areaLabel(a)}</span><span class="muted">{n}</span></button>
@@ -219,6 +218,17 @@
     </aside>
 
     <section class="grid-wrap">
+      {#if d.areas[group]}
+        {@const ar = d.areas[group]}
+        {@const uses = usedIn(d, group)}
+        <div class="areahead">
+          <strong>{ar.label || group}</strong><span class="id">{group}</span>
+          <span class="muted">· {ar.glyphs.length} glyph{ar.glyphs.length === 1 ? '' : 's'} · box {ar.size[0]} × {ar.size[1]} · {uses.length ? `used in ${uses.length} word type${uses.length === 1 ? '' : 's'}` : 'not in any word type yet'}</span>
+          <span class="spacer"></span>
+          <button class="primary" onclick={() => (addTo = group)}>+ Add glyphs</button>
+          <a href="/layouts?area={encodeURIComponent(group)}" title="Area Properties on the Layouts screen: name, box, word types">Edit box in Layouts →</a>
+        </div>
+      {/if}
       {#if tiles.length === 0 && !foldedDecimals}
         <div class="empty">
           {#if filter === 'nospell'}<p class="ok">✓ Every glyph in an area can be typed.</p>
@@ -253,6 +263,7 @@
   {#if notice}
     <div class="toast">{notice.text} {#if notice.undo}<button onclick={() => { app.undo(); notice = null; }}>Undo</button>{/if}</div>
   {/if}
+  {#if addTo}<AddGlyphsDialog area={addTo} onclose={() => (addTo = null)} />{/if}
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
   {#if sel}
@@ -260,18 +271,7 @@
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
-        <div class="h"><strong class="mono">{sel.glyph}</strong>{#if app.charOf(sel.glyph)} <span>{app.charOf(sel.glyph)}</span>{/if}{#if !sel.svg}<span class="badge-warn"> · no SVG on disk</span>{/if}</div>
-        <div class="row"><span class="k">In areas</span>
-          {#each areasOf[sel.glyph] ?? [] as a}<span class="chip">{app.areaLabel(a)} <span class="id">{a}</span> <button class="x" title="Remove from {a}" onclick={() => app.removeFromArea(a, sel!.glyph)}>×</button></span>{/each}
-          <select onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) app.addToArea(v, [sel!.glyph]); (e.target as HTMLSelectElement).value = ''; }}>
-            <option value="">+ Add to area…</option>
-            {#each areaNames.filter((a) => !(areasOf[sel!.glyph] ?? []).includes(a)) as a}<option value={a}>{app.areaLabel(a)} ({a})</option>{/each}
-          </select>
-        </div>
-        {#if view === 'tiles'}
-          <div><span class="k">Box</span> {#if areasOf[sel.glyph]?.[0]}{d.areas[areasOf[sel.glyph][0]].size.join(' × ')} <span class="muted">(from "{areasOf[sel.glyph][0]}")</span>{:else}<span class="muted">set by the area it joins</span>{/if}</div>
-        {/if}
-        <div><span class="k">File</span> {#if sel.svg}inputs/svg/{sel.glyph}.svg{#if svgInfo} · {svgInfo.paths} paths · {svgInfo.kb} KB{/if}{:else}<span class="muted">none</span>{/if}</div>
+        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles'} />
         <div class="row" style="margin-top: var(--s-2)">
           <a href={editUrl(sel.glyph)}><button class="primary">Edit outline</button></a>
           <a href={editUrl(sel.glyph, 'file')}><button title="Open the editor with a new SVG loaded (nothing is written until you save)">Replace…</button></a>
@@ -332,6 +332,8 @@
   .groups hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-2) 0; width: 100%; }
   .gh { font-size: var(--t-xs); color: var(--fg-2); margin: var(--s-2) 0 2px 8px; text-transform: uppercase; letter-spacing: .04em; }
   .grid-wrap { flex: 1; min-width: 0; overflow: auto; padding: var(--s-3); }
+  .areahead { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; padding: 6px var(--s-3); margin-bottom: var(--s-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); font-size: var(--t-sm); }
+  .areahead a { font-size: var(--t-sm); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 120px); gap: var(--s-2); }
   .tile { position: relative; height: auto; width: 120px; padding: var(--s-2) var(--s-2) 26px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
   .tile:hover { background: var(--bg-3); }
@@ -356,9 +358,6 @@
   .facts .row { flex-wrap: wrap; }
   .colh { font-size: var(--t-xs); color: var(--fg-2); border-bottom: 1px dashed var(--line); padding-bottom: 2px; margin-bottom: 2px; }
   .big { padding: var(--s-2); background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
-  .k { display: inline-block; width: 70px; color: var(--fg-2); }
-  .x { height: 16px; padding: 0 4px; border: 0; background: transparent; }
-  .mono { font-family: var(--mono); }
   .small { font-size: var(--t-xs); }
   .warn { color: var(--warn); }
   .menu-wrap { position: relative; }
