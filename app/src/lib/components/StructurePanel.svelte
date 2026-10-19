@@ -336,55 +336,55 @@
 <style>
   .stack { display: flex; flex-direction: column; gap: 3px; }
   .line { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 1px 4px; border-radius: 4px; border: 1px solid transparent; flex-wrap: wrap; }
-  .line.sel { background: var(--accent-bg); border-color: var(--accent); }
+  .line.sel { background: var(--sel-bg); border-color: var(--link); }
   .line.off { opacity: .55; }
-  .line.dragover { border-top-color: var(--accent); }
-  .grip { color: var(--fg-2); cursor: grab; font-size: 13px; }
-  .req { color: var(--fg-2); font-size: 8px; width: 13px; text-align: center; }
-  .gp { display: inline-flex; align-items: center; gap: 1px; height: 26px; padding: 0 3px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
-  .gp .dd { font-size: 9px; color: var(--fg-2); }
+  .line.dragover { border-top-color: var(--link); }
+  .grip { color: var(--ink-muted); cursor: grab; font-size: 13px; }
+  .req { color: var(--ink-muted); font-size: 8px; width: 13px; text-align: center; }
+  .gp { display: inline-flex; align-items: center; gap: 1px; height: 26px; padding: 0 3px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
+  .gp .dd { font-size: 9px; color: var(--ink-muted); }
   .gp.dim { opacity: .8; }
   .lbl { height: 26px; padding: 0 4px; border: 0; background: transparent; font-weight: 500; text-align: left; white-space: nowrap; }
-  .lbl:hover { color: var(--accent); background: transparent; }
-  .lbl.on { color: var(--accent); }
-  .lbl.small { font-weight: 400; font-size: var(--t-sm); }
+  .lbl:hover { color: var(--link); background: transparent; }
+  .lbl.on { color: var(--link); }
+  .lbl.small { font-weight: 400; font-size: var(--t-small); }
   .lbl.dim { display: inline-flex; align-items: center; }
-  .plus { color: var(--fg-2); font-size: var(--t-xs); }
+  .plus { color: var(--ink-muted); font-size: var(--t-caption); }
   .spacer { flex: 1; }
-  .tag { font-size: var(--t-xs); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; color: var(--fg-2); line-height: 16px; white-space: nowrap; }
-  .tag.red { color: var(--arrow); border-color: var(--arrow); font-weight: 600; }
+  .tag { font-size: var(--t-caption); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; color: var(--ink-muted); line-height: 16px; white-space: nowrap; }
+  .tag.red { color: var(--accent); border-color: var(--accent); font-weight: 600; }
   .tag.dot { border-style: dotted; }
-  .tiny { font-size: var(--t-xs); color: var(--fg-2); white-space: nowrap; }
-  .exp { height: 22px; padding: 0 6px; font-size: var(--t-xs); border: 0; background: transparent; color: var(--fg-2); }
-  .exp.on, .exp:hover { color: var(--accent); background: transparent; }
+  .tiny { font-size: var(--t-caption); color: var(--ink-muted); white-space: nowrap; }
+  .exp { height: 22px; padding: 0 6px; font-size: var(--t-caption); border: 0; background: transparent; color: var(--ink-muted); }
+  .exp.on, .exp:hover { color: var(--link); background: transparent; }
   .sub { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding: 0 4px 2px 26px; }
-  .seg, .segs { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
-  .seg button, .segs button { height: 22px; padding: 0 7px; border: 0; border-radius: 0; background: var(--bg); font-size: var(--t-xs); }
-  .seg button + button, .segs button + button, .seg .n + button { border-left: 1px solid var(--line); }
-  .seg .n { padding: 0 7px; line-height: 22px; font-family: var(--mono); font-size: var(--t-sm); border-left: 1px solid var(--line); }
-  .segs button.on { background: var(--fg); color: var(--bg); }
-  .card { margin: 0 0 4px 22px; border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 5px; font-size: var(--t-sm); }
+  .seg, .segs { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .seg button, .segs button { height: 22px; padding: 0 7px; border: 0; border-radius: 0; background: var(--bg-field); font-size: var(--t-caption); }
+  .seg button + button, .segs button + button, .seg .n + button { border-left: 1px solid var(--border); }
+  .seg .n { padding: 0 7px; line-height: 22px; font-family: var(--font-mono); font-size: var(--t-small); border-left: 1px solid var(--border); }
+  .segs button.on { background: var(--sel-bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--sel-border); }
+  .card { margin: 0 0 4px 22px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 6px 8px; background: var(--bg-field); display: flex; flex-direction: column; gap: 5px; font-size: var(--t-small); }
   .wrap { flex-wrap: wrap; }
-  .alt { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 5px; padding: 3px 5px; background: var(--bg-2); }
-  .or { font-size: var(--t-xs); color: var(--fg-2); padding-left: 14px; }
-  .ec { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--line); border-radius: 12px; padding: 0 2px 0 8px; height: 24px; background: var(--bg); font-size: var(--t-sm); }
+  .alt { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 5px; padding: 3px 5px; background: var(--bg-panel); }
+  .or { font-size: var(--t-caption); color: var(--ink-muted); padding-left: 14px; }
+  .ec { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--border); border-radius: 12px; padding: 0 2px 0 8px; height: 24px; background: var(--bg-field); font-size: var(--t-small); }
   .ec.edit { padding-left: 2px; }
-  .ec select { height: 20px; font-size: var(--t-xs); padding: 0 2px; border: 0; background: transparent; }
-  .idin { height: 20px; width: 90px; font-family: var(--mono); font-size: var(--t-xs); border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; padding: 0 4px; }
-  .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--fg-2); font-size: 12px; }
-  .add { height: 22px; font-size: var(--t-xs); padding: 0 4px; border-style: dashed; background: transparent; width: auto; }
-  .lnk { height: 22px; font-size: var(--t-xs); border-style: dashed; background: transparent; }
-  .arealink { height: 22px; border: 0; background: transparent; color: var(--accent); padding: 0 2px; white-space: nowrap; font-size: var(--t-xs); }
+  .ec select { height: 20px; font-size: var(--t-caption); padding: 0 2px; border: 0; background: transparent; }
+  .idin { height: 20px; width: 90px; font-family: var(--font-mono); font-size: var(--t-caption); border: 0; border-left: 1px solid var(--border); border-radius: 0; background: transparent; padding: 0 4px; }
+  .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); font-size: 12px; }
+  .add { height: 22px; font-size: var(--t-caption); padding: 0 4px; border-style: dashed; background: transparent; width: auto; }
+  .lnk { height: 22px; font-size: var(--t-caption); border-style: dashed; background: transparent; }
+  .arealink { height: 22px; border: 0; background: transparent; color: var(--link); padding: 0 2px; white-space: nowrap; font-size: var(--t-caption); }
   .arealink:hover { text-decoration: underline; background: transparent; }
-  .danger { height: 22px; font-size: var(--t-xs); color: var(--danger); border-color: var(--danger); background: transparent; }
-  .addpart { width: 100%; border-style: dashed; background: transparent; font-size: var(--t-sm); color: var(--fg-2); }
-  .rec { border-top: 1px dashed var(--line); padding-top: 4px; margin-top: 2px; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-sm); }
+  .danger { height: 22px; font-size: var(--t-caption); color: var(--status-danger); border-color: var(--status-danger); background: transparent; }
+  .addpart { width: 100%; border-style: dashed; background: transparent; font-size: var(--t-small); color: var(--ink-muted); }
+  .rec { border-top: 1px dashed var(--border); padding-top: 4px; margin-top: 2px; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-small); }
   .rec summary { cursor: pointer; }
   .chips { display: flex; flex-wrap: wrap; gap: 3px; }
-  .tg { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: var(--t-xs); background: var(--bg); }
-  .tg.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .tg .rk { font-family: var(--mono); font-size: 10px; opacity: .8; }
-  .newarea { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px dashed var(--line); border-radius: var(--radius); }
-  .newarea label { display: inline-flex; gap: 4px; align-items: center; font-size: var(--t-sm); }
-  .err { color: var(--danger); }
+  .tg { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: var(--t-caption); background: var(--bg-field); }
+  .tg.on { background: var(--sel-bg); color: var(--ink); border-color: var(--sel-border); }
+  .tg .rk { font-family: var(--font-mono); font-size: 10px; opacity: .8; }
+  .newarea { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px dashed var(--border); border-radius: var(--radius-md); }
+  .newarea label { display: inline-flex; gap: 4px; align-items: center; font-size: var(--t-small); }
+  .err { color: var(--status-danger); }
 </style>

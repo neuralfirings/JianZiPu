@@ -12,5 +12,5 @@
 </div>
 
 <style>
-  .small { font-size: var(--t-xs); }
+  .small { font-size: var(--t-caption); }
 </style>

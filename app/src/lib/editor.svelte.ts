@@ -256,6 +256,16 @@ export function bumpGap(rel: Relationship, delta: number, baseGlyph: string | nu
   return rel.gap[i].value;
 }
 
+/** The gap a rule takes when a part is attached by dropping its handle on an edge: `measured` is the
+ *  distance on screen. A plain number becomes it; a glyph list keeps the row that applies to the
+ *  shown glyphs, and when none does, gains an "otherwise" row with it (rows tried first stay first). */
+export function attachGap(rel: Relationship, measured: number, baseGlyph: string | null, elemGlyph: string | null): 'set' | 'kept' | 'otherwise' {
+  if (!Array.isArray(rel.gap)) { rel.gap = measured; return 'set'; }
+  if (gapEntryIndex(rel.gap, baseGlyph, elemGlyph) >= 0) return 'kept';
+  rel.gap.push({ value: measured });
+  return 'otherwise';
+}
+
 /** Which side of a rule its exceptions key on: the existing entries decide; for a plain
  *  number, the side whose area has more than one glyph (the stroke, usually). */
 export function gapKeySide(gap: Relationship['gap'], elemGlyphCount: number, baseGlyphCount: number): 'base' | 'elem' {

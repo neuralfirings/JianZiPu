@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
-import { addArea, areaIdProblem, decimalGrid, splitMembers, usedIn } from './areas';
+import { addArea, areaIdProblem, decimalGrid, deleteAreaProblems, splitMembers, usedIn } from './areas';
 
 const design = (): Design => ({
   version: 2,
@@ -17,6 +17,18 @@ const design = (): Design => ({
 } as unknown as Design);
 
 describe('areas', () => {
+  it('deletes only an empty area no word type uses, and says why otherwise', () => {
+    const d = design();
+    expect(deleteAreaProblems(d, 'lonely')).toEqual([]);
+    const hui = deleteAreaProblems(d, 'hui');
+    expect(hui).toHaveLength(2);
+    expect(hui[0]).toMatch(/still has 4 glyphs/);
+    expect(hui[1]).toMatch(/^standard, chord use it/);
+    d.areas.left.glyphs = [];
+    expect(deleteAreaProblems(d, 'left')).toEqual(['standard, chord use it. Take it out of those word types in Structure (Advanced) first.']);
+    d.areas.lonely.glyphs = ['md_x'];
+    expect(deleteAreaProblems(d, 'lonely')).toEqual(['It still has 1 glyph. Remove it first: Manage, then × on each.']);
+  });
   it('lists the word types that use an area, through named elements too', () => {
     expect(usedIn(design(), 'hui').map((l) => l.name)).toEqual(['standard', 'chord']);
     expect(usedIn(design(), 'lonely')).toEqual([]);

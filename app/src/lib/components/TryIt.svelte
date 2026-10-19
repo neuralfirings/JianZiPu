@@ -118,24 +118,24 @@
 </div>
 
 <style>
-  .try { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-  .checks { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-  .chk { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 5px; border: 1px dashed var(--line); border-radius: 4px; background: var(--bg); min-width: 44px; }
-  .chk.ok { border-style: solid; border-color: var(--ok); }
-  .chk.bad { border-style: solid; border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, var(--bg)); }
+  .try { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .checks { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+  .chk { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 5px; border: 1px dashed var(--border); border-radius: 4px; background: var(--bg-field); min-width: 44px; }
+  .chk.ok { border-style: solid; border-color: var(--status-saved); }
+  .chk.bad { border-style: solid; border-color: var(--status-draft); background: color-mix(in srgb, var(--status-draft) 10%, var(--bg-field)); }
   .out { display: inline-flex; align-items: center; gap: 2px; min-height: 30px; }
-  .miss { color: var(--danger); font-size: 20px; }
+  .miss { color: var(--status-danger); font-size: 20px; }
   .brk .miss { font-size: inherit; }
-  .stray { font-family: var(--mono); color: var(--fg-2); font-size: var(--t-sm); }
-  .sym { font-family: var(--mono); color: var(--fg-2); }
-  .free { font-family: var(--mono); width: 100%; }
-  .word { display: flex; align-items: flex-end; gap: var(--s-2); }
-  .brk { font-size: var(--t-xs); color: var(--fg-2); }
-  .brk b { color: var(--fg); font-weight: 400; font-size: var(--t-sm); }
-  .sub { display: flex; flex-direction: column; gap: 3px; border-top: 1px dashed var(--line); padding-top: var(--s-2); }
-  h5 { margin: 0; font-size: var(--t-sm); font-weight: 600; }
-  .chg { display: flex; align-items: center; gap: var(--s-2); }
-  .small { font-size: var(--t-xs); }
-  .err { color: var(--danger); }
-  .warn { color: var(--warn); }
+  .stray { font-family: var(--font-mono); color: var(--ink-muted); font-size: var(--t-small); }
+  .sym { font-family: var(--font-mono); color: var(--ink-muted); }
+  .free { font-family: var(--font-mono); width: 100%; }
+  .word { display: flex; align-items: flex-end; gap: var(--space-4); }
+  .brk { font-size: var(--t-caption); color: var(--ink-muted); }
+  .brk b { color: var(--ink); font-weight: 400; font-size: var(--t-small); }
+  .sub { display: flex; flex-direction: column; gap: 3px; border-top: 1px dashed var(--border); padding-top: var(--space-4); }
+  h5 { margin: 0; font-size: var(--t-small); font-weight: 600; }
+  .chg { display: flex; align-items: center; gap: var(--space-4); }
+  .small { font-size: var(--t-caption); }
+  .err { color: var(--status-danger); }
+  .warn { color: var(--status-draft); }
 </style>

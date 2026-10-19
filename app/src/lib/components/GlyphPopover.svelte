@@ -29,14 +29,14 @@
 </div>
 
 <style>
-  .gpop { position: fixed; z-index: 30; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 32px rgba(0,0,0,.22); padding: 8px; box-sizing: border-box; }
-  .phead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: var(--t-sm); }
+  .gpop { position: fixed; z-index: 30; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); padding: 8px; box-sizing: border-box; }
+  .phead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: var(--t-small); }
   .ptitle { font-weight: 600; white-space: nowrap; }
-  .psearch { height: 24px; width: 110px; font-size: var(--t-xs); margin-left: auto; }
-  .pclose { height: 24px; width: 24px; padding: 0; border: 0; background: transparent; color: var(--fg-2); font-size: 16px; }
-  .phead .muted { color: var(--fg-2); font-size: var(--t-xs); }
+  .psearch { height: 24px; width: 110px; font-size: var(--t-caption); margin-left: auto; }
+  .pclose { height: 24px; width: 24px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); font-size: 16px; }
+  .phead .muted { color: var(--ink-muted); font-size: var(--t-caption); }
   .pgrid { display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: 3px; max-height: min(400px, 60vh); overflow: auto; }
-  .pcell { width: 44px; height: 44px; padding: 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
-  .pcell:hover { border-color: var(--accent); }
-  .pcell.on { border-color: var(--accent); background: var(--accent-bg); }
+  .pcell { width: 44px; height: 44px; padding: 3px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-field); }
+  .pcell:hover { border-color: var(--link); }
+  .pcell.on { border-color: var(--link); background: var(--sel-bg); }
 </style>

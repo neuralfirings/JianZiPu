@@ -45,3 +45,16 @@ export function areaIdProblem(d: Design, id: string): string | null {
 export function addArea(d: Design, id: string, label: string, size: [number, number]) {
   d.areas[id] = { label: label.trim() || id, size: [size[0], size[1]], glyphs: [] };
 }
+
+/** Why `id` can't be deleted, one sentence per reason (empty when it can): it still holds glyphs,
+ *  or a word type has a part that uses it. */
+export function deleteAreaProblems(d: Design, id: string): string[] {
+  const a = d.areas[id];
+  if (!a) return [`There is no area "${id}".`];
+  const out: string[] = [];
+  const n = a.glyphs.length;
+  if (n) out.push(`It still has ${n} glyph${n === 1 ? '' : 's'}. Remove ${n === 1 ? 'it' : 'them'} first: Manage, then × on each.`);
+  const uses = usedIn(d, id).map((l) => l.label ?? l.name);
+  if (uses.length) out.push(`${uses.join(', ')} ${uses.length === 1 ? 'uses' : 'use'} it. Take it out of ${uses.length === 1 ? 'that word type' : 'those word types'} in Structure (Advanced) first.`);
+  return out;
+}

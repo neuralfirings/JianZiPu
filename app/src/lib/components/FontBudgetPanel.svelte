@@ -17,7 +17,7 @@
 {/if}
 
 <style>
-  table { font-size: var(--t-sm); border-collapse: collapse; }
-  td { padding: 1px 6px 1px 0; } .num { text-align: right; font-family: var(--mono); }
-  .small { font-size: var(--t-xs); }
+  table { font-size: var(--t-small); border-collapse: collapse; }
+  td { padding: 1px 6px 1px 0; } .num { text-align: right; font-family: var(--font-mono); }
+  .small { font-size: var(--t-caption); }
 </style>

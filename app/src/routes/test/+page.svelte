@@ -112,7 +112,7 @@
       </div>
     {/if}
     <div class="row wrap">
-      <input type="text" style="flex: 1; min-width: 300px; font-family: var(--mono)" bind:value={text} placeholder="type words: s7k5 名七勾五 :fenkai C03|s6,5"
+      <input type="text" style="flex: 1; min-width: 300px; font-family: var(--font-mono)" bind:value={text} placeholder="type words: s7k5 名七勾五 :fenkai C03|s6,5"
         oncompositionstart={() => (composing = true)} oncompositionend={() => { composing = false; text = text + ''; }} />
       <select onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) text = sets[v].join(' '); (e.target as HTMLSelectElement).value = ''; }}>
         <option value="">Sample set…</option>
@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  {#if err}<p class="error" style="padding: 0 var(--s-4)">{err}</p>{/if}
+  {#if err}<p class="error" style="padding: 0 var(--space-6)">{err}</p>{/if}
   <div class="words">
     {#each result?.words ?? [] as w (w.word)}
       {@const pg = wordPage(w)}
@@ -156,19 +156,19 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; }
-  .top { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); }
-  .wrap { flex-wrap: wrap; gap: var(--s-3); }
+  .top { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border); }
+  .wrap { flex-wrap: wrap; gap: var(--space-5); }
   .spacer { flex: 1; }
-  .words { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: var(--s-3); padding: var(--s-4); align-content: flex-start; }
+  .words { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-6); align-content: flex-start; }
   .word { display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .word a { display: block; }
-  .font { font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--canvas); border-radius: var(--radius); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }
-  .keys { font-family: var(--mono); }
-  .miss { color: var(--danger); }
-  .built { padding: var(--s-2) var(--s-3); background: var(--bg-2); border-radius: var(--radius); }
-  .small { font-size: var(--t-xs); }
-  .older summary { cursor: pointer; font-size: var(--t-sm); }
-  .older td { padding: 2px 10px 2px 0; font-size: var(--t-sm); }
-  .log { border-top: 1px solid var(--line); padding: var(--s-2) var(--s-4); max-height: 40vh; overflow: auto; }
-  pre { font: var(--t-xs)/1.4 var(--mono); white-space: pre-wrap; }
+  .font { font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--bg-canvas); border-radius: var(--radius-md); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }
+  .keys { font-family: var(--font-mono); }
+  .miss { color: var(--status-danger); }
+  .built { padding: var(--space-4) var(--space-5); background: var(--bg-panel); border-radius: var(--radius-md); }
+  .small { font-size: var(--t-caption); }
+  .older summary { cursor: pointer; font-size: var(--t-small); }
+  .older td { padding: 2px 10px 2px 0; font-size: var(--t-small); }
+  .log { border-top: 1px solid var(--border); padding: var(--space-4) var(--space-6); max-height: 40vh; overflow: auto; }
+  pre { font: var(--t-caption)/1.4 var(--font-mono); white-space: pre-wrap; }
 </style>

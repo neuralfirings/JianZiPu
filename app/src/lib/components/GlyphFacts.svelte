@@ -30,10 +30,10 @@
 </div>
 
 <style>
-  .gf { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; font-size: var(--t-sm); }
+  .gf { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; font-size: var(--t-small); }
   .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-  .mono { font-family: var(--mono); }
-  .k { display: inline-block; width: 70px; color: var(--fg-2); }
+  .mono { font-family: var(--font-mono); }
+  .k { display: inline-block; width: 70px; color: var(--ink-muted); }
   .x { height: 16px; padding: 0 4px; border: 0; background: transparent; }
   select { height: 26px; }
 </style>

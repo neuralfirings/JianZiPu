@@ -129,8 +129,8 @@
         <div class="item" class:skip={picks[it.id] === false && !readOnly} class:conflict={it.conflict && !readOnly}>
           <div class="ihead">
             <b class="key">{it.kind === 'design' ? it.label : it.key}</b>
-            <span class="badge {it.status}">{it.status}</span>
-            {#if it.conflict && !readOnly}<span class="badge conflict">conflict</span>{/if}
+            <span class="tag {it.status}">{it.status}</span>
+            {#if it.conflict && !readOnly}<span class="pill danger">× Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             <span class="spacer"></span>
             {#if it.kind === 'design' && it.unit.type === 'area' && mode !== 'mine'}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}
@@ -145,13 +145,13 @@
           {#if it.kind === 'glyph'}
             <div class="views">
               {#if it.conflict && !readOnly}
-                <SvgText text={svgOf(it.base)} label="Before{m.base.date ? ` (${day(m.base.date)})` : ''}" />
-                <SvgText text={svgOf(it.theirs)} label="{who} draft" />
+                <SvgText text={svgOf(it.base)} tone="before" label="Before{m.base.date ? ` (${day(m.base.date)})` : ''}" />
+                <SvgText text={svgOf(it.theirs)} tone="after" label="{who} draft" />
                 <SvgText text={svgOf(it.current)} label="Your Builder now" />
               {:else}
-                <SvgText text={svgOf(it.base ?? it.current)} label="before" />
-                <SvgText text={svgOf(it.theirs)} label="after" />
-                {#if it.status === 'changed'}<SvgText text={svgOf(it.theirs)} ghost={svgOf(it.base ?? it.current)} label="before / after" />{/if}
+                <SvgText text={svgOf(it.base ?? it.current)} tone="before" label="Before" />
+                <SvgText text={svgOf(it.theirs)} tone="after" label="After" />
+                {#if it.status === 'changed'}<SvgText text={svgOf(it.theirs)} ghost={svgOf(it.base ?? it.current)} label="Before / After" />{/if}
               {/if}
             </div>
           {:else if it.kind === 'spelling'}
@@ -205,44 +205,43 @@
 </div>
 
 <style>
-  .review { display: flex; flex-direction: column; gap: var(--s-3); max-width: 980px; }
-  .head { display: flex; align-items: flex-start; gap: var(--s-2); flex-wrap: wrap; }
-  h2 { margin: 0; font-size: var(--t-xl); font-weight: 600; }
-  h3 { margin: var(--s-3) 0 0; font-size: var(--t-lg); font-weight: 600; }
+  .review { display: flex; flex-direction: column; gap: var(--space-5); max-width: 980px; }
+  .head { display: flex; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; }
+  h2 { margin: 0; }
+  h3 { margin: var(--space-5) 0 0; }
   .head p { margin: 2px 0 0; }
   .spacer { flex: 1; }
   .seg { display: inline-flex; }
   .seg button { border-radius: 0; margin-left: -1px; }
-  .seg button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
-  .seg button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
-  button.on { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); position: relative; }
-  .item { border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); background: var(--bg); }
+  .seg button:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); margin-left: 0; }
+  .seg button:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  button.on { background: var(--sel-bg); color: var(--ink); border-color: var(--link); position: relative; }
+  .item { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); background: var(--bg-panel); }
   .item.skip { opacity: .55; }
-  .item.conflict { border-color: var(--warn); }
-  .ihead { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
-  .key { font-family: var(--mono); font-size: var(--t-md); }
-  .sum { font-size: var(--t-sm); }
-  .badge { font-size: var(--t-xs); padding: 1px 6px; border-radius: 8px; background: var(--bg-3); }
-  .badge.added { color: var(--ok); }
-  .badge.deleted { color: var(--danger); }
-  .badge.conflict { color: var(--warn); font-weight: 600; }
-  .views { display: flex; gap: var(--s-3); flex-wrap: wrap; }
-  .cells { border-collapse: collapse; font-size: var(--t-sm); }
-  .cells th, .cells td { border: 1px solid var(--line); padding: 2px 8px; text-align: left; }
-  .cells thead th { font-weight: 500; color: var(--fg-2); }
-  .cells .new { color: var(--accent); }
-  .cells tr.cf td { background: var(--accent-bg); }
-  .more { display: flex; gap: var(--s-3); flex-wrap: wrap; }
-  .link { border: 0; background: none; color: var(--accent); padding: 0; height: auto; }
-  .words { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .item.conflict { border-color: var(--status-danger); }
+  .ihead { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .key { font-family: var(--font-mono); font-size: var(--t-label); }
+  .sum { font-size: var(--t-small); }
+  .tag.added { color: var(--status-saved); border-color: currentColor; }
+  .tag.deleted { color: var(--status-danger); border-color: currentColor; }
+  .views { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+  .cells { border-collapse: collapse; font-size: var(--t-small); }
+  .cells th, .cells td { border-bottom: 1px solid var(--hairline); padding: var(--space-2) var(--space-4); text-align: left; }
+  .cells thead th { font-weight: 600; border-bottom-color: var(--border-strong); }
+  .cells td { font-family: var(--font-mono); }
+  .cells .new { color: var(--link); }
+  .cells tr.cf td { background: var(--status-danger-bg); }
+  .more { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+  .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; }
+  .words { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
   .words > div { min-width: 0; }
-  .diff { margin: 0; max-height: 320px; overflow: auto; font-family: var(--mono); font-size: var(--t-xs); background: var(--bg-2); border-radius: 4px; padding: var(--s-2); }
-  .opadd { color: var(--ok); }
-  .opdel { color: var(--danger); }
-  .opgap { color: var(--fg-2); }
-  .pickrow { display: flex; gap: var(--s-2); align-items: center; }
-  .applybar { position: sticky; bottom: 0; display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
-  .warn { color: var(--warn); }
-  .small { font-size: var(--t-sm); }
-  .empty { color: var(--fg-2); }
+  .diff { margin: 0; max-height: 320px; overflow: auto; font-family: var(--font-mono); font-size: var(--t-caption); background: var(--bg-sunken); border-radius: var(--radius-sm); padding: var(--space-4); }
+  .opadd { color: var(--status-saved); }
+  .opdel { color: var(--status-danger); }
+  .opgap { color: var(--ink-muted); }
+  .pickrow { display: flex; gap: var(--space-4); align-items: center; }
+  .applybar { position: sticky; bottom: 0; display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap; padding: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); box-shadow: var(--shadow-float); }
+  .warn { color: var(--status-draft); }
+  .small { font-size: var(--t-small); }
+  .empty { color: var(--ink-muted); }
 </style>

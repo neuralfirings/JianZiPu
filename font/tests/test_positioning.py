@@ -133,6 +133,44 @@ def test_centering_with_phantom(design):
     assert resolve.resolve(design, L, sh2, {"a": "g_a2"})["a"][1] == pytest.approx(327.5)
 
 
+def _without_b_page_rule():
+    import copy
+    toy = copy.deepcopy(TOY)
+    word = toy["layouts"][0]
+    word["relationships"] = [r for r in word["relationships"] if not (r["axis"] == "y" and r["elem"] == "b" and r["base"] is None)]
+    return schema.parse_design(toy)
+
+
+def test_resolve_lenient_parks_the_unplaceable_part():
+    d = _without_b_page_rule()
+    L = d.layout("word")
+    sh = next(s for s in shapes.enumerate_shapes(L) if s.names == ["b", "c"])
+    try:
+        resolve.resolve(d, L, sh, center=False)
+        raise AssertionError("strict resolve should fail: b has no y rule without a")
+    except resolve.Unresolvable:
+        pass
+    missing = {}
+    pos = resolve.resolve(d, L, sh, center=False, missing=missing)
+    assert list(missing) == ["b"] and list(missing["b"]) == ["y"]
+    assert "no relationship positions b on y" in missing["b"]["y"]
+    assert pos["b"] == (10, 0)                    # x from its rule, y parked at 0
+    assert pos["c"] == (20, -105)                 # c still hangs off b: top = b.bottom - 5
+
+
+def test_resolve_payload_reports_unplaced():
+    from jzpbuild import webserver
+    d = _without_b_page_rule()
+    L = d.layout("word")
+    sh = next(s for s in shapes.enumerate_shapes(L) if s.names == ["b"])
+    r = webserver.resolve_payload(d, "word", [list(c) if isinstance(c, tuple) else c for c in sh.choice], None, center=False)
+    assert r["ok"] is False and "b on y" in r["error"]
+    assert list(r["unplaced"]) == ["b"]
+    assert r["elements"][0]["x"] == 10 and r["elements"][0]["y"] == 0
+    ok = webserver.resolve_payload(schema.parse_design(TOY), "word", [list(c) if isinstance(c, tuple) else c for c in sh.choice], None)
+    assert ok["ok"] and ok["unplaced"] == {}
+
+
 def test_resolve_vert_prev(design):
     L = design.layout("vert")
     sh = next(s for s in shapes.enumerate_shapes(L) if s.names == ["col", "c@1", "a@2", "b@2"])

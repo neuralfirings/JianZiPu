@@ -147,21 +147,20 @@
 {/if}
 
 <style>
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 60; padding: var(--s-4); }
-  .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-5); width: 100%; max-width: 600px; max-height: 90vh; overflow: auto; display: flex; flex-direction: column; gap: var(--s-3); }
-  h3 { margin: 0; font-size: var(--t-lg); font-weight: 600; }
+  .modal-bg { padding: var(--space-6); }
+  .modal { padding: var(--space-7); width: 100%; max-width: 600px; max-height: 90vh; overflow: auto; display: flex; flex-direction: column; gap: var(--space-5); }
+  h3 { margin: 0; font-size: var(--t-panel); font-weight: 600; }
   p { margin: 0; line-height: 1.5; }
-  .three { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: var(--s-2); line-height: 1.5; }
+  .three { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: var(--space-4); line-height: 1.5; }
   .end { justify-content: flex-end; flex-wrap: wrap; }
-  .small { font-size: var(--t-sm); }
-  .danger { background: var(--danger); border-color: var(--danger); color: #fff; }
-  .conflicts { display: flex; flex-direction: column; gap: var(--s-2); }
-  .cf { border: 1px solid var(--warn); border-radius: var(--radius); padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
-  .pics { gap: var(--s-3); align-items: flex-start; }
-  .badge { font-size: var(--t-xs); padding: 1px 6px; border-radius: 8px; background: var(--bg-3); color: var(--warn); }
-  button.on { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
-  .cells { border-collapse: collapse; font-size: var(--t-sm); }
-  .cells th, .cells td { border: 1px solid var(--line); padding: 2px 8px; text-align: left; }
-  .link { border: 0; background: none; color: var(--accent); padding: 0; height: auto; text-align: left; }
-  .auto { margin: 0; padding-left: 20px; font-size: var(--t-sm); }
+  .small { font-size: var(--t-small); }
+  .conflicts { display: flex; flex-direction: column; gap: var(--space-4); }
+  .cf { border: 1px solid var(--status-draft); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .pics { gap: var(--space-5); align-items: flex-start; }
+  .badge { font-size: var(--t-caption); padding: 1px 6px; border-radius: 8px; background: var(--bg-hover); color: var(--status-draft); }
+  button.on { background: var(--sel-bg); color: var(--ink); border-color: var(--link); }
+  .cells { border-collapse: collapse; font-size: var(--t-small); }
+  .cells th, .cells td { border: 1px solid var(--border); padding: 2px 8px; text-align: left; }
+  .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; text-align: left; }
+  .auto { margin: 0; padding-left: 20px; font-size: var(--t-small); }
 </style>

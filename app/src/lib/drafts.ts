@@ -1,6 +1,6 @@
 // Testers' drafts in Supabase Storage: one private bucket, one folder per person
 // (drafts/<user id>/draft.json, a bundle as JSON). Storage rules let each person read and write
-// only their own folder; the admin can read all of them (supabase/setup.sql).
+// only their own folder; the admin can read all of them (supabase/001_setup.sql).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fromJson, toJson, type Bundle } from './bundle';
 

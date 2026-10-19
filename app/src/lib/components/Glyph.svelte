@@ -12,6 +12,6 @@
 {/if}
 
 <style>
-  .glyph { display: block; color: var(--fg); }
-  .missing { display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--line); border-radius: 4px; color: var(--fg-2); font-family: var(--mono); overflow: hidden; }
+  .glyph { display: block; color: var(--ink); }
+  .missing { display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--border); border-radius: 4px; color: var(--ink-muted); font-family: var(--font-mono); overflow: hidden; }
 </style>

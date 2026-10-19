@@ -39,19 +39,19 @@
 
 <style>
   .dock { display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; position: relative; }
-  .dock.left, .dock.right { padding: var(--s-2); overflow: auto; height: 100%; }
+  .dock.left, .dock.right { padding: var(--space-4); overflow: auto; height: 100%; }
   .dock.left > .slot, .dock.right > .slot { min-width: 230px; }
-  .dock.bottom { padding: var(--s-2); overflow: auto; height: 100%; }
-  .dock.hot { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-bg); }
+  .dock.bottom { padding: var(--space-4); overflow: auto; height: 100%; }
+  .dock.hot { outline: 2px dashed var(--link); outline-offset: -2px; background: var(--sel-bg); }
   .slot { min-width: 0; }
-  .ins { height: 0; border-top: 3px solid var(--accent); margin: -3px 0 0; position: relative; z-index: 3; }
-  .tabbar { display: flex; flex-wrap: wrap; gap: 2px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); padding: 2px; margin-top: auto; }
-  .tab { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px 0 4px; border: 0; background: transparent; font-size: var(--t-sm); font-weight: 600; }
-  .tab:hover { background: var(--bg-3); }
-  .tab .grip { color: var(--fg-2); cursor: grab; font-size: 12px; touch-action: none; }
-  .tab .chev { color: var(--fg-2); font-size: 10px; }
-  .tab .sum { font-weight: 400; color: var(--fg-2); font-size: var(--t-xs); }
-  .bdg { font-size: var(--t-xs); border: 1px solid var(--line); border-radius: 9px; padding: 0 6px; line-height: 15px; color: var(--fg-2); font-weight: 400; }
-  .bdg.warn { border-color: var(--warn); color: var(--warn); }
-  .empty { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: var(--t-sm); }
+  .ins { height: 0; border-top: 3px solid var(--link); margin: -3px 0 0; position: relative; z-index: 3; }
+  .tabbar { display: flex; flex-wrap: wrap; gap: 2px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); padding: 2px; margin-top: auto; }
+  .tab { display: inline-flex; align-items: center; gap: 5px; height: var(--control-sm); padding: 0 8px 0 4px; border: 0; background: transparent; font: 600 var(--t-label)/1 var(--font-display); }
+  .tab:hover { background: var(--bg-hover); }
+  .tab .grip { color: var(--ink-faint); cursor: grab; font-size: 12px; touch-action: none; }
+  .tab .chev { color: var(--ink-muted); font-size: 10px; }
+  .tab .sum { font-weight: 400; color: var(--ink-muted); font-size: var(--t-caption); }
+  .bdg { font-size: var(--t-caption); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 0 6px; line-height: 15px; color: var(--ink-muted); font-weight: 400; }
+  .bdg.warn { border-color: var(--status-draft); color: var(--status-draft); }
+  .empty { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center; color: var(--link); font-size: var(--t-small); }
 </style>

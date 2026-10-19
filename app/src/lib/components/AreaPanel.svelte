@@ -1,8 +1,8 @@
 <script lang="ts">
   // Area Properties (Layouts, docs/AREAS-PLACEMENT-UX.md): the area of the selected part, or
   // the one picked in the switcher. Its name, box (typed sizes preview on the canvas and only
-  // apply on Enter / leaving the fields), advance and delete (Advanced), the word types that
-  // use it, and its glyphs: click = preview, double-click or "edit" = glyph editor, Manage =
+  // apply on Enter / leaving the fields), advance (Advanced), + New area and Delete area (only an
+  // empty area no word type uses; otherwise a banner says why), the word types that use it, and its glyphs: click = preview, double-click or "edit" = glyph editor, Manage =
   // remove / add. Position decimals sit in a text grid (13 hui × blank, .1–.9).
   import { goto } from '$app/navigation';
   import { api, type ResolvedElement } from '$lib/api';
@@ -10,7 +10,7 @@
   import { editor } from '$lib/editor.svelte';
   import { panels } from '$lib/panels.svelte';
   import { defaultChoice, shapeElements } from '$lib/shape';
-  import { addArea, areaIdProblem, decimalGrid, splitMembers, usedIn } from '$lib/areas';
+  import { addArea, areaIdProblem, decimalGrid, deleteAreaProblems, splitMembers, usedIn } from '$lib/areas';
   import { searchText, decimalPatterns } from '$lib/typing';
   import Glyph from './Glyph.svelte';
   import WordCanvas from './WordCanvas.svelte';
@@ -27,7 +27,6 @@
   let showAll = $state(false);
   let adding = $state(false);
   let switcher = $state(false);
-  let more = $state(false);
   const LIMIT = 28;
   let wide = $derived(panels.dockOf('glyphs') === 'bottom');
 
@@ -115,21 +114,30 @@
   let newId = $state(''), newLabel = $state(''), newOpen = $state(false);
   let newProblem = $derived(areaIdProblem(d, newId.trim()));
   function pick(a: string) { switcher = false; editor.showArea(a); }
+  function openNew() { newOpen = !newOpen; switcher = false; delState = null; }
   function createArea() {
     const id = newId.trim();
     if (areaIdProblem(d, id)) return;
     const size: [number, number] = area ? [area.size[0], area.size[1]] : [350, 350];
     app.edit(`New area ${id}`, (x) => addArea(x, id, newLabel, size));
-    newId = ''; newLabel = ''; newOpen = false; switcher = false;
+    newId = ''; newLabel = ''; newOpen = false; switcher = false; delState = null;
     editor.areaView = id;
   }
+  // ---- delete: a dialog when it can go, a banner naming what keeps it otherwise
+  let delState = $state<{ area: string; problems: string[] } | null>(null);
+  function askDelete() {
+    const a = areaId; if (!a) return;
+    newOpen = false;
+    delState = { area: a, problems: deleteAreaProblems(d, a) };
+  }
   function deleteArea() {
-    const a = areaId; if (!a || uses.length) return;
-    if (!confirm(`Delete the area "${app.areaLabel(a)}" (${a})? Its ${area?.glyphs.length ?? 0} glyphs stay on disk.`)) return;
-    more = false;
+    const a = delState?.area; delState = null;
+    if (!a || deleteAreaProblems(d, a).length) return;
     app.edit(`Delete area ${a}`, (x) => { delete x.areas[a]; });
     editor.areaView = null; app.syncCatalog();
   }
+  // the banner goes away once the area changes or the reasons are fixed
+  $effect(() => { if (delState && (delState.area !== areaId || !deleteAreaProblems(d, delState.area).length) && delState.problems.length) delState = null; });
   let groups = $derived.by(() => {
     const here = editor.layout;
     const ids = Object.keys(d.areas);
@@ -144,7 +152,7 @@
   });
 </script>
 
-<svelte:window onpointerdown={(e) => { if (!(e.target as HTMLElement).closest('.sw, .more')) { switcher = false; more = false; } }} />
+<svelte:window onpointerdown={(e) => { const t = e.target as HTMLElement; if (!t.closest('.sw')) switcher = false; if (!t.closest('.newwrap')) newOpen = false; }} />
 
 <div class="ap">
   <div class="props">
@@ -163,17 +171,6 @@
               {:else}<tr><td colspan="4" class="tiny">none</td></tr>{/each}
             {/each}
           </tbody></table>
-          {#if editor.advanced}
-            {#if newOpen}
-              <div class="new">
-                <label>id <input type="text" bind:value={newId} placeholder="thumb" /></label>
-                <label>Shown as <input type="text" bind:value={newLabel} placeholder="Thumb mark" /></label>
-                <span class="tiny">box {area ? `${area.size[0]} × ${area.size[1]}, copied from ${area.label || areaId}` : '350 × 350'}</span>
-                {#if newId && newProblem}<span class="err tiny">{newProblem}</span>{/if}
-                <div class="row"><button onclick={() => (newOpen = false)}>Cancel</button><button class="primary" disabled={!!newProblem} onclick={createArea}>Create</button></div>
-              </div>
-            {:else}<button class="lnk" onclick={() => (newOpen = true)}>+ New area…</button>{/if}
-          {/if}
         </div>
       {/if}
     </span>
@@ -187,21 +184,44 @@
         <label class="f" title="A part with an advance moves the pen (the colon and the bar); 0 for ordinary parts">Advance <input type="number" class="num" value={area.advance ?? 0} onchange={(e) => setAdvance(+(e.target as HTMLInputElement).value)} /></label>
       {/if}
       <span class="f used">Used in
-        {#each uses as l (l.name)}<button class="pill" class:on={l.name === editor.layoutName} title="Open {l.label ?? l.name} with this area" onclick={() => { if (l.name !== editor.layoutName) editor.setLayout(l.name); editor.showArea(areaId!); }}>{l.label ?? l.name}</button>{:else}<span class="muted">no word type yet</span>{/each}
+        {#each uses as l (l.name)}<button class="opt" class:on={l.name === editor.layoutName} title="Open {l.label ?? l.name} with this area" onclick={() => { if (l.name !== editor.layoutName) editor.setLayout(l.name); editor.showArea(areaId!); }}>{l.label ?? l.name}</button>{:else}<span class="muted">no word type yet</span>{/each}
       </span>
-      {#if editor.advanced}
-        <span class="more">
-          <button class="pm" title="More" onclick={() => (more = !more)}>⋯</button>
-          {#if more}
-            <div class="menu right">
-              <button disabled={uses.length > 0} title={uses.length ? `Used by ${uses.map((l) => l.label ?? l.name).join(', ')}: remove it from those word types first` : ''} onclick={deleteArea}>Delete area</button>
-              {#if uses.length}<span class="tiny">used by {uses.map((l) => l.label ?? l.name).join(', ')}</span>{/if}
-            </div>
-          {/if}
-        </span>
-      {/if}
     {/if}
+    <span class="acts">
+      <span class="newwrap">
+        <button class="sm" onclick={openNew} aria-expanded={newOpen}>+ New area</button>
+        {#if newOpen}
+          <div class="menu right new" role="dialog" aria-label="New area">
+            <label>Id <input type="text" bind:value={newId} placeholder="thumb" class="mono" /></label>
+            <label>Shown as <input type="text" bind:value={newLabel} placeholder="Thumb mark" /></label>
+            <span class="tiny">Box {area ? `${area.size[0]} × ${area.size[1]}, copied from ${area.label || areaId}` : '350 × 350'}. Add glyphs with Manage, then use it in a word type's Structure.</span>
+            {#if newId && newProblem}<span class="err tiny">× {newProblem}</span>{/if}
+            <div class="row"><span class="spacer"></span><button class="quiet" onclick={() => (newOpen = false)}>Cancel</button><button class="primary" disabled={!!newProblem} onclick={createArea}>Create area</button></div>
+          </div>
+        {/if}
+      </span>
+      {#if area && areaId}<button class="sm danger" onclick={askDelete}>Delete area</button>{/if}
+    </span>
   </div>
+
+  {#if delState && delState.problems.length && delState.area === areaId}
+    <div class="banner danger" role="alert">
+      <span class="ic">×</span>
+      <div class="why"><b>Can't delete {app.areaLabel(delState.area)} ({delState.area}).</b>
+        <ul>{#each delState.problems as p (p)}<li>{p}</li>{/each}</ul>
+      </div>
+      <button class="quiet sm" aria-label="Close" onclick={() => (delState = null)}>×</button>
+    </div>
+  {/if}
+  {#if delState && !delState.problems.length}
+    <div class="modal-bg" role="presentation" onclick={() => (delState = null)}>
+      <div class="modal del" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (delState = null)}>
+        <h3>Delete the area {app.areaLabel(delState.area)}?</h3>
+        <p>{delState.area} has no glyphs and no word type uses it. Nothing else changes, and Undo brings it back.</p>
+        <div class="row"><span class="spacer"></span><button class="quiet" onclick={() => (delState = null)}>Cancel</button><button class="danger" onclick={deleteArea}>Delete area</button></div>
+      </div>
+    </div>
+  {/if}
 
   {#if area && areaId}
     {#if changed && pending}
@@ -280,54 +300,61 @@
 
 <style>
   .ap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .props { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: var(--t-sm); padding-bottom: 6px; border-bottom: 1px dashed var(--line); }
-  .f { display: inline-flex; align-items: center; gap: 4px; color: var(--fg-2); }
-  .f input { color: var(--fg); }
-  .num { width: 58px; height: 24px; font-family: var(--mono); }
-  .num.hot { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .props { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: var(--t-small); padding-bottom: 6px; border-bottom: 1px dashed var(--border); }
+  .f { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-muted); }
+  .f input { color: var(--ink); }
+  .num { width: 58px; height: 24px; font-family: var(--font-mono); }
+  .num.hot { border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
   .used { flex-wrap: wrap; }
-  .pill { height: 22px; padding: 0 8px; border-radius: 11px; font-size: var(--t-xs); }
-  .pill.on { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-  .sw, .more { position: relative; }
+  .opt { height: var(--control-sm); padding: 0 var(--space-4); border-color: var(--border); font-size: var(--t-small); }
+  .opt.on { border-color: var(--sel-border); color: var(--ink); background: var(--sel-bg); }
+  .sw, .newwrap { position: relative; }
+  .acts { margin-left: auto; display: inline-flex; gap: var(--space-4); align-items: center; }
+  .new { min-width: 280px; padding: var(--space-5); gap: var(--space-4); }
+  .new label { display: flex; flex-direction: column; gap: var(--space-2); font-weight: 600; color: var(--ink); }
+  .new .mono { font-family: var(--font-mono); }
+  .ap .banner { flex-wrap: nowrap; align-items: flex-start; font-size: var(--t-small); }
+  .why { flex: 1; min-width: 0; }
+  .why ul { margin: var(--space-2) 0 0; padding-left: 18px; }
+  .banner .quiet { flex: none; width: var(--control-sm); padding: 0; }
+  .del { max-width: 440px; display: flex; flex-direction: column; gap: var(--space-4); }
+  .del p { margin: 0; }
+  .spacer { flex: 1; }
   .pick { height: 26px; font-weight: 600; }
-  .pm { height: 22px; width: 24px; padding: 0; }
-  .menu { position: absolute; left: 0; top: 100%; z-index: 30; margin-top: 2px; min-width: 330px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; display: flex; flex-direction: column; gap: 4px; }
+  .menu { position: absolute; left: 0; top: 100%; z-index: 30; margin-top: 2px; min-width: 330px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); padding: 4px; display: flex; flex-direction: column; gap: 4px; }
   .menu.right { left: auto; right: 0; min-width: 200px; }
-  .menu table { border-collapse: collapse; width: 100%; font-size: var(--t-sm); }
+  .menu table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
   .menu td { padding: 2px 6px; white-space: nowrap; }
   .menu tr:not(.grp) { cursor: pointer; }
-  .menu tr:not(.grp):hover td { background: var(--bg-3); }
-  .menu tr.on td { background: var(--accent-bg); color: var(--accent); }
-  .menu tr.grp td { font-size: var(--t-xs); color: var(--fg-2); padding-top: 6px; border-bottom: 1px dashed var(--line); cursor: default; }
-  .menu td.n { text-align: right; font-family: var(--mono); font-size: var(--t-xs); color: var(--fg-2); }
-  .menu .new { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 6px; }
-  .menu .new label { display: flex; gap: 6px; align-items: center; font-size: var(--t-sm); }
-  .lnk { border-style: dashed; background: transparent; height: 24px; font-size: var(--t-sm); align-self: flex-start; }
-  .pending { font-size: var(--t-sm); color: var(--accent); background: var(--accent-bg); border-radius: var(--radius); padding: 3px 8px; }
-  .minis { display: flex; gap: var(--s-2); flex-wrap: wrap; }
-  .mini { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: var(--radius); padding: 4px; background: var(--bg); }
-  .hd { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+  .menu tr:not(.grp):hover td { background: var(--bg-hover); }
+  .menu tr.on td { background: var(--sel-bg); color: var(--ink); }
+  .menu tr.grp td { font-size: var(--t-caption); color: var(--ink-muted); padding-top: 6px; border-bottom: 1px dashed var(--border); cursor: default; }
+  .menu td.n { text-align: right; font-family: var(--font-mono); font-size: var(--t-caption); color: var(--ink-muted); }
+  .pending { font-size: var(--t-small); color: var(--link); background: var(--sel-bg); border-radius: var(--radius-md); padding: 3px 8px; }
+  .minis { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+  .mini { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px; background: var(--bg-field); }
+  .hd { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
   .spacer { flex: 1; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; max-height: 104px; overflow: hidden; }
   .chips.tall { max-height: 30vh; overflow: auto; }
   .cell { display: inline-flex; flex-direction: column; align-items: center; }
-  .chip { position: relative; height: 36px; width: 36px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); }
-  .chip.on { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
-  .x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); font-size: 11px; line-height: 13px; text-align: center; color: var(--fg-2); }
-  .edit { font-size: var(--t-xs); line-height: 16px; color: var(--fg-2); text-decoration: none; padding: 0 4px; border-radius: 3px; }
-  .edit:hover { color: var(--accent); background: var(--accent-bg); }
-  .dg { display: grid; gap: 2px; font-family: var(--mono); font-size: 11px; max-width: 640px; }
-  .dg .h { color: var(--fg-2); text-align: center; line-height: 18px; font-size: var(--t-xs); }
-  .dg .c { position: relative; border: 1px solid var(--line); border-radius: 3px; text-align: center; line-height: 18px; height: 20px; padding: 0; background: var(--bg); white-space: nowrap; cursor: pointer; font-family: var(--mono); font-size: 11px; }
-  .dg .c:hover { border-color: var(--accent); }
-  .dg .c.on { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); color: var(--accent); font-weight: 700; }
-  .dg .c.hit { background: color-mix(in srgb, var(--warn) 18%, var(--bg)); border-color: var(--warn); }
-  .dg .c.miss { border-style: dashed; color: var(--fg-2); background: transparent; }
-  .dg .c.none { border-style: dotted; color: var(--fg-2); opacity: .5; cursor: default; }
-  .cx { display: none; position: absolute; top: -6px; right: -5px; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); font-size: 10px; line-height: 12px; color: var(--fg-2); }
+  .chip { position: relative; height: 36px; width: 36px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-field); }
+  .chip.on { border-color: var(--link); box-shadow: 0 0 0 1.5px var(--link); }
+  .x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-field); border: 1px solid var(--border); font-size: 11px; line-height: 13px; text-align: center; color: var(--ink-muted); }
+  .edit { font-size: var(--t-caption); line-height: 16px; color: var(--ink-muted); text-decoration: none; padding: 0 4px; border-radius: 3px; }
+  .edit:hover { color: var(--link); background: var(--sel-bg); }
+  .dg { display: grid; gap: 2px; font-family: var(--font-mono); font-size: 11px; max-width: 640px; }
+  .dg .h { color: var(--ink-muted); text-align: center; line-height: 18px; font-size: var(--t-caption); }
+  .dg .c { position: relative; border: 1px solid var(--border); border-radius: 3px; text-align: center; line-height: 18px; height: 20px; padding: 0; background: var(--bg-field); white-space: nowrap; cursor: pointer; font-family: var(--font-mono); font-size: 11px; }
+  .dg .c:hover { border-color: var(--link); }
+  .dg .c.on { border-color: var(--link); box-shadow: 0 0 0 1.5px var(--link); color: var(--link); font-weight: 700; }
+  .dg .c.hit { background: color-mix(in srgb, var(--status-draft) 18%, var(--bg-field)); border-color: var(--status-draft); }
+  .dg .c.miss { border-style: dashed; color: var(--ink-muted); background: transparent; }
+  .dg .c.none { border-style: dotted; color: var(--ink-muted); opacity: .5; cursor: default; }
+  .cx { display: none; position: absolute; top: -6px; right: -5px; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-field); font-size: 10px; line-height: 12px; color: var(--ink-muted); }
   .dg .c:hover .cx { display: block; }
-  .small { font-size: var(--t-xs); }
-  .tiny { font-size: var(--t-xs); color: var(--fg-2); }
-  .err { color: var(--danger); }
+  .small { font-size: var(--t-caption); }
+  .tiny { font-size: var(--t-caption); color: var(--ink-muted); }
+  .err { color: var(--status-danger); }
   .row { display: flex; gap: 6px; justify-content: flex-end; }
 </style>

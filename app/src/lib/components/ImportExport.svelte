@@ -80,14 +80,14 @@
         {/if}
         <label><input type="radio" bind:group={merge} value="replace" /> Replace everything</label><br />
         <label><input type="radio" bind:group={merge} value="merge" /> Merge: keep mine, add what's new</label>
-        <div class="row" style="margin-top: var(--s-3)"><button class="primary" onclick={apply}>Import</button><button onclick={onclose}>Cancel</button></div>
+        <div class="row" style="margin-top: var(--space-5)"><button class="primary" onclick={apply}>Import</button><button onclick={onclose}>Cancel</button></div>
       {/if}
     {/if}
   </div>
 </div>
 
 <style>
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-5); width: min(560px, 90vw); max-height: 85vh; overflow: auto; }
+
+  .modal { padding: var(--space-7); width: min(560px, 90vw); max-height: 85vh; overflow: auto; }
   h3 { margin-top: 0; }
 </style>

@@ -44,8 +44,8 @@
 
 <style>
   .cp { display: flex; flex-direction: column; gap: 4px; }
-  .small { font-size: var(--t-sm); }
+  .small { font-size: var(--t-small); }
   .grp { margin-top: 6px; }
   .inl { margin-right: 8px; white-space: nowrap; } .inl input { margin: 0 2px 0 0; }
-  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-xs); }
+  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-caption); }
 </style>

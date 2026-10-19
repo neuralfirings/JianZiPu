@@ -150,19 +150,19 @@
 </div>
 
 <style>
-  .page { padding: var(--s-5) max(var(--s-4), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--s-3); }
-  h2 { margin: 0; font-size: var(--t-xl); font-weight: 600; }
+  .page { padding: var(--space-7) max(var(--space-6), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--space-5); }
+  h2 { margin: 0; font-size: var(--t-heading); font-weight: 600; }
   .top { align-items: center; }
   .spacer { flex: 1; }
-  .err { color: var(--danger); display: flex; gap: var(--s-2); align-items: center; }
-  .link { border: 0; background: none; color: var(--accent); padding: 0; height: auto; }
-  .signin { display: flex; flex-direction: column; gap: var(--s-2); max-width: 520px; }
-  .signin input { height: var(--control); padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); flex: 1; }
+  .err { color: var(--status-danger); display: flex; gap: var(--space-4); align-items: center; }
+  .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; }
+  .signin { display: flex; flex-direction: column; gap: var(--space-4); max-width: 520px; }
+  .signin input { height: var(--control-md); padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); flex: 1; }
   .list { border-collapse: collapse; max-width: 980px; }
-  .list th, .list td { text-align: left; padding: var(--s-2); border-bottom: 1px solid var(--line); vertical-align: top; }
-  .list th { font-weight: 500; color: var(--fg-2); font-size: var(--t-sm); }
+  .list th, .list td { text-align: left; padding: var(--space-4); border-bottom: 1px solid var(--border); vertical-align: top; }
+  .list th { font-weight: 500; color: var(--ink-muted); font-size: var(--t-small); }
   .acts { white-space: nowrap; }
-  .tag { font-size: var(--t-xs); padding: 1px 6px; border-radius: 8px; background: var(--bg-3); color: var(--warn); }
-  .new { color: var(--accent); }
-  .small { font-size: var(--t-sm); }
+  .tag { font-size: var(--t-caption); padding: 1px 6px; border-radius: 8px; background: var(--bg-hover); color: var(--status-draft); }
+  .new { color: var(--link); }
+  .small { font-size: var(--t-small); }
 </style>

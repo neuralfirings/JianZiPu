@@ -105,7 +105,10 @@ def _base_name(shape: Shape, e: Element, rel: Relationship, layout: Layout) -> s
 # ---------------------------------------------------------------- resolving
 
 def resolve(design: Design, layout: Layout, shape: Shape, pinned: dict[str, str] | None = None,
-            center: bool = True) -> dict[str, tuple[float, float]]:
+            center: bool = True, missing: dict[str, dict[str, str]] | None = None) -> dict[str, tuple[float, float]]:
+    """x/y of each element. Raises Unresolvable on the first part that can't be placed, unless
+    `missing` is given: then such a part sits at 0 on that axis and `missing[name][axis]` says why
+    (the editor still draws the shape and marks the part)."""
     pinned = pinned or {}
     chosen = plan(layout, shape)
     pos: dict[tuple[str, str], float] = {}          # (axis, name) -> near-edge origin
@@ -128,55 +131,75 @@ def resolve(design: Design, layout: Layout, shape: Shape, pinned: dict[str, str]
             hi = b if hi is None else max(hi, b)
         return (lo, hi)
 
+    def step(key: tuple[str, str]) -> bool:
+        """Place one (axis, element); False while its base isn't placed yet."""
+        axis, name = key
+        e = shape.element(name)
+        rel = chosen[key]
+        if rel is None:
+            raise Unresolvable(f"{layout.name}: no relationship positions {name} on {axis} in shape {shape.names}",
+                               kind="no_rule", elem=name, axis=axis)
+        info = AXIS_INFO[axis]
+        elem_glyph = pinned.get(name)
+        if rel.base is None:
+            try:
+                pos[key] = resolve_gap(rel.gap, None, elem_glyph)
+            except Unresolvable as err:
+                raise Unresolvable(f"{layout.name}: {err} ({name} on {axis}, page rule)",
+                                   kind="no_gap", elem=name, axis=axis, base=None, base_glyph=None, elem_glyph=elem_glyph) from None
+            return True
+        # base extent along this axis
+        if rel.base == "prev":
+            prev = shape.instance_elements(e.slot, e.instance - 1)
+            ext = box([p.name for p in prev], axis)
+            base_glyph = None
+        else:
+            bname = _base_name(shape, e, rel, layout)
+            if bname is None:
+                raise Unresolvable(f"{layout.name}: base {rel.base!r} of {name} absent", kind="base_absent", elem=name, axis=axis, base=rel.base)
+            if bname == name:
+                raise Unresolvable(f"{layout.name}: {name} positioned relative to itself", kind="self", elem=name, axis=axis)
+            ext = box([bname], axis)
+            base_glyph = pinned.get(bname)
+        if ext is None:
+            return False
+        base_edge = rel.base_edge or info["near_edge"]
+        elem_edge = rel.elem_edge or info["far_edge"]
+        try:
+            gap = resolve_gap(rel.gap, base_glyph, elem_glyph)
+        except Unresolvable as err:
+            raise Unresolvable(f"{layout.name}: {err} ({name} on {axis} relative to {rel.base})",
+                               kind="no_gap", elem=name, axis=axis, base=rel.base, base_glyph=base_glyph, elem_glyph=elem_glyph) from None
+        target = (ext[1] if base_edge == info["far_edge"] else ext[0]) + gap
+        pos[key] = target - size(e, axis) if elem_edge == info["far_edge"] else target
+        return True
+
+    def stuck(key: tuple[str, str], err: Unresolvable) -> None:
+        """Lenient mode: park the part at 0 on this axis and say why."""
+        if missing is None:
+            raise err
+        missing.setdefault(key[1], {})[key[0]] = str(err).removeprefix(f"{layout.name}: ")
+        pos[key] = 0.0
+
     while pending:
         progressed = False
-        for key in list(pending):
-            axis, name = key
-            e = shape.element(name)
-            rel = chosen[key]
-            if rel is None:
-                raise Unresolvable(f"{layout.name}: no relationship positions {name} on {axis} in shape {shape.names}",
-                                   kind="no_rule", elem=name, axis=axis)
-            info = AXIS_INFO[axis]
-            elem_glyph = pinned.get(name)
-            if rel.base is None:
-                try:
-                    pos[key] = resolve_gap(rel.gap, None, elem_glyph)
-                except Unresolvable as err:
-                    raise Unresolvable(f"{layout.name}: {err} ({name} on {axis}, page rule)",
-                                       kind="no_gap", elem=name, axis=axis, base=None, base_glyph=None, elem_glyph=elem_glyph) from None
+        for key in sorted(pending):
+            try:
+                placed = step(key)
+            except Unresolvable as err:
+                stuck(key, err)
+                placed = True
+            if placed:
                 pending.discard(key)
                 progressed = True
-                continue
-            # base extent along this axis
-            if rel.base == "prev":
-                prev = shape.instance_elements(e.slot, e.instance - 1)
-                ext = box([p.name for p in prev], axis)
-                base_glyph = None
-            else:
-                bname = _base_name(shape, e, rel, layout)
-                if bname is None:
-                    raise Unresolvable(f"{layout.name}: base {rel.base!r} of {name} absent", kind="base_absent", elem=name, axis=axis, base=rel.base)
-                if bname == name:
-                    raise Unresolvable(f"{layout.name}: {name} positioned relative to itself", kind="self", elem=name, axis=axis)
-                ext = box([bname], axis)
-                base_glyph = pinned.get(bname)
-            if ext is None:
-                continue
-            base_edge = rel.base_edge or info["near_edge"]
-            elem_edge = rel.elem_edge or info["far_edge"]
-            try:
-                gap = resolve_gap(rel.gap, base_glyph, elem_glyph)
-            except Unresolvable as err:
-                raise Unresolvable(f"{layout.name}: {err} ({name} on {axis} relative to {rel.base})",
-                                   kind="no_gap", elem=name, axis=axis, base=rel.base, base_glyph=base_glyph, elem_glyph=elem_glyph) from None
-            target = (ext[1] if base_edge == info["far_edge"] else ext[0]) + gap
-            pos[key] = target - size(e, axis) if elem_edge == info["far_edge"] else target
-            pending.discard(key)
-            progressed = True
         if not progressed:
-            raise Unresolvable(f"{layout.name}: circular or dangling relationships for {sorted(pending)}",
+            err = Unresolvable(f"{layout.name}: circular or dangling relationships for {sorted(pending)}",
                                kind="circular", elems=sorted(n for _, n in pending), axis=sorted({a for a, _ in pending}))
+            if missing is None:
+                raise err
+            key = min(pending)       # park one part; the rest may then place against it
+            stuck(key, Unresolvable(f"{layout.name}: its rules on {key[0]} go round in a circle"))
+            pending.discard(key)
 
     def phantom_extent(axis: str, el: str) -> tuple[float, float] | None:
         """Where an absent element would sit: first relationship whose base

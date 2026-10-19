@@ -4,7 +4,7 @@
   import { replaceState } from '$app/navigation';
   import { api, type Design, type Layout, type Relationship } from '$lib/api';
   import { app } from '$lib/state.svelte';
-  import { editor, bumpGap, gapValue, gapEntryIndex } from '$lib/editor.svelte';
+  import { editor, attachGap, bumpGap, gapValue, gapEntryIndex } from '$lib/editor.svelte';
   import { elementLabel, anchorNames, elementNames, clampZoom, zoomScroll } from '$lib/shape';
   import { applyRuleEdit, combosOf, entriesOf } from '$lib/rules';
   import WordCanvas, { type Arrow, type Edge } from '$lib/components/WordCanvas.svelte';
@@ -51,7 +51,8 @@
   }
   let wrapH = $state(0);
   let canvasEl: WordCanvas;
-  let status = $state<string>('');
+  let status = $state<string>('');   // what the last canvas action did; its own line above the status line
+  $effect(() => { void editor.selected; void editor.layoutName; status = ''; });
 
   // ---- rule editing mode: the design previewed is the one with the edit applied,
   // and the glyphs shown are the combination the editor picked
@@ -135,9 +136,19 @@
     const anchors = anchorNames(editor.elements, d.areas);
     return editor.elements.map((e) => {
       const r = res?.elements.find((x) => x.name === e.name);
-      return { name: e.name, area: e.area, glyph: effPinned[e.name], x: r?.x ?? null, y: r?.y ?? null, size: (r?.size ?? d.areas[e.area].size) as [number, number], error: !!res?.error && r?.x == null, anchor: anchors.has(e.name) };
+      const miss = res?.unplaced?.[e.name];
+      return { name: e.name, area: e.area, glyph: effPinned[e.name], x: r?.x ?? null, y: r?.y ?? null, size: (r?.size ?? d.areas[e.area].size) as [number, number],
+        error: !!miss || (!!res?.error && r?.x == null), missing: miss ? (Object.keys(miss) as ('x' | 'y')[]) : undefined,
+        problem: miss ? unplacedNote(e.name, miss) : undefined, anchor: anchors.has(e.name) };
     });
   });
+  /** Tooltip for a part the resolver parked at 0: which placement rule it lacks, and why. */
+  function unplacedNote(name: string, miss: Partial<Record<'x' | 'y', string>>) {
+    const what = [miss.y ? 'vertical' : '', miss.x ? 'horizontal' : ''].filter(Boolean).join(' and ');
+    const at = [miss.x ? 'x = 0' : '', miss.y ? 'y = 0' : ''].filter(Boolean).join(', ');
+    const why = [miss.y, miss.x].filter(Boolean).join(' · ');
+    return `${name} needs a ${what} placement rule in this shape. Shown at ${at} until it has one; add a rule in Spacing.\n${why}`;
+  }
   let selectedEl = $derived(editor.selected ? editor.elements.find((e) => e.name === editor.selected) ?? null : null);
   const areaLabel = (a: string) => app.areaLabel(a);
 
@@ -208,8 +219,24 @@
   });
 
   // ---- drag: edits the active rule of the dragged part (or the rule being edited)
-  let dragFrom: { design: Design } | null = null;
-  function applyDelta(design: Design, name: string, dx: number, dy: number): string | null {
+  let dragFrom: { design: Design; gaps: Record<'x' | 'y', number | null> } | null = null;
+  const edgeOf = (r: { x: number | null; y: number | null; size: [number, number] }, ed: Edge) =>
+    ed === 'top' ? r.y! + r.size[1] : ed === 'bottom' ? r.y! : ed === 'left' ? r.x! : r.x! + r.size[0];
+  /** The gap a part's rule in effect has on screen right now (edge to edge, or from the page), or null. */
+  function shownGap(axis: 'x' | 'y', name: string): number | null {
+    const a = editor.activeRel(axis, name);
+    const me = elements.find((x) => x.name === name);
+    if (!a || !me || me.x == null || me.y == null) return null;
+    const rel = editor.layout!.relationships[a.index];
+    if (rel.base == null) return Math.round(axis === 'y' ? me.y : me.x);
+    const bn = editor.baseName(name, rel);
+    const base = bn ? elements.find((x) => x.name === bn) : null;
+    if (!base || base.x == null || base.y == null) return null;
+    const be = (rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')) as Edge, mine = (rel.elem_edge ?? (axis === 'y' ? 'top' : 'right')) as Edge;
+    return Math.round(edgeOf(me, mine) - edgeOf(base, be));
+  }
+  /** `shown`: the rule's gap on screen before the drag, used when no gap row applies to the shown glyphs (the "?" arrow). */
+  function applyDelta(design: Design, name: string, dx: number, dy: number, shown?: number | null): string | null {
     const l = design.layouts.find((x) => x.name === editor.layoutName)!;
     const axis = dx ? 'x' : 'y', delta = dx || dy;
     const a = editor.activeRel(axis, name);
@@ -219,20 +246,28 @@
     const baseGlyph = bn ? editor.pinned[bn] ?? null : null, elemGlyph = editor.pinned[name] ?? null;
     const before = gapValue(rel.gap, baseGlyph, elemGlyph);
     const ei = gapEntryIndex(rel.gap, baseGlyph, elemGlyph);
-    const after = bumpGap(rel, delta, baseGlyph, elemGlyph);
-    if (after == null) return null;
-    const cond = ei < 0 ? '' : entriesOf(rel.gap)[ei].when_base || entriesOf(rel.gap)[ei].when_elem ? ` rule ${ei + 1}` : ' otherwise';
+    let after = bumpGap(rel, delta, baseGlyph, elemGlyph);
+    if (after == null) {
+      // no gap row for these glyphs: start an "otherwise" row from where the part sits now
+      const from = shown ?? shownGap(axis, name);
+      if (from == null) return null;
+      after = Math.round(from + delta);
+      attachGap(rel, after, baseGlyph, elemGlyph);
+    }
+    const cond = ei < 0 ? (before == null ? ' (new otherwise row)' : '') : entriesOf(rel.gap)[ei].when_base || entriesOf(rel.gap)[ei].when_elem ? ` rule ${ei + 1}` : ' otherwise';
     const who = elementLabel(l, name, areaLabel);
     const what = axis === 'y' ? (rel.base == null ? 'start height' : `gap above${bn ? ` after ${elementLabel(l, bn, areaLabel)}` : rel.base === 'prev' ? ' after previous row' : ''}`) : (rel.base == null ? 'x position' : 'horizontal gap');
-    return `${l.label ?? l.name}: ${what} of ${who}${cond} ${before} → ${after}`;
+    return `${l.label ?? l.name}: ${what} of ${who}${cond} ${before ?? '?'} → ${after}`;
   }
   function commit(name: string, dx: number, dy: number) {
     let label = '';
-    app.edit('drag', (dd) => { label = applyDelta(dd, name, dx, dy) ?? 'drag'; });
+    const shown = dragFrom?.gaps[dx ? 'x' : 'y'];
+    app.edit('drag', (dd) => { label = applyDelta(dd, name, dx, dy, shown) ?? 'drag'; });
     if (app.undoStack.length) { app.undoStack[app.undoStack.length - 1].label = label; app.changes[app.changes.length - 1] = label; }
     status = label;
   }
   function ondrag(e: { name: string; dx: number; dy: number; phase: 'start' | 'move' | 'end' | 'cancel' }) {
+    if (e.phase === 'start') status = '';
     const re = editor.ruleEdit;
     if (re) {
       const delta = re.axis === 'y' ? e.dy : e.dx;
@@ -241,13 +276,13 @@
       else re.liveDelta = 0;
       return;
     }
-    if (e.phase === 'start') { dragFrom = { design: JSON.parse(JSON.stringify(app.design)) }; return; }
+    if (e.phase === 'start') { dragFrom = { design: JSON.parse(JSON.stringify(app.design)), gaps: { x: shownGap('x', e.name), y: shownGap('y', e.name) } }; return; }
     if (e.phase === 'cancel') { editor.dragDesign = null; editor.dragLabel = null; dragFrom = null; return; }
     if (!dragFrom) return;
     if (e.phase === 'move') {
       if (!e.dx && !e.dy) { editor.dragDesign = null; editor.dragLabel = null; return; }
       const copy: Design = JSON.parse(JSON.stringify(dragFrom.design));
-      const label = applyDelta(copy, e.name, e.dx, e.dy);
+      const label = applyDelta(copy, e.name, e.dx, e.dy, dragFrom.gaps[e.dx ? 'x' : 'y']);
       if (label) { editor.dragDesign = copy; editor.dragLabel = label; } else editor.dragLabel = 'This part has no rule to change for the current glyphs';
       return;
     }
@@ -305,9 +340,9 @@
       status = `Can't attach ${elementLabel(l, e.name, areaLabel)} to ${elementLabel(l, e.target, areaLabel)}: ${elementLabel(l, e.target, areaLabel)} is already placed relative to ${elementLabel(l, e.name, areaLabel)} (that would go round in a circle). Attach the other way round, or remove that rule first.`;
       return;
     }
-    const edgeVal = (r: typeof meR, ed: Edge) => ed === 'top' ? r.y! + r.size[1] : ed === 'bottom' ? r.y! : ed === 'left' ? r.x! : r.x! + r.size[0];
-    const gap = Math.round(edgeVal(meR, e.edge) - edgeVal(tgR, e.targetEdge));
+    const gap = Math.round(edgeOf(meR, e.edge) - edgeOf(tgR, e.targetEdge));
     const who = elementLabel(l, e.name, areaLabel), whom = base === 'prev' ? 'the previous row' : elementLabel(l, e.target, areaLabel);
+    let how = 'set' as 'set' | 'kept' | 'otherwise';   // set inside app.edit's callback
     app.edit(`${l.label ?? l.name}: attach ${who}'s ${e.edge} edge to ${whom}'s ${e.targetEdge} (gap ${gap})`, (dd) => {
       const rels = dd.layouts.find((x) => x.name === l.name)!.relationships;
       let active = editor.activeRel(axis, e.name)?.index ?? null;
@@ -316,12 +351,16 @@
       if (existing >= 0) {
         rel = rels.splice(existing, 1)[0];
         if (active != null && existing < active) active--;
-        if (!Array.isArray(rel.gap)) rel.gap = gap;
+        how = attachGap(rel, gap, effPinned[e.target] ?? null, effPinned[e.name] ?? null);
       } else rel = { axis, elem: me.el, base, gap };
       rel.base_edge = e.targetEdge; rel.elem_edge = e.edge;
       rels.splice(active ?? rels.length, 0, rel);
     });
-    status = `${who} now attaches to ${whom} (${e.edge} → ${e.targetEdge}). Drag it to set the gap.`;
+    status = how === 'kept'
+      ? `${who} now attaches to ${whom} (${e.edge} → ${e.targetEdge}) and takes its existing gap for these glyphs. Drag it to change that gap.`
+      : how === 'otherwise'
+        ? `${who} now attaches to ${whom} (${e.edge} → ${e.targetEdge}) at ${gap}, where it sits now: added as the "otherwise" gap of that rule, so it also covers glyphs without their own row. Drag it to adjust.`
+        : `${who} now attaches to ${whom} (${e.edge} → ${e.targetEdge}) at ${gap}, where it sits now. Drag it to adjust.`;
   }
   function removeRule(index: number) {
     const l = editor.layout!, r = l.relationships[index];
@@ -424,31 +463,34 @@
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
         onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
     </div>
+    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}>×</button></div>{/if}
     <div class="status">
       {#if editor.boxEdit && editor.dragDesign}{@const be = editor.boxEdit}{@const old = d.areas[be.area]?.size ?? be.size}Box of {app.areaLabel(be.area)} {old[0]} × {old[1]} → <b>{be.size[0]} × {be.size[1]}</b>, not applied: moves parts in {usedIn(d, be.area).length} word type{usedIn(d, be.area).length === 1 ? '' : 's'}. <b>Enter</b> applies · <b>Esc</b> cancels.
     {:else if editor.dragLabel}{editor.dragLabel}
-      {:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
+      {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><b>× Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
       {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
       {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
-      {:else}Click a part to see and edit its spacing. {status}{/if}
+      {:else}Click a part to see and edit its spacing.{/if}
     </div>
   {:else}
-    <p class="muted" style="padding: var(--s-5)">No word types yet. Turn on Advanced and add one in the Word types panel.</p>
+    <p class="muted" style="padding: var(--space-7)">No word types yet. Turn on Advanced and add one in the Word types panel.</p>
   {/if}
 </PanelWorkspace>
 
 <style>
-  .toolbar { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); gap: var(--s-3); }
+  .toolbar { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border); gap: var(--space-5); }
   .spacer { flex: 1; }
   /* the canvas centres with auto margins, not justify-content: a zoomed canvas wider than the area must still scroll to its left edge */
-  .canvas-wrap { flex: 1 1 auto; min-height: 240px; padding: var(--s-3); display: flex; align-items: flex-start; overflow: auto; }
+  .canvas-wrap { flex: 1 1 auto; min-height: 240px; padding: var(--space-5); display: flex; align-items: flex-start; overflow: auto; }
   .canvas-wrap > :global(svg) { margin: 0 auto; flex: none; }
   .zoom { display: inline-flex; align-items: center; gap: 2px; }
   .zoom button { min-width: 28px; }
-  .zoom .pct { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--t-sm); }
-  .status { padding: 4px var(--s-3); border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--fg-2); min-height: 26px; }
+  .zoom .pct { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--t-small); }
+  .note { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-5); border-top: 1px solid var(--border); background: var(--status-info-bg); font-size: var(--t-small); }
+  .note span { flex: 1; min-width: 0; }
+  .status { padding: 4px var(--space-5); border-top: 1px solid var(--border); font-size: var(--t-small); color: var(--ink-muted); min-height: 26px; }
   .greyed { opacity: .45; pointer-events: none; }
-  .small { font-size: var(--t-xs); }
+  .small { font-size: var(--t-caption); }
   .wrap { flex-wrap: wrap; }
-  .anchor-word { color: var(--arrow); font-weight: 600; }
+  .anchor-word { color: var(--accent); font-weight: 600; }
 </style>

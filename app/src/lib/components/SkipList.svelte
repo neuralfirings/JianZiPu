@@ -68,20 +68,20 @@
 </div>
 
 <style>
-  .warn { color: var(--warn); }
-  .warn code { display: block; margin-top: 4px; font-family: var(--mono); color: var(--fg); }
-  .skips { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--warn); border-radius: var(--radius); padding: 8px; font-size: var(--t-sm); }
+  .warn { color: var(--status-draft); }
+  .warn code { display: block; margin-top: 4px; font-family: var(--font-mono); color: var(--ink); }
+  .skips { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--status-draft); border-radius: var(--radius-md); padding: 8px; font-size: var(--t-small); }
   .spacer { flex: 1; }
-  .small { font-size: var(--t-xs); }
-  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-xs); }
-  .grp { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
-  .ghead { display: flex; gap: 8px; align-items: flex-start; width: 100%; height: auto; padding: 6px 8px; border: 0; background: transparent; text-align: left; font-size: var(--t-xs); line-height: 1.4; }
-  .grp.open .ghead { border-bottom: 1px solid var(--line); }
-  .n { flex: none; min-width: 28px; font-family: var(--mono); font-weight: 600; color: var(--warn); }
+  .small { font-size: var(--t-caption); }
+  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-caption); }
+  .grp { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
+  .ghead { display: flex; gap: 8px; align-items: flex-start; width: 100%; height: auto; padding: 6px 8px; border: 0; background: transparent; text-align: left; justify-content: flex-start; font-size: var(--t-caption); font-weight: 400; line-height: 1.4; white-space: normal; }
+  .grp.open .ghead { border-bottom: 1px solid var(--border); }
+  .n { flex: none; min-width: 28px; font-family: var(--font-mono); font-weight: 600; color: var(--status-draft); }
   .what { flex: 1; min-width: 0; }
-  .chip { display: inline-flex; vertical-align: middle; border: 1px solid var(--line); border-radius: 3px; padding: 1px; margin: 0 1px; background: var(--bg); }
+  .chip { display: inline-flex; vertical-align: middle; border: 1px solid var(--border); border-radius: 3px; padding: 1px; margin: 0 1px; background: var(--bg-field); }
   .ex { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; }
-  .exrow { display: flex; align-items: center; gap: 6px; font-size: var(--t-xs); }
-  .names { font-family: var(--mono); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .exrow { display: flex; align-items: center; gap: 6px; font-size: var(--t-caption); }
+  .names { font-family: var(--font-mono); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pins { display: inline-flex; gap: 2px; }
 </style>

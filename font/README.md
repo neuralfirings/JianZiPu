@@ -139,7 +139,7 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
 
 ### Setting it up
 
-1. **Supabase**: a project; run `supabase/setup.sql` in the SQL editor (profiles, private `drafts` and
+1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and
    `assets` buckets, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
    set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
    Review), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.

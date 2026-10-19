@@ -4,7 +4,7 @@
   // splitter to resize (shut to hide; a rail brings the dock back). Used by Layouts
   // and the glyph editor, each with its own store (src/lib/panels.svelte.ts).
   import { onMount, type Snippet } from 'svelte';
-  import { DOCK_LABEL, type AnyPanels, type Dock, type Meta } from '$lib/panels.svelte';
+  import { DOCK_LABEL, DOCK_MIN, type AnyPanels, type Dock, type Meta } from '$lib/panels.svelte';
   import PanelDock from './PanelDock.svelte';
   import Panel from './Panel.svelte';
 
@@ -69,8 +69,11 @@
   const visible = (dock: Dock) => shown(dock).length > 0 && !store.a.hidden[dock];
   let cols = $derived.by(() => {
     const a = store.a;
-    const side = (dock: 'left' | 'right') => (visible(dock) ? (dock === 'left' ? `${a.size.left}px 6px` : `6px ${a.size.right}px`) : shown(dock).length || store.dragging ? '24px' : '');
-    return `${side('left')} minmax(${centerMin}px, 1fr) ${side('right')}`.trim();
+    // a dock keeps its saved width while there is room and gives way (down to DOCK_MIN) when the
+    // window is narrower, so the three columns always fit the window
+    const w = (dock: 'left' | 'right') => `minmax(${Math.min(DOCK_MIN[dock], a.size[dock])}px, ${a.size[dock]}px)`;
+    const side = (dock: 'left' | 'right') => (visible(dock) ? (dock === 'left' ? `${w('left')} 6px` : `6px ${w('right')}`) : shown(dock).length || store.dragging ? '24px' : '');
+    return `${side('left')} minmax(min(${centerMin}px, 100%), 1fr) ${side('right')}`.trim();
   });
   const dockNames = (dock: Dock) => shown(dock).map((id) => meta(id).title).join(' · ');
 </script>
@@ -111,20 +114,20 @@
 {/if}
 
 <style>
-  .ws { display: grid; height: 100%; min-width: 0; min-height: 0; flex: 1; }
+  .ws { display: grid; height: 100%; min-width: 0; min-height: 0; flex: 1; overflow: hidden; }
   .ws.dragging { user-select: none; cursor: grabbing; }
   .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-  .bottom { flex: none; min-height: 0; overflow: hidden; border-top: 1px solid var(--line); background: var(--bg); }
+  .bottom { flex: none; min-height: 0; max-height: 60%; overflow: hidden; border-top: 1px solid var(--border); background: var(--bg-app); }
   .split { background: transparent; touch-action: none; }
-  .split.v { cursor: col-resize; border-left: 1px solid var(--line); }
-  .split.v:hover { background: var(--accent-bg); }
-  .split.h { height: 6px; cursor: row-resize; border-top: 1px solid var(--line); flex: none; }
-  .split.h:hover { background: var(--accent-bg); }
-  .rail { border: 0; border-radius: 0; background: var(--bg-2); color: var(--fg-2); font-size: var(--t-xs); padding: 0; height: auto; width: 24px; display: flex; align-items: flex-start; justify-content: center; border-right: 1px solid var(--line); }
-  .rail span { writing-mode: vertical-rl; padding: var(--s-2) 0; white-space: nowrap; }
-  .rail:hover { background: var(--accent-bg); color: var(--accent); }
-  .rail.drop { border: 2px dashed var(--accent); background: var(--accent-bg); color: var(--accent); }
-  .rail.hrail { width: auto; height: 24px; flex: none; align-items: center; border-right: 0; border-top: 1px solid var(--line); }
-  .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 3px 8px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--bg); color: var(--accent); font-size: var(--t-sm); font-weight: 600; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+  .split.v { cursor: col-resize; border-left: 1px solid var(--border); }
+  .split.v:hover { background: var(--sel-bg); }
+  .split.h { height: 6px; cursor: row-resize; border-top: 1px solid var(--border); flex: none; }
+  .split.h:hover { background: var(--sel-bg); }
+  .rail { border: 0; border-radius: 0; background: var(--bg-panel); color: var(--ink-muted); font-size: var(--t-caption); padding: 0; height: auto; width: 24px; display: flex; align-items: flex-start; justify-content: center; border-right: 1px solid var(--border); }
+  .rail span { writing-mode: vertical-rl; padding: var(--space-4) 0; white-space: nowrap; }
+  .rail:hover { background: var(--sel-bg); color: var(--ink); }
+  .rail.drop { border: 2px dashed var(--link); background: var(--sel-bg); color: var(--ink); }
+  .rail.hrail { width: auto; height: 24px; flex: none; align-items: center; border-right: 0; border-top: 1px solid var(--border); }
+  .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 3px 8px; border: 1px solid var(--link); border-radius: var(--radius-md); background: var(--bg-panel); color: var(--ink); font-family: var(--font-display); font-size: var(--t-small); font-weight: 600; box-shadow: var(--shadow-drag); }
   :global(.ws.dragging [data-dock]) { min-height: 48px; }
 </style>

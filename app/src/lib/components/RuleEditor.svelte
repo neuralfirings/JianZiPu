@@ -183,37 +183,36 @@
 {/if}
 
 <style>
-  .ed { display: flex; flex-direction: column; gap: var(--s-2); }
+  .ed { display: flex; flex-direction: column; gap: var(--space-4); }
   .head { gap: 6px; }
   .spacer { flex: 1; }
-  .small { font-size: var(--t-xs); }
-  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-xs); }
-  .tiny.on { border-color: var(--accent); color: var(--accent); }
-  .grid-head { display: flex; align-items: center; gap: 4px; font-size: var(--t-sm); flex-wrap: wrap; }
-  .search { height: 20px; width: 80px; font-size: var(--t-xs); }
-  .grid { display: flex; flex-wrap: wrap; gap: 3px; max-height: 180px; overflow: auto; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+  .small { font-size: var(--t-caption); }
+  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-caption); }
+  .tiny.on { border-color: var(--link); color: var(--link); }
+  .grid-head { display: flex; align-items: center; gap: 4px; font-size: var(--t-small); flex-wrap: wrap; }
+  .search { height: 20px; width: 80px; font-size: var(--t-caption); }
+  .grid { display: flex; flex-wrap: wrap; gap: 3px; max-height: 180px; overflow: auto; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
   .cellwrap { position: relative; display: inline-block; border-radius: 4px; }
-  .cellwrap.shown { box-shadow: 0 0 0 2px var(--fg); }
+  .cellwrap.shown { box-shadow: 0 0 0 2px var(--ink); }
   .cell { position: relative; width: 36px; height: 36px; padding: 2px; border: 1px solid transparent; background: transparent; border-radius: 4px; }
-  .eye { position: absolute; left: -3px; bottom: -3px; width: 16px; height: 16px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--fg-2); font-size: 10px; line-height: 14px; display: none; }
+  .eye { position: absolute; left: -3px; bottom: -3px; width: 16px; height: 16px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-field); color: var(--ink-muted); font-size: 10px; line-height: 14px; display: none; }
   .cellwrap:hover .eye, .cellwrap.shown .eye { display: block; }
-  .cellwrap.shown .eye { color: var(--fg); border-color: var(--fg); }
-  .eye:hover { color: var(--accent); border-color: var(--accent); }
-  .cell:hover { border-color: var(--line); }
-  .cell.on { border-color: var(--accent); background: var(--accent-bg); }
-  .grid.any .cell { border-color: var(--accent-bg); background: var(--accent-bg); opacity: .75; }
-  .grid.any .cell:hover { opacity: 1; border-color: var(--accent); }
-  .cell.shadow { border-style: dashed; border-color: var(--warn); background: transparent; opacity: .7; }
-  .sn { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; border-radius: 7px; background: var(--warn); color: #fff; font-size: 10px; line-height: 14px; text-align: center; padding: 0 3px; }
-  .conflict { border: 1px solid var(--warn); border-radius: var(--radius); padding: 6px 8px; font-size: var(--t-xs); display: flex; flex-direction: column; gap: 4px; }
-  .gaprow { gap: var(--s-2); align-items: center; }
+  .cellwrap.shown .eye { color: var(--ink); border-color: var(--ink); }
+  .eye:hover { color: var(--link); border-color: var(--link); }
+  .cell:hover { border-color: var(--border); }
+  .cell.on { border-color: var(--link); background: var(--sel-bg); }
+  .grid.any .cell { border-color: var(--sel-bg); background: var(--sel-bg); opacity: .75; }
+  .grid.any .cell:hover { opacity: 1; border-color: var(--link); }
+  .cell.shadow { border-style: dashed; border-color: var(--status-draft); background: transparent; opacity: .7; }
+  .sn { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; border-radius: 7px; background: var(--status-draft); color: var(--on-accent); font-size: 10px; line-height: 14px; text-align: center; padding: 0 3px; }
+  .conflict { border: 1px solid var(--status-draft); border-radius: var(--radius-md); padding: 6px 8px; font-size: var(--t-caption); display: flex; flex-direction: column; gap: 4px; }
+  .gaprow { gap: var(--space-4); align-items: center; }
   .gaprow input { width: 70px; }
-  .preview { gap: 4px; align-items: center; border-top: 1px dashed var(--line); padding-top: var(--s-2); }
-  .mono { font-family: var(--mono); }
+  .preview { gap: 4px; align-items: center; border-top: 1px dashed var(--border); padding-top: var(--space-4); }
+  .mono { font-family: var(--font-mono); }
   .shown { display: inline-flex; align-items: center; gap: 3px; }
-  .thumb { display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
-  .thumb:hover { border-color: var(--accent); }
-  .dd { font-size: 9px; color: var(--fg-2); }
+  .thumb { display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
+  .thumb:hover { border-color: var(--link); }
+  .dd { font-size: 9px; color: var(--ink-muted); }
   .wrap { flex-wrap: wrap; }
-  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>

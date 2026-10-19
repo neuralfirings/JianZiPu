@@ -87,15 +87,15 @@
 </div>
 
 <style>
-  .wt { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-  .row { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
-  .row input { flex: 1; min-width: 140px; font-family: var(--mono); }
-  .sizes { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-  .sizes button { height: 24px; padding: 0 8px; border: 0; border-radius: 0; font-size: var(--t-xs); }
-  .sizes button.on { background: var(--accent-bg); color: var(--accent); }
-  a { font-size: var(--t-sm); white-space: nowrap; }
-  .words { display: flex; gap: var(--s-2); overflow-x: auto; padding-bottom: 4px; align-items: flex-end; }
-  .word { height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: var(--bg); border: 1px solid transparent; border-radius: var(--radius); }
-  button.word { border-color: var(--line); }
+  .wt { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .row input { flex: 1; min-width: 140px; font-family: var(--font-mono); }
+  .sizes { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  .sizes button { height: 24px; padding: 0 8px; border: 0; border-radius: 0; font-size: var(--t-caption); }
+  .sizes button.on { background: var(--sel-bg); color: var(--ink); }
+  a { font-size: var(--t-small); white-space: nowrap; }
+  .words { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: 4px; align-items: flex-end; }
+  .word { height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: var(--bg-field); border: 1px solid transparent; border-radius: var(--radius-md); }
+  button.word { border-color: var(--border); }
   .word.dim { opacity: .45; }
 </style>

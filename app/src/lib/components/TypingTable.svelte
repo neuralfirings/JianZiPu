@@ -108,22 +108,23 @@
 </table>
 
 <style>
-  .kt { border-collapse: collapse; width: 100%; font-size: var(--t-sm); }
-  thead th { position: sticky; top: 0; z-index: 2; background: var(--bg-2); text-align: left; font-weight: 500; color: var(--fg-2); padding: 4px; border-bottom: 1px solid var(--line); white-space: nowrap; font-size: var(--t-xs); }
-  td { padding: 1px 3px; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); vertical-align: middle; }
-  tr.grp td { background: var(--bg-3); padding: 3px 8px; }
-  tr.on td { background: var(--accent-bg); }
-  tr.bad td { background: color-mix(in srgb, var(--danger) 8%, transparent); }
-  tr.ro td { color: var(--fg-2); }
+  .kt { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  thead th { position: sticky; top: 0; z-index: 2; background: var(--bg-panel); text-align: left; font-weight: 600; color: var(--ink); padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border-strong); white-space: nowrap; font-size: var(--t-small); }
+  td { padding: 1px 3px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+  tbody tr:not(.grp):hover td { background: var(--bg-hover); }
+  tr.grp td { background: var(--bg-sunken); padding: 3px 8px; font-family: var(--font-display); font-weight: 600; font-size: var(--t-label); }
+  tr.on td { background: var(--sel-bg); }
+  tr.bad td { background: var(--status-danger-bg); }
+  tr.ro td { color: var(--ink-muted); }
   td[data-f] { min-width: 70px; }
   td[data-f='pinyin'] { min-width: 90px; }
   .st { width: 18px; text-align: center; }
-  .st.err { color: var(--danger); }
-  .st.warn { color: var(--warn); }
+  .st.err { color: var(--status-danger); }
+  .st.warn { color: var(--status-draft); }
   .gl { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; }
-  .gn { font-family: var(--mono); font-size: var(--t-xs); }
-  .issue { color: var(--fg-2); max-width: 280px; }
-  .small { font-size: var(--t-xs); }
-  .lnk { height: 20px; padding: 0 6px; border-style: dashed; background: transparent; font-size: var(--t-xs); }
+  .gn { font-family: var(--font-mono); font-size: var(--t-caption); }
+  .issue { color: var(--ink-muted); max-width: 280px; }
+  .small { font-size: var(--t-caption); }
+  .lnk { height: 20px; padding: 0 6px; border-style: dashed; background: transparent; font-size: var(--t-caption); }
 </style>

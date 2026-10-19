@@ -66,17 +66,17 @@
 
 <style>
   .si { position: relative; display: inline-block; width: 100%; }
-  input { width: 100%; min-width: 0; height: 26px; font-family: var(--mono); font-size: var(--t-sm); }
-  input.zh { font-family: var(--font); font-size: 15px; }
+  input { width: 100%; min-width: 0; height: 26px; font-family: var(--font-mono); font-size: var(--t-small); }
+  input.zh { font-family: var(--font-serif); font-size: 15px; }
   .cell input { border-color: transparent; background: transparent; border-radius: 3px; }
-  .cell input:hover { border-color: var(--line); }
-  .cell input:focus { border-color: var(--accent); background: var(--bg); }
-  input.changed { background: color-mix(in srgb, var(--warn) 14%, transparent); }
-  input.bad { border-color: var(--danger) !important; color: var(--danger); }
-  input.inh::placeholder { color: var(--fg-2); font-style: italic; }
-  .ro { display: inline-block; padding: 0 6px; font-family: var(--mono); font-size: var(--t-sm); color: var(--fg-2); border-bottom: 1px dotted var(--line); }
-  .note { position: absolute; left: 0; top: 100%; z-index: 20; margin-top: 2px; white-space: nowrap; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; font-size: var(--t-xs); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
-  .note.error { border-color: var(--danger); color: var(--danger); }
-  .note.shared { color: var(--accent); }
-  .note.free { color: var(--ok); }
+  .cell input:hover { border-color: var(--border); }
+  .cell input:focus { border-color: var(--link); background: var(--bg-field); }
+  input.changed { background: color-mix(in srgb, var(--status-draft) 14%, transparent); }
+  input.bad { border-color: var(--status-danger) !important; color: var(--status-danger); }
+  input.inh::placeholder { color: var(--ink-muted); font-style: italic; }
+  .ro { display: inline-block; padding: 0 6px; font-family: var(--font-mono); font-size: var(--t-small); color: var(--ink-muted); border-bottom: 1px dotted var(--border); }
+  .note { position: absolute; left: 0; top: 100%; z-index: 20; margin-top: 2px; white-space: nowrap; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: var(--t-caption); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+  .note.error { border-color: var(--status-danger); color: var(--status-danger); }
+  .note.shared { color: var(--link); }
+  .note.free { color: var(--status-saved); }
 </style>

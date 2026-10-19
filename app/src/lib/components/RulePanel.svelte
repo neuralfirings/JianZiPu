@@ -150,14 +150,14 @@
     <span class="muted">{axis === 'y' ? 'gap above, relative to' : 'position, relative to'}</span>
     {#each chain as c, k (c.index)}
       {#if k > 0}<span class="else">else</span>{/if}
-      <button class="pill" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)}
+      <button class="opt" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)}
         onpointerenter={() => (editor.hoverRel = c.index)} onpointerleave={() => { if (editor.hoverRel === c.index) editor.hoverRel = null; }}
         draggable="true" ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
         title={c.index === active ? 'In effect for the preview word' : basePresent(c.rel) ? 'Not in effect: an earlier base wins. Click to look at its rules (the preview drops the parts before it).' : 'Not in effect: this part is not in the word. Click to add it to the preview.'}
         onclick={() => viewPill(c.index)}>{c.index === active ? '● ' : ''}{pillLabel(c.rel)}</button>
     {/each}
     <span class="addwrap">
-      <button class="pill add" onclick={() => (addOpen = !addOpen)}>+ ▾</button>
+      <button class="opt add" onclick={() => (addOpen = !addOpen)}>+ ▾</button>
       {#if addOpen}
         <div class="menu">
           <div class="muted">relative to…</div>
@@ -224,50 +224,50 @@
 </div>
 
 <style>
-  .rp { display: flex; flex-direction: column; gap: var(--s-2); }
+  .rp { display: flex; flex-direction: column; gap: var(--space-4); }
   .spacer { flex: 1; }
-  .tabs { display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); gap: 4px; }
-  .elsegaps { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--fg-2); white-space: nowrap; }
-  .elsegaps line { stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 3 2; }
+  .tabs { display: flex; align-items: flex-end; border-bottom: 1px solid var(--border); gap: 4px; }
+  .elsegaps { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-small); color: var(--ink-muted); white-space: nowrap; }
+  .elsegaps line { stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 3 2; }
   .tab { border-bottom: 0; border-radius: 6px 6px 0 0; height: 26px; }
-  .tab.on { background: var(--bg); position: relative; top: 1px; }
+  .tab.on { background: var(--bg-field); position: relative; top: 1px; }
   .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-  .pill { height: 24px; padding: 0 9px; border-radius: 12px; font-size: var(--t-sm); background: var(--bg); }
-  .pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-  .pill.view { box-shadow: 0 0 0 2px var(--fg); }
-  .pill.absent { border-style: dashed; color: var(--fg-2); }
-  .pill.add { border-style: dashed; color: var(--fg-2); background: transparent; }
-  .else { font-size: var(--t-xs); color: var(--fg-2); }
+  .opt { height: var(--control-sm); padding: 0 var(--space-4); border-color: var(--border); font-size: var(--t-small); background: var(--bg-field); }
+  .opt.active { border-color: var(--sel-border); color: var(--ink); background: var(--sel-bg); }
+  .opt.view { box-shadow: 0 0 0 2px var(--ink); }
+  .opt.absent { border-style: dashed; color: var(--ink-muted); }
+  .opt.add { border-style: dashed; color: var(--ink-muted); background: transparent; }
+  .else { font-size: var(--t-caption); color: var(--ink-muted); }
   /* the two edges, highlighted in the colours of the canvas edge bars (a key, not a link) */
-  .em-me, .em-base { color: var(--fg); border-radius: 2px; padding: 0 2px; }
-  .em-me { background: color-mix(in srgb, var(--edge-me) 22%, transparent); }
-  .em-base { background: color-mix(in srgb, var(--edge-base) 22%, transparent); }
+  .em-me, .em-base { color: var(--ink); border-radius: 2px; padding: 0 2px; }
+  .em-me { background: color-mix(in srgb, var(--ov-active) 22%, transparent); }
+  .em-base { background: color-mix(in srgb, var(--ov-area) 22%, transparent); }
   .addwrap { position: relative; }
-  .menu { position: absolute; z-index: 20; top: 100%; right: 0; margin-top: 4px; min-width: 220px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; display: flex; flex-direction: column; }
+  .menu { position: absolute; z-index: 20; top: 100%; right: 0; margin-top: 4px; min-width: 220px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); padding: 4px; display: flex; flex-direction: column; }
   .mi { text-align: left; border: 0; background: transparent; }
-  .mi:hover { background: var(--bg-3); }
-  .sentence { font-size: var(--t-xs); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  .sentence select { height: 20px; font-size: var(--t-xs); padding: 0 2px; }
-  .info { font-size: var(--t-xs); border: 1px dashed var(--line); border-radius: var(--radius); padding: 4px 8px; color: var(--fg-2); }
-  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-xs); }
+  .mi:hover { background: var(--bg-hover); }
+  .sentence { font-size: var(--t-caption); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .sentence select { height: 20px; font-size: var(--t-caption); padding: 0 2px; }
+  .info { font-size: var(--t-caption); border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 4px 8px; color: var(--ink-muted); }
+  .tiny { height: 20px; padding: 0 6px; font-size: var(--t-caption); }
   .rules { display: flex; flex-direction: column; gap: 4px; }
   .rhead, .rr { display: grid; grid-template-columns: 14px 20px 1fr 34px 62px 18px; gap: 4px; align-items: center; }
-  .rhead { font-size: var(--t-xs); color: var(--fg-2); padding: 0 6px; }
-  .rr { border: 1px solid var(--line); border-radius: var(--radius); padding: 3px 6px; background: var(--bg); cursor: pointer; }
-  .rr:hover { border-color: var(--accent); }
-  .rr.on { border-color: var(--accent); background: var(--accent-bg); }
-  .rr.other { background: var(--bg-2); }
-  .rr.warn { border-style: dashed; color: var(--warn); }
-  .hdl { color: var(--fg-2); text-align: center; cursor: grab; }
-  .rn { display: inline-flex; width: 19px; height: 19px; border-radius: 50%; border: 1px solid var(--line); font-size: var(--t-xs); align-items: center; justify-content: center; font-family: var(--mono); }
-  .rr.on .rn { border-color: var(--accent); color: var(--accent); }
+  .rhead { font-size: var(--t-caption); color: var(--ink-muted); padding: 0 6px; }
+  .rr { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 3px 6px; background: var(--bg-field); cursor: pointer; }
+  .rr:hover { border-color: var(--link); }
+  .rr.on { border-color: var(--link); background: var(--sel-bg); }
+  .rr.other { background: var(--bg-panel); }
+  .rr.warn { border-style: dashed; color: var(--status-draft); }
+  .hdl { color: var(--ink-muted); text-align: center; cursor: grab; }
+  .rn { display: inline-flex; width: 19px; height: 19px; border-radius: 50%; border: 1px solid var(--border); font-size: var(--t-caption); align-items: center; justify-content: center; font-family: var(--font-mono); }
+  .rr.on .rn { border-color: var(--link); color: var(--link); }
   .chips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; min-width: 0; }
-  .chip { display: inline-flex; padding: 1px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); }
-  .any { font-size: var(--t-xs); color: var(--fg-2); border: 1px dashed var(--line); border-radius: 10px; padding: 0 6px; }
-  .arrow { text-align: right; color: var(--fg-2); font-size: var(--t-xs); }
-  .arrow.dot { color: var(--accent); }
+  .chip { display: inline-flex; padding: 1px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-field); }
+  .any { font-size: var(--t-caption); color: var(--ink-muted); border: 1px dashed var(--border); border-radius: 10px; padding: 0 6px; }
+  .arrow { text-align: right; color: var(--ink-muted); font-size: var(--t-caption); }
+  .arrow.dot { color: var(--link); }
   .rr input { width: 62px; height: 24px; }
-  .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--fg-2); }
+  .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); }
   .lnk { display: inline-flex; align-items: center; gap: 4px; border-style: dashed; }
-  .warn { color: var(--warn); }
+  .warn { color: var(--status-draft); }
 </style>

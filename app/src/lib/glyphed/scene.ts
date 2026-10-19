@@ -43,7 +43,7 @@ export class Scene {
   box: Box = [350, 350];
   weight = 36;                       // reference stroke weight (line width of open paths)
   ink = new paper.Color('black');
-  accent = new paper.Color('#1f6fe5');
+  accent = new paper.Color('#0a5cbf');
   showGrid = false;
   private history: string[] = [];
   private future: string[] = [];
@@ -69,8 +69,8 @@ export class Scene {
 
   readTheme() {
     const css = getComputedStyle(document.documentElement);
-    this.ink = new paper.Color(css.getPropertyValue('--fg').trim() || '#1c1c1a');
-    this.accent = new paper.Color(css.getPropertyValue('--accent').trim() || '#1f6fe5');
+    this.ink = new paper.Color(css.getPropertyValue('--glyph').trim() || '#121212');
+    this.accent = new paper.Color(css.getPropertyValue('--ov-active').trim() || '#0a5cbf');
     this.glyph.selectedColor = this.accent;
     this.restyle();
   }
@@ -80,8 +80,8 @@ export class Scene {
     this.bg.removeChildren();
     const [w, h] = this.box;
     const css = getComputedStyle(document.documentElement);
-    const line = css.getPropertyValue('--box-line').trim() || '#8fb4f0';
-    const paperBg = css.getPropertyValue('--bg').trim() || '#fff';
+    const line = css.getPropertyValue('--ov-part').trim() || '#3f6fd8';
+    const paperBg = css.getPropertyValue('--bg-canvas').trim() || '#fff';
     new paper.Path.Rectangle({ parent: this.bg, point: [0, 0], size: [w, h], fillColor: paperBg, strokeColor: line, strokeWidth: 1, strokeScaling: false });
     if (this.showGrid) {
       const step = paper.view.zoom >= 2 ? 10 : paper.view.zoom >= 0.8 ? 50 : 100;

@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { bumpGap, bumpGapOwn, gapEntryIndex, gapKeySide, gapValue, hitsOtherwise } from './editor.svelte';
+import { attachGap, bumpGap, bumpGapOwn, gapEntryIndex, gapKeySide, gapValue, hitsOtherwise } from './editor.svelte';
 import type { Relationship } from './api';
 
 const list = [{ when_base: ['b1'], value: 10 }, { when_elem: ['e1'], value: 20 }, { value: 30 }];
 
 describe('gap lookups', () => {
+  it('attachGap: takes the measured gap, keeps a row that applies, else adds an otherwise row', () => {
+    const num: Relationship = { axis: 'y', elem: 'e', base: 'b', gap: 5 };
+    expect(attachGap(num, -120, 'b1', null)).toBe('set');
+    expect(num.gap).toBe(-120);
+    const hit: Relationship = { axis: 'y', elem: 'e', base: 'b', gap: [{ when_base: ['b1'], value: -450 }] };
+    expect(attachGap(hit, -120, 'b1', null)).toBe('kept');
+    expect(hit.gap).toEqual([{ when_base: ['b1'], value: -450 }]);
+    const miss: Relationship = { axis: 'y', elem: 'e', base: 'b', gap: [{ when_base: ['b1'], value: -450 }] };
+    expect(attachGap(miss, -120, 'b2', null)).toBe('otherwise');
+    expect(miss.gap).toEqual([{ when_base: ['b1'], value: -450 }, { value: -120 }]);
+    expect(gapValue(miss.gap, 'b2', null)).toBe(-120);
+  });
   it('first match wins; a number is not a list', () => {
     expect(gapEntryIndex(list, 'b1', 'e1')).toBe(0);
     expect(gapEntryIndex(list, 'b2', 'e1')).toBe(1);

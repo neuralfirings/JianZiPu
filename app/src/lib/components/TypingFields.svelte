@@ -35,11 +35,11 @@
 </div>
 
 <style>
-  .tf { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+  .tf { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
   .grid { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 8px; align-items: center; }
-  label { color: var(--fg-2); font-size: var(--t-xs); }
+  label { color: var(--ink-muted); font-size: var(--t-caption); }
   p { margin: 0; }
-  .small { font-size: var(--t-xs); }
-  .mono { font-family: var(--mono); }
-  .lnk { align-self: flex-start; height: 22px; padding: 0 8px; border-style: dashed; background: transparent; font-size: var(--t-xs); }
+  .small { font-size: var(--t-caption); }
+  .mono { font-family: var(--font-mono); }
+  .lnk { align-self: flex-start; height: 22px; padding: 0 8px; border-style: dashed; background: transparent; font-size: var(--t-caption); }
 </style>

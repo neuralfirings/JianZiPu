@@ -101,11 +101,11 @@
 
   <div class="sheets" class:two={compare}>
     <div class="sheet" class:vertical style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-      {#if !font}<p class="muted" style="font: var(--t-md) var(--font)">Load a build or a .ttf file to see the text in it.</p>{:else}{#each segments(text, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
+      {#if !font}<p class="muted" style="font: var(--t-label) var(--font-serif)">Load a build or a .ttf file to see the text in it.</p>{:else}{#each segments(text, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
     </div>
     {#if compare}
       <div class="sheet" class:vertical style="font-family: {secondFont ? `'${secondFont.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-        {#if !secondFont}<p class="muted" style="font: var(--t-md) var(--font)">Pick a second font to compare.</p>{:else}{#each segments(text, secondFont.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
+        {#if !secondFont}<p class="muted" style="font: var(--t-label) var(--font-serif)">Pick a second font to compare.</p>{:else}{#each segments(text, secondFont.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
       </div>
     {/if}
   </div>
@@ -114,15 +114,15 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; }
-  .top { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); }
-  .wrap { flex-wrap: wrap; gap: var(--s-3); }
-  .file { display: inline-flex; align-items: center; height: var(--control); padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); cursor: pointer; }
+  .top { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border); }
+  .wrap { flex-wrap: wrap; gap: var(--space-5); }
+  .file { display: inline-flex; align-items: center; height: var(--control-md); padding: 0 var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-panel); cursor: pointer; }
   .file input { display: none; }
-  textarea { margin: var(--s-3) var(--s-4) 0; font-family: var(--mono); resize: vertical; }
-  .sheets { flex: 1; min-height: 0; display: flex; gap: var(--s-3); padding: var(--s-3) var(--s-4); overflow: auto; }
-  .sheet { flex: 1; min-width: 0; background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s-4); white-space: pre-wrap; line-height: 1.5; overflow: auto; }
+  textarea { margin: var(--space-5) var(--space-6) 0; font-family: var(--font-mono); resize: vertical; }
+  .sheets { flex: 1; min-height: 0; display: flex; gap: var(--space-5); padding: var(--space-5) var(--space-6); overflow: auto; }
+  .sheet { flex: 1; min-width: 0; background: var(--bg-canvas); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-6); white-space: pre-wrap; line-height: 1.5; overflow: auto; }
   .sheet.vertical { writing-mode: vertical-rl; text-orientation: upright; white-space: pre; }
-  .small { font-size: var(--t-xs); padding: 0 var(--s-4) var(--s-3); }
-  .error { color: var(--danger); margin: 0; }
-  .miss { color: var(--danger); }
+  .small { font-size: var(--t-caption); padding: 0 var(--space-6) var(--space-5); }
+  .error { color: var(--status-danger); margin: 0; }
+  .miss { color: var(--status-danger); }
 </style>

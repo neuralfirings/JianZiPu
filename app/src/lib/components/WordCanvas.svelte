@@ -7,7 +7,7 @@
   import { app } from '$lib/state.svelte';
   import { canvasBox, labelWidth, placeLabels, edgeBar, barLength, barsCoincide, type BoxEdge } from '$lib/shape';
 
-  type El = { name: string; area: string; glyph?: string | null; x: number | null; y: number | null; size: [number, number]; error?: boolean; anchor?: boolean };
+  type El = { name: string; area: string; glyph?: string | null; x: number | null; y: number | null; size: [number, number]; error?: boolean; anchor?: boolean; missing?: ('x' | 'y')[]; problem?: string };
   type BarEnd = { name: string; box: { x: number; y: number; size: [number, number] }; edge: BoxEdge };
   /** `bars`: the two edges the rule ties together (base's in orange, this part's in the selection blue), `at` = where
    *  the arrow crosses; drawn for rules in effect and for `emph` ghosts. */
@@ -196,7 +196,11 @@
         {:else if showGlyphs && g}
           <svg x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} viewBox={g.viewBox} class="g">{@html g.inner}</svg>
         {/if}
-        <rect x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} class="box" class:hidden={!showBoxes} />
+        {#if e.problem}<title>{e.problem}</title>{/if}
+        <rect x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} class="box" class:hidden={!showBoxes && !e.error} />
+        {#if e.missing?.length}
+          <text x={e.x + 6} y={-e.y - 6} font-size={fs * 0.9} class="needs-tag">needs {e.missing.map((a) => (a === 'y' ? '↕' : '⇆')).join(' ')} rule</text>
+        {/if}
         {#if tgt}
           {#if tgt === 'top'}<line x1={e.x} x2={e.x + e.size[0]} y1={-(e.y + e.size[1])} y2={-(e.y + e.size[1])} class="tedge" />
           {:else if tgt === 'bottom'}<line x1={e.x} x2={e.x + e.size[0]} y1={-e.y} y2={-e.y} class="tedge" />
@@ -250,56 +254,57 @@
 </svg>
 
 <style>
-  .canvas { display: block; background: var(--canvas); border-radius: var(--radius); touch-action: none; overflow: visible; }
-  .page { fill: none; stroke: var(--line); stroke-dasharray: 12 12; stroke-width: 2; }
-  .baseline { stroke: var(--line); stroke-width: 2; }
-  .embox { fill: none; stroke: var(--fg-2); stroke-width: 1; opacity: .3; vector-effect: non-scaling-stroke; pointer-events: none; }
-  .emlbl { fill: var(--fg-2); opacity: .55; font-family: var(--font); pointer-events: none; }
-  .cross { stroke: var(--fg-2); stroke-width: 2; }
-  .box { fill: var(--box); stroke: var(--box-line); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .canvas { display: block; background: var(--bg-canvas); border-radius: var(--radius-md); touch-action: none; overflow: visible; }
+  .page { fill: none; stroke: var(--ov-guide); stroke-dasharray: 12 12; stroke-width: 2; }
+  .baseline { stroke: var(--ov-guide); stroke-width: 2; }
+  .embox { fill: none; stroke: var(--ov-guide); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+  .emlbl { fill: var(--ink-muted); opacity: .55; font-family: var(--font-serif); pointer-events: none; }
+  .cross { stroke: var(--ink-muted); stroke-width: 2; }
+  .box { fill: var(--ov-part-fill); stroke: var(--ov-part); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .box.hidden { fill: transparent; stroke: transparent; }
-  .el.hoverable:hover .box { stroke: var(--accent); }
-  .el.selected .box { stroke: var(--accent); stroke-width: 3; fill: var(--box); }
-  .el.error .box { stroke: var(--danger); }
-  .el.anchor .box:not(.hidden) { stroke: var(--arrow); stroke-width: 3; fill: rgba(217,56,56,.08); }
-  .el.anchor.selected .box:not(.hidden) { stroke: var(--arrow); stroke-width: 4; }
-  .ghostbox { fill: none; stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 8 6; vector-effect: non-scaling-stroke; pointer-events: none; }
-  .el.marked .box, .el.marked .box.hidden { stroke: var(--accent); stroke-width: 3; }
-  .el.target .box { stroke: var(--ok); stroke-width: 3; }
+  .el.hoverable:hover .box { stroke: var(--ov-active); }
+  .el.selected .box { stroke: var(--ov-active); stroke-width: 2; fill: var(--ov-part-fill); }
+  .el.error .box, .el.error .box.hidden { stroke: var(--status-danger); stroke-width: 2; stroke-dasharray: 8 5; fill: var(--status-danger-bg); fill-opacity: .55; }
+  .needs-tag { fill: var(--status-danger); font-family: var(--font-serif); font-weight: 600; letter-spacing: .02em; pointer-events: none; paint-order: stroke; stroke: var(--bg-canvas); stroke-width: 4px; }
+  .el.anchor .box:not(.hidden) { stroke: var(--ov-anchor); stroke-width: 2; fill: var(--ov-anchor-fill); }
+  .el.anchor.selected .box:not(.hidden) { stroke: var(--ov-anchor); stroke-width: 2; outline: none; }
+  .ghostbox { fill: none; stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 8 6; vector-effect: non-scaling-stroke; pointer-events: none; }
+  .el.marked .box, .el.marked .box.hidden { stroke: var(--link); stroke-width: 3; }
+  .el.target .box { stroke: var(--status-saved); stroke-width: 3; }
   .el.dim { opacity: .28; }
   .el.locked { cursor: default; }
-  .el.base .box { stroke: var(--fg); stroke-width: 3; fill: transparent; }
+  .el.base .box { stroke: var(--ink); stroke-width: 3; fill: transparent; }
   /* the base of a rule of the selected part (wins over the anchor's red outline; the label still says anchor) */
-  .el.rulebase .box:not(.hidden) { stroke: var(--edge-base); stroke-width: 2; }
+  .el.rulebase .box:not(.hidden) { stroke: var(--ov-area); stroke-width: 2; }
   .el.rulebasedim .box:not(.hidden) { stroke-opacity: .35; }
   .g.ov { opacity: .6; }
   .g.ov1 { color: var(--ov1); } .g.ov2 { color: var(--ov2); } .g.ov3 { color: var(--ov3); } .g.ov4 { color: var(--ov4); }
-  .tedge { stroke: var(--ok); stroke-width: 6; vector-effect: non-scaling-stroke; }
-  .anchor-tag { fill: var(--arrow); font-family: var(--font); font-weight: 600; pointer-events: none; paint-order: stroke; stroke: var(--canvas); stroke-width: 4px; }
+  .tedge { stroke: var(--status-saved); stroke-width: 6; vector-effect: non-scaling-stroke; }
+  .anchor-tag { fill: var(--ov-anchor); font-family: var(--font-serif); font-weight: 600; letter-spacing: .02em; pointer-events: none; paint-order: stroke; stroke: var(--bg-canvas); stroke-width: 4px; }
   .interactive .el { cursor: grab; }
   .linking .el { cursor: crosshair; }
-  .g { color: var(--fg); overflow: visible; }
-  .lbl { fill: var(--fg-2); font-family: var(--mono); pointer-events: none; }
+  .g { color: var(--glyph); overflow: visible; }
+  .lbl { fill: var(--ink-muted); font-family: var(--font-mono); pointer-events: none; }
   /* each bar = its outline's width + 4 px, so it reads as that edge thickening: selected 3 → 7, base 2 → 6 */
   .edgebar { stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
   .edgebar.dim { opacity: .35; }
   .edgebar.hot { stroke-width: 9; }
-  .edgebar.base { stroke: var(--edge-base); stroke-width: 6; }
-  .edgebar.me { stroke: var(--edge-me); stroke-width: 7; }
+  .edgebar.base { stroke: var(--ov-area); stroke-width: 6; }
+  .edgebar.me { stroke: var(--ov-active); stroke-width: 6; }
   .edgebar.base.hot { stroke-width: 8; }
   .arrow { cursor: pointer; }
-  .arrow .ln { stroke: var(--arrow); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+  .arrow .ln { stroke: var(--ov-measure); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
   .arrow .hit { stroke: transparent; stroke-width: 14; vector-effect: non-scaling-stroke; }
-  .arrow .albl { fill: var(--arrow); font-family: var(--font); paint-order: stroke; stroke: var(--canvas); stroke-width: 4px; pointer-events: all; cursor: pointer; }
+  .arrow .albl { fill: var(--ov-measure); font-family: var(--font-serif); paint-order: stroke; stroke: var(--bg-canvas); stroke-width: 4px; pointer-events: all; cursor: pointer; }
   .arrow:hover .albl { text-decoration: underline; }
-  .arrow.ghost .ln { stroke: var(--fg-2); stroke-dasharray: 6 5; opacity: .7; }
-  .arrow.ghost .albl { fill: var(--fg-2); }
+  .arrow.ghost .ln { stroke: var(--ink-muted); stroke-dasharray: 6 5; opacity: .7; }
+  .arrow.ghost .albl { fill: var(--ink-muted); }
   .arrow.on .ln { stroke-width: 4; opacity: 1; }
   .arrow.on .albl { font-weight: 600; }
-  .arrow.ghost.on .ln { stroke: var(--accent); }
-  .arrow.ghost.on .albl { fill: var(--accent); }
-  .handle { fill: var(--canvas); stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; cursor: crosshair; }
-  .handle:hover { fill: var(--accent); }
-  .linkline { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
-  .albl { fill: var(--accent); font-family: var(--font); paint-order: stroke; stroke: var(--canvas); stroke-width: 4px; pointer-events: none; }
+  .arrow.ghost.on .ln { stroke: var(--link); }
+  .arrow.ghost.on .albl { fill: var(--link); }
+  .handle { fill: var(--ov-handle); stroke: var(--ov-active); stroke-width: 2; vector-effect: non-scaling-stroke; cursor: crosshair; }
+  .handle:hover { fill: var(--ov-active); }
+  .linkline { stroke: var(--link); stroke-width: 2; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+  .albl { fill: var(--link); font-family: var(--font-serif); paint-order: stroke; stroke: var(--bg-canvas); stroke-width: 4px; pointer-events: none; }
 </style>

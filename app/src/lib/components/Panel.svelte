@@ -58,27 +58,27 @@
 </section>
 
 <style>
-  .pn { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); min-width: 0; }
+  .pn { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); min-width: 0; }
   .pn.lifted { opacity: .35; border-style: dashed; }
-  .ph { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 6px 0 4px; border-bottom: 1px solid var(--line); background: var(--bg-2); border-radius: var(--radius) var(--radius) 0 0; white-space: nowrap; }
-  .folded .ph { border-bottom: 0; border-radius: var(--radius); }
-  .grip { color: var(--fg-2); font-size: 13px; cursor: grab; padding: 0 2px; user-select: none; touch-action: none; }
+  .ph { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--hairline); background: var(--bg-panel); border-radius: var(--radius-lg) var(--radius-lg) 0 0; white-space: nowrap; }
+  .folded .ph { border-bottom: 0; border-radius: var(--radius-lg); }
+  .grip { color: var(--ink-faint); font-size: 13px; cursor: grab; padding: 0 2px; user-select: none; touch-action: none; }
   .grip:active { cursor: grabbing; }
-  .fold { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 3px; border: 0; background: transparent; font-weight: 600; font-size: var(--t-md); min-width: 0; }
-  .fold:hover { background: transparent; color: var(--accent); }
-  .chev { color: var(--fg-2); font-size: 10px; width: 9px; }
+  .fold { display: inline-flex; align-items: center; gap: var(--space-3); height: 28px; padding: 0 var(--space-1); border: 0; background: transparent; font: 600 var(--t-panel)/20px var(--font-display); min-width: 0; }
+  .fold:hover { background: transparent; color: var(--link); }
+  .chev { color: var(--ink-muted); font-size: 10px; width: 9px; }
   .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bdg { font-size: var(--t-xs); border: 1px solid var(--line); border-radius: 9px; padding: 0 6px; line-height: 16px; color: var(--fg-2); }
-  .bdg.warn { border-color: var(--warn); color: var(--warn); }
-  .tag { font-size: var(--t-xs); color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 4px; line-height: 15px; }
-  .sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg-2); font-size: var(--t-xs); }
+  .bdg { font-size: var(--t-caption); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 0 7px; line-height: 18px; color: var(--ink-muted); }
+  .bdg.warn { border-color: var(--status-draft); border-style: dashed; color: var(--status-draft); background: var(--status-draft-bg); }
+  .tag { color: var(--link); border-color: var(--link); }
+  .sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink-muted); font-size: var(--t-caption); }
   .sp { flex: 1; }
   .mw { position: relative; }
-  .pm { height: 22px; width: 22px; padding: 0; border: 0; background: transparent; color: var(--fg-2); opacity: .5; }
+  .pm { height: 22px; width: 22px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); opacity: .5; }
   .ph:hover .pm, .pm:focus { opacity: 1; }
-  .menu { position: absolute; right: 0; top: 100%; z-index: 40; margin-top: 2px; min-width: 190px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; }
-  .menu button { text-align: left; border: 0; background: transparent; height: 26px; font-size: var(--t-sm); }
-  .menu button:hover:not(:disabled) { background: var(--bg-3); }
-  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 3px 0; }
-  .pb { padding: var(--s-2) var(--s-3) var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+  .menu { position: absolute; right: 0; top: 100%; z-index: 40; margin-top: 2px; min-width: 190px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); padding: 4px; }
+  .menu button { text-align: left; justify-content: flex-start; border: 0; background: transparent; height: 26px; font-size: var(--t-small); font-weight: 400; }
+  .menu button:hover:not(:disabled) { background: var(--bg-hover); }
+  .menu hr { border: 0; border-top: 1px solid var(--hairline); margin: 3px 0; }
+  .pb { padding: var(--space-4) var(--space-5) var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
 </style>

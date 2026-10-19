@@ -22,3 +22,6 @@ font/JianZiPu.ttf
 font/JianZiPu.fea
 font/src_font/*.ttf
 .env
+
+# local working notes: UX specs, wireframes, roadmap (not shared)
+docs/

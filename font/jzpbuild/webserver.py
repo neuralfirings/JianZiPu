@@ -111,15 +111,20 @@ def resolve_payload(design: schema.Design, layout_name: str, choice: list,
     layout = design.layout(layout_name)
     shape = shape_from_choice(layout, choice)
     pinned = {k: v for k, v in (pinned or {}).items() if v}
+    unplaced: dict[str, dict[str, str]] = {}
     try:
         pos = resolve.resolve(design, layout, shape, pinned, center=center)
         error = None
     except resolve.Unresolvable as err:
-        pos, error = {}, str(err)
+        # still draw the shape: what can be placed is, a part with no rule on an axis sits at 0
+        # there and `unplaced` says which part and axis, and why
+        error = str(err)
+        pos = resolve.resolve(design, layout, shape, pinned, center=center, missing=unplaced)
     chosen = resolve.plan(layout, shape)
     return {
         "ok": error is None,
         "error": error,
+        "unplaced": unplaced,
         "elements": [{"name": e.name, "el": e.el, "area": e.area, "slot": e.slot, "instance": e.instance,
                       "size": design.areas[e.area].size,
                       "x": pos.get(e.name, (None, None))[0], "y": pos.get(e.name, (None, None))[1]}

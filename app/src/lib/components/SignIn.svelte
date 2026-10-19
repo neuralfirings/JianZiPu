@@ -66,13 +66,13 @@
 </div>
 
 <style>
-  .wrap { min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: var(--s-6) var(--s-4); }
-  .card { width: 100%; max-width: 440px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-3); }
-  .title { font-weight: 600; font-size: var(--t-lg); }
-  h2 { margin: 0; font-size: var(--t-lg); font-weight: 600; }
+  .wrap { min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-6); }
+  .card { width: 100%; max-width: 440px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-5); }
+  .title { font-weight: 600; font-size: var(--t-panel); }
+  h2 { margin: 0; font-size: var(--t-panel); font-weight: 600; }
   p { margin: 0; line-height: 1.5; }
-  form { display: flex; flex-direction: column; gap: var(--s-2); }
-  input { height: var(--control); padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
-  .foot { font-size: var(--t-sm); }
+  form { display: flex; flex-direction: column; gap: var(--space-4); }
+  input { height: var(--control-md); padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
+  .foot { font-size: var(--t-small); }
   .row { flex-wrap: wrap; }
 </style>

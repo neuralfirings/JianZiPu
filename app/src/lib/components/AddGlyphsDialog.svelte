@@ -23,7 +23,7 @@
           <input type="checkbox" checked={picked.includes(r.glyph)} onchange={() => (picked = picked.includes(r.glyph) ? picked.filter((x) => x !== r.glyph) : [...picked, r.glyph])} />
           <Glyph name={r.glyph} size={44} />
           <span class="id">{r.glyph}</span>
-          <span class="muted" style="font-size: var(--t-xs)">{r.areas.join(', ') || 'unassigned'}</span>
+          <span class="muted" style="font-size: var(--t-caption)">{r.areas.join(', ') || 'unassigned'}</span>
         </label>
       {/each}
       {#if !candidates.length}<p class="muted">No glyph matches.</p>{/if}
@@ -33,9 +33,9 @@
 
 <style>
   .spacer { flex: 1; }
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-4); width: min(900px, 92vw); max-height: 85vh; display: flex; flex-direction: column; gap: var(--s-3); }
+
+  .modal { padding: var(--space-6); width: min(900px, 92vw); max-height: 85vh; display: flex; flex-direction: column; gap: var(--space-5); }
   .pick-grid { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, 150px); gap: 4px; }
   .pick { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 4px; cursor: pointer; }
-  .pick.on { background: var(--accent-bg); }
+  .pick.on { background: var(--sel-bg); }
 </style>

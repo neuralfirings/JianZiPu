@@ -54,6 +54,8 @@ export type ResolvedElement = {
 };
 export type ResolvePayload = {
   ok: boolean; error: string | null; elements: ResolvedElement[];
+  /** parts the resolver couldn't place on an axis (parked at 0 there), with why; empty when ok */
+  unplaced?: Record<string, Partial<Record<'x' | 'y', string>>>;
   chosen: Record<string, Relationship | null>; pins: Record<string, string[]>;
 };
 export type WordPiece = {

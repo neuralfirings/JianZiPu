@@ -1,4 +1,6 @@
 <script lang="ts">
+  import '@fontsource-variable/literata/wght.css';
+  import '@fontsource-variable/eb-garamond/wght.css';
   import '../app.css';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
@@ -64,12 +66,15 @@
     };
   });
 
+  // toasts leave after 5 s (20 s when they offer a commit message to copy), held while hovered or focused
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
-  $effect(() => {
+  function releaseToast() {
     const t = pilot.toast;
     if (toastTimer) clearTimeout(toastTimer);
-    if (t) toastTimer = setTimeout(() => (pilot.toast = null), t.copy ? 20000 : 9000);
-  });
+    if (t) toastTimer = setTimeout(() => (pilot.toast = null), t.copy ? 20000 : 5000);
+  }
+  function holdToast() { if (toastTimer) clearTimeout(toastTimer); }
+  $effect(() => { void pilot.toast; releaseToast(); });
   async function copyMessage(text: string) {
     try { await navigator.clipboard.writeText(text); pilot.say('Commit message copied.'); } catch { prompt('Commit message:', text); }
   }
@@ -89,14 +94,14 @@
 
 <div class="shell">
   <header>
-    <div class="brand">JZP Font Builder</div>
+    <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JZP Font Builder</div>
     {#if hosted.isHosted && hosted.user}
       <span class="pill-wrap">
         <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-          ✎ Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
+          ◌ Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
         </button>
         {#if pill}
-          <div class="pop" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
+          <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
             <strong>Your draft</strong>
             <p>Only you see it. Builds and the Tester use it. The font itself doesn't change.</p>
             <p class="muted">{#if app.draftBase?.version.date}Based on the font of {day(app.draftBase.version.date)}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
@@ -109,12 +114,12 @@
         {/if}
       </span>
     {:else if hosted.ready && !hosted.isHosted}
-      <span class="pill local" title="Save writes design.json, components.csv and glyph files in this repo.">Local files</span>
+      <span class="chip dashed local" title="Save writes design.json, components.csv and glyph files in this repo.">Local files</span>
     {/if}
     {#if !gate && hosted.ready}
     <nav>
       {#each nav as [href, label]}
-        <a {href} class:active={page.url.pathname === href || page.url.pathname.startsWith(href + '/')}>{label}</a>
+        <a {href} aria-current={page.url.pathname === href || page.url.pathname.startsWith(href + '/') ? 'page' : undefined}>{label}</a>
       {/each}
     </nav>
     <div class="spacer"></div>
@@ -122,29 +127,29 @@
       <label class="adv" title="Structural edits: add, remove, reorder parts; new / delete word types; recognition rules"><input type="checkbox" bind:checked={editor.advanced} /> Advanced</label>
     {/if}
     {#if budget}
-      <a class="chip" href="/layouts?budget=1" title="GPOS rules generated from this design">
-        <span class="badge-{budget.level}">●</span> {budget.rules} rules · {budget.kb.toFixed(0)} KB
+      <a class="pill {budget.level === 'warn' ? 'draft' : 'saved'} budget" href="/layouts?budget=1" title={budget.skipped ? `GPOS rules generated from this design; ${budget.skipped} skipped` : 'GPOS rules generated from this design'}>
+        {budget.level === 'warn' ? '!' : '✓'} {budget.rules} rules · {budget.kb.toFixed(0)} KB
       </a>
     {/if}
     {#if !inGlyphEditor}
-      <button class="ghost" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
+      <button class="quiet" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
         title={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label}` : 'Nothing to undo'}>↶</button>
-      <button class="ghost" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
+      <button class="quiet" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
         title={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'}>↷</button>
     {/if}
     <span class="status" role="status">
       {#if hosted.isHosted && app.offline}
-        <button class="chip warnchip" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>⚠ Not saved · offline</button>
+        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>! Not saved · offline</button>
       {:else if hosted.isHosted && app.saving}
-        <span class="chip">Saving…</span>
+        <span class="pill info">◐ Saving…</span>
       {:else if app.dirty}
-        <button class="chip accent" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● {inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
+        <button class="pill draft" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● {inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
       {:else if hosted.isHosted && app.lastSaved}
-        <span class="chip">Saved to your draft · {hhmm(app.lastSaved)}</span>
+        <span class="pill saved">✓ Saved to your draft · {hhmm(app.lastSaved)}</span>
       {:else if app.lastSaved}
-        <span class="chip">{inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
+        <span class="pill saved">✓ {inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
       {:else if !app.loading}
-        <span class="chip">{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
+        <span class="pill saved">✓ {inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
       {/if}
     </span>
     {#if hosted.isHosted}
@@ -160,9 +165,9 @@
       <a class="fb" href={hosted.config.feedback_url} target="_blank" rel="noopener">Feedback</a>
     {/if}
     <span class="menu-wrap">
-      <button onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>
+      <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>
       {#if menu}
-        <div class="menu" role="menu">
+        <div class="menu float" role="menu">
           {#if hosted.isHosted}
             <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
@@ -190,7 +195,7 @@
       <span class="menu-wrap">
         <button class="who" onclick={(e) => { e.stopPropagation(); person = !person; }} aria-label="Account" title={hosted.user.email}>{(hosted.firstName || '?').slice(0, 1).toUpperCase()}</button>
         {#if person}
-          <div class="menu" role="menu">
+          <div class="menu float" role="menu">
             <span class="muted signed">Signed in as {hosted.user.email}</span>
             <button onclick={async () => { app.flush(); await hosted.signOut(); }}>Sign out</button>
           </div>
@@ -208,13 +213,14 @@
     </div>
   {/if}
   {#if hosted.isHosted && hosted.signedOut}
-    <div class="banner error">You've been signed out. Your unsaved changes are kept in this browser. <button onclick={() => hosted.signOut()}>Sign in again</button></div>
+    <div class="banner danger"><span class="ic">!</span> <b>You've been signed out.</b> Your unsaved changes are kept in this browser. <button onclick={() => hosted.signOut()}>Sign in again</button></div>
   {:else if hosted.isHosted && app.offline}
-    <div class="banner error">⚠ <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
+    <div class="banner danger"><span class="ic">!</span> <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
       <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button></div>
   {/if}
   {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
     <div class="banner info">
+      <span class="ic">i</span>
       <span><b>The font was updated{app.main?.date ? ` on ${day(app.main.date)}` : ''}</b>{app.draftBase?.version.date ? ` (since your draft started on ${day(app.draftBase.version.date)})` : ''}.</span>
       <span class="spacer"></span>
       <button onclick={() => (pilot.updateDismissed = true)}>Not now</button>
@@ -222,7 +228,7 @@
     </div>
   {/if}
   {#if app.draftRestored}
-    <div class="banner">
+    <div class="banner draft"><span class="ic">●</span>
       {#if hosted.isHosted}
         Restored {plural(app.unsavedCount, 'change')} from your last visit that hadn't reached your draft.
         <button onclick={() => { app.draftRestored = false; app.save(); }}>Save them</button>
@@ -234,11 +240,11 @@
     </div>
   {/if}
   {#if app.error}
-    <div class="banner error">{app.error} <button onclick={() => app.load()}>Retry</button></div>
+    <div class="banner danger"><span class="ic">×</span> {app.error} <button onclick={() => app.load()}>Retry</button></div>
   {/if}
   {#if app.paused}
-    <div class="modal-bg">
-      <div class="modal">
+    <div class="scrim">
+      <div class="dialog modal" role="dialog" aria-modal="true">
         <h3>Save is waiting</h3>
         <p>{app.paused.length === 1 ? 'This spelling problem' : `These ${app.paused.length} spelling problems`} must be fixed first: the font can't build with {app.paused.length === 1 ? 'it' : 'them'}.</p>
         <ul class="paused">
@@ -256,13 +262,13 @@
     </div>
   {/if}
   {#if app.conflict}
-    <div class="modal-bg">
-      <div class="modal">
+    <div class="scrim">
+      <div class="dialog modal" role="dialog" aria-modal="true">
         <h3>{app.conflictFile} changed on disk</h3>
         <p>{app.conflict}</p>
         <div class="row">
           <button onclick={() => { app.conflict = null; app.reloadFromDisk(); }}>Reload from disk (lose my {app.changes.length} changes)</button>
-          <button class="primary" onclick={() => app.save(true)}>Overwrite</button>
+          <button class="danger" onclick={() => app.save(true)}>Overwrite</button>
           <button onclick={() => { app.conflict = null; dialog = 'export'; }}>Export mine first</button>
         </div>
       </div>
@@ -273,7 +279,7 @@
     {#if gate}
       <SignIn />
     {:else if app.loading || !hosted.ready}
-      <p class="muted" style="padding: var(--s-6)">{hosted.isHosted ? 'Loading your draft…' : 'Loading design…'}</p>
+      <p class="muted" style="padding: var(--space-8)">{hosted.isHosted ? 'Loading your draft…' : 'Loading design…'}</p>
     {:else if app.design}
       {@render children()}
     {/if}
@@ -284,7 +290,7 @@
   {/if}
   <PilotDialogs />
   {#if pilot.toast}
-    <div class="toast" role="status">
+    <div class="toast" role="status" onmouseenter={holdToast} onmouseleave={releaseToast} onfocusin={holdToast} onfocusout={releaseToast}>
       <span>{pilot.toast.text}</span>
       {#if pilot.toast.copy}<button onclick={() => copyMessage(pilot.toast!.copy!)}>Copy commit message</button>{/if}
       {#if pilot.toast.undo}<button onclick={() => { app.undo(); pilot.toast = null; }}>Undo</button>{/if}
@@ -294,44 +300,57 @@
 </div>
 
 <style>
-  .shell { display: flex; flex-direction: column; height: 100vh; }
-  header { display: flex; align-items: center; gap: var(--s-2); height: 44px; padding: 0 var(--s-4); border-bottom: 1px solid var(--line); background: var(--bg-2); }
-  .brand { font-weight: 600; margin-right: var(--s-4); }
-  nav { display: flex; gap: var(--s-1); }
-  nav a { padding: 4px 10px; border-radius: var(--radius); color: var(--fg); text-decoration: none; }
-  nav a.active { background: var(--accent-bg); color: var(--accent); }
+  .shell { display: flex; flex-direction: column; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
+  /* wraps instead of running off the edge when the controls do not fit on one line */
+  header button { white-space: nowrap; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); min-height: 48px; padding: var(--space-3) var(--space-6); border-bottom: 1px solid var(--border); background: var(--bg-panel); flex: none; min-width: 0; }
+  .brand { display: inline-flex; align-items: center; gap: var(--space-4); font: 600 20px/1 var(--font-display); margin-right: var(--space-5); white-space: nowrap; }
+  .seal { display: block; width: 26px; height: 26px; border-radius: var(--radius-sm); }
+  nav { display: flex; gap: var(--space-2); min-width: 0; overflow-x: auto; }
+  nav a { display: inline-flex; align-items: center; height: var(--control-md); padding: 0 var(--space-5); border: 1px solid transparent; border-radius: var(--radius-md); color: var(--ink); font-weight: 600; text-decoration: none; white-space: nowrap; transition: background 120ms ease-out; }
+  nav a:hover { background: var(--bg-hover); }
+  nav a[aria-current="page"] { background: var(--sel-bg); border-color: var(--sel-border); }
   .spacer { flex: 1; }
-  .ghost { border-color: transparent; background: transparent; }
   .menu-wrap { position: relative; }
-  .menu { position: absolute; right: 0; top: 100%; z-index: 30; margin-top: 4px; min-width: 220px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; }
-  .menu button { text-align: left; border: 0; background: transparent; }
-  .menu button:hover:not(:disabled) { background: var(--bg-3); }
-  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 3px 0; }
-  .adv { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--fg-2); margin-right: var(--s-2); }
-  .changes, .banner { padding: var(--s-2) var(--s-4); border-bottom: 1px solid var(--line); background: var(--bg-2); display: flex; gap: var(--s-3); align-items: center; }
+  .menu { position: absolute; right: 0; top: 100%; z-index: var(--z-popover); margin-top: 4px; min-width: 220px; display: flex; flex-direction: column; padding: var(--space-2); }
+  .menu button { justify-content: flex-start; text-align: left; border: 0; background: transparent; font-weight: 400; }
+  .menu button:hover:not(:disabled) { background: var(--bg-hover); }
+  .menu hr { border: 0; border-top: 1px solid var(--hairline); margin: var(--space-1) 0; }
+  .adv { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-small); color: var(--ink-muted); margin-right: var(--space-4); }
+  .changes { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border); background: var(--bg-panel); display: flex; gap: var(--space-5); align-items: center; }
   .changes ol { margin: 0; padding-left: 20px; max-height: 120px; overflow: auto; flex: 1; }
-  .banner.error { color: var(--danger); }
-  main { flex: 1; min-height: 0; overflow: auto; }
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-5); max-width: 560px; }
-  .chip { text-decoration: none; color: inherit; border: 0; }
-  .warnchip { color: var(--danger); }
-  .pill-wrap { position: relative; margin-right: var(--s-3); }
-  .pill { height: 22px; padding: 0 10px; border-radius: 11px; font-size: var(--t-sm); white-space: nowrap; }
-  .pill.draft { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent); }
-  .pill.local { display: inline-flex; align-items: center; border: 1px dashed var(--line); color: var(--fg-2); margin-right: var(--s-3); }
+  /* Banner: tinted ground and edge in the state colour, the words in ink */
+  /* banners under the top bar run full width */
+  .banner { border-width: 0 0 1px; border-radius: 0; padding: var(--space-4) var(--space-6); }
+  main { flex: 1; min-height: 0; min-width: 0; overflow: auto; }
+  .modal { max-width: 560px; }
+  .modal h3 { margin-bottom: var(--space-4); }
+  .budget { text-decoration: none; }
+  .status .pill { cursor: default; }
+  .status button.pill { cursor: pointer; }
+  .pill-wrap { position: relative; margin-right: var(--space-5); }
+  .pill.draft:hover { filter: brightness(.97); }
+  .local { margin-right: var(--space-5); white-space: nowrap; }
   .moved { opacity: .8; }
-  .pop { position: absolute; left: 0; top: 100%; margin-top: 6px; z-index: 40; width: 300px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
-  .pop p { margin: 0; font-size: var(--t-sm); line-height: 1.45; }
-  .fb { font-size: var(--t-sm); color: var(--accent); text-decoration: none; padding: 0 var(--s-1); }
-  .who { width: 28px; padding: 0; border-radius: 50%; font-weight: 600; }
-  .signed { padding: 4px 8px; font-size: var(--t-sm); }
-  .menu a { padding: 0 var(--s-3); height: var(--control); display: flex; align-items: center; color: inherit; text-decoration: none; border-radius: var(--radius); }
-  .menu a:hover { background: var(--bg-3); }
-  .danger-item { color: var(--danger); }
-  .banner.info { background: var(--accent-bg); }
-  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(var(--s-4), env(safe-area-inset-bottom, 0px)); z-index: 70; display: flex; gap: var(--s-2); align-items: center; max-width: min(720px, calc(100vw - 32px)); background: var(--fg); color: var(--bg); padding: var(--s-2) var(--s-3); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.25); font-size: var(--t-sm); }
-  .toast button { white-space: nowrap; background: transparent; color: inherit; border-color: color-mix(in srgb, var(--bg) 40%, transparent); height: 24px; }
-  .toast .x { border: 0; font-size: 16px; }
-  .paused { margin: 0 0 var(--s-2); padding-left: 20px; color: var(--danger); }
+  .pop { position: absolute; left: 0; top: 100%; margin-top: 6px; z-index: var(--z-popover); width: 300px; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .pop p { margin: 0; font-size: var(--t-small); line-height: 16px; }
+  .fb { font-size: var(--t-small); color: var(--link); text-decoration: none; padding: 0 var(--space-2); }
+  .who { width: var(--control-md); padding: 0; border-radius: 50%; }
+  .signed { padding: 4px 8px; font-size: var(--t-small); }
+  .menu a { padding: 0 var(--space-5); height: var(--control-md); display: flex; align-items: center; color: inherit; text-decoration: none; border-radius: var(--radius-md); }
+  .menu a:hover { background: var(--bg-hover); }
+  .danger-item { color: var(--accent); }
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px)); max-width: min(720px, calc(100vw - 32px)); }
+  .toast button { white-space: nowrap; }
+  .toast .x { text-decoration: none; font-size: 16px; }
+  .paused { margin: 0 0 var(--space-4); padding-left: 20px; color: var(--status-danger); }
+  /* narrow: the tabs take their own scrolling row under the name and the controls */
+  @media (max-width: 1100px) {
+    nav { order: 10; flex: 1 0 100%; padding: var(--space-3) 0; }
+  }
+  @media (max-width: 760px) {
+    header { gap: var(--space-2); padding-left: var(--space-4); padding-right: var(--space-4); }
+    .brand { font-size: 0; gap: 0; margin-right: var(--space-2); }
+    nav a, header button { height: var(--control-lg); }
+  }
 </style>

@@ -30,7 +30,7 @@
 <div class="modal-bg" role="presentation" onclick={onclose}>
   <div class="modal" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onclose(); if (e.key === 'Enter' && !problem) create(); }}>
     <h3 style="margin:0">New glyph</h3>
-    <label class="f"><span>Name</span><input type="text" bind:value={name} placeholder="md_9" style="font-family: var(--mono); width: 200px" /></label>
+    <label class="f"><span>Name</span><input type="text" bind:value={name} placeholder="md_9" style="font-family: var(--font-mono); width: 200px" /></label>
     {#if taken}<div class="muted small">Names are not reused. <a href="/glyphs/{encodeURIComponent(taken)}/edit" onclick={onclose}>Open {taken}</a> instead?</div>{/if}
     <label class="f"><span>Area</span>
       <select bind:value={area}>
@@ -59,10 +59,10 @@
 
 <style>
   .spacer { flex: 1; }
-  .small { font-size: var(--t-xs); }
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-4); width: min(520px, 92vw); display: flex; flex-direction: column; gap: var(--s-3); }
-  .f { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
-  .f > span:first-child { width: 80px; color: var(--fg-2); }
-  .starts { display: flex; gap: var(--s-3); }
+  .small { font-size: var(--t-caption); }
+
+  .modal { padding: var(--space-6); width: min(520px, 92vw); display: flex; flex-direction: column; gap: var(--space-5); }
+  .f { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .f > span:first-child { width: 80px; color: var(--ink-muted); }
+  .starts { display: flex; gap: var(--space-5); }
 </style>
