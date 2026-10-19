@@ -24,8 +24,8 @@
   <div class="row"><strong>Why {groups.reduce((n, g) => n + g.count, 0)} shapes are skipped</strong><span class="spacer"></span><button class="tiny" onclick={onclose}>×</button></div>
   <div class="muted small">A skipped shape gets no positioning rule: those words shape, but the parts are not placed. Each line is one cause; open an example to fix it in the editor.</div>
   {#if unsupported}
-    <div class="warn small">The running dev server is older than this app build and does not report causes. Restart it, then reload this page:
-      <code>cd src-fonttools && python3 -m jzpbuild.devserver --port 5713</code></div>
+    <div class="warn small">The running web server is older than this app build and does not report causes. Restart it, then reload this page:
+      <code>cd src-fonttools && python3 -m jzpbuild.webserver --port 5713</code></div>
   {:else if groups.length === 0}
     <div class="muted small">Nothing skipped for this word type.</div>
   {/if}

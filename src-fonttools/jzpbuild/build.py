@@ -60,8 +60,6 @@ def main(argv=None):
                    help="also write the generated .fea here for inspection")
     p.add_argument("--fea-only", action="store_true",
                    help="only generate the feature file, don't build the font")
-    p.add_argument("--figma_pull", action="store_true",
-                   help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
     p.add_argument("--classic_pos", action="store_true",
                    help="legacy positioning from inputs/layouts.json + gpos.py "
                         "instead of the cursive rules from inputs/design.json "
@@ -82,9 +80,6 @@ def main(argv=None):
     if args.design is not None:
         config.DESIGN_JSON = Path(args.design)
 
-    if args.figma_pull:
-        from .figma import fetch
-        fetch()
     fea_out = Path(args.fea_out) if args.fea_out else None
     if args.fea_only:
         text = generate(classic_pos=args.classic_pos)

@@ -1,7 +1,11 @@
 # jzpbuild — the JianZiPu font build pipeline
 
-One command builds the font from sources, with no FontForge and no
-hand-edited feature files.
+The font is designed in the **JZP Font Builder**, a web app served by this
+folder's web server: glyphs, how they're typed, and how words are laid out are
+all edited there, and its Save writes the files in `inputs/`. Start with
+"The Builder app" below. The rest of this README is the reference for what
+runs underneath: one Python build, with no FontForge and no hand-edited
+feature files.
 
 ## Setup (first time on a fresh checkout)
 
@@ -9,8 +13,8 @@ hand-edited feature files.
 2. **Install dependencies:**
    ```bash
    cd src-fonttools
-   pip install -e .          # fonttools, picosvg, requests, skia-pathops
-   pip install -e '.[test]'  # + pytest (uharfbuzz is a main dependency: the dev server shapes test words with it)
+   pip install -e .          # fonttools, picosvg, skia-pathops, uharfbuzz
+   pip install -e '.[test]'  # + pytest (uharfbuzz is a main dependency: the web server shapes test words with it)
    ```
 3. **Base font.** The pipeline subsets glyphs from a base Kai typeface, and
    expects it at `src-fonttools/src_font/TW-Kai-98.ttf`. This file is **gitignored
@@ -20,38 +24,159 @@ hand-edited feature files.
    `SOURCE_FONT` in `jzpbuild/config.py` (`SOURCE_FONT = BUILDER_DIR /
    "src_font/TW-Kai-98.ttf"`) to point at it — everything downstream
    (`base.py`) just reads whatever path is set there.
-4. **`src-fonttools/inputs/`** holds everything the build reads — both the
-   hand-maintained sources (`design.json`, `components.csv`,
-   `glyphRename.csv`, `edge_cases.fea`) and the Figma-fetched artifacts
-   (`svg/`, and `layouts.json` for the legacy `--classic_pos` build) — and
-   is tracked in git, so a fresh checkout already has it — nothing to do
-   here. Refresh the Figma-fetched half whenever you want the latest:
-   ```bash
-   export FIGMA_TOKEN=figd_...   # see "Figma access" below for where to get one
-   python3 -m jzpbuild --figma_pull
-   ```
-   A plain build reads `src-fonttools/inputs/svg/` and `design.json`
+4. **The Builder app.** `cd ../app && npm install && npm run build` once (and
+   after pulling app changes); the web server then serves it.
+5. **`src-fonttools/inputs/`** holds everything the build reads — what the
+   Builder edits (`design.json`, `components.csv`, `svg/`), the hand-maintained
+   `glyphRename.csv` and `edge_cases.fea`, and `layouts.json` for the legacy
+   `--classic_pos` build — and is tracked in git, so a fresh checkout already
+   has it — nothing to do here. A plain build reads `src-fonttools/inputs/svg/` and `design.json`
    unconditionally, with no fallback location — if this directory is ever
    missing or emptied, the build fails fast with `FileNotFoundError` rather
    than silently reading something stale (see "config.py's paths are the
    single source of truth" below for why).
 
-With those in place (base font placed, deps installed), you're set up —
-everything from here on is just `python3 -m jzpbuild`.
+With those in place (base font placed, deps installed, app built), you're set
+up: `python3 -m jzpbuild.webserver` and open http://127.0.0.1:5713/.
 
-## Commands
+## The Builder app (start here)
+
+`jzpbuild/webserver.py` is a stdlib-only local HTTP server (no extra
+dependency). It serves the built Builder app (`app/build/`, SPA fallback)
+at `/`, `inputs/` and `tests/` as static files (`/inputs/svg/...`,
+`/JianZiPu.ttf`, which is the latest UI build when there is one), and the JSON API the app uses:
+
+```bash
+cd src-fonttools
+python3 -m jzpbuild.webserver          # http://127.0.0.1:5713/
+python3 -m jzpbuild.webserver --port 9000
+```
+
+| Route | Does |
+|---|---|
+| `GET /api/design` | `design.json` + content hash + validation warnings + rule stats |
+| `PUT /api/design` | `{design, base_hash}` → validates, writes `design.json`; 409 if the file changed on disk since `base_hash` (empty hash = force) |
+| `POST /api/design/check` | validate + stats for an unsaved design (the app calls this after every edit) |
+| `POST /api/resolve` | `{design?, layout, choice, pinned?, center?}` → positions of one word shape; `choice` is per slot `null` / alternative index / list per row |
+| `POST /api/words` | `{design?, words}` → each typed word shaped through GSUB (HarfBuzz on the last built font) and positioned by the unsaved design — the live preview |
+| `GET /api/glyphs` | every glyph (SVGs + CSV rows) with its spellings, areas and SVG, plus the CSV's row order and content hash |
+| `PUT /api/glyphs` | `{rows, base_hash, design}` → checks the spellings (400 with `errors` on a clash or invalid spelling), rewrites `components.csv` keeping its row order and dropping empty rows; 409 if the file changed since `base_hash` |
+| `POST /api/typing/preview` | `{design, rows, words, base_rows?, compare_words?, roundtrip?}` → GSUB from the *unsaved* spellings compiled into a copy of the last build (≈0.5 s, cached): each word's glyphs, `issues`, a round trip of every spelling, `changed` sample words vs `base_rows`, `not_built` glyphs and `missing_chars` |
+| `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
+| `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
+| `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only) |
+| `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
+| `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the caller's builds (`build` = latest, `builds` = newest first, last 8 kept). The body may carry a draft, `{design, rows, svgs, deleted}`, built instead of the files on disk (hosted mode) |
+| `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key, feedback_url}` (never the service key) |
+| `GET /api/base` | the font version on disk: `{commit, date, design_hash, csv_hash, svg_hashes}`; a draft records it to notice when the font moves on |
+| `GET /api/builds/<id>/JianZiPu.ttf` | that exact build; `?download=1` sends it as an attachment. Build folders live in the system temp dir and are removed when the server stops |
+
+The app itself lives in `app/` (SvelteKit 2 + Svelte 5, static build):
+
+```bash
+cd app && npm install
+npm run dev      # Vite dev server on :5173, proxies /api etc. to the Python server on :5713
+npm run build    # writes app/build/, which the Python server then serves at /
+```
+
+Screens: **Glyphs** (every SVG on disk, grouped by area, with the
+unassigned ones called out; a **Tiles | Typing** switch, where Typing is a
+spreadsheet of every glyph's spellings — the `components.csv` columns —
+with paste-a-range, CSV import/export, clash checks as you type, and an
+inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
+the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
+edits outlines on a Paper.js canvas, imports SVGs, traces images with
+potrace, and writes the file through `PUT /api/svg/<name>`; see
+`docs/GLYPH-EDITOR-UX.md`), **Layouts** (word types; eight dockable, foldable,
+resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
+Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
+rule editor with live canvas preview), Centering, Area Properties (the
+shared areas: switcher, box size previewed on the canvas until Enter,
+members with the position decimals as a grid, + New area under Advanced;
+see `docs/AREAS-PLACEMENT-UX.md`; the old Areas screen is gone); a live test strip;
+Advanced toggle for structural edits), **Test & Build** (live preview vs
+the built font, sample sets, Build button with log; each build is a
+separate file in a temp folder with Download and Open in Tester), **Tester**
+(type anything in one exact TTF: a build from this session or a `.ttf`
+opened from disk, loaded under its own font name so an installed JianZiPu
+never stands in; characters the file lacks are drawn in red by a system font; optional second font side by side),
+**Review** (a tester's draft, from Supabase or a `.zip`, item by item: glyphs before / after / overlay,
+spellings, design units with sample words and the JSON diff; Keep / Skip, conflicts picked by hand;
+Apply makes them unsaved changes; see "Hosted pilot" below). Edits are held in the
+browser until **Save (⌘S)**, which writes `design.json` and/or `components.csv` (and glyph files a Review
+Apply brought in); Save refuses to clobber a file that
+changed on disk, and waits while a spelling clashes. **⋯ → Import/Export** moves the whole design as one JSON
+file; **⋯ → Download as draft .zip** packs your unsaved changes the way a tester's Export does.
+`.claude/launch.json` has a `builder` entry that starts the server.
+
+## Hosted pilot
+
+A few invited testers use the Builder online; each works in a private **draft**; nothing they do
+changes the repo. Spec and copy: `docs/PILOT-UX.md`.
+
+```
+browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
+        │  draft.json (bundle) ◀──────────▶ Supabase Storage  drafts/<user id>/draft.json
+        └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
+                                      in a temp dir; base font fetched from Storage assets/)
+your machine: webserver (local) → /review → Supabase (admin) or a .zip → Apply → Save → git commit
+```
+
+- **Server** (`webserver --hosted` or `JZP_HOSTED=1`, `jzpbuild/hosted.py`): PUT and DELETE answer 403;
+  every POST needs a signed-in tester (the token is checked with Supabase `GET /auth/v1/user`, cached
+  5 min); builds are per tester, random ids, and take the draft as inputs (`--design`,
+  `--input-components`, `--input-svg-dir`); `/api/words` and typing previews use the tester's latest
+  build, else main's. At start it downloads the base font from Storage (`JZP_BASE_FONT_OBJECT`, default
+  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once.
+- **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
+  sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
+  tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first,
+  the font-updated banner with Update my draft (three-way: the font's changes come in, conflicts are
+  Keep mine / Take the font's), ⋯ → Export / Import a draft (.zip), Discard my draft, See my changes.
+- **Bundle** (a draft, an Export .zip, what Review opens): `manifest.json`, `design.json`,
+  `components.csv`, `svg/` (added and changed glyphs only), `base/` (the versions the draft started
+  from, for the three-way merge). Glyph files from someone else are sanitised before they are shown.
+
+### Setting it up
+
+1. **Supabase**: a project; run `supabase/setup.sql` in the SQL editor (profiles, private `drafts` and
+   `assets` buckets, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
+   set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
+   Review), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
+2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `JZP_FEEDBACK_URL` (a form or mailto:).
+   Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
+3. **Your local Review**: start the server with the same `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the
+   environment (never the service key on a laptop you share), open Review, sign in with your admin
+   email. Without them, Review still opens `.zip` files.
+
+```bash
+cd src-fonttools && SUPABASE_URL=https://<project>.supabase.co SUPABASE_ANON_KEY=<anon key> python3 -m jzpbuild.webserver
+docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder   # the hosted image, locally
+```
+
+### Merging a tester's draft
+
+Review → the tester's row → each item shows what changed; Keep or Skip it (a conflict, where your
+Builder also changed the same thing since the draft started, needs a pick). **Apply** turns the kept items
+into one undoable step of unsaved changes, glyph files included. Look them over in Layouts and the
+Tester, **Save**, then commit with the message the toast copies ("Apply Mei Chen's draft: …"). The row
+is marked "reviewed" in this browser; a later save by the tester shows "new since you looked".
+
+## Command line
+
+The Builder runs builds and checks for you; these are for scripting, CI and the tests.
 
 ```bash
 cd src-fonttools
 python3 -m jzpbuild                          # build from inputs/ -> JianZiPu.ttf
-python3 -m jzpbuild --figma_pull             # pull latest SVGs (+ legacy layouts) from Figma first
 python3 -m jzpbuild --fea-only               # just regenerate the feature file (fast)
 python3 -m jzpbuild -o /path/to/JianZiPu.ttf # write the font somewhere else (e.g. a release copy)
 python3 -m jzpbuild --design ./scratch/design.json   # position from another design file
 python3 -m jzpbuild --classic_pos            # legacy: position from inputs/layouts.json + gpos.py
 python3 -m jzpbuild --input-components ./experiment/components.csv  # override one input file
 python3 -m jzpbuild --help                   # full list of --input-* overrides
-python3 -m jzpbuild.devserver                # API + the Builder app at http://127.0.0.1:5713/
+python3 -m jzpbuild.webserver                # API + the Builder app at http://127.0.0.1:5713/
 ```
 
 By default the build writes to `src-fonttools/JianZiPu.ttf`, and the
@@ -60,10 +185,8 @@ By default the build writes to `src-fonttools/JianZiPu.ttf`, and the
 running the pipeline never touches anything tracked: the shaping regression
 test always has an untouched golden reference (`config.CURRENT_FONT`,
 `tests/JianZiPu.ttf`) to compare against, and you can preview a build (via
-the Builder's Test & Build screen or `tools/font_tester.html`) before
+the Builder's Test & Build or Tester screen) before
 copying it anywhere with `-o`.
-
-`npm run font` at the repo root does the default build.
 
 **`src-fonttools/inputs/` is the only source read at build time — no fallback.**
 `config.py`'s paths are the single source of truth: a plain build reads SVGs
@@ -71,10 +194,8 @@ from `config.COMPONENTS_DIR` (`src-fonttools/inputs/svg/`) and the positioning
 design from `config.DESIGN_JSON` (`src-fonttools/inputs/design.json`) with no
 alternate location to fall back to (unless overridden on the CLI — see
 "Overriding individual input paths" below). `src-fonttools/inputs/` is tracked
-in git in full — the Figma-fetched half (`svg/`, `layouts.json`, `meta.json`)
-is committed after each `--figma_pull` refresh, not regenerated on every
-checkout, so treat a `git status` diff under it after `--figma_pull` as
-something to review and commit like any other source change.
+in git in full: a Save in the Builder shows up as a `git status` diff under it,
+to review and commit like any other source change.
 
 ### Overriding individual input paths
 
@@ -100,13 +221,12 @@ from this doc).
 ## What it does
 
 ```
-Figma file ──(figma.py, REST API)──▶ src-fonttools/inputs/svg/*.svg  (+ layouts.json, legacy)
+app/ (the Builder, served by jzpbuild.webserver) ──Save──▶ inputs/{design.json, components.csv, svg/}
 src-fonttools/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
 inputs/svg/*.svg ──(glyphs.py: picosvg + pathops + cu2qu)──▶ PUA component glyphs
 inputs/{components.csv, glyphRename.csv, edge_cases.fea} ──(features.py)──▶ GSUB feature text
 inputs/design.json ──(positioning/: shapes → resolve → emit)──▶ GPOS feature text
                                        └──(feaLib)──▶ GSUB/GPOS ──▶ src-fonttools/JianZiPu.ttf
-app/ (SvelteKit, served by jzpbuild.devserver) ──▶ edits design.json / components.csv, runs builds
 ```
 
 ## How compilation works
@@ -167,7 +287,7 @@ GSUB rules). Also sets metrics, name table, and OS/2 fields from
 
 **3. Import component glyphs — `glyphs.py::add_component_glyphs()`.** Reads
 every SVG in `config.COMPONENTS_DIR` (`inputs/svg/`), in sorted
-filename order, and for each: strips Figma clip-path noise, normalizes with
+filename order, and for each: strips clip-path noise (frame cropping from exported SVGs), normalizes with
 `picosvg`, draws into a `pathops.Path` to remove overlaps and resolve the
 fill rule, converts to quadratic curves with `cu2qu`, and adds it to the
 font as a new glyph (named from the SVG's filename stem) at a PUA codepoint
@@ -183,16 +303,14 @@ components, no OpenType tables yet) to `fontTools.feaLib`, which resolves
 every class/lookup reference against the font's actual glyph set and
 produces real `GSUB`/`GPOS` tables. `font.save(out_path)` writes the `.ttf`.
 
-Upstream of all this, `--figma_pull` (`figma.py::fetch()`) is a separate,
-optional step that populates `src-fonttools/inputs/` in the first place —
-nothing in the four steps above talks to Figma directly, they only ever
-read what's already sitting in `src-fonttools/inputs/`.
+Upstream of all this, the Builder's Save writes `src-fonttools/inputs/`;
+the four steps above only ever read what's already sitting there.
 
 ## Sources of truth (what you edit)
 
 | To change...                       | Edit...                                                       |
 |------------------------------------|---------------------------------------------------------------|
-| glyph shapes                       | Figma GLYPH pages (then `--figma_pull`), or drop SVGs in `inputs/svg/` |
+| glyph shapes                       | Builder → Glyphs → Edit (draw, import or trace; writes `inputs/svg/`) |
 | which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
 | input keys / spellings             | Builder → Glyphs → Typing (writes `inputs/components.csv`)     |
@@ -321,7 +439,7 @@ hand-written FEA does not.
 
 ### `jzpbuild/positioning/` and `inputs/design.json`
 
-The positioning model, replacing `gpos.py` + Figma frames. `design.json`
+The positioning model, replacing `gpos.py` + the classic layout frames. `design.json`
 (version 2) holds:
 
 - **`areas`** — the reusable parts a word is made of: a box size, the
@@ -367,8 +485,8 @@ used by `tests/parity_report.py` to compare the two models.
 
 ### `jzpbuild/config.py`
 
-Static configuration that isn't derivable from the CSVs or Figma: file
-paths, the Figma file key, font metrics (upm, ascent/descent, OS/2 fields),
+Static configuration that isn't derivable from the inputs: file
+paths, font metrics (upm, ascent/descent, OS/2 fields),
 the name table, PUA codepoint ranges for control/component glyphs, and the
 `RIGHT_SELECTORS` map (which `lg_*` glyphs select which right-hand-technique
 layout family — `RIGHT_KEYS` is derived from it). Edit this when the font's
@@ -460,129 +578,20 @@ add it to those areas too; one glyph can be in several.
    select the part whose gap depends on it, and add an exception row
    ("by glyph") naming the new glyph.
 
-## Figma access
-
-`--figma_pull` needs `FIGMA_TOKEN` in the environment (Figma → Settings →
-Security → Personal access tokens; `export FIGMA_TOKEN=figd_...` or put it
-in `src-fonttools/.env` and source it). The file key lives in
-`config.FIGMA_FILE_KEY`; only the page named `config.FIGMA_PAGE_NAME`
-(default `"main"`, override via `FIGMA_PAGE_NAME` env var) is scanned —
-other pages (drafts, archive, WIP) are ignored, and an unknown page name
-fails fast listing the real page names in the file. Fetches are cached in
-`src-fonttools/inputs/` by file version (`meta.json`), so a repeat
-`--figma_pull` against an unchanged Figma file is a no-op.
-
-Two Figma-specific quirks this pipeline works around — worth knowing before
-touching `figma.py` again:
-
-- **Ink-cropped SVG exports.** Figma's `/v1/images?format=svg` endpoint
-  crops each exported SVG's canvas to the tight bounding box of rendered
-  ink (`absoluteRenderBounds`), discarding where that ink sat relative to
-  the component's own declared frame (`absoluteBoundingBox`). Several JZP
-  glyphs (`mod_zhu`, `mod_chuo`, ...) intentionally draw outside their
-  frame — that bleed is load-bearing for positioning. `restore_frame_bounds()`
-  undoes this per glyph, translating content back by
-  `render_bounds − frame_bounds` and recanvasing to the frame size. Verified
-  against the checked-in `src/components/mod_zhu.svg` to within ~0.7 units.
-- **Image-export rate limits.** `/v1/images` is throttled harder than the
-  rest of the API. `get()` retries 429/5xx with backoff (honoring
-  `Retry-After`, capped at `MAX_AUTO_RETRY_WAIT = 60s`) — if Figma reports a
-  longer wait, the fetch aborts loudly instead of hanging, since that
-  usually means a **daily/monthly image-export quota** was hit (common on
-  free-tier tokens), not a transient throttle. **We hit this quota during
-  this session and it was never confirmed to reset/clear** — if `--figma_pull`
-  fails with a multi-hour retry estimate, that's why. A possible follow-up
-  if it recurs: split fetching into a cheap `--fetch-layouts` (`/v1/files`
-  only, not quota-limited) and a separate `--fetch-svgs` step, so layout
-  tweaks don't burn the image quota.
-
-### Layout count: 37 on Figma, 34 wired up
-
-Only relevant to the legacy `--classic_pos` build: three Figma frames
-(`layout_li`'s extra areas) were never routed to glyphs by `gpos.py`. The
-default build does not read `layouts.json`, so this needs no decision
-unless the classic path is revived.
-
-## Dev Server and the Builder app
-
-`jzpbuild/devserver.py` is a stdlib-only local HTTP server (no extra
-dependency). It serves the built Builder app (`app/build/`, SPA fallback)
-at `/`, `src-fonttools/` as static files (`/inputs/svg/...`, `/tools/...`,
-`/JianZiPu.ttf`, which is the latest UI build when there is one), and the JSON API the app uses:
-
-```bash
-cd src-fonttools
-python3 -m jzpbuild.devserver          # http://127.0.0.1:5713/
-python3 -m jzpbuild.devserver --port 9000
-```
-
-| Route | Does |
-|---|---|
-| `GET /api/design` | `design.json` + content hash + validation warnings + rule stats |
-| `PUT /api/design` | `{design, base_hash}` → validates, writes `design.json`; 409 if the file changed on disk since `base_hash` (empty hash = force) |
-| `POST /api/design/check` | validate + stats for an unsaved design (the app calls this after every edit) |
-| `POST /api/resolve` | `{design?, layout, choice, pinned?, center?}` → positions of one word shape; `choice` is per slot `null` / alternative index / list per row |
-| `POST /api/words` | `{design?, words}` → each typed word shaped through GSUB (HarfBuzz on the last built font) and positioned by the unsaved design — the live preview |
-| `GET /api/glyphs` | every glyph (SVGs + CSV rows) with its spellings, areas and SVG, plus the CSV's row order and content hash |
-| `PUT /api/glyphs` | `{rows, base_hash, design}` → checks the spellings (400 with `errors` on a clash or invalid spelling), rewrites `components.csv` keeping its row order and dropping empty rows; 409 if the file changed since `base_hash` |
-| `POST /api/typing/preview` | `{design, rows, words, base_rows?, compare_words?, roundtrip?}` → GSUB from the *unsaved* spellings compiled into a copy of the last build (≈0.5 s, cached): each word's glyphs, `issues`, a round trip of every spelling, `changed` sample words vs `base_rows`, `not_built` glyphs and `missing_chars` |
-| `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
-| `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
-| `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
-| `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the session's builds (`build` = latest, `builds` = newest first, last 8 kept) |
-| `GET /api/builds/<id>/JianZiPu.ttf` | that exact build; `?download=1` sends it as an attachment. Build folders live in the system temp dir and are removed when the server stops |
-
-The app itself lives in `app/` (SvelteKit 2 + Svelte 5, static build):
-
-```bash
-cd app && npm install
-npm run dev      # Vite dev server on :5173, proxies /api etc. to the Python server on :5713
-npm run build    # writes app/build/, which the Python server then serves at /
-```
-
-Screens: **Glyphs** (every SVG on disk, grouped by area, with the
-unassigned ones called out; a **Tiles | Typing** switch, where Typing is a
-spreadsheet of every glyph's spellings — the `components.csv` columns —
-with paste-a-range, CSV import/export, clash checks as you type, and an
-inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
-the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
-edits outlines on a Paper.js canvas, imports SVGs, traces images with
-potrace, and writes the file through `PUT /api/svg/<name>`; see
-`docs/GLYPH-EDITOR-UX.md`), **Layouts** (word types; eight dockable, foldable,
-resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
-Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid
-rule editor with live canvas preview), Centering, Area Properties (the
-shared areas: switcher, box size previewed on the canvas until Enter,
-members with the position decimals as a grid, + New area under Advanced;
-see `docs/AREAS-PLACEMENT-UX.md`; the old Areas screen is gone); a live test strip;
-Advanced toggle for structural edits), **Test & Build** (live preview vs
-the built font, sample sets, Build button with log; each build is a
-separate file in a temp folder with Download and Open in Tester), **Tester**
-(type anything in one exact TTF: a build from this session or a `.ttf`
-opened from disk, loaded under its own font name so an installed JianZiPu
-never stands in; characters the file lacks are drawn in red by a system font; optional second font side by side). Edits are held in the
-browser until **Save (⌘S)**, which writes `design.json` and/or `components.csv`; Save refuses to clobber a file that
-changed on disk, and waits while a spelling clashes. **⋯ → Import/Export** moves the whole design as one JSON
-file. `.claude/launch.json` has a `builder` entry that starts the server.
-
 ## Helpful Tools
 
-The Builder's **Tester** screen (`/tester`) is the same idea inside the app,
-tied to the builds of the running server. `tools/font_tester.html` — works with **no server at all** (open directly
-with a plain `file://` double-click) since it only reads a built `.ttf`.
-Points at `../JianZiPu.ttf` by default; a "Load / reload font" button
-cache-busts with a timestamp so it always picks up your latest build.
-Includes a live input/output pair, a 中文/ASCII toggle that loads two
-equivalent spellings of the same passage, and example chips across basic
-words, decimals, modifiers, chords, vertical words, Chinese input, and
-edge cases. The Builder's Test & Build screen covers the same ground with
-a side-by-side of the live preview and the built font.
+The Builder's **Tester** screen (`/tester`) loads one exact `.ttf` (a build
+from the running server, or any file from disk) under its own font name, so
+an installed JianZiPu never stands in; characters the file lacks are drawn
+in red. **Test & Build** puts the live preview and the built font side by
+side over sample sets (basic words, decimals, modifiers, chords, vertical
+words, Chinese input, edge cases).
 
 ## Verification
 
 ```bash
 python3 tests/test_positioning.py                  # unit tests for positioning/ (no pytest needed)
-python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_devserver.py   # all unit tests: positioning, SVG flattening, SVG endpoints
+python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py   # all unit tests: positioning, SVG flattening, SVG endpoints
 python3 -m pytest tests/test_shaping.py            # shaping regression against the golden font (needs a build)
 (cd ../app && npm test)                            # Vitest: rules, shapes, gap helpers, panels store, glyph editor scene / ops / tools
 python3 tests/test_shaping.py NEW.ttf              # compare an existing NEW.ttf vs tests/JianZiPu.ttf (golden)
@@ -609,10 +618,10 @@ quirks, see `docs/ROADMAP.md`).
 - The old font also shipped AAT tables (`morx`, `feat`) and vertical metrics
   (`vhea`/`vmtx`) that FontForge generated; this pipeline emits pure
   OpenType (GSUB/GPOS), which is what browsers and modern apps use.
-- The legacy pipeline (FontForge scripts in `src/scripts/`, `scripts.cjs`,
-  `src-fontforge/input/figma.css`, hand-maintained `src-fontforge/input/fontForgeFeatures.fea`,
-  and the wide `src-fontforge/input/*.csv` files) is deprecated and kept only for
-  reference. The builder's slimmed CSVs (`src-fonttools/inputs/components.csv`,
+- The legacy pipeline (FontForge scripts, `scripts.cjs`, the
+  hand-maintained `fontForgeFeatures.fea` and the wide CSVs, all in
+  `src-fontforge/`) was removed on 2026-10-18 and is in git history under the
+  tag `fontforge-final`. The builder's slimmed CSVs (`src-fonttools/inputs/components.csv`,
   `src-fonttools/inputs/glyphRename.csv`) are the live sources of truth.
   `components.csv` is now `glyph_name,vert_variant,common,latin,latin_alt,
   simplified,traditional,pinyin`: `glyph_name` is the ID (the old

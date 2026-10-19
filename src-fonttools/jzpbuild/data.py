@@ -9,7 +9,7 @@ to their glyph names in the font (Han characters get readable ch_* names).
 Both loaders are cached: a build reads each file once, however many
 modules ask for it. The CLI's --input-* overrides are applied to config
 before the first load, so they're honored; a long-running process that
-rewrites a file (devserver.py's /api/save) must call the loader's
+rewrites a file (webserver.py's /api/save) must call the loader's
 `cache_clear()` afterwards.
 """
 

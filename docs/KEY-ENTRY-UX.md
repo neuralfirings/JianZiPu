@@ -131,7 +131,7 @@ Moving it into `design.json` would give one file, one hash and an atomic Save. T
 
 - design.json grows from 1 741 lines to about 2 600.
 - Every role's proposals edit the same file.
-- `data.py`, the devserver glyph endpoints and the app's writer change.
+- `data.py`, the webserver glyph endpoints and the app's writer change.
 
 Area membership has already moved to design.json, and that's fine: membership is layout, spelling is input.
 

@@ -1,4 +1,4 @@
-// Thin client for the Python dev server (python3 -m jzpbuild.devserver).
+// Thin client for the Python web server (python3 -m jzpbuild.webserver).
 export type Design = {
   version: 2;
   center: { x: number; y: number };
@@ -83,12 +83,22 @@ export type BuildStatus = {
   builds: Build[];          // newest first
 };
 
+export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null; feedback_url: string | null };
+export type BaseInfo = { commit: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
+/** A draft to build instead of the files on disk (hosted mode). */
+export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };
+
+/** Set by hosted.svelte.ts: the signed-in tester's access token, and what to do when the server
+ *  says the sign-in is gone (401). Local mode leaves both unset. */
+export const session: { token: () => string | null; onSignedOut: () => void } = { token: () => null, onSignedOut: () => {} };
+
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined
-  });
+  const headers: Record<string, string> = {};
+  if (body) headers['Content-Type'] = 'application/json';
+  const token = session.token();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 401) session.onSignedOut();
   const data = await res.json();
   if (!res.ok && !(data && typeof data === 'object' && 'error' in data)) {
     throw new Error(`${method} ${url}: HTTP ${res.status}`);
@@ -111,7 +121,7 @@ export const api = {
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),
   /** Unsaved spellings compiled into the last build (GSUB only): typed words, round trip, words that change. */
-  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean }) =>
+  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[] }) =>
     call<TypingPreview>('POST', '/api/typing/preview', body),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
@@ -120,6 +130,11 @@ export const api = {
   saveSvg: (name: string, svg: string, baseHash: string | null, overwrite = false) =>
     call<{ ok: boolean; error?: string; exists?: boolean; conflict?: boolean; disk?: string; file?: string; bytes?: number; existed?: boolean; hash?: string; contours?: number; points?: number }>(
       'PUT', `/api/svg/${encodeURIComponent(name)}`, { svg, base_hash: baseHash, overwrite }),
-  build: () => call<{ ok: boolean; error: string | null; status: BuildStatus }>('POST', '/api/build'),
+  /** Delete inputs/svg/<name>.svg (local mode only). */
+  deleteSvg: (name: string) => call<{ ok: boolean; error?: string }>('DELETE', `/api/svg/${encodeURIComponent(name)}`),
+  /** Build the files on disk, or `inputs` (a draft) when given. */
+  build: (inputs?: BuildInputs) => call<{ ok: boolean; error: string | null; status: BuildStatus }>('POST', '/api/build', inputs ?? {}),
+  config: () => call<ServerConfig>('GET', '/api/config'),
+  base: () => call<BaseInfo>('GET', '/api/base'),
   buildStatus: () => call<BuildStatus>('GET', '/api/build/status')
 };

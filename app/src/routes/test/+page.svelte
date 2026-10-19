@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
+  import { hosted } from '$lib/hosted.svelte';
   import { api, type BuildStatus, type WordPayload } from '$lib/api';
   import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from '$lib/components/WordCanvas.svelte';
@@ -54,10 +55,13 @@
     else if (status.build && font?.id !== status.build.id) loadFont();
   }
   async function build() {
-    if (app.dirty && !(await app.save())) return;
+    // hosted: the build takes the draft as it is now (unsaved edits too); local: Save writes the files first
+    if (hosted.isHosted) app.flush();
+    else if (app.dirty && !(await app.save())) return;
     logOpen = true;
-    const r = await api.build();
-    status = r.status;
+    const r = await api.build(app.buildInputs());
+    if (!r.ok && r.error) err = r.error;
+    status = r.status ?? status;
     refreshStatus();
   }
   onMount(() => { refreshStatus(); loadFont(); });
@@ -73,7 +77,7 @@
     const m = log.match(/OverflowError.*?(?=\n|$)|.*too large.*|.*Error.*/);
     return m ? m[0] : 'Build failed — see the log.';
   });
-  const buildLabel = $derived(status?.state === 'running' ? 'Building…' : app.dirty ? 'Save & build' : 'Build font');
+  const buildLabel = $derived(status?.state === 'running' ? 'Building…' : app.dirty && !hosted.isHosted ? 'Save & build' : 'Build font');
 </script>
 
 <div class="page">
@@ -97,7 +101,7 @@
       {@const b = status.build}
       <div class="row wrap built">
         <span><strong>{b.id}</strong> · JianZiPu.ttf · {fmtBytes(b.bytes)} · {fmtTime(b.time)}</span>
-        <span class="muted small" title={b.file}>in a temporary folder on the dev server, kept while it runs</span>
+        <span class="muted small" title={b.file}>in a temporary folder on the web server, kept while it runs</span>
         <a href="{b.url}?download=1" download="JianZiPu.ttf"><button>Download JianZiPu.ttf</button></a>
         <a href="/tester?build={b.id}"><button>Open in Tester ↗</button></a>
         {#if status.builds.length > 1}

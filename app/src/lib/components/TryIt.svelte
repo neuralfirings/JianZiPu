@@ -44,7 +44,7 @@
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       try {
-        const r = await api.typingPreview({ design: d, rows, words: ws, roundtrip: false });
+        const r = await api.typingPreview({ design: d, rows, words: ws, roundtrip: false, svg_names: app.extraGlyphs });
         if (r.ok) { result = r; err = null; } else err = r.error ?? 'preview failed';
       } catch (e) { err = (e as Error).message; }
     }, 200);

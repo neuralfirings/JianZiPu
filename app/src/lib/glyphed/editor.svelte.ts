@@ -8,6 +8,7 @@ import * as ops from './ops';
 import { loadImage, thresholdImage, traceCanvas, TRACE_DEFAULTS, type TraceOptions } from './trace';
 import { api, type SvgCheck } from '$lib/api';
 import { app } from '$lib/state.svelte';
+import { hosted } from '$lib/hosted.svelte';
 
 export const DEFAULT_WEIGHT = 36;
 const DRAFT_PREFIX = 'jzp-glyph-draft:';
@@ -407,6 +408,7 @@ export class GlyphEditor {
     this.saving = true; this.error = null;
     try {
       const text = s.exportSvg();
+      if (hosted.isHosted) return await this.saveToDraft(text);
       const r = await api.saveSvg(this.name, text, this.loadedHash, overwrite);
       if (!r.ok) {
         if (r.conflict) this.conflictDisk = r.disk ?? '';
@@ -427,6 +429,25 @@ export class GlyphEditor {
     } catch (e) {
       this.error = (e as Error).message; return { ok: false, error: this.error };
     } finally { this.saving = false; }
+  }
+  /** Hosted: the outline goes into the tester's draft (one undo step, with joining its area when
+   *  new), and the draft saves. Offline, it waits in the browser like any other edit. */
+  private async saveToDraft(text: string): Promise<{ ok: boolean; error?: string }> {
+    const s = this.scene!;
+    let design = app.design;
+    if (this.isNew && this.area && design?.areas[this.area] && !design.areas[this.area].glyphs.includes(this.name)) {
+      design = JSON.parse(JSON.stringify(design)) as NonNullable<typeof design>;
+      design.areas[this.area].glyphs.push(this.name);
+    }
+    app.applyChanges(`Glyph ${this.name}: ${this.isNew ? 'new' : 'new outline'}`, { design: design ?? undefined, svgWrites: { [this.name]: text } });
+    s.markSaved();
+    this.savedText = text; this.savedAt = new Date(); this.loadedHash = await sha16(text); this.conflictDisk = null;
+    this.isNew = false;
+    this.dropDraft();
+    this.applyOverlays();
+    this.sync();
+    await app.save();
+    return { ok: true };
   }
   /** Conflict: take the disk version (drops my edits) or keep mine and overwrite. */
   async loadDiskVersion() { if (this.conflictDisk != null) { const t = this.conflictDisk; this.conflictDisk = null; this.dropDraft(); await this.setSource(t); } }

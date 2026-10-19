@@ -3,7 +3,7 @@
 Each composed JZP word is laid out by contextual single-position rules: a rule
 matches the sequence of area classes that make up a word shape and moves the
 marked glyph to its area's x/y for the active layout. Layout geometry comes
-from layouts.json (derived from Figma).
+from layouts.json (the classic frame geometry).
 
 Rules are plain token lists: "@area_left'" positions the left-hand glyph
 (trailing apostrophe = marked), "@area_left" is context. The marked token's

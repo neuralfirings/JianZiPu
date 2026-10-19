@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hosted Pilot</title>
+<style>
+  /* Wireframes for docs/PILOT-UX.md. Same primitives as areas-placement-ux.html and glyph-editor-ux.html. */
+  :root {
+    color-scheme: light;
+    --bg: #faf8f3; --fg: #2b2a28; --fg-2: #6b6760; --line: #8d887f; --line-soft: #c9c4ba;
+    --wf-bg: #ffffff; --wf-fill: #ebe8e1; --wf-fill-2: #dcd8cf;
+    --accent: #d23b2f; --accent-bg: #fbe3e0; --ok: #3b7d4f; --ok-bg: #dcefe0;
+    --sel: #2f5fa8; --sel-bg: #dde7f7; --ghost: #a09b92;
+    --warn: #a86500; --warn-bg: #fbefd9; --scrim: rgba(43, 42, 40, .28);
+    --add: #3b7d4f; --add-bg: #e3f2e6; --del: #b0372c; --del-bg: #fbe6e3;
+    --scrib: repeating-linear-gradient(0deg, transparent 0 5px, var(--line-soft) 5px 7px);
+    --hand: "Patrick Hand", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive, sans-serif;
+    --cjk: "Noto Serif TC", "Songti TC", "PingFang TC", "Microsoft JhengHei", serif;
+    --mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+      --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+      --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+      --sel: #8fb4f0; --sel-bg: #263650; --ghost: #6e6a62;
+      --warn: #f0a93b; --warn-bg: #3d2e14; --scrim: rgba(0, 0, 0, .45);
+      --add: #7fc08f; --add-bg: #22392a; --del: #ff8a7d; --del-bg: #4a2420;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1d1c1a; --fg: #ebe7df; --fg-2: #a39e94; --line: #8a857b; --line-soft: #4a4740;
+    --wf-bg: #26251f; --wf-fill: #33312b; --wf-fill-2: #403d35;
+    --accent: #ff6b5c; --accent-bg: #4a2420; --ok: #7fc08f; --ok-bg: #22392a;
+    --sel: #8fb4f0; --sel-bg: #263650; --ghost: #6e6a62;
+    --warn: #f0a93b; --warn-bg: #3d2e14; --scrim: rgba(0, 0, 0, .45);
+    --add: #7fc08f; --add-bg: #22392a; --del: #ff8a7d; --del-bg: #4a2420;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 var(--hand);
+    padding-block: 28px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 34px; margin: 0 0 6px; font-weight: 400; line-height: 1.15; }
+  h2 { font-size: 26px; margin: 48px 0 8px; font-weight: 400; border-bottom: 2px solid var(--line); padding-bottom: 2px; }
+  h3 { font-size: 20px; margin: 22px 0 6px; font-weight: 400; }
+  p { margin: 6px 0 10px; max-width: 72ch; }
+  ul, ol { margin: 4px 0 10px; padding-left: 22px; max-width: 76ch; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; }
+  .sub { color: var(--fg-2); }
+  .cjk { font-family: var(--cjk); }
+
+  /* primitives */
+  .scroll { overflow-x: auto; padding: 14px 2px 8px; margin: 6px 0 12px; }
+  .wf { background: var(--wf-bg); border: 2px solid var(--line); border-radius: 6px; padding: 10px; position: relative; }
+  .wf .cap { position: absolute; top: -12px; left: 12px; background: var(--bg); padding: 0 6px; font-size: 14px; color: var(--fg-2); white-space: nowrap; }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 6px; }
+  .grow { flex: 1; }
+  .btn { border: 1.5px solid var(--line); border-radius: 5px; padding: 0 8px; background: var(--wf-fill); font-size: 14px; white-space: nowrap; line-height: 22px; display: inline-block; }
+  .btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .btn.lnk { border-style: dashed; background: transparent; }
+  .btn.danger { color: var(--accent); border-color: var(--accent); background: transparent; }
+  .btn.dangerf { color: #fff; border-color: var(--accent); background: var(--accent); }
+  .btn.off { opacity: .45; }
+  .btn.big { line-height: 30px; font-size: 16px; padding: 0 14px; }
+  .field { border: 1.5px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--wf-bg); font-size: 14px; line-height: 22px; white-space: nowrap; display: inline-block; }
+  .field.big { line-height: 30px; font-size: 16px; min-width: 260px; }
+  .muted { color: var(--fg-2); font-size: 14px; }
+  .tiny { font-size: 12px; color: var(--fg-2); }
+  .id { font-family: var(--mono); font-size: 11px; color: var(--fg-2); }
+  .red { color: var(--accent); }
+  .blue { color: var(--sel); }
+  .green { color: var(--ok); }
+  .warnc { color: var(--warn); }
+  .pill { border: 1.5px solid var(--line); border-radius: 12px; padding: 0 8px; font-size: 13px; line-height: 20px; background: var(--wf-bg); white-space: nowrap; display: inline-block; }
+  .pill.draft { border-color: var(--sel); color: var(--sel); background: var(--sel-bg); }
+  .pill.local { border-style: dashed; color: var(--fg-2); }
+  .pill.acc { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .pill.ok { border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+  .pill.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); }
+  .tag { font-size: 11px; border: 1px dashed var(--line); border-radius: 3px; padding: 0 4px; color: var(--fg-2); white-space: nowrap; }
+  .hint { font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--line-soft); padding-left: 8px; margin: 6px 0; max-width: 76ch; }
+  .scrib { display: inline-block; height: 12px; background: var(--scrib); border-radius: 2px; vertical-align: middle; }
+  svg { max-width: 100%; height: auto; display: block; }
+
+  /* callouts */
+  .co { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 12px; align-items: center; justify-content: center; font-family: var(--mono); flex: none; }
+  .co.s { width: 17px; height: 17px; font-size: 11px; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 18px; margin: 8px 0; }
+  .notes > div { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; }
+
+  .verdict { border: 2px solid var(--fg); border-radius: 8px; padding: 12px 16px; background: var(--wf-bg); max-width: 84ch; }
+  .verdict b { font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px 14px; }
+  @media (min-width: 820px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .grid3 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px 14px; }
+  @media (min-width: 900px) { .grid3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+  /* app header */
+  .appbar { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-fill); white-space: nowrap; min-width: 100%; width: max-content; font-size: 15px; }
+  .wf.fit { width: max-content; min-width: 100%; }
+  .brand { font-weight: 700; margin-right: 6px; }
+  .nav { display: flex; gap: 2px; }
+  .nav span { padding: 0 8px; border-radius: 4px; line-height: 22px; }
+  .nav span.on { background: var(--sel-bg); color: var(--sel); }
+  .nav span.new { outline: 1.5px dashed var(--ok); color: var(--ok); }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--wf-bg); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+  .state { font-size: 13px; color: var(--fg-2); }
+  .state.unsaved { color: var(--accent); }
+  .state.err { color: var(--accent); font-weight: 700; }
+  .lbl { display: block; font-size: 13px; color: var(--fg-2); margin-bottom: 1px; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+
+  /* menus, dialogs, popovers, toasts */
+  .menu { border: 1.5px solid var(--line); border-radius: 5px; background: var(--wf-bg); box-shadow: 5px 6px 0 var(--line-soft); padding: 4px; font-size: 14px; min-width: 240px; display: flex; flex-direction: column; }
+  .menu > span { padding: 1px 8px; border-radius: 3px; white-space: nowrap; display: flex; justify-content: space-between; gap: 12px; }
+  .menu > span.hi { background: var(--sel-bg); color: var(--sel); }
+  .menu > span.dz { color: var(--accent); }
+  .menu > span .k { color: var(--fg-2); font-size: 12px; }
+  .menu hr { border: 0; border-top: 1.5px dashed var(--line-soft); margin: 3px 0; width: 100%; }
+  .menu .grp { font-size: 12px; color: var(--fg-2); padding: 2px 8px 0; }
+  .stage { position: relative; background: var(--scrim); border-radius: 6px; padding: 26px 18px; display: flex; justify-content: center; align-items: flex-start; }
+  .dlg { background: var(--wf-bg); border: 2px solid var(--line); border-radius: 7px; box-shadow: 6px 7px 0 var(--line-soft); padding: 10px 12px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; position: relative; }
+  .dlg.wide { max-width: 760px; }
+  .dlg h4 { margin: 0; font-size: 19px; font-weight: 400; }
+  .dlg p { margin: 0; }
+  .dlg .foot { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; border-top: 1.5px dashed var(--line-soft); padding-top: 8px; align-items: center; }
+  .pop { background: var(--wf-bg); border: 1.5px solid var(--line); border-radius: 6px; box-shadow: 5px 6px 0 var(--line-soft); padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; max-width: 330px; }
+  .pop .foot { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .toast { display: inline-flex; gap: 8px; align-items: center; border: 1.5px solid var(--ok); background: var(--ok-bg); border-radius: 6px; padding: 3px 10px; font-size: 14px; flex-wrap: wrap; }
+  .banner { display: flex; gap: 8px; align-items: center; border: 1.5px solid var(--warn); background: var(--warn-bg); border-radius: 5px; padding: 3px 10px; font-size: 14px; flex-wrap: wrap; }
+  .banner.err { border-color: var(--accent); background: var(--accent-bg); }
+  .banner.info { border-color: var(--sel); background: var(--sel-bg); }
+  .drop { border: 2px dashed var(--line); border-radius: 6px; padding: 12px; text-align: center; color: var(--fg-2); font-size: 14px; }
+  .files { font-family: var(--mono); font-size: 12px; border: 1.5px solid var(--line-soft); border-radius: 4px; padding: 4px 8px; background: var(--wf-fill); line-height: 1.6; }
+  .files .c { color: var(--fg-2); font-family: var(--hand); font-size: 13px; }
+
+  /* sign-in card */
+  .signin { max-width: 380px; margin: 10px auto; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; padding: 18px 10px; }
+  .signin .logo { font-family: var(--cjk); font-size: 40px; line-height: 1; border: 1.5px solid var(--line); border-radius: 8px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+  .signin h4 { margin: 0; font-size: 21px; font-weight: 400; }
+  .signin p { margin: 0; font-size: 14px; }
+
+  /* screen sketch */
+  .screen { border: 1.5px solid var(--line-soft); border-radius: 5px; background: var(--wf-fill); padding: 6px; display: flex; flex-direction: column; gap: 6px; min-width: 900px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, 46px); gap: 5px; }
+  .tile { border: 1.5px solid var(--line); border-radius: 4px; height: 50px; display: flex; align-items: center; justify-content: center; background: var(--wf-bg); font-family: var(--cjk); font-size: 20px; }
+  .dim { opacity: .45; }
+
+  /* review */
+  .rv { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px; min-width: 980px; }
+  .side { display: flex; flex-direction: column; gap: 2px; font-size: 14px; border-right: 1.5px dashed var(--line-soft); padding-right: 8px; }
+  .side > span { display: flex; justify-content: space-between; padding: 0 6px; border-radius: 3px; }
+  .side > span.on { background: var(--sel-bg); color: var(--sel); }
+  .side .h { font-size: 12px; color: var(--fg-2); margin-top: 8px; border-bottom: 1px dashed var(--line-soft); }
+  .sec { font-size: 18px; margin: 10px 0 4px; display: flex; align-items: center; gap: 8px; border-bottom: 1.5px solid var(--line-soft); }
+  .item { border: 1.5px solid var(--line); border-radius: 6px; background: var(--wf-bg); padding: 6px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .item.skip { opacity: .55; border-style: dashed; }
+  .item.conf { border-color: var(--warn); box-shadow: 0 0 0 2px var(--warn-bg); }
+  .item .hd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; }
+  .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 5px; overflow: hidden; font-size: 13px; }
+  .seg span { padding: 0 9px; line-height: 21px; border-right: 1.5px solid var(--line); background: var(--wf-bg); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--fg); color: var(--bg); }
+  .seg span.onk { background: var(--ok); color: #fff; }
+  .badge { font-size: 11px; border-radius: 3px; padding: 0 5px; line-height: 17px; border: 1px solid; white-space: nowrap; }
+  .badge.a { color: var(--add); border-color: var(--add); background: var(--add-bg); }
+  .badge.c { color: var(--sel); border-color: var(--sel); background: var(--sel-bg); }
+  .badge.d { color: var(--del); border-color: var(--del); background: var(--del-bg); }
+  .badge.w { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+  .gx { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .gbox { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--fg-2); }
+  .gbox svg { width: 84px; height: 84px; border: 1.5px solid var(--line-soft); border-radius: 4px; background: var(--wf-bg); }
+  .gbox.on svg { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .g-old { fill: none; stroke: var(--ghost); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+  .g-new { fill: none; stroke: var(--fg); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+  .g-ov-old { fill: none; stroke: var(--del); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+  .g-ov-new { fill: none; stroke: var(--sel); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+  .g-box { fill: none; stroke: var(--line-soft); stroke-dasharray: 3 3; }
+
+  table.t { border-collapse: collapse; font-size: 14px; width: 100%; }
+  table.t th, table.t td { border-bottom: 1px dashed var(--line-soft); padding: 3px 7px; text-align: left; vertical-align: middle; white-space: nowrap; }
+  table.t th { font-weight: 400; color: var(--fg-2); font-size: 13px; }
+  table.t td.ch { background: var(--sel-bg); }
+  table.t td.ch s { color: var(--fg-2); }
+  table.t td.ch b { color: var(--sel); font-weight: 700; }
+  table.t td.cf { background: var(--warn-bg); }
+  table.t tr.skip td { opacity: .5; }
+  table.t td.g { font-family: var(--cjk); font-size: 18px; }
+  table.v { border-collapse: collapse; font-size: 14px; }
+  table.v th, table.v td { border: 1.5px solid var(--line); padding: 3px 9px; text-align: left; vertical-align: top; }
+  table.v th { background: var(--wf-fill); font-weight: 400; }
+
+  .jd { font-family: var(--mono); font-size: 12px; border: 1.5px solid var(--line-soft); border-radius: 4px; background: var(--wf-fill); padding: 4px 0; line-height: 1.55; }
+  .jd div { padding: 0 8px; white-space: pre; }
+  .jd .m { background: var(--del-bg); color: var(--del); }
+  .jd .p { background: var(--add-bg); color: var(--add); }
+  .jd .f { color: var(--fg-2); }
+  .summ { font-size: 14px; margin: 0; padding-left: 18px; }
+  .summ li { margin: 1px 0; }
+
+  /* mini word canvases */
+  .mw { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .mword { display: flex; flex-direction: column; align-items: center; font-size: 12px; color: var(--fg-2); gap: 2px; }
+  .mword svg { width: 86px; height: 86px; border: 1.5px solid var(--line-soft); border-radius: 4px; background: var(--wf-bg); }
+  .cv .bx { fill: var(--sel-bg); fill-opacity: .35; stroke: var(--line); stroke-width: 1.2; }
+  .cv .bx.mk { stroke: var(--accent); stroke-width: 2; fill: var(--accent-bg); fill-opacity: .5; }
+  .cv .gh { fill: none; stroke: var(--ghost); stroke-width: 1.3; stroke-dasharray: 4 3; }
+  .cv .gl { font-family: var(--cjk); fill: var(--fg); }
+
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .three > div { border: 1.5px solid var(--line-soft); border-radius: 5px; padding: 5px 7px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .three > div.pick { border-color: var(--sel); box-shadow: 0 0 0 1.5px var(--sel); }
+  .radio { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; }
+  .radio i { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line); display: inline-block; position: relative; flex: none; }
+  .radio.on i::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--sel); }
+  .applybar { position: sticky; bottom: 0; display: flex; gap: 8px; align-items: center; border-top: 2px solid var(--line); background: var(--wf-fill); padding: 6px 8px; border-radius: 0 0 5px 5px; flex-wrap: wrap; }
+
+  .qs { counter-reset: q; list-style: none; padding: 0; }
+  .qs li { counter-increment: q; display: flex; gap: 10px; margin: 8px 0; }
+  .qs li::before { content: counter(q); display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--fg); color: var(--bg); font: 12px/22px var(--mono); justify-content: center; flex: none; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Hosted pilot: drafts, updates and review</h1>
+<p class="sub">Wireframes for <code>docs/PILOT-UX.md</code>. Design only: no app code or data changed. The hosting model is decided
+(Railway, read-only server, Supabase sign-in and drafts); this is the experience on top of it. Light theme, real names from
+<code>design.json</code> and <code>components.csv</code>.</p>
+
+<div class="verdict">
+  <p style="margin-top:0"><b>One word carries the whole pilot: your draft.</b> A tester works in <b>their draft</b>; the real thing is
+  <b>the font</b>. Save saves the draft, Build builds from the draft, Export downloads the draft, Update brings the draft up to date with the font,
+  and Nancy <b>reviews a draft</b>. When proposals come, a proposal starts life as a draft, so every one of these words stays.</p>
+  <ul style="margin-bottom:0">
+    <li>The header always says where your work goes: a blue <span class="pill draft">Your draft</span> pill (hosted) or a dashed <span class="pill local">Local files</span> pill (Nancy's machine). Nothing else changes between the two.</li>
+    <li>Everything a tester can't break stays the same as today: screens, panels, undo, ⌘S. The pilot adds a sign-in page, a few header states, two banners, three dialogs and one new screen (Review, local only).</li>
+    <li>The Review screen is one component used three ways: Nancy reviewing a tester's draft, a tester importing a .zip, and the "font updated" choices.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>1 · Sign in (invite-only, magic link)</h2>
+<p>Every hosted route goes here when signed out. One field, one button. No password, no sign-up.</p>
+
+<div class="grid2">
+  <div class="wf"><span class="cap">1a · sign in</span>
+    <div class="signin">
+      <div class="logo">勾</div>
+      <h4>JZP Font Builder · pilot</h4>
+      <p class="muted">For invited testers. Type the email Nancy invited, and we'll send you a link to sign in. No password needed.</p>
+      <span class="field big" style="text-align:left">mei.chen@example.com</span>
+      <span class="btn primary big">Email me a sign-in link</span>
+      <span class="tiny">Want to try it? <u>Ask for an invite ↗</u></span>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">1b · check your email</span>
+    <div class="signin">
+      <div class="logo" style="font-family:var(--hand); font-size: 30px">✉</div>
+      <h4>Check your email</h4>
+      <p>We sent a sign-in link to <b>mei.chen@example.com</b>.<br>Open it on this computer, in this browser.</p>
+      <p class="muted">The link works once, for 1 hour. Nothing there? Look in spam, or send it again.</p>
+      <div class="row" style="justify-content:center"><span class="btn off">Send again (0:24)</span><span class="btn lnk">Use a different email</span></div>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">1c · not invited</span>
+    <div class="signin">
+      <div class="logo">勾</div>
+      <h4>This email isn't on the pilot list</h4>
+      <p><b>someone@example.com</b> wasn't invited. The pilot is for a few invited testers for now.</p>
+      <p class="muted">If Nancy invited you at another address, use that one.</p>
+      <div class="row" style="justify-content:center"><span class="btn">Try another email</span><span class="btn lnk">Ask for an invite ↗</span></div>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">1d · link used or expired</span>
+    <div class="signin">
+      <div class="logo">勾</div>
+      <h4>This sign-in link has expired</h4>
+      <p class="muted">Links work once, for 1 hour. Send yourself a new one.</p>
+      <span class="field big" style="text-align:left">mei.chen@example.com</span>
+      <span class="btn primary big">Email me a new link</span>
+    </div>
+  </div>
+</div>
+<div class="notes">
+  <div><span class="co">1</span><span>After the link: straight to <b>Glyphs</b> (or the page they asked for before signing in), with the welcome note on the first visit only.</span></div>
+  <div><span class="co">2</span><span>Sign-in lasts 30 days on that browser. A tester never sees this page again unless they sign out or switch browsers.</span></div>
+  <div><span class="co">3</span><span>"Ask for an invite ↗" and "Send feedback ↗" open the same form, in a new tab.</span></div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2 · The header: hosted and local</h2>
+<p>Same bar as today. Hosted adds the <b>Your draft</b> pill, a Feedback link and the person menu, and its save state talks about the draft.
+Local adds only a dashed <b>Local files</b> pill and the <b>Review</b> nav item.</p>
+
+<div class="scroll">
+<div class="wf fit"><span class="cap">2a · hosted, every save state</span>
+  <div class="stack">
+    <div><span class="lbl">all saved</span>
+      <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span class="on">Glyphs</span><span>Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+        <span class="grow"></span><span class="pill draft">✎ Your draft <span class="co s">1</span></span><span class="btn">↶</span><span class="btn">↷</span>
+        <span class="state">Saved to your draft · 14:02</span><span class="btn primary off">Save</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div></div>
+    <div><span class="lbl">edits not yet saved</span>
+      <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+        <span class="grow"></span><span class="pill draft">✎ Your draft</span><span class="btn">↶</span><span class="btn">↷</span>
+        <span class="state unsaved">● 3 unsaved <span class="co s">2</span></span><span class="btn primary">Save</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div></div>
+    <div><span class="lbl">saving (auto or ⌘S)</span>
+      <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+        <span class="grow"></span><span class="pill draft">✎ Your draft</span><span class="btn">↶</span><span class="btn">↷</span>
+        <span class="state">Saving…</span><span class="btn primary off">Saving…</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div></div>
+    <div><span class="lbl">can't save (offline)</span>
+      <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+        <span class="grow"></span><span class="pill draft">✎ Your draft</span><span class="btn">↶</span><span class="btn">↷</span>
+        <span class="state err">⚠ Not saved · offline <span class="co s">3</span></span><span class="btn primary">Try again</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div></div>
+    <div><span class="lbl">font updated, "Not now"</span>
+      <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+        <span class="grow"></span><span class="pill draft">✎ Your draft · <span class="warnc">font updated</span> <span class="co s">4</span></span><span class="btn">↶</span><span class="btn">↷</span>
+        <span class="state">Saved to your draft · 14:02</span><span class="btn primary off">Save</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div></div>
+  </div>
+</div>
+</div>
+
+<div class="scroll">
+<div class="wf fit"><span class="cap">2b · local (Nancy's machine): today's header + one pill + Review</span>
+  <div class="appbar"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span><span class="new">Review</span></span>
+    <span class="grow"></span><span class="pill local">Local files <span class="co s">5</span></span><span class="muted">● 312 rules · 41 KB</span><span class="btn">↶</span><span class="btn">↷</span>
+    <span class="state unsaved">● 3 unsaved</span><span class="btn primary">Save</span><span class="btn">⋯</span></div>
+</div>
+</div>
+
+<div class="notes">
+  <div><span class="co">1</span><span><b>Your draft</b> pill. Hover: "Only you see your draft. The font itself doesn't change." Click: the draft popover (2c).</span></div>
+  <div><span class="co">2</span><span>Same chip as today, same change list on click. <b>Autosave</b> runs every 30 s while there are unsaved edits, and when the tab closes or you switch screens. ⌘S / Save saves now. Undo still works after a save.</span></div>
+  <div><span class="co">3</span><span>Offline: the chip turns red and Save becomes <b>Try again</b>. Edits keep landing in the browser draft (as today) and the app keeps retrying. Banner in section 7.</span></div>
+  <div><span class="co">4</span><span>After "Not now" on the font-updated banner, the pill keeps a quiet reminder. Clicking it opens the popover with <b>Update my draft…</b>.</span></div>
+  <div><span class="co">5</span><span><b>Local files</b> pill. Hover: "Save writes design.json, components.csv and glyph files in this repo." That is the only cue; Nancy's Builder works as today.</span></div>
+</div>
+
+<div class="grid3" style="margin-top: 18px">
+  <div class="wf"><span class="cap">2c · Your draft popover</span>
+    <div class="pop">
+      <b style="font-size:15px">Your draft</b>
+      <span>Only you see it. Builds and the Tester use it. The font itself doesn't change.</span>
+      <span class="tiny">Based on the font of 15 Oct · last saved 14:02</span>
+      <span><b>Your changes:</b> 2 glyphs · 5 spellings · 2 design items</span>
+      <span class="banner" style="font-size:13px">The font was updated on 18 Oct. <span class="btn">Update my draft…</span></span>
+      <div class="foot"><span class="btn lnk">See my changes</span><span class="btn">Export…</span></div>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">2d · ⋯ menu, hosted</span>
+    <div class="menu">
+      <span>Export my draft (.zip)…</span>
+      <span>Import a draft (.zip)…</span>
+      <span>Update my draft to the font… <span class="k">18 Oct</span></span>
+      <hr>
+      <span>Send feedback ↗</span>
+      <span>Welcome note</span>
+      <hr>
+      <span>Reset panel layouts</span>
+      <span class="dz">Discard my draft…</span>
+    </div>
+    <p class="tiny">"Update my draft…" is greyed with "up to date" when the draft is on the current font. "Reload from disk" is gone in hosted mode.</p>
+  </div>
+  <div class="wf"><span class="cap">2e · person menu (avatar)</span>
+    <div class="menu">
+      <span class="grp">Signed in as</span>
+      <span><b>mei.chen@example.com</b></span>
+      <hr>
+      <span>Sign out</span>
+    </div>
+    <p class="tiny">Signing out keeps the draft (it's on the server). Unsaved edits are saved first; if that fails, sign-out asks first.</p>
+    <div class="menu" style="margin-top: 8px">
+      <span class="grp">⋯ menu, local (Nancy)</span>
+      <span>Import…</span><span>Export…</span><span>Reload from disk</span><span>Discard unsaved changes</span>
+      <hr><span>Review a draft…</span><hr><span>Reset panel layouts</span>
+    </div>
+  </div>
+</div>
+<p class="hint">"See my changes" opens the Review screen on your own draft, read-only (same sections as section 6). It answers "what have I done?" and is the future proposal page.
+Glyph editor: <b>Save glyph</b> writes the outline into your draft, and the toast reads "Saved lg_gou to your draft. Layouts and the Tester use it now."</p>
+
+<!-- ============================================================ -->
+<h2>3 · First visit: the welcome note</h2>
+<p>Once per tester, over the Glyphs screen. Three facts a non-technical tester needs, then out of the way. It comes back from ⋯ → Welcome note.</p>
+
+<div class="scroll">
+<div class="wf" style="min-width: 900px"><span class="cap">3 · first sign-in</span>
+  <div class="appbar" style="margin-bottom: 6px"><span class="brand">JZP Font Builder</span><span class="nav"><span class="on">Glyphs</span><span>Layouts</span><span>Test &amp; Build</span><span>Tester</span></span>
+    <span class="grow"></span><span class="pill draft">✎ Your draft</span><span class="state">Saved to your draft</span><span class="btn primary off">Save</span><span class="tiny"><u>Feedback</u></span><span class="btn">⋯</span><span class="avatar">M</span></div>
+  <div class="stage" style="min-height: 330px">
+    <div class="tiles dim" style="position:absolute; inset: 14px; grid-template-columns: repeat(auto-fill, 46px)">
+      <div class="tile">名</div><div class="tile">中</div><div class="tile">食</div><div class="tile">大</div><div class="tile">跪</div><div class="tile">散</div><div class="tile">一</div><div class="tile">二</div><div class="tile">三</div><div class="tile">四</div><div class="tile">五</div><div class="tile">六</div><div class="tile">七</div><div class="tile">八</div><div class="tile">九</div><div class="tile">十</div><div class="tile">勾</div><div class="tile">挑</div><div class="tile">抹</div>
+    </div>
+    <div class="dlg" style="max-width: 520px">
+      <h4>Welcome, Mei</h4>
+      <p>Thank you for testing the JZP Font Builder. Three things to know:</p>
+      <div class="row" style="align-items:flex-start; flex-wrap:nowrap"><span class="co">1</span><span><b>This is your own draft.</b> Change anything: glyphs, how they're typed, how words are laid out. Nothing you do changes the real font or anyone else's work.</span></div>
+      <div class="row" style="align-items:flex-start; flex-wrap:nowrap"><span class="co">2</span><span><b>It saves itself</b> every 30 seconds, and when you press Save. ↶ undoes a step.</span></div>
+      <div class="row" style="align-items:flex-start; flex-wrap:nowrap"><span class="co">3</span><span><b>Tell us what you think.</b> Confusing, broken or lovely: <u>Feedback</u> (top right) takes a minute. To share your work itself, ⋯ → Export my draft.</span></div>
+      <p class="tiny">Good places to start: Tester (type a few words), then Glyphs → open a glyph → Edit.</p>
+      <div class="foot"><span class="btn lnk">Open the Tester</span><span class="btn primary">Start</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<h2>4 · "The font was updated"</h2>
+<p>Nancy merged someone's work, so the font moved on from the version the draft started from. Shown once per sign-in, under the header, on any screen.
+The draft never changes by itself.</p>
+
+<div class="scroll">
+<div class="wf" style="min-width: 900px"><span class="cap">4a · banner</span>
+  <div class="banner info">
+    <b>The font was updated on 18 Oct</b> (since your draft started on 15 Oct): 3 glyphs, 6 spellings, 1 word type.
+    <span class="grow"></span>
+    <span class="btn lnk">What changed?</span>
+    <span class="btn">Not now</span>
+    <span class="btn primary">Update my draft…</span>
+  </div>
+  <p class="tiny" style="margin: 6px 0 0">Not now = keep working on your version. The pill keeps a quiet "font updated" (2a) and the banner comes back at the next sign-in. Glyphs you never touched already show the new font's version; design and spellings wait for Update.</p>
+</div>
+</div>
+
+<div class="scroll">
+<div class="wf" style="min-width: 900px"><span class="cap">4b · Update my draft (the per-item prompt)</span>
+  <div class="stage">
+    <div class="dlg wide">
+      <h4>Update your draft to the font of 18 Oct</h4>
+      <p>The font has <b>10 changes</b> since 15 Oct. <b>8</b> are in things you didn't change: they come in on their own.
+      <b>2</b> are in things you also changed: choose which to keep. <span class="tiny">1 of your changes is already in the font (thank you!) and leaves your list.</span></p>
+
+      <div class="item conf">
+        <div class="hd"><span class="badge w">both changed</span><b>Glyph · 勾 lg_gou</b><span class="grow"></span></div>
+        <div class="gx">
+          <div class="gbox on"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-new" d="M22 30 H70 Q80 30 78 42 L72 78 Q70 86 60 84 L50 80"/></svg><span>yours</span><span class="radio on"><i></i>Keep mine</span></div>
+          <div class="gbox"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-new" d="M20 26 H72 Q84 26 80 40 L76 80 Q74 88 64 86 L52 82"/><path class="g-new" d="M30 46 L42 56" style="stroke-width:7"/></svg><span>the font's new one</span><span class="radio"><i></i>Take the font's</span></div>
+          <div class="gbox"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-old" d="M22 28 H70 Q82 28 78 40 L74 80 Q72 88 62 86 L52 82"/></svg><span>before (15 Oct)</span></div>
+        </div>
+      </div>
+
+      <div class="item conf">
+        <div class="hd"><span class="badge w">both changed</span><b>Word type · Standard word</b></div>
+        <ul class="summ">
+          <li><b>Yours:</b> gap between Left hand and 徽 position 20 → 35</li>
+          <li><b>The font's:</b> gap between Right hand and String 0 → 12, when the right hand is 勾</li>
+        </ul>
+        <div class="mw">
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="bx mk" x="14" y="8" width="30" height="30"/><rect class="bx" x="56" y="8" width="30" height="30"/><rect class="bx" x="14" y="44" width="72" height="50"/><text class="gl" x="29" y="31" font-size="22" text-anchor="middle">名</text><text class="gl" x="71" y="31" font-size="22" text-anchor="middle">七</text><text class="gl" x="50" y="86" font-size="44" text-anchor="middle">勾</text></svg><span class="radio on"><i></i>Keep mine</span></div>
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="bx" x="18" y="8" width="30" height="30"/><rect class="bx" x="52" y="8" width="30" height="30"/><rect class="bx mk" x="14" y="44" width="72" height="50"/><text class="gl" x="33" y="31" font-size="22" text-anchor="middle">名</text><text class="gl" x="67" y="31" font-size="22" text-anchor="middle">七</text><text class="gl" x="50" y="86" font-size="44" text-anchor="middle">勾</text></svg><span class="radio"><i></i>Take the font's</span></div>
+          <span class="tiny" style="max-width: 300px">Samples: 名七勾五 · 中九挑三. A word type is one item: you keep one side whole. <u>Export</u> first if you want both and redo one by hand.</span>
+        </div>
+      </div>
+
+      <details><summary class="muted">8 changes that come in on their own</summary>
+        <ul class="summ"><li>Glyph 挑 lg_tiao, 抹 lg_mo: new outlines</li><li>Spellings: 6 rows (md_san, md_7 …)</li><li>Area 注 modifier: box 115 × 470 → 115 × 500</li></ul>
+      </details>
+      <div class="foot"><span class="btn lnk">Export my draft first</span><span class="grow"></span><span class="btn">Not now</span><span class="btn primary">Update my draft</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="row" style="margin: 6px 0 4px">
+  <div class="toast">✓ Your draft is now based on the font of 18 Oct. 8 changes came in; you kept 2 of yours. <span class="btn">Undo</span></div>
+</div>
+<div class="notes">
+  <div><span class="co">1</span><span>Each side shows what it would look like: glyph pictures for glyphs, sample words for design items, cells for spellings. No JSON for testers.</span></div>
+  <div><span class="co">2</span><span>Conflicts start on <b>Keep mine</b>: the safe default for someone mid-work. Update is one undo step (and a save), so a wrong choice is ↶ away while the tab is open.</span></div>
+  <div><span class="co">3</span><span>Units for a conflict: a glyph, one spelling cell, an area, a word type, the page center. Two different cells of one spelling row merge on their own.</span></div>
+  <div><span class="co">4</span><span>With no conflicts the dialog is one line ("8 changes come in on their own") and a single <b>Update my draft</b> button.</span></div>
+</div>
+
+<!-- ============================================================ -->
+<h2>5 · Export, Import, Discard</h2>
+
+<div class="grid3">
+  <div class="wf"><span class="cap">5a · Export my draft</span>
+    <div class="dlg">
+      <h4>Export your draft</h4>
+      <p>One .zip with everything in your draft. Send it to Nancy, or keep it as a backup: ⋯ → Import opens it again.</p>
+      <div class="files">jzp-draft-mei-2026-10-18.zip<br>
+        &nbsp;manifest.json <span class="c">who, when, based on the font of 15 Oct</span><br>
+        &nbsp;design.json <span class="c">word types, spacing, areas</span><br>
+        &nbsp;components.csv <span class="c">spellings</span><br>
+        &nbsp;svg/ <span class="c">2 glyphs you drew or changed</span><br>
+        &nbsp;base/ <span class="c">the 15 Oct versions, for comparing</span></div>
+      <p class="tiny">Includes unsaved edits too (3 right now), so what you download is what you see.</p>
+      <div class="foot"><span class="btn">Cancel</span><span class="btn primary">Download .zip</span></div>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">5b · Import a draft</span>
+    <div class="dlg">
+      <h4>Import a draft</h4>
+      <p>Open a draft .zip (yours, or one someone sent you). You'll see every change before anything goes into your draft.</p>
+      <div class="drop">Drop a .zip here, or <u>choose a file</u></div>
+      <p class="tiny">Opens the review page: keep or skip each change, then <b>Apply</b>. Applied changes are unsaved edits you can undo.</p>
+      <div class="foot"><span class="btn">Cancel</span></div>
+    </div>
+  </div>
+  <div class="wf"><span class="cap">5c · Discard my draft</span>
+    <div class="dlg">
+      <h4>Discard your draft?</h4>
+      <p>This deletes your draft and starts you again from the font of 18 Oct. You'd lose <b>2 glyphs, 5 spellings and 2 design changes</b>. It can't be undone.</p>
+      <p class="muted">Want to keep a copy? Export it first.</p>
+      <div class="foot"><span class="btn lnk">Export first</span><span class="grow"></span><span class="btn">Cancel</span><span class="btn dangerf">Discard my draft</span></div>
+    </div>
+  </div>
+</div>
+<p class="hint">Local Export keeps today's dialog (design.json) and gains a second button, <b>Download as draft .zip</b>, so Nancy can hand a tester a starting point.
+Local Import accepts both: a .json goes to today's import, a .zip goes to Review.</p>
+
+<!-- ============================================================ -->
+<h2>6 · Review a draft (Nancy, local Builder, <code>/review</code>)</h2>
+
+<h3>6a · Pick a draft</h3>
+<div class="scroll">
+<div class="wf" style="min-width: 960px"><span class="cap">/review · signed in as admin</span>
+  <div class="appbar" style="margin-bottom: 8px"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span>Layouts</span><span>Test &amp; Build</span><span>Tester</span><span class="on">Review</span></span>
+    <span class="grow"></span><span class="pill local">Local files</span><span class="state">Saved 14:40</span><span class="btn primary off">Save</span><span class="btn">⋯</span></div>
+  <div class="row" style="margin-bottom: 6px"><b style="font-size: 18px">Review a draft</b><span class="grow"></span><span class="btn">Open a .zip…</span><span class="tiny">Signed in as nancy@… · <u>sign out</u></span></div>
+  <table class="t">
+    <tr><th>Tester</th><th>Last saved</th><th>Based on</th><th>Changes</th><th>Status</th><th></th></tr>
+    <tr><td><b>Mei Chen</b> <span class="id">mei.chen@…</span></td><td>today 14:02</td><td>font of 15 Oct <span class="pill warn">1 update behind</span></td><td>2 glyphs · 5 spellings · 2 design</td><td><span class="pill acc">new since you looked</span></td><td><span class="btn primary">Review</span> <span class="btn lnk">.zip</span></td></tr>
+    <tr><td><b>Wen Li</b> <span class="id">wen@…</span></td><td>yesterday 21:15</td><td>font of 18 Oct</td><td>14 spellings</td><td><span class="pill ok">reviewed 18 Oct</span></td><td><span class="btn">Review</span> <span class="btn lnk">.zip</span></td></tr>
+    <tr><td><b>Tomás R.</b> <span class="id">tomas@…</span></td><td>16 Oct</td><td>font of 15 Oct</td><td class="muted">no changes yet</td><td class="muted">·</td><td><span class="btn off">Review</span></td></tr>
+  </table>
+  <p class="tiny" style="margin: 8px 0 0">Not signed in: the table is replaced by "Sign in to see testers' drafts" (same magic-link form, admin emails only). Open a .zip works without signing in.</p>
+</div>
+</div>
+
+<h3>6b · The review page</h3>
+<p>Three sections, one item per row, Keep / Skip on each. "Before" is the font the draft started from (the .zip's <code>base/</code>);
+"your Builder now" is what Nancy has loaded, saved or not. A conflict appears only where both moved.</p>
+
+<div class="scroll">
+<div class="wf" style="min-width: 1000px; padding-bottom: 0"><span class="cap">/review/mei · Mei's draft</span>
+  <div class="row" style="margin-bottom: 6px">
+    <span class="btn lnk">← Drafts</span>
+    <b style="font-size: 18px">Mei Chen's draft</b>
+    <span class="tiny">saved today 14:02 · based on the font of 15 Oct · your Builder is on 18 Oct</span>
+    <span class="grow"></span>
+    <span class="seg"><span class="on">All 9</span><span>Conflicts 1</span><span>Skipped 2</span></span>
+    <span class="btn">Keep all</span><span class="btn">Skip all</span>
+  </div>
+  <div class="rv">
+    <div class="side">
+      <span class="h">Sections</span>
+      <span class="on">Glyphs <span>2</span></span>
+      <span>Spellings <span>5</span></span>
+      <span>Design <span>2</span></span>
+      <span class="h">Needs a pick</span>
+      <span class="warnc">Area · Right hand <span>!</span></span>
+      <span class="h">Words to try</span>
+      <span class="tiny" style="font-family: var(--cjk)">名七勾五 中九挑三 大十抹一</span>
+    </div>
+    <div class="col" style="gap: 8px">
+      <div class="sec">Glyphs <span class="tiny">2 · <span class="badge a">added</span> <span class="badge c">changed</span> <span class="badge d">deleted</span></span></div>
+
+      <div class="item">
+        <div class="hd"><span class="badge c">changed</span><b class="cjk">勾</b><span class="id">lg_gou</span><span class="tiny">area Right hand · typed g</span><span class="grow"></span><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></div>
+        <div class="gx">
+          <div class="gbox"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-old" d="M22 28 H70 Q82 28 78 40 L74 80 Q72 88 62 86 L52 82"/></svg><span>before</span></div>
+          <div class="gbox"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-new" d="M22 30 H70 Q80 30 78 42 L72 78 Q70 86 60 84 L50 80"/></svg><span>after</span></div>
+          <div class="gbox on"><svg viewBox="0 0 100 100"><rect class="g-box" x="8" y="8" width="84" height="84"/><path class="g-ov-old" d="M22 28 H70 Q82 28 78 40 L74 80 Q72 88 62 86 L52 82"/><path class="g-ov-new" d="M22 30 H70 Q80 30 78 42 L72 78 Q70 86 60 84 L50 80"/></svg><span><span class="red">before</span> / <span class="blue">after</span></span></div>
+          <div class="mw" style="margin-left: 10px">
+            <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="bx" x="14" y="44" width="72" height="50"/><text class="gl" x="29" y="31" font-size="22" text-anchor="middle">名</text><text class="gl" x="71" y="31" font-size="22" text-anchor="middle">七</text><text class="gl" x="50" y="86" font-size="44" text-anchor="middle">勾</text></svg><span>in a word, after</span></div>
+          </div>
+          <span class="grow"></span><span class="btn lnk">Open in glyph editor</span>
+        </div>
+      </div>
+
+      <div class="item skip">
+        <div class="hd"><span class="badge a">added</span><b>md_7.25</b><span class="tiny">area 徽 position · typed 7.25 · new spelling</span><span class="grow"></span><span class="seg"><span>Keep</span><span class="on">Skip</span></span></div>
+        <div class="tiny">Skipped: its spelling row (Spellings, below) is skipped with it.</div>
+      </div>
+
+      <div class="sec">Spellings <span class="tiny">5 rows · changed cells in blue</span></div>
+      <table class="t">
+        <tr><th></th><th>glyph</th><th>common</th><th>latin</th><th>latin_alt</th><th>simplified</th><th>traditional</th><th></th></tr>
+        <tr><td class="g">勾</td><td class="id">lg_gou</td><td></td><td>g</td><td class="ch"><s>·</s> <b>gou</b></td><td>勾</td><td></td><td><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></td></tr>
+        <tr><td class="g">挑</td><td class="id">lg_tiao</td><td></td><td class="ch"><s>t</s> <b>tt</b></td><td></td><td>挑</td><td></td><td><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></td></tr>
+        <tr><td class="g">七</td><td class="id">md_7</td><td>7</td><td></td><td class="ch"><s>·</s> <b>qi</b></td><td>七</td><td></td><td><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></td></tr>
+        <tr><td class="g">大</td><td class="id">md_da</td><td></td><td class="ch cf"><s>v</s> <b>d</b> <span class="badge w">clashes with 中 md_zhong</span></td><td></td><td>大</td><td></td><td><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></td></tr>
+        <tr class="skip"><td class="g">·</td><td class="id">md_7.25</td><td class="ch"><b>7.25</b></td><td></td><td></td><td></td><td></td><td><span class="seg"><span>Keep</span><span class="on">Skip</span></span></td></tr>
+      </table>
+      <p class="tiny" style="margin: 0">A clash doesn't block Apply. It shows up in Glyphs → Typing as today, and Save waits until it's fixed.</p>
+
+      <div class="sec">Design <span class="tiny">2 items: areas, word types, page center</span></div>
+      <div class="item">
+        <div class="hd"><span class="badge c">changed</span><b>Word type · Standard word</b><span class="grow"></span><span class="seg"><span class="onk">Keep</span><span>Skip</span></span></div>
+        <ul class="summ">
+          <li>Gap between <b>Left hand</b> and <b>徽 position</b>: 20 → 35</li>
+          <li>New exception: when the left hand is <span class="cjk">跪</span>, 徽 position sits 40 lower</li>
+        </ul>
+        <div class="mw">
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="gh" x="18" y="8" width="30" height="30"/><rect class="bx mk" x="14" y="8" width="30" height="30"/><rect class="bx" x="56" y="8" width="30" height="30"/><rect class="bx" x="14" y="44" width="72" height="50"/><text class="gl" x="29" y="31" font-size="22" text-anchor="middle">名</text><text class="gl" x="71" y="31" font-size="22" text-anchor="middle">七</text><text class="gl" x="50" y="86" font-size="44" text-anchor="middle">勾</text></svg><span>名七勾五</span></div>
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="gh" x="52" y="8" width="30" height="30"/><rect class="bx" x="14" y="8" width="30" height="30"/><rect class="bx mk" x="56" y="16" width="30" height="30"/><rect class="bx" x="14" y="50" width="72" height="44"/><text class="gl" x="29" y="31" font-size="22" text-anchor="middle">跪</text><text class="gl" x="71" y="39" font-size="22" text-anchor="middle">九</text><text class="gl" x="50" y="88" font-size="40" text-anchor="middle">挑</text></svg><span>跪九挑三</span></div>
+          <span class="tiny">dashed = before · solid = after</span>
+          <span class="grow"></span><span class="btn lnk">Open in Layouts</span>
+        </div>
+        <details><summary class="muted">Show JSON changes (4 lines)</summary>
+          <div class="jd">
+            <div class="f">  "layouts" › "standard" › "relationships" › left → hui</div>
+            <div class="m">-   "gap": 20</div>
+            <div class="p">+   "gap": 35,</div>
+            <div class="p">+   "when": [{ "glyph": "md_gui", "gap": 75 }]</div>
+          </div>
+        </details>
+      </div>
+
+      <div class="item conf">
+        <div class="hd"><span class="badge w">conflict</span><b>Area · Right hand</b><span class="tiny">Mei and your Builder both changed it since 15 Oct</span><span class="grow"></span><span class="warnc" style="font-size: 13px">pick one to apply</span></div>
+        <div class="three">
+          <div><span class="tiny">Before (15 Oct)</span><span>Box <b>660 × 660</b></span><span>16 members</span><span class="radio"><i></i>Use before</span></div>
+          <div><span class="tiny">Mei's draft</span><span>Box <b class="blue">680</b> × 660</span><span>16 members</span><span class="radio"><i></i>Use Mei's</span></div>
+          <div><span class="tiny">Your Builder now</span><span>Box 660 × 660</span><span>17 members (+ <span class="cjk">撮</span> lg_cuo)</span><span class="radio"><i></i>Keep yours</span></div>
+        </div>
+        <div class="mw"><span class="tiny">Samples with each pick:</span>
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="bx mk" x="10" y="40" width="80" height="54"/><text class="gl" x="50" y="86" font-size="46" text-anchor="middle">勾</text></svg><span>Mei's</span></div>
+          <div class="mword"><svg class="cv" viewBox="0 0 100 100"><rect class="bx mk" x="14" y="44" width="72" height="50"/><text class="gl" x="50" y="86" font-size="44" text-anchor="middle">勾</text></svg><span>yours</span></div>
+          <span class="grow"></span><details><summary class="muted">JSON, 3 ways</summary><div class="jd"><div class="f">  "areas" › "right" › "size"</div><div>  before [660, 660]   Mei [680, 660]   yours [660, 660]</div></div></details>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="applybar">
+    <span>Keeping <b>6 of 9</b> · <span class="warnc">1 conflict to pick</span></span>
+    <span class="grow"></span>
+    <span class="tiny">Applied changes become unsaved changes in your Builder. Nothing is written until you Save.</span>
+    <span class="btn">Cancel</span><span class="btn primary off">Apply 6 changes</span>
+  </div>
+</div>
+</div>
+<div class="notes">
+  <div><span class="co">1</span><span><b>Keep</b> is the default everywhere except conflicts, which start unpicked. Apply stays disabled with "Pick 1 conflict first" until each has a pick.</span></div>
+  <div><span class="co">2</span><span>A glyph and its spelling row go together: skipping an added glyph skips its row; keeping a row for a skipped glyph shows "names no glyph", as in Typing import.</span></div>
+  <div><span class="co">3</span><span>Design items reuse the Area Properties before/after minis (dashed = before). The change summary is the main reading; JSON is folded away for checking.</span></div>
+  <div><span class="co">4</span><span>"Open in Glyphs / Layouts" opens the item in a new tab with the draft's version previewed, so Nancy can look closer without losing her place.</span></div>
+</div>
+
+<h3>6c · After Apply</h3>
+<div class="scroll">
+<div class="wf" style="min-width: 960px"><span class="cap">back in the Builder (Layouts)</span>
+  <div class="appbar" style="margin-bottom: 6px"><span class="brand">JZP Font Builder</span><span class="nav"><span>Glyphs</span><span class="on">Layouts</span><span>Test &amp; Build</span><span>Tester</span><span>Review</span></span>
+    <span class="grow"></span><span class="pill local">Local files</span><span class="btn">↶</span><span class="btn">↷</span><span class="state unsaved">● 6 unsaved</span><span class="btn primary">Save</span><span class="btn">⋯</span></div>
+  <div class="row" style="align-items:flex-start; gap: 16px">
+    <div class="toast">✓ Applied 6 changes from Mei Chen's draft. They're unsaved: look them over, then Save and commit. <span class="btn">Copy commit message</span><span class="btn">Undo</span></div>
+    <div class="pop" style="max-width: 360px">
+      <b>Unsaved changes</b>
+      <ol class="summ" style="padding-left: 20px"><li>From Mei: glyph lg_gou</li><li>From Mei: spellings (3 rows)</li><li>From Mei: Standard word, gap Left hand → 徽 position</li><li>…</li></ol>
+      <span class="tiny">Save writes design.json, components.csv and 1 glyph file. Mei's draft is marked "reviewed 18 Oct".</span>
+    </div>
+  </div>
+  <p class="tiny" style="margin: 6px 0 0">Commit message: "Apply Mei Chen's draft: lg_gou, 3 spellings, Standard word spacing". Glyph files from Apply wait for Save like everything else (unlike the glyph editor's own Save).</p>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<h2>7 · Errors and empty states</h2>
+<div class="grid2">
+  <div class="wf"><span class="cap">7a · can't save (offline / server down)</span>
+    <div class="banner err">⚠ <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
+      <span class="grow"></span><span class="btn">Try again</span><span class="btn lnk">Export my draft</span></div>
+    <p class="tiny">Retries every 30 s. When it works: toast "Saved to your draft" and the banner goes. Build and Tester keep working from the browser copy, with a note "using unsaved changes".</p>
+  </div>
+  <div class="wf"><span class="cap">7b · saved from another tab or computer</span>
+    <div class="dlg" style="max-width:none">
+      <h4>Your draft was saved somewhere else</h4>
+      <p>Another tab or computer saved your draft at 14:05, after you opened it here. Which one should stay?</p>
+      <div class="foot"><span class="btn lnk">Export this one first</span><span class="grow"></span><span class="btn">Load the 14:05 version</span><span class="btn primary">Keep this one</span></div>
+    </div>
+    <p class="tiny">Same shape as today's "changed on disk" dialog. "Keep this one" replaces the other save.</p>
+  </div>
+  <div class="wf"><span class="cap">7c · signed out while working</span>
+    <div class="banner">You've been signed out. Your unsaved changes are kept in this browser. <span class="grow"></span><span class="btn primary">Sign in again</span></div>
+    <p class="tiny">Sign in again → back on the same page, the changes save on their own.</p>
+  </div>
+  <div class="wf"><span class="cap">7d · draft restored after a crash (as today, new words)</span>
+    <div class="banner">Restored 3 changes from your last visit that hadn't reached your draft. <span class="grow"></span><span class="btn primary">Save them</span><span class="btn">Discard them</span></div>
+  </div>
+  <div class="wf"><span class="cap">7e · Review: no drafts yet</span>
+    <div class="drop">No tester has saved a draft yet.<br><span class="tiny">Drafts appear here after a tester's first save. You can still <u>open a .zip</u>.</span></div>
+  </div>
+  <div class="wf"><span class="cap">7f · Import / Review: wrong file</span>
+    <div class="banner err">"notes.zip" isn't a Builder draft: it has no manifest.json. <span class="grow"></span><span class="btn">Choose another file</span></div>
+    <p class="tiny">Also: "This draft was made with a newer Builder. Update this Builder first." (manifest version too new).</p>
+  </div>
+  <div class="wf"><span class="cap">7g · build failed on a draft</span>
+    <div class="banner err">The font couldn't be built from your draft. <span class="grow"></span><span class="btn lnk">Show details</span><span class="btn">Send this to Nancy ↗</span></div>
+    <p class="tiny">"Send this to Nancy" opens the feedback form with the build id filled in (no draft content in the URL).</p>
+  </div>
+  <div class="wf"><span class="cap">7h · pilot paused / server down</span>
+    <div class="signin" style="padding: 6px">
+      <h4>The Builder is taking a break</h4>
+      <p class="muted">We can't reach it right now. Your saved draft is safe. Try again in a few minutes.</p>
+      <span class="btn">Try again</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>8 · Words that survive the move to proposals</h2>
+<table class="v">
+  <tr><th>Pilot (now)</th><th>Later (proposals)</th><th>Why it holds</th></tr>
+  <tr><td>Your draft</td><td>Your proposal (draft)</td><td>A proposal's first state is "draft"; the pill gains a state</td></tr>
+  <tr><td>Save · Saved to your draft</td><td>Save · Saved to your proposal</td><td>Button unchanged; only the chip's noun moves</td></tr>
+  <tr><td>The font · the font of 18 Oct</td><td>The font (released)</td><td>Testers never see "main", "branch" or "commit"</td></tr>
+  <tr><td>Update my draft</td><td>Update your proposal</td><td>Same dialog, same per-item choices</td></tr>
+  <tr><td>Review a draft · Keep / Skip · Apply</td><td>Review a proposal · Keep / Skip · Approve</td><td>The review page becomes the proposal page</td></tr>
+  <tr><td>See my changes</td><td>Proposal page (read-only for the author)</td><td>Same component</td></tr>
+  <tr><td>Export / Import (.zip)</td><td>Same, as a backup and offline path</td><td>The .zip format is the proposal's payload</td></tr>
+</table>
+<p class="hint">Avoided on purpose: "copy" (sounds like a duplicate file), "sandbox", "branch", "merge", "sync", "publish".</p>
+
+<h2>9 · Open questions</h2>
+<ol class="qs">
+  <li>Not invited: say plainly "This email isn't on the pilot list" (proposed, friendlier) or the neutral "If you're invited, a link is on its way" (doesn't reveal who's invited)?</li>
+  <li>Conflict unit: a whole word type or area is kept from one side. Is that fine for the pilot, or do you need per-rule picks inside a word type?</li>
+  <li>On Apply, glyph files wait for Save with the rest (proposed). Or should they write at once, like the glyph editor's Save glyph?</li>
+  <li>Review as a fifth nav item in local mode (proposed), or only ⋯ → Review a draft?</li>
+  <li>Should testers get "See my changes" (read-only review of their own draft) in the pilot, or is the unsaved list enough until proposals?</li>
+  <li>Does a tester's Update ever need Nancy, or are testers trusted to pick "Keep mine / Take the font's" themselves (proposed)?</li>
+</ol>
+
+</main>
+</body>
+</html>

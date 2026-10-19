@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+.claude
+.DS_Store
+**/node_modules
+**/__pycache__
+app/build
+app/.svelte-kit
+docs
+src-fonttools/src_font
+src-fonttools/cache
+src-fonttools/tests
+src-fonttools/JianZiPu.ttf
+src-fonttools/JianZiPu.fea

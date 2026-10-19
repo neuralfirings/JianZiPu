@@ -35,7 +35,7 @@ class TypingCheck {
     try {
       const dirty = app.typingDirty;
       const r = await api.typingPreview({
-        design: app.design, rows: T.toRecords(app.typing), roundtrip: true,
+        design: app.design, rows: T.toRecords(app.typing), roundtrip: true, svg_names: app.extraGlyphs,
         base_rows: dirty ? T.toRecords(app.savedTyping) : undefined,
         compare_words: dirty ? this.sampleWords : []
       });

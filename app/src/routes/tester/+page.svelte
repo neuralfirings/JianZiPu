@@ -1,6 +1,6 @@
 <script lang="ts">
   // The font portal: type anything and see it in one exact TTF, loaded into this page
-  // from a build on the dev server or from a file you choose. Nothing installed on the
+  // from a build on the web server or from a file you choose. Nothing installed on the
   // computer is used; the text falls back to nothing.
   import { onMount } from 'svelte';
   import { page } from '$app/state';

@@ -1,12 +1,12 @@
 # JZP Font Builder — UX design
 
-Local SvelteKit app served by the Python dev server (`python3 -m jzpbuild.devserver`).
+Local SvelteKit app served by the Python web server (`python3 -m jzpbuild.webserver`).
 One user, no accounts, writes repo files. Edits `dynamic_positioning/layouts_data.json`
 (layouts, areas, spacing) and `inputs/components.csv` (glyph → area membership, typing keys).
 Reads `inputs/svg/` (222 SVGs). Builds `JianZiPu.ttf`.
 
-Builds on `docs/UX-REVIEW.md` (terminology, area-first position panel, drag labelling,
-badge scope) and `docs/ARCH-REVIEW.md` §2.3 (slots with alternatives; badge at 80 % / 95 %
+Builds on `docs/archive/UX-REVIEW.md` (terminology, area-first position panel, drag labelling,
+badge scope) and `docs/archive/ARCH-REVIEW.md` §2.3 (slots with alternatives; badge at 80 % / 95 %
 per main-glyph lookup). Those findings are taken as given and not re-argued here.
 
 **One design decision drives everything below:** the engine's new model is a *chain*
@@ -242,7 +242,7 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
   session's builds or opened from a `.ttf` on disk, with size, liga/kern switches, vertical
   columns, sample sets and an optional second font beside it. The chip names the file that is
   rendering.
-- Sample sets are the groups in `font_tester.html`; "My set" is stored in the app's local
+- Sample sets are the groups of the old `font_tester.html` (now in the app); "My set" is stored in the app's local
   draft and included in export.
 - Phone-usable (this is the only section that needs to be).
 
@@ -380,7 +380,7 @@ Structure · Chord (chord_left + chord_right)    Recognised by  [撮][大撮][�
 ### 3.5 Spacing panel (selected part) — built as the rule builder (2026-10-15)
 
 Superseded the gap-row sketch below by the design in `docs/rule-builder-ux.html`
-(chosen by the user after the canvas-first "Option D" of `SPACING-UX-OPTIONS.md`).
+(chosen by the user after the canvas-first "Option D" of `docs/archive/SPACING-UX-OPTIONS.md`).
 What is built, in `app/src/lib/components/{WordStrip,RulePanel,RuleEditor}.svelte`:
 
 - **Word strip** at the top of the inspector: one chip per part of the preview word
@@ -590,7 +590,7 @@ add/remove parts, Recognition, "no otherwise", per-row-boundary gaps in Vertical
 
 **Autosave vs Save.** Edits autosave to the browser (IndexedDB) every change; nothing touches
 the repo until **Save (⌘S)**, which writes `layouts_data.json` and/or `components.csv` through
-the dev server. The header chip states both facts: `● Unsaved (3)` → on Save → `Saved 14:02`.
+the web server. The header chip states both facts: `● Unsaved (3)` → on Save → `Saved 14:02`.
 The chip's menu lists the changes in sentence form ("Standard word: gap above 注 after Stroke
 for 勾/大 66 → 72", "Area hui: +md_7.5") with "revert" per line, and "Discard all". On reopen
 with a draft newer than disk: banner "You have unsaved changes from 14:02 — Restore / Discard".
@@ -719,5 +719,5 @@ Each step ships usable; acceptance = what the font author can do without reading
    reorder is impossible with Advanced off.
 
 Deferred (absent by design): Pyodide
-in-browser resolve (the dev server is local, so latency is not a problem here), multi-user
+in-browser resolve (the web server is local, so latency is not a problem here), multi-user
 anything.

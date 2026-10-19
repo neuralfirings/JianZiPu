@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app } from '$lib/state.svelte';
   import type { Design } from '$lib/api';
+  import { designSummary } from '$lib/merge';
   let { mode, onclose }: { mode: 'import' | 'export'; onclose: () => void } = $props();
 
   function download() {
@@ -18,28 +19,6 @@
   let err = $state<string | null>(null);
   let merge = $state<'replace' | 'merge'>('replace');
 
-  function diff(a: Design, b: Design): string[] {
-    const out: string[] = [];
-    for (const l of b.layouts) {
-      const mine = a.layouts.find((x) => x.name === l.name);
-      if (!mine) { out.push(`Word type "${l.label ?? l.name}": new`); continue; }
-      const n = l.relationships.filter((r) => !mine.relationships.some((m) => JSON.stringify(m) === JSON.stringify(r))).length;
-      const slotsDiffer = JSON.stringify(mine.slots) !== JSON.stringify(l.slots);
-      if (n || slotsDiffer) out.push(`Word type "${l.label ?? l.name}": ${n} spacing rules differ${slotsDiffer ? ', structure differs' : ''}`);
-    }
-    for (const l of a.layouts) if (!b.layouts.some((x) => x.name === l.name)) out.push(`Word type "${l.label ?? l.name}": missing from file`);
-    for (const [name, area] of Object.entries(b.areas)) {
-      const mine = a.areas[name];
-      if (!mine) { out.push(`Area "${name}": new`); continue; }
-      const plus = area.glyphs.filter((g) => !mine.glyphs.includes(g)).length;
-      const minus = mine.glyphs.filter((g) => !area.glyphs.includes(g)).length;
-      const size = JSON.stringify(mine.size) !== JSON.stringify(area.size);
-      if (plus || minus || size) out.push(`Area "${name}": ${plus ? `+${plus} glyphs ` : ''}${minus ? `−${minus} glyphs ` : ''}${size ? 'box size differs' : ''}`.trim());
-    }
-    for (const name of Object.keys(a.areas)) if (!b.areas[name]) out.push(`Area "${name}": missing from file`);
-    return out;
-  }
-
   async function pick(e: Event) {
     err = null; file = null;
     const f = (e.target as HTMLInputElement).files?.[0];
@@ -50,7 +29,7 @@
         throw new Error("This isn't a Builder design file (needs version 2, layouts[] and areas{}).");
       const r = await (await import('$lib/api')).api.check(d);
       if (!r.ok) throw new Error(r.error ?? 'invalid design');
-      file = { name: f.name, design: d, diff: diff(app.design!, d) };
+      file = { name: f.name, design: d, diff: designSummary(app.design!, d) };
     } catch (ex) {
       err = (ex as Error).message;
     }

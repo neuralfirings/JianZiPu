@@ -1,7 +1,8 @@
 """Generate the GSUB half of the feature file (classes + substitution lookups).
 
 The goal is semantic equivalence with the previously hand-maintained
-src-fontforge/input/fontForgeFeatures.fea: every glyph class and
+fontForgeFeatures.fea of the FontForge pipeline (removed; git tag
+fontforge-final): every glyph class and
 substitution rule is derived from components.csv, glyphRename.csv, and
 algorithmic hui/decimal matrices. Hand-written disambiguation rules live in
 inputs/edge_cases.fea and are included verbatim.

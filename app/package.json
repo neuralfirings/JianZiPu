@@ -24,7 +24,9 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "esm-potrace-wasm": "^0.5.1",
+    "fflate": "^0.8.2",
     "paper": "^0.12.18",
     "paperjs-offset": "^2.2.2"
   }

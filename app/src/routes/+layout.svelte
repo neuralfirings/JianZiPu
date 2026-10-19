@@ -3,24 +3,46 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
-  import { goto } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
+  import PilotDialogs from '$lib/components/PilotDialogs.svelte';
+  import SignIn from '$lib/components/SignIn.svelte';
   import { editor } from '$lib/editor.svelte';
+  import { hosted } from '$lib/hosted.svelte';
+  import { day, downloadZip, hhmm, pilot, welcomed } from '$lib/pilot.svelte';
   import { panels, editorPanels } from '$lib/panels.svelte';
   let { children } = $props();
   let menu = $state(false);
+  let person = $state(false);
+  let pill = $state(false);
   let dialog = $state<'import' | 'export' | null>(null);
   let showChanges = $state(false);
 
-  const nav = [
+  let nav = $derived([
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
     ['/test', 'Test & Build'],
-    ['/tester', 'Tester']
-  ];
+    ['/tester', 'Tester'],
+    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : [])
+  ]);
+
+  /** Hosted: wait for sign-in, then load the tester's draft (and greet them the first time). */
+  async function start() {
+    await hosted.init();
+    hosted.onSignIn(() => { pilot.updateDismissed = false; void app.load().then(greet); });
+    if (!hosted.isHosted || hosted.user) { await app.load(); greet(); }
+  }
+  function greet() {
+    if (hosted.isHosted && hosted.user && !welcomed(hosted.user.id)) pilot.dialog = 'welcome';
+  }
+  beforeNavigate(() => app.flush());
 
   onMount(() => {
-    app.load();
+    void start();
+    const onHide = () => { if (document.visibilityState === 'hidden') app.flush(); };
+    document.addEventListener('visibilitychange', onHide);
+    const onUnload = (e: BeforeUnloadEvent) => { if (hosted.isHosted && app.dirty) { app.flush(); e.preventDefault(); } };
+    window.addEventListener('beforeunload', onUnload);
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
@@ -34,10 +56,26 @@
       }
     };
     window.addEventListener('keydown', onKey);
-    const onClick = () => (menu = false);
+    const onClick = () => { menu = false; person = false; pill = false; };
     window.addEventListener('click', onClick);
-    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick); };
+    return () => {
+      window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick);
+      document.removeEventListener('visibilitychange', onHide); window.removeEventListener('beforeunload', onUnload);
+    };
   });
+
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    const t = pilot.toast;
+    if (toastTimer) clearTimeout(toastTimer);
+    if (t) toastTimer = setTimeout(() => (pilot.toast = null), t.copy ? 20000 : 9000);
+  });
+  async function copyMessage(text: string) {
+    try { await navigator.clipboard.writeText(text); pilot.say('Commit message copied.'); } catch { prompt('Commit message:', text); }
+  }
+  let gate = $derived(hosted.ready && hosted.isHosted && !hosted.user);
+  let counts = $derived(pill && hosted.isHosted ? app.draftCounts : null);
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
   // on the glyph editor routes the glyph owns undo and ⌘S; the header keeps only the design's Save
   let inGlyphEditor = $derived(/^\/glyphs\/(new$|[^/]+\/edit)/.test(page.url.pathname));
@@ -52,6 +90,28 @@
 <div class="shell">
   <header>
     <div class="brand">JZP Font Builder</div>
+    {#if hosted.isHosted && hosted.user}
+      <span class="pill-wrap">
+        <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
+          ✎ Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
+        </button>
+        {#if pill}
+          <div class="pop" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
+            <strong>Your draft</strong>
+            <p>Only you see it. Builds and the Tester use it. The font itself doesn't change.</p>
+            <p class="muted">{#if app.draftBase?.version.date}Based on the font of {day(app.draftBase.version.date)}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
+            {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
+            <div class="row">
+              <button onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
+              <button onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
+            </div>
+          </div>
+        {/if}
+      </span>
+    {:else if hosted.ready && !hosted.isHosted}
+      <span class="pill local" title="Save writes design.json, components.csv and glyph files in this repo.">Local files</span>
+    {/if}
+    {#if !gate && hosted.ready}
     <nav>
       {#each nav as [href, label]}
         <a {href} class:active={page.url.pathname === href || page.url.pathname.startsWith(href + '/')}>{label}</a>
@@ -73,30 +133,71 @@
         title={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'}>↷</button>
     {/if}
     <span class="status" role="status">
-      {#if app.dirty}
+      {#if hosted.isHosted && app.offline}
+        <button class="chip warnchip" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>⚠ Not saved · offline</button>
+      {:else if hosted.isHosted && app.saving}
+        <span class="chip">Saving…</span>
+      {:else if app.dirty}
         <button class="chip accent" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● {inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
+      {:else if hosted.isHosted && app.lastSaved}
+        <span class="chip">Saved to your draft · {hhmm(app.lastSaved)}</span>
       {:else if app.lastSaved}
         <span class="chip">{inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
       {:else if !app.loading}
         <span class="chip">{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
       {/if}
     </span>
-    <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json and components.csv (the glyph has its own Save, ⌘S)' : 'Write design.json and components.csv (⌘S)'}>
-      {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
-    </button>
+    {#if hosted.isHosted}
+      <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving || hosted.signedOut} title="Save to your draft (⌘S). It also saves itself every 30 seconds.">
+        {app.saving ? 'Saving…' : app.offline ? 'Try again' : 'Save'}
+      </button>
+    {:else}
+      <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json, components.csv and merged glyph files (the glyph has its own Save, ⌘S)' : 'Write design.json, components.csv and merged glyph files (⌘S)'}>
+        {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
+      </button>
+    {/if}
+    {#if hosted.isHosted && hosted.config?.feedback_url}
+      <a class="fb" href={hosted.config.feedback_url} target="_blank" rel="noopener">Feedback</a>
+    {/if}
     <span class="menu-wrap">
       <button onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>
       {#if menu}
         <div class="menu" role="menu">
-          <button onclick={() => (dialog = 'import')}>Import…</button>
-          <button onclick={() => (dialog = 'export')}>Export…</button>
-          <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
-          <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
-          <hr />
-          <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault} title="Put the panels of Layouts and the glyph editor back where they started">Reset panel layouts</button>
+          {#if hosted.isHosted}
+            <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
+            <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
+            <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? 'Update my draft to the font…' : 'Update my draft · up to date'}</button>
+            {#if hosted.config?.feedback_url}<a role="menuitem" href={hosted.config.feedback_url} target="_blank" rel="noopener">Send feedback ↗</a>{/if}
+            <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
+            <hr />
+            <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault}>Reset panel layouts</button>
+            <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
+            <button class="danger-item" onclick={() => (pilot.dialog = 'discard')}>Discard my draft…</button>
+          {:else}
+            <button onclick={() => (dialog = 'import')}>Import…</button>
+            <button onclick={() => (dialog = 'export')}>Export…</button>
+            <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
+            <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
+            <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
+            <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
+            <hr />
+            <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault} title="Put the panels of Layouts and the glyph editor back where they started">Reset panel layouts</button>
+          {/if}
         </div>
       {/if}
     </span>
+    {#if hosted.isHosted && hosted.user}
+      <span class="menu-wrap">
+        <button class="who" onclick={(e) => { e.stopPropagation(); person = !person; }} aria-label="Account" title={hosted.user.email}>{(hosted.firstName || '?').slice(0, 1).toUpperCase()}</button>
+        {#if person}
+          <div class="menu" role="menu">
+            <span class="muted signed">Signed in as {hosted.user.email}</span>
+            <button onclick={async () => { app.flush(); await hosted.signOut(); }}>Sign out</button>
+          </div>
+        {/if}
+      </span>
+    {/if}
+    {/if}
   </header>
 
   {#if showChanges && app.dirty}
@@ -106,11 +207,30 @@
       <button onclick={() => { app.discard(); showChanges = false; }}>Discard all</button>
     </div>
   {/if}
+  {#if hosted.isHosted && hosted.signedOut}
+    <div class="banner error">You've been signed out. Your unsaved changes are kept in this browser. <button onclick={() => hosted.signOut()}>Sign in again</button></div>
+  {:else if hosted.isHosted && app.offline}
+    <div class="banner error">⚠ <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
+      <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button></div>
+  {/if}
+  {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
+    <div class="banner info">
+      <span><b>The font was updated{app.main?.date ? ` on ${day(app.main.date)}` : ''}</b>{app.draftBase?.version.date ? ` (since your draft started on ${day(app.draftBase.version.date)})` : ''}.</span>
+      <span class="spacer"></span>
+      <button onclick={() => (pilot.updateDismissed = true)}>Not now</button>
+      <button class="primary" onclick={() => (pilot.dialog = 'update')}>Update my draft…</button>
+    </div>
+  {/if}
   {#if app.draftRestored}
     <div class="banner">
-      Restored unsaved changes from your last session.
-      <button onclick={() => (app.draftRestored = false)}>Keep</button>
-      <button onclick={() => { app.discard(); app.draftRestored = false; }}>Discard</button>
+      {#if hosted.isHosted}
+        Restored {plural(app.unsavedCount, 'change')} from your last visit that hadn't reached your draft.
+        <button onclick={() => { app.draftRestored = false; app.save(); }}>Save them</button>
+      {:else}
+        Restored unsaved changes from your last session.
+        <button onclick={() => (app.draftRestored = false)}>Keep</button>
+      {/if}
+      <button onclick={() => { app.discard(); app.draftRestored = false; }}>Discard{hosted.isHosted ? ' them' : ''}</button>
     </div>
   {/if}
   {#if app.error}
@@ -150,8 +270,10 @@
   {/if}
 
   <main>
-    {#if app.loading}
-      <p class="muted" style="padding: var(--s-6)">Loading design…</p>
+    {#if gate}
+      <SignIn />
+    {:else if app.loading || !hosted.ready}
+      <p class="muted" style="padding: var(--s-6)">{hosted.isHosted ? 'Loading your draft…' : 'Loading design…'}</p>
     {:else if app.design}
       {@render children()}
     {/if}
@@ -159,6 +281,15 @@
 
   {#if dialog}
     <ImportExport mode={dialog} onclose={() => (dialog = null)} />
+  {/if}
+  <PilotDialogs />
+  {#if pilot.toast}
+    <div class="toast" role="status">
+      <span>{pilot.toast.text}</span>
+      {#if pilot.toast.copy}<button onclick={() => copyMessage(pilot.toast!.copy!)}>Copy commit message</button>{/if}
+      {#if pilot.toast.undo}<button onclick={() => { app.undo(); pilot.toast = null; }}>Undo</button>{/if}
+      <button class="x" onclick={() => (pilot.toast = null)} aria-label="Close">×</button>
+    </div>
   {/if}
 </div>
 
@@ -184,5 +315,23 @@
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
   .modal { background: var(--bg); border-radius: var(--radius); padding: var(--s-5); max-width: 560px; }
   .chip { text-decoration: none; color: inherit; border: 0; }
+  .warnchip { color: var(--danger); }
+  .pill-wrap { position: relative; margin-right: var(--s-3); }
+  .pill { height: 22px; padding: 0 10px; border-radius: 11px; font-size: var(--t-sm); white-space: nowrap; }
+  .pill.draft { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent); }
+  .pill.local { display: inline-flex; align-items: center; border: 1px dashed var(--line); color: var(--fg-2); margin-right: var(--s-3); }
+  .moved { opacity: .8; }
+  .pop { position: absolute; left: 0; top: 100%; margin-top: 6px; z-index: 40; width: 300px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
+  .pop p { margin: 0; font-size: var(--t-sm); line-height: 1.45; }
+  .fb { font-size: var(--t-sm); color: var(--accent); text-decoration: none; padding: 0 var(--s-1); }
+  .who { width: 28px; padding: 0; border-radius: 50%; font-weight: 600; }
+  .signed { padding: 4px 8px; font-size: var(--t-sm); }
+  .menu a { padding: 0 var(--s-3); height: var(--control); display: flex; align-items: center; color: inherit; text-decoration: none; border-radius: var(--radius); }
+  .menu a:hover { background: var(--bg-3); }
+  .danger-item { color: var(--danger); }
+  .banner.info { background: var(--accent-bg); }
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(var(--s-4), env(safe-area-inset-bottom, 0px)); z-index: 70; display: flex; gap: var(--s-2); align-items: center; max-width: min(720px, calc(100vw - 32px)); background: var(--fg); color: var(--bg); padding: var(--s-2) var(--s-3); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.25); font-size: var(--t-sm); }
+  .toast button { white-space: nowrap; background: transparent; color: inherit; border-color: color-mix(in srgb, var(--bg) 40%, transparent); height: 24px; }
+  .toast .x { border: 0; font-size: 16px; }
   .paused { margin: 0 0 var(--s-2); padding-left: 20px; color: var(--danger); }
 </style>

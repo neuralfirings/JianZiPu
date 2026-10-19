@@ -29,7 +29,7 @@ describe('load and export', () => {
     expect(out).not.toMatch(/\d\.\d{2,}/);          // no more than one decimal
     expect(scene.dirty).toBe(false);
   });
-  it('resolves groups, transforms and compound paths from Figma-style files', () => {
+  it('resolves groups, transforms and compound paths from design-tool exports', () => {
     const svg = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><g transform="translate(100 0)"><rect width="50" height="50"/></g>'
       + '<path fill-rule="evenodd" d="M0 200h100v100h-100zM25 225h50v50h-50z" fill="black"/></svg>';
     expect(scene.loadSvg(svg)).toBe(2);

@@ -1,6 +1,5 @@
 """Paths and static configuration for the JianZiPu build."""
 
-import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -9,12 +8,11 @@ from pathlib import Path
 BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directory (src-fonttools/)
 
 # ---------------------------------------------------------------------------
-# input files — used by: data.py, features.py, glyphs.py, genfea.py, figma.py
+# input files — used by: data.py, features.py, glyphs.py, genfea.py
 #
-# One folder (inputs/) for everything the build reads: both the
-# human-maintained sources (components.csv, glyphRename.csv, edge_cases.fea)
-# and the Figma-fetched artifacts (svg/, layouts.json, meta.json — tracked
-# in git, refreshed via --figma_pull, no fallback to some other copy). Every
+# One folder (inputs/) for everything the build reads, all tracked in git:
+# design.json, components.csv and svg/ (edited in the Builder app),
+# glyphRename.csv and edge_cases.fea (by hand), layouts.json (legacy). Every
 # path below is also individually overridable from the CLI (see build.py's
 # --input-* flags) — these are just the defaults.
 #
@@ -23,30 +21,20 @@ BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directo
 # two different things sharing the word "component" — one's metadata, one's
 # artwork. Distinguished by suffix (_CSV vs _DIR); don't conflate them.
 
-INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, figma.py, build.py
+INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, build.py
 
 COMPONENTS_CSV = INPUTS_DIR / "components.csv"               # data.py
 GLYPH_RENAME_CSV = INPUTS_DIR / "glyphRename.csv"            # data.py
 EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 
 COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
-META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
-LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
+LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py — classic layout/area geometry
 
 # The design file: areas (box size + member glyphs), layouts (slots,
 # relationships/gaps, centering). Source of truth for positioning AND for the
 # GSUB area classes; edited by the JZP Font Builder app. LAYOUTS_JSON above is
-# the classic Figma geometry, used only by --classic_pos.
-DESIGN_JSON = INPUTS_DIR / "design.json"                     # positioning/, data.py, devserver.py
-
-# ---------------------------------------------------------------------------
-# Figma access — used by: figma.py
-
-# Figma file key (from the design file URL, see README)
-FIGMA_FILE_KEY = os.environ.get("FIGMA_FILE_KEY", "CC89RmepV34CVP9bKWu48b")
-# Only this page (Figma "canvas") is scanned for glyphs/layouts; other pages
-# (drafts, archive, WIP) are ignored entirely.
-FIGMA_PAGE_NAME = os.environ.get("FIGMA_PAGE_NAME", "main")
+# the classic frame geometry, used only by --classic_pos.
+DESIGN_JSON = INPUTS_DIR / "design.json"                     # positioning/, data.py, webserver.py
 
 # ---------------------------------------------------------------------------
 # font source / build outputs

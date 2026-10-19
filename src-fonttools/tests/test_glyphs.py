@@ -46,7 +46,7 @@ def test_overlapping_paths_are_unioned_like_a_browser_paints_them():
 
 
 def test_a_path_stacked_on_itself_stays_filled():
-    # Figma exports sometimes hold a stroke twice; even-odd used to cancel it to a hairline
+    # exported SVGs sometimes hold a stroke twice; even-odd used to cancel it to a hairline
     sq = "M10 10h100v100h-100z"
     assert _area(_svg(sq, sq)) == pytest.approx(10000)
     # ... also when the copy runs the other way round
@@ -105,7 +105,7 @@ def test_groups_and_transforms_are_resolved():
 
 
 def test_clip_path_is_ignored():
-    # Figma frame clips must not chop the outline (md_4.blank's digit extends above its frame)
+    # frame clips must not chop the outline (md_4.blank's digit extends above its frame)
     svg = ('<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg">'
            '<g clip-path="url(#c)"><path d="M-20 -20h100v100h-100z" fill="black"/></g>'
            '<defs><clipPath id="c"><rect width="350" height="350"/></clipPath></defs></svg>')

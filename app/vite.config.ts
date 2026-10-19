@@ -1,7 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 
-// The Python dev server (python3 -m jzpbuild.devserver) owns /api and the
+// The Python web server (python3 -m jzpbuild.webserver) owns /api and the
 // built font; in `npm run dev` the Vite server proxies to it.
 export default defineConfig({
   plugins: [sveltekit()],

@@ -6,7 +6,6 @@ requires-python = ">=3.10"
 dependencies = [
     "fonttools>=4.50",
     "picosvg>=0.20",
-    "requests>=2.31",
     "skia-pathops>=0.9",
     "uharfbuzz>=0.39",
 ]

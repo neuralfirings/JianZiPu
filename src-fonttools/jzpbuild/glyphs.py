@@ -28,7 +28,7 @@ def _skia_path(root, flip_height: float | None):
     transforms resolved (picosvg), overlaps removed and winding fixed.
     With `flip_height` the result is in font coordinates (y up); without,
     it stays in SVG coordinates."""
-    # Strip clip-paths first: they are Figma frame-cropping noise, and the
+    # Strip clip-paths first: they are frame-cropping noise from design-tool exports, and the
     # historical FontForge import ignored them (md_4.blank's digit extends
     # above its frame and must not be chopped).
     ET.register_namespace("", "http://www.w3.org/2000/svg")

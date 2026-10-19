@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from jzpbuild import config, devserver, features, typing_preview as tp  # noqa: E402
+from jzpbuild import config, webserver, features, typing_preview as tp  # noqa: E402
 from jzpbuild.data import GlyphRow  # noqa: E402
 
 DESIGN = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8"))
@@ -122,19 +122,19 @@ def csv_copy(tmp_path, monkeypatch):
     p.write_text(config.COMPONENTS_CSV.read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setattr(config, "COMPONENTS_CSV", p)
     yield p
-    devserver.data.cache_clear_all()
+    webserver.data.cache_clear_all()
 
 
 def test_write_keeps_order_drops_empty_rows_and_returns_the_new_hash(csv_copy):
-    payload = devserver.glyphs_payload()
+    payload = webserver.glyphs_payload()
     rows = [{"glyph_name": r["glyph"], **{k: r[k] for k in tp.ROW_FIELDS if k != "glyph_name"}}
             for r in payload["glyphs"]]
     for r in rows:
         if r["glyph_name"] == "lg_tiao":
             r["latin"] = "t"
-    res = devserver.write_glyph_rows(list(reversed(rows)), payload["hash"])
+    res = webserver.write_glyph_rows(list(reversed(rows)), payload["hash"])
     text = csv_copy.read_text(encoding="utf-8")
-    assert res["ok"] and res["hash"] == devserver._hash(text)
+    assert res["ok"] and res["hash"] == webserver._hash(text)
     names = [r["glyph_name"] for r in csv.DictReader(io.StringIO(text))]
     assert names[:3] == payload["order"][:3]                     # file order, not request order
     assert "md_1.1" not in names                                  # decimals have nothing to say
@@ -142,15 +142,15 @@ def test_write_keeps_order_drops_empty_rows_and_returns_the_new_hash(csv_copy):
 
 
 def test_write_refuses_a_stale_hash(csv_copy):
-    with pytest.raises(devserver.CsvConflict):
-        devserver.write_glyph_rows([], "0000000000000000")
+    with pytest.raises(webserver.CsvConflict):
+        webserver.write_glyph_rows([], "0000000000000000")
 
 
 def test_write_refuses_a_clash_and_leaves_the_file(csv_copy):
     before = csv_copy.read_text(encoding="utf-8")
     rows = [{"glyph_name": "lg_gou", "latin": "k"}, {"glyph_name": "lg_tuo", "latin": "k"}]
-    with pytest.raises(devserver.SpellingErrors) as e:
-        devserver.write_glyph_rows(rows)
+    with pytest.raises(webserver.SpellingErrors) as e:
+        webserver.write_glyph_rows(rows)
     assert e.value.errors[0]["value"] == "k"
     assert csv_copy.read_text(encoding="utf-8") == before
 
@@ -217,8 +217,8 @@ def test_a_glyph_missing_from_the_build_is_left_out(built_font):
 
 @pytest.fixture
 def server(built_font, monkeypatch):
-    monkeypatch.setattr(devserver, "_preview_base_font", lambda: built_font)
-    srv = ThreadingHTTPServer(("127.0.0.1", 0), devserver.Handler)
+    monkeypatch.setattr(webserver, "_preview_base_font", lambda *_: built_font)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}"
     srv.shutdown()

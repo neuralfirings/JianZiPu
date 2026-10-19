@@ -1,4 +1,4 @@
-"""Tests for the dev server's build registry: each UI build lives in its own temp dir, the last
+"""Tests for the web server's build registry: each UI build lives in its own temp dir, the last
 few are listed, each one is served (and downloadable) by id, old ones are pruned.
 Uses fake font files; never runs the real build (tests/test_shaping.py does that).
 
@@ -18,18 +18,18 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from jzpbuild import devserver  # noqa: E402
+from jzpbuild import webserver  # noqa: E402
 
 
 @pytest.fixture
 def runner(monkeypatch):
-    r = devserver.BuildRunner()
-    monkeypatch.setattr(devserver, "BUILD", r)
+    r = webserver.BuildRunner()
+    monkeypatch.setattr(webserver, "BUILD", r)
     yield r
     r.cleanup()
 
 
-def fake_build(r: devserver.BuildRunner, content: bytes = b"\x00\x01\x00\x00fake") -> dict:
+def fake_build(r: webserver.BuildRunner, content: bytes = b"\x00\x01\x00\x00fake") -> dict:
     r._seq += 1
     d = Path(tempfile.mkdtemp(prefix="jzp-build-test-"))
     p = d / "JianZiPu.ttf"
@@ -64,7 +64,7 @@ def test_cleanup_removes_everything(runner):
 
 @pytest.fixture
 def server(runner):
-    srv = ThreadingHTTPServer(("127.0.0.1", 0), devserver.Handler)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}"
     srv.shutdown()
