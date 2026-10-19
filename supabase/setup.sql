@@ -7,7 +7,7 @@
 --                   folder, admins read all of them (the local Builder's Review screen)
 --   bucket assets   private; only the server's service key reads it (the TW-Kai base font)
 --
--- After running it (docs: src-fonttools/README.md "Hosted pilot"):
+-- After running it (docs: font/README.md "Hosted pilot"):
 --   Authentication → Sign In / Providers → Email: turn OFF "Allow new users to sign up"
 --   Authentication → URL Configuration: Site URL = the pilot's address; Redirect URLs add
 --     https://<pilot domain>/** and http://127.0.0.1:5713/** (your local Builder's Review sign-in)

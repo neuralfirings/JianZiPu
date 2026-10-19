@@ -92,7 +92,7 @@ show "Best on a larger screen" with the Glyphs and Test sections still usable.
 - Loading: tiles render as 120 px skeleton squares; SVGs stream in (one `/api/svgs` call,
   ~222 items; render progressively, don't block on all).
 - Error: `inputs/svg/` unreadable → full-panel notice "Can't read inputs/svg/ — is the dev
-  server running from src-fonttools/?" with a Retry button.
+  server running from font/?" with a Retry button.
 - **Glyph editor (built 2026-10-17, design in `docs/GLYPH-EDITOR-UX.md` /
   `glyph-editor-ux.html`).** Every tile has an **Edit** button (hover / selected; double-click or
   Enter also opens it); the inspector has **Edit outline**, **Replace from file…** and **Trace from

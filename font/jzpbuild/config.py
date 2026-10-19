@@ -5,7 +5,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # path roots — internal only, used here to build the paths below
 
-BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directory (src-fonttools/)
+BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directory (font/)
 
 # ---------------------------------------------------------------------------
 # input files — used by: data.py, features.py, glyphs.py, genfea.py

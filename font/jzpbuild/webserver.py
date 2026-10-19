@@ -1,6 +1,6 @@
 """The web server for the JZP Font Builder app (local, or hosted with --hosted).
 
-    cd src-fonttools && python3 -m jzpbuild.webserver [--port 5713]
+    cd font && python3 -m jzpbuild.webserver [--port 5713]
 
 Serves the built app (app/build/, if present) and this folder as static
 files, plus a JSON API over the repo's input files. Local mode (default): single user,
@@ -742,7 +742,13 @@ def main(argv=None):
     p.add_argument("--port", type=int, default=int(os.environ.get("PORT") or 5713))
     p.add_argument("--hosted", action="store_true", help="hosted pilot mode (also JZP_HOSTED=1); see hosted.py")
     args = p.parse_args(argv)
+    # local settings (Supabase URL and anon key for the Review screen) from font/.env
+    names = hosted.load_env_file(config.BUILDER_DIR / ".env")
+    if names:
+        print(f"read {', '.join(sorted(names))} from {config.BUILDER_DIR / '.env'}")
     SETTINGS = hosted.Settings.from_env(hosted=True if args.hosted else None)
+    if not SETTINGS.hosted and SETTINGS.supabase_service_key:
+        print("note: SUPABASE_SERVICE_KEY is only for the hosted server; this local server doesn't need it")
     if SETTINGS.hosted:
         if not (SETTINGS.supabase_url and SETTINGS.supabase_anon_key):
             sys.exit("hosted mode needs SUPABASE_URL and SUPABASE_ANON_KEY")

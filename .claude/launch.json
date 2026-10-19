@@ -5,7 +5,7 @@
       "name": "builder",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "jzpbuild.webserver", "--port", "5713"],
-      "cwd": "src-fonttools",
+      "cwd": "font",
       "port": 5713
     },
     {

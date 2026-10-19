@@ -1,6 +1,6 @@
 """Unit tests for jzpbuild.positioning: shapes, resolver, emitter.
 
-Run:  cd src-fonttools && python3 -m pytest tests/test_positioning.py
+Run:  cd font && python3 -m pytest tests/test_positioning.py
   or  python3 tests/test_positioning.py   (no pytest needed)
 """
 

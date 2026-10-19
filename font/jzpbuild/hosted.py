@@ -32,6 +32,27 @@ from pathlib import Path
 from . import config
 
 
+def load_env_file(path: Path) -> list[str]:
+    """Read KEY=VALUE lines from a local .env (gitignored) into os.environ, without overriding
+    what the shell already set. Blank lines, # comments, `export ` and surrounding quotes are
+    fine. Returns the names it set (never the values)."""
+    if not path.is_file():
+        return []
+    names = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.removeprefix("export ").split("=", 1)
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        if key and key not in os.environ:
+            os.environ[key] = value
+            names.append(key)
+    return names
+
+
 def _env_flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 

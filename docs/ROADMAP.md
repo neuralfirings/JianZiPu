@@ -79,7 +79,7 @@ the draft, base font fetched from Storage. App: sign-in gate, "✎ Your draft" p
 and Update my draft (merge.ts `fontUpdateItems`), Export/Import .zip, Discard, See my changes.
 Local Builder: `/review` (testers' drafts with an admin sign-in, or a .zip) → Keep/Skip →
 Apply as one undo step (glyph files wait for Save) → Save → Copy commit message.
-Deploy: `Dockerfile`, `supabase/setup.sql`; steps in `src-fonttools/README.md` "Hosted pilot".
+Deploy: `Dockerfile`, `supabase/setup.sql`; steps in `font/README.md` "Hosted pilot".
 
 ### Phase 1b: hosted Layout Manager (later)
 
@@ -99,4 +99,4 @@ proposal detail page — as in the original plan, on top of the local app.
 
 ## Out of scope / kept as legacy
 
-Classic `gpos.py` + `inputs/layouts.json` (`--classic_pos` only, until the golden is regenerated). Removed 2026-10-18: the Figma importer (`figma.py`, `--figma_pull`, the `requests` dependency), `src-fontforge/` (FontForge pipeline, v3.x sources and backups; git tag `fontforge-final`), the broken root Parcel `package.json`, and `src-fonttools/tools/` (`font_tester.html` is replaced by the Builder's Tester screen). Superseded reviews and wireframes moved to `docs/archive/`.
+Classic `gpos.py` + `inputs/layouts.json` (`--classic_pos` only, until the golden is regenerated). Removed 2026-10-18: the Figma importer (`figma.py`, `--figma_pull`, the `requests` dependency), `src-fontforge/` (FontForge pipeline, v3.x sources and backups; git tag `fontforge-final`), the broken root Parcel `package.json`, and `font/tools/` (`font_tester.html` is replaced by the Builder's Tester screen). Superseded reviews and wireframes moved to `docs/archive/`.

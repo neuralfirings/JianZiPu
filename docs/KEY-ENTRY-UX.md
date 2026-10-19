@@ -2,7 +2,7 @@
 
 Artifact: https://claude.ai/artifact/5UrLxJUDKEna7PFnYkMzUu
 Wireframes: `docs/key-entry-ux.html` (open it in a browser; it uses no external resources).
-How each glyph is typed: the editable columns of `src-fonttools/inputs/components.csv`, edited on the
+How each glyph is typed: the editable columns of `font/inputs/components.csv`, edited on the
 Glyphs screen. It replaces the small "Typing keys" editor on the Areas screen. Design only: no code or data changed.
 
 **Implemented 2026-10-17** (Glyphs screen, `app/src/lib/typing.ts`, `POST /api/typing/preview`). Where the build

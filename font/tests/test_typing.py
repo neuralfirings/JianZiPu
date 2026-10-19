@@ -4,7 +4,7 @@ preview font (GSUB from unsaved rows compiled into a real build).
 
 The preview tests build the font once per session (about 15 s).
 
-Run:  cd src-fonttools && python3 -m pytest tests/test_typing.py
+Run:  cd font && python3 -m pytest tests/test_typing.py
 """
 
 import csv

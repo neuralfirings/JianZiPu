@@ -1,7 +1,7 @@
 """Tests for the web server's hosted (pilot) mode: read-only, signed-in testers only, builds of a
 tester's draft that belong to that tester. Supabase is stubbed; nothing leaves the machine.
 
-Run:  cd src-fonttools && python3 -m pytest tests/test_hosted.py
+Run:  cd font && python3 -m pytest tests/test_hosted.py
 """
 
 import json
@@ -18,6 +18,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from jzpbuild import config, webserver, hosted  # noqa: E402
+import os  # noqa: E402
 
 SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/></svg>'
 USERS = {"tok-a": {"id": "user-a"}, "tok-b": {"id": "user-b"}}
@@ -104,6 +105,20 @@ def test_base_font_is_left_alone_when_present(tmp_path):
 
 
 # ---------------------------------------------------------------- HTTP
+
+def test_env_file(tmp_path, monkeypatch):
+    f = tmp_path / ".env"
+    f.write_text('# local settings\nSUPABASE_URL="https://x.supabase.co"\nexport SUPABASE_ANON_KEY=anon\n\nJZP_TEST_KEEP=file\n')
+    monkeypatch.setenv("JZP_TEST_KEEP", "shell")
+    for k in ("SUPABASE_URL", "SUPABASE_ANON_KEY"):
+        monkeypatch.delenv(k, raising=False)
+    assert sorted(hosted.load_env_file(f)) == ["SUPABASE_ANON_KEY", "SUPABASE_URL"]
+    assert os.environ["SUPABASE_URL"] == "https://x.supabase.co" and os.environ["SUPABASE_ANON_KEY"] == "anon"
+    assert os.environ["JZP_TEST_KEEP"] == "shell"          # the shell wins
+    assert hosted.load_env_file(tmp_path / "missing") == []
+    for k in ("SUPABASE_URL", "SUPABASE_ANON_KEY"):
+        os.environ.pop(k, None)                            # set by the loader, not by monkeypatch
+
 
 def test_config_and_base(server):
     status, r = call(server, "GET", "/api/config")

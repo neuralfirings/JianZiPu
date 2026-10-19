@@ -169,7 +169,7 @@ class DesignState {
     } catch (e) {
       this.error = hosted.isHosted
         ? `The Builder is taking a break: we can't reach it right now. Your saved draft is safe. (${(e as Error).message})`
-        : `Can't reach the web server. Run: cd src-fonttools && python3 -m jzpbuild.webserver  (${(e as Error).message})`;
+        : `Can't reach the web server. Run: cd font && python3 -m jzpbuild.webserver  (${(e as Error).message})`;
     } finally {
       this.loading = false;
     }

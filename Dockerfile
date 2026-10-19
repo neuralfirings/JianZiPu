@@ -13,13 +13,13 @@ RUN npm run build
 
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 JZP_HOSTED=1
-WORKDIR /repo/src-fonttools
-COPY src-fonttools/pyproject.toml ./
+WORKDIR /repo/font
+COPY font/pyproject.toml ./
 RUN pip install --no-cache-dir "fonttools>=4.50" "picosvg>=0.20" "skia-pathops>=0.9" "uharfbuzz>=0.39"
-COPY src-fonttools/jzpbuild ./jzpbuild
-COPY src-fonttools/inputs ./inputs
+COPY font/jzpbuild ./jzpbuild
+COPY font/inputs ./inputs
 COPY --from=app /repo/app/build /repo/app/build
-RUN useradd --create-home builder && mkdir -p src_font && chown -R builder /repo/src-fonttools
+RUN useradd --create-home builder && mkdir -p src_font && chown -R builder /repo/font
 USER builder
 # the base font (TW-Kai) is fetched from Supabase Storage at startup, then main's font is built once
 CMD ["python3", "-m", "jzpbuild.webserver", "--hosted", "--host", "0.0.0.0"]

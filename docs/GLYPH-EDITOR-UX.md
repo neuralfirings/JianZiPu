@@ -2,7 +2,7 @@
 
 Artifact: https://claude.ai/artifact/LdBmi12pa7ETZHGYS8jxTh
 Wireframes: `docs/glyph-editor-ux.html` (open it in a browser; it uses no external resources).
-A touch-up and import tool for `src-fonttools/inputs/svg/<name>.svg`, built on Paper.js
+A touch-up and import tool for `font/inputs/svg/<name>.svg`, built on Paper.js
 (+ paperjs-offset, + a potrace WASM build). It writes SVG files only; it changes no
 `design.json` shape except one new optional key, `reference_weight` (units).
 
