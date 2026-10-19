@@ -3,7 +3,7 @@
 Each composed JZP word is laid out by contextual single-position rules: a rule
 matches the sequence of area classes that make up a word shape and moves the
 marked glyph to its area's x/y for the active layout. Layout geometry comes
-from layouts.json (derived from Figma).
+from layouts.json (the classic frame geometry).
 
 Rules are plain token lists: "@area_left'" positions the left-hand glyph
 (trailing apostrophe = marked), "@area_left" is context. The marked token's
@@ -20,19 +20,13 @@ from . import config
 
 Rule = list  # of str tokens; trailing "'" marks the positioned glyph
 
+# The (left || hui) presence combinations, in canonical rule order: both,
+# left only, hui only.
+LH_COMBOS = (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"])
+
 
 class FillError(Exception):
     pass
-
-
-def _lh_combos(jc: bool) -> list[list[str]]:
-    """The (left||hui) presence combinations, in canonical order."""
-    tail = ["@area_jc"] if jc else []
-    return [
-        ["@area_left", "@area_hui"] + tail,
-        ["@area_left"] + tail,
-        ["@area_hui"] + tail,
-    ]
 
 
 def word_layout_rules(right: str | None, jc: bool,
@@ -46,6 +40,7 @@ def word_layout_rules(right: str | None, jc: bool,
     rule sets.
     """
     R_ = [f"@area_right__{right}"] if right else []
+    jc_ = ["@area_jc"] if jc else []
     rules: list[Rule] = []
 
     # In the blank (no right hand) layouts the word ends before zhu can
@@ -54,42 +49,38 @@ def word_layout_rules(right: str | None, jc: bool,
 
     # fy' — with zhu, then without
     for zhu in head_zhus:
-        for lh in _lh_combos(jc):
-            rules.append(["@area_fy'"] + lh + zhu + R_)
+        for lh in LH_COMBOS:
+            rules.append(["@area_fy'"] + lh + jc_ + zhu + R_)
 
     # left'
     for zhu in head_zhus:
         for hui in (["@area_hui"], []):
-            rules.append(["@area_left'"] + hui + (["@area_jc"] if jc else []) + zhu + R_)
+            rules.append(["@area_left'"] + hui + jc_ + zhu + R_)
 
     # hui'
     for zhu in head_zhus:
-        rule = ["@area_hui'"] + (["@area_jc"] if jc else []) + zhu + R_
         if not jc and not zhu and not R_:
             continue  # bare hui fallback handled separately (blank layouts)
-        rules.append(rule)
+        rules.append(["@area_hui'"] + jc_ + zhu + R_)
 
     # jc'
     if jc:
         for zhu in head_zhus:
-            for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+            for lh in LH_COMBOS:
                 rules.append(lh + ["@area_jc'"] + zhu + R_)
 
     # zhu'
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-        rules.append(lh + (["@area_jc"] if jc else []) + ["@area_zhu'"] + R_)
+    for lh in LH_COMBOS:
+        rules.append(lh + jc_ + ["@area_zhu'"] + R_)
 
     # right'
     if right:
         for zhu in (["@area_zhu"], []):
-            for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-                rules.append(lh + (["@area_jc"] if jc else []) + zhu + [f"@area_right__{right}'"])
+            for lh in LH_COMBOS:
+                rules.append(lh + jc_ + zhu + [f"@area_right__{right}'"])
 
     # strings
-    prefix_combos = []
-    for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
-            prefix_combos.append(lh + (["@area_jc"] if jc else []) + zhu + R_)
+    prefix_combos = [lh + jc_ + zhu + R_ for zhu in (["@area_zhu"], []) for lh in LH_COMBOS]
     if strings == "li":
         for p in prefix_combos:
             rules.append(p + ["@area_string_top'", "@area_string_bottom'"])
@@ -164,7 +155,7 @@ def vert_rules(n: int) -> list[Rule]:
     return rules
 
 
-def cuo_rules(anchor: str) -> list[dict]:
+def cuo_rules(anchor: str) -> list[tuple[str, list[Rule]]]:
     """The 撮 chord segments: anchor is '@area_chord__cuo' (left segment,
     after the chord glyph) or '@area_cuo_bar' (right segment, after '|').
 
@@ -194,19 +185,19 @@ def cuo_rules(anchor: str) -> list[dict]:
         [A, "@area_left", "@area_hui", "@area_jc'"],
         [A, "@area_hui", "@area_jc'"],
     ]
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+    for lh in LH_COMBOS:
         b2.append([A] + lh + ["@area_jc", "@area_zhu'"])
     for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+        for lh in LH_COMBOS:
             b2.append([A] + lh + ["@area_jc"] + zhu + ["@area_string'"])
     blocks.append((f"layout_cuo_{side}2", b2))
 
     # plain variant
     b1: list[Rule] = []
-    for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+    for lh in LH_COMBOS:
         b1.append([A] + lh + ["@area_zhu'"])
     for zhu in (["@area_zhu"], []):
-        for lh in (["@area_left", "@area_hui"], ["@area_left"], ["@area_hui"]):
+        for lh in LH_COMBOS:
             b1.append([A] + lh + zhu + ["@area_string'"])
     blocks.append((f"layout_cuo_{side}", b1))
 
@@ -237,13 +228,21 @@ def token_area(token: str) -> str:
 
 
 def fill_rule(rule: Rule, layout: str, layouts: dict,
-              overrides: dict[str, str] | None = None) -> str:
+              overrides: dict[str, str] | None = None, zero: bool = False) -> str:
     areas = layouts.get(layout)
     if areas is None:
         raise FillError(f"no geometry for layout {layout}")
     parts = ["pos"]
     for token in rule:
         if token.endswith("'"):
+            if zero:
+                # Same match context/specificity as the real rule (still
+                # blocks less-specific fallback rules, e.g. layout_blank,
+                # from matching this word instead), but contributes no net
+                # offset -- used when this family's real positioning comes
+                # from elsewhere (dynamic_positioning) instead of layouts.json.
+                parts.append(f"{token} <0 0 0 0>")
+                continue
             area = (overrides or {}).get(token.rstrip("'")) or token_area(token)
             p = areas.get(area)
             if p is None:
@@ -256,13 +255,25 @@ def fill_rule(rule: Rule, layout: str, layouts: dict,
 
 def emit_block(lines: list[str], layout: str, rules: list[Rule],
                layouts: dict, comment: str | None = None,
-               overrides: dict[str, str] | None = None) -> None:
+               overrides: dict[str, str] | None = None, zero: bool = False) -> None:
     lines.append(f"  # layout: {layout}" + (f" — {comment}" if comment else ""))
     for r in rules:
-        lines.append("  " + fill_rule(r, layout, layouts, overrides))
+        lines.append("  " + fill_rule(r, layout, layouts, overrides, zero=zero))
 
 
-def gen_gpos(layouts: dict) -> list[str]:
+def gen_gpos(layouts: dict, skip_right_keys: set[str] = frozenset(),
+             zero_others: bool = False) -> list[str]:
+    """`skip_right_keys`: families whose real positioning comes from
+    dynamic_positioning instead (their own classic rules here are zeroed,
+    not omitted -- see the comment on the six-family loop below).
+    `zero_others`: also zero every OTHER classic-positioned shape this
+    module generates (the remaining right-hand families, vertical-mode
+    words, cuo chords) -- a dynamic-pos-only test build, so that anything
+    dynamic_positioning doesn't actually cover renders visibly broken
+    (glyphs piled at the origin) instead of silently looking correct via
+    classic and giving false confidence that dynamic positioning handled
+    it. See jzpbuild.build's --dynamic_pos_only flag.
+    """
     lines = ["lookup jzp_glyph_positioning {"]
 
     # vertical stacks. Special case first: ':大息' would otherwise be read as
@@ -270,28 +281,60 @@ def gen_gpos(layouts: dict) -> list[str]:
     emit_block(lines, "layout_vertjzp2",
                [["@area_char_colon", "md_da'", "md_xi'"]], layouts,
                comment="special case :大息",
-               overrides={"md_da": "area_char1", "md_xi": "area_char2"})
+               overrides={"md_da": "area_char1", "md_xi": "area_char2"},
+               zero=zero_others)
     for n in (4, 3, 2, 1):
-        emit_block(lines, f"layout_vertjzp{n}", vert_rules(n), layouts)
+        emit_block(lines, f"layout_vertjzp{n}", vert_rules(n), layouts, zero=zero_others)
 
-    # 历 (li) — takes two strings
-    emit_block(lines, "layout_li2", word_layout_rules("li", jc=True, strings="li"), layouts)
-    emit_block(lines, "layout_li", word_layout_rules("li", jc=False, strings="li"), layouts)
-    emit_block(lines, "layout_li3", no_left_layout_rules("li", jc=False), layouts)
+    # 历 (li) — takes two strings. Same zeroing rationale as the six
+    # standard right-hand techniques below: when dynamic_positioning owns
+    # li's real positioning, these rules must still be emitted (so the
+    # "blanks" fallback below can't wrongly match a li word) but with a
+    # zeroed value record, not omitted -- see the comment on the loop below.
+    li_zero = "li" in skip_right_keys
+    emit_block(lines, "layout_li2", word_layout_rules("li", jc=True, strings="li"), layouts, zero=li_zero)
+    emit_block(lines, "layout_li", word_layout_rules("li", jc=False, strings="li"), layouts, zero=li_zero)
+    emit_block(lines, "layout_li3", no_left_layout_rules("li", jc=False), layouts, zero=li_zero)
 
     # 撮 chords: left segment then right segment
     for anchor in ("@area_chord__cuo", "@area_cuo_bar"):
         for layout, rules in cuo_rules(anchor):
-            emit_block(lines, layout, rules, layouts)
+            emit_block(lines, layout, rules, layouts, zero=zero_others)
 
     # the six standard right-hand techniques
     for right in config.RIGHT_KEYS:
-        emit_block(lines, f"layout_{right}2", word_layout_rules(right, jc=True), layouts)
-        emit_block(lines, f"layout_{right}", word_layout_rules(right, jc=False), layouts)
-        emit_block(lines, f"layout_{right}3", no_left_layout_rules(right), layouts)
+        # Real positioning for this family comes from dynamic_positioning
+        # instead (--dynamic_pos) -- but still emit these rules with zeroed
+        # value records, not omitted entirely: omitting them would let the
+        # less-specific "blanks (no right hand)" rules below incorrectly
+        # match a prefix of this family's words (their contextual matching
+        # has no way to require a right-hand glyph's ABSENCE), additively
+        # leaking an unwanted offset on top of dynamic_positioning's own
+        # (since GPOS single-adjustment accumulates across lookups, unlike
+        # mark attachment). Zeroed rules keep the same match specificity
+        # (still take precedence over the blank fallback) while
+        # contributing nothing. `zero_others` extends the same treatment to
+        # families dynamic_positioning was never asked to cover in the
+        # first place (a dynamic-pos-only test build) -- see gen_gpos's
+        # docstring.
+        zero = right in skip_right_keys or zero_others
+        emit_block(lines, f"layout_{right}2", word_layout_rules(right, jc=True), layouts, zero=zero)
+        emit_block(lines, f"layout_{right}", word_layout_rules(right, jc=False), layouts, zero=zero)
+        emit_block(lines, f"layout_{right}3", no_left_layout_rules(right), layouts, zero=zero)
 
-    # blanks (no right hand)
-    emit_block(lines, "layout_blank2", word_layout_rules(None, jc=True), layouts)
+    # blanks (no right hand) -- zero_others covers these too: a "blank"
+    # word (fy/left/hui/jc/zhu/string with no right-hand technique glyph at
+    # all) is a shape ANY non-right-hand-family pivot's glyphs can
+    # accidentally match by coincidence (nothing in these rules' own
+    # backtrack/lookahead excludes e.g. cuo's xl_cuo/xl_tt), so leaving them
+    # unzeroed under --dynamic_pos_only let a real bug through: chord_left's
+    # own fy_1 rule and this unzeroed classic fallback both fired on the
+    # same "fy followed by left/hui" glyph run, and GPOS single-adjustment
+    # values from separate lookups accumulate (see README's "Why not GPOS
+    # mark attachment") -- e.g. "Cfys5" landed mod_fanyin at (580, 1439)
+    # instead of dynamic_pos's own intended (290, 741), literally the sum of
+    # both rules' offsets.
+    emit_block(lines, "layout_blank2", word_layout_rules(None, jc=True), layouts, zero=zero_others)
 
     blank_rules = word_layout_rules(None, jc=False)
     # the bare-hui cases need explicit zhu/string context (7z7, 77) and a
@@ -302,29 +345,23 @@ def gen_gpos(layouts: dict) -> list[str]:
         ["@area_hui'", "@area_string"],
     ]
     # insert after the left' rules (2 fy-groups of 3, then 2 left rules... )
-    emit_block(lines, "layout_blank", blank_rules[:8] + extra + blank_rules[8:], layouts)
+    emit_block(lines, "layout_blank", blank_rules[:8] + extra + blank_rules[8:], layouts, zero=zero_others)
 
-    emit_block(lines, "layout_blank3", no_left_layout_rules(None), layouts)
+    emit_block(lines, "layout_blank3", no_left_layout_rules(None), layouts, zero=zero_others)
 
     # final fallback: hui position for 8+ when nothing else matched
     emit_block(lines, "layout_blank", [["@area_hui'"]], layouts,
-               comment="hui fallback for 8-13 after string rules")
+               comment="hui fallback for 8-13 after string rules", zero=zero_others)
 
     lines.append("} jzp_glyph_positioning;")
     lines += ["", "feature kern {", "  lookup jzp_glyph_positioning;", ""]
-    # cleanup: hide stray glyphs of half-formed words, and give space its
-    # advance back at word boundaries
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos numbersign {wilds}{sep}@area_wild' <-1000 0 0 0>;")
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos blank_colon {wilds}{sep}@area_wild' <-1000 0 0 0>;")
-    for n in range(10, -1, -1):
-        wilds = " ".join(["@area_wild"] * n)
-        sep = " " if n else ""
-        lines.append(f"  pos @new_word_char {wilds}{sep}@space_char' <0 0 -1000 0>;")
+    # cleanup: hide stray glyphs of half-formed words (up to 10 deep), and
+    # give space its advance back at word boundaries
+    for context, marked, value in (("numbersign", "@area_wild", "<-1000 0 0 0>"),
+                                   ("blank_colon", "@area_wild", "<-1000 0 0 0>"),
+                                   ("@new_word_char", "@space_char", "<0 0 -1000 0>")):
+        for n in range(10, -1, -1):
+            tokens = " ".join([context] + ["@area_wild"] * n + [f"{marked}'"])
+            lines.append(f"  pos {tokens} {value};")
     lines.append("} kern;")
     return lines

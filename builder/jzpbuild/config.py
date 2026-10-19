@@ -1,20 +1,18 @@
 """Paths and static configuration for the JianZiPu build."""
 
-import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # path roots — internal only, used here to build the paths below
 
-BUILDER_DIR = Path(__file__).resolve().parent.parent
+BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directory (builder/)
 
 # ---------------------------------------------------------------------------
-# input files — used by: data.py, features.py, glyphs.py, genfea.py, figma.py
+# input files — used by: data.py, features.py, glyphs.py, genfea.py
 #
-# One folder (builder/inputs/) for everything the build reads: both the
-# human-maintained sources (components.csv, glyphRename.csv, edge_cases.fea)
-# and the Figma-fetched artifacts (svg/, layouts.json, meta.json — tracked
-# in git, refreshed via --figma_pull, no fallback to some other copy). Every
+# One folder (inputs/) for everything the build reads, all tracked in git:
+# design.json, components.csv and svg/ (edited in the Builder app),
+# glyphRename.csv and edge_cases.fea (by hand), layouts.json (legacy). Every
 # path below is also individually overridable from the CLI (see build.py's
 # --input-* flags) — these are just the defaults.
 #
@@ -23,25 +21,20 @@ BUILDER_DIR = Path(__file__).resolve().parent.parent
 # two different things sharing the word "component" — one's metadata, one's
 # artwork. Distinguished by suffix (_CSV vs _DIR); don't conflate them.
 
-INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, figma.py, build.py
+INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, build.py
 
 COMPONENTS_CSV = INPUTS_DIR / "components.csv"               # data.py
 GLYPH_RENAME_CSV = INPUTS_DIR / "glyphRename.csv"            # data.py
 EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 
 COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
-META_JSON = INPUTS_DIR / "meta.json"                   # figma.py — Figma file version, for cache invalidation
-LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py, figma.py — layout/area geometry
-FEA_OUT_DEFAULT = INPUTS_DIR / "fontForgeFeatures.fea" # build.py — default --fea-out inspection copy
+LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py — classic layout/area geometry
 
-# ---------------------------------------------------------------------------
-# Figma access — used by: figma.py
-
-# Figma file key (from the design file URL, see README)
-FIGMA_FILE_KEY = os.environ.get("FIGMA_FILE_KEY", "CC89RmepV34CVP9bKWu48b")
-# Only this page (Figma "canvas") is scanned for glyphs/layouts; other pages
-# (drafts, archive, WIP) are ignored entirely.
-FIGMA_PAGE_NAME = os.environ.get("FIGMA_PAGE_NAME", "main")
+# The design file: areas (box size + member glyphs), layouts (slots,
+# relationships/gaps, centering). Source of truth for positioning AND for the
+# GSUB area classes; edited by the JZP Font Builder app. LAYOUTS_JSON above is
+# the classic frame geometry, used only by --classic_pos.
+DESIGN_JSON = INPUTS_DIR / "design.json"                     # positioning/, data.py, webserver.py
 
 # ---------------------------------------------------------------------------
 # font source / build outputs
@@ -51,7 +44,10 @@ SOURCE_FONT = BUILDER_DIR / "src_font/TW-Kai-98.ttf"                      # base
 # printable ASCII plus NBSP.
 BASE_KEEP_CODEPOINTS = list(range(0x20, 0x7F)) + [0xA0]      # base.py
 CURRENT_FONT = BUILDER_DIR / "tests/JianZiPu.ttf"                       # tests/test_shaping.py — tracked, golden reference
-OUTPUT_FONT = BUILDER_DIR / "JianZiPu.ttf"                      # build.py — default build destination, never clobbers CURRENT_FONT
+# Build artifacts (gitignored): the font, and an inspection copy of the
+# generated feature text (--fea-out). Neither ever clobbers CURRENT_FONT.
+OUTPUT_FONT = BUILDER_DIR / "JianZiPu.ttf"                      # build.py
+FEA_OUT_DEFAULT = BUILDER_DIR / "JianZiPu.fea"                  # build.py
 
 # ---------------------------------------------------------------------------
 # font metrics / identity — used by: base.py, glyphs.py
@@ -89,14 +85,19 @@ OS2 = {
     "sCapHeight": 660,
 }
 
-# widths of the zero-ink control glyphs (from the current font)
-CONTROL_GLYPHS = {  # name -> (codepoint, advance width)  — used by: base.py
+# PUA assignments — must stay stable so existing documents keep rendering.
+
+# zero-ink control glyphs: name -> (codepoint, advance width)
+CONTROL_GLYPHS = {                                            # base.py
     "blank": (0x58001, 0),
-    "blank_bar": (0x58002, 500),
+    "blank_bar": (0x58002, 1000),
     "blank_colon": (0x58003, 1000),
     "advance": (0x58004, 1000),
     "half_advance": (0x58005, 500),
 }
+# First codepoint for the imported component glyphs; glyphs.py assigns them
+# in sorted-filename order from here.
+COMPONENT_GLYPHS_BASE = 58101                                 # glyphs.py
 
 # ---------------------------------------------------------------------------
 # right-hand technique classes — used by: features.py, gpos.py
@@ -114,15 +115,3 @@ RIGHT_SELECTORS = {  # features.py
     "li": ["lg_li"],
 }
 RIGHT_KEYS = [k for k in RIGHT_SELECTORS if k != "li"]  # gpos.py
-
-# ---------------------------------------------------------------------------
-# defined but currently unused elsewhere (kept as documented intent — features.py
-# recomputes its own hui/decimal ranges inline instead of importing these)
-
-# Hui numbers and their ASCII-digit glyph spellings ("one zero" = 10, etc.)
-HUI_RANGE = list(range(1, 14))  # 1..13; 13 also reachable as ch_wai / "13+"
-DECIMALS = list(range(1, 10))
-
-# PUA assignments (must stay stable so existing documents keep rendering)
-CONTROL_GLYPHS_BASE = 0x58001  # duplicates CONTROL_GLYPHS["blank"][0] above
-COMPONENT_GLYPHS_BASE = 58101  # duplicates the base implicit in glyphs.py's own codepoint counter

@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
 
@@ -11,12 +12,12 @@ from .genfea import generate
 from .glyphs import add_component_glyphs
 
 
-def build(out_path=None, fea_out=None, verbose=False):
+def build(out_path=None, fea_out=None, verbose=False, classic_pos=False):
     out_path = out_path or config.OUTPUT_FONT
     vlog = print if verbose else (lambda *a: None)
 
     print("generating feature file ...")
-    fea_text = generate()
+    fea_text = generate(classic_pos=classic_pos)
     if fea_out:
         fea_out.write_text(fea_text)
         print(f"  wrote {fea_out}")
@@ -59,27 +60,29 @@ def main(argv=None):
                    help="also write the generated .fea here for inspection")
     p.add_argument("--fea-only", action="store_true",
                    help="only generate the feature file, don't build the font")
-    p.add_argument("--figma_pull", action="store_true",
-                   help="fetch SVGs + layouts from Figma first (needs FIGMA_TOKEN)")
+    p.add_argument("--classic_pos", action="store_true",
+                   help="legacy positioning from inputs/layouts.json + gpos.py "
+                        "instead of the cursive rules from inputs/design.json "
+                        "(only for comparing against the released font)")
     for flag, attr, desc in INPUT_OVERRIDES:
         p.add_argument(f"--{flag.replace('_', '-')}", type=str, default=None,
                        help=f"override the {desc} input path "
                             f"(default {getattr(config, attr)})")
+    p.add_argument("--design", type=str, default=None,
+                   help=f"override the design file (default {config.DESIGN_JSON})")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
-    from pathlib import Path
     for flag, attr, _ in INPUT_OVERRIDES:
         val = getattr(args, flag)
         if val is not None:
             setattr(config, attr, Path(val))
+    if args.design is not None:
+        config.DESIGN_JSON = Path(args.design)
 
-    if args.figma_pull:
-        from .figma import fetch
-        fetch()
     fea_out = Path(args.fea_out) if args.fea_out else None
     if args.fea_only:
-        text = generate()
+        text = generate(classic_pos=args.classic_pos)
         if fea_out:
             fea_out.write_text(text)
             print(f"wrote {fea_out}")
@@ -88,7 +91,7 @@ def main(argv=None):
         return 0
 
     build(out_path=Path(args.output) if args.output else None,
-          fea_out=fea_out, verbose=args.verbose)
+          fea_out=fea_out, verbose=args.verbose, classic_pos=args.classic_pos)
     return 0
 
 

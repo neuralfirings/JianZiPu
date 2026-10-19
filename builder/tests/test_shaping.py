@@ -106,7 +106,7 @@ def test_shaping_matches_current_font():
     import subprocess, tempfile
     new = Path(tempfile.mkdtemp()) / "JianZiPu.new.ttf"
     subprocess.run(
-        [sys.executable, "-m", "jzpbuild", "-o", str(new), "--fea-out", ""],
+        [sys.executable, "-m", "jzpbuild", "--classic_pos", "-o", str(new), "--fea-out", ""],  # golden is classic-positioned
         cwd=config.BUILDER_DIR, check=True)
     assert compare_fonts(str(config.CURRENT_FONT), str(new)) == 0
 

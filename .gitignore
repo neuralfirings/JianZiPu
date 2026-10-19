@@ -19,5 +19,9 @@ __pycache__/
 # builder/ (Python font pipeline)
 builder/cache/
 builder/JianZiPu.ttf
+builder/JianZiPu.fea
 builder/src_font/*.ttf
-builder/.env
+.env
+
+# local working notes: UX specs, wireframes, roadmap (not shared)
+docs/

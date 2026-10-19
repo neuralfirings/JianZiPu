@@ -1,15 +1,23 @@
 """Generate the GSUB half of the feature file (classes + substitution lookups).
 
 The goal is semantic equivalence with the previously hand-maintained
-src/input/fontForgeFeatures.fea: every glyph class and substitution rule is
-derived from components.csv, glyphRename.csv, and algorithmic
-hui/decimal matrices. Hand-written disambiguation rules live in
-src/input/edge_cases.fea and are included verbatim.
+fontForgeFeatures.fea of the FontForge pipeline (removed; git tag
+fontforge-final): every glyph class and
+substitution rule is derived from components.csv, glyphRename.csv, and
+algorithmic hui/decimal matrices. Hand-written disambiguation rules live in
+inputs/edge_cases.fea and are included verbatim.
+
+Rule ORDER within the hui lookups is load-bearing (a 2-token hui like
+`one one` must be tried before its 1-token prefix `one`); hui_sequence()
+below is the one place that order is spelled out.
 """
+
+import contextvars
 
 from . import config
 from .data import (
-    GlyphRow, load_components, load_char_to_glyph_name_rows, resolve_char_to_glyph_name,
+    GlyphRow, load_components, load_char_to_glyph_name_rows, load_design,
+    resolve_char_to_glyph_name,
 )
 from .validate import validate_or_raise
 
@@ -34,26 +42,49 @@ def hui_ch(n: int) -> str:
 
 PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad", "ch_hui"]
 
+# The Builder's spelling preview generates GSUB from an unsaved design and unsaved
+# rows; it sets this for the duration of one call (per thread, so concurrent
+# requests don't see each other's design).
+_DESIGN_OVERRIDE: contextvars.ContextVar = contextvars.ContextVar("design_override", default=None)
+
+
+def _design():
+    return _DESIGN_OVERRIDE.get() or load_design()
+
+
+def hui_sequence(spell, wai: str = "ch_wai", last: int = 10) -> list[tuple[str, int]]:
+    """(input token sequence, hui number) pairs in the order every hui lookup
+    enumerates them: 11-13 first (so they aren't shadowed by their shorter
+    1-token prefixes), then 外 as 13, then 1..`last`. `spell` renders one
+    hui number as tokens (hui_ascii, hui_ch, ...); `wai` is 外's own glyph
+    in the same spelling system."""
+    return ([(spell(h), h) for h in (11, 12, 13)] + [(wai, 13)]
+            + [(spell(h), h) for h in range(1, last + 1)])
+
+
+def decimals(spell) -> list[tuple[str, int]]:
+    """(decimal token, md_* suffix) for the decimals 1..9 plus 半 (= .5)."""
+    return [(spell(d), d) for d in range(1, 10)] + [("ch_ban", 5)]
+
+
+_LEGACY_AREA = {"area_char": "char", "area_chord": "chord", "area_fy": "fy", "area_left": "left",
+                "area_hui": "hui", "area_mod_jc": "jc", "area_mod_zhu": "zhu",
+                "area_right": "right", "area_string": "string"}
+
 
 def hui_class_glyphs(rows: list[GlyphRow]) -> list[str]:
-    base = [r.glyph_name for r in rows if r.in_area("area_hui")]
-    decimals = []
-    for n in range(1, 14):
-        decimals.append(f"md_{n}.blank")
-        decimals.extend(f"md_{n}.{d}" for d in range(1, 10))
-    return base + decimals + ["blank"]
+    return list(_design().areas["hui"].glyphs)
 
 
-def area_glyphs(rows: list[GlyphRow], col: str) -> list[str]:
-    return [r.glyph_name for r in rows if r.in_area(col)]
+def area_glyphs(rows: list[GlyphRow], area: str) -> list[str]:
+    """Member glyphs of a design.json area (legacy column names accepted)."""
+    return list(_design().areas[_LEGACY_AREA.get(area, area)].glyphs)
 
 
 def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
     """Everything that can appear inside a composed word (@area_wild)."""
     names = {r.glyph_name for r in rows}
-    for n in range(1, 14):
-        names.add(f"md_{n}.blank")
-        names.update(f"md_{n}.{d}" for d in range(1, 10))
+    names.update(_design().all_glyphs())
     names.update(["blank", "blank_bar", "blank_colon"])
     return sorted(names)
 
@@ -63,20 +94,14 @@ def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
 
 
 def gen_classes(rows: list[GlyphRow]) -> list[str]:
-    hui = hui_class_glyphs(rows)
-    char_glyphs = area_glyphs(rows, "area_char")
     vert_pairs = [(r.glyph_name, r.vert_variant) for r in rows if r.vert_variant]
-    lines = [
-        "# base classes (generated from components.csv)",
-        f"  @area_fy = [ {' '.join(area_glyphs(rows, 'area_fy'))} ];",
-        f"  @area_left = [ {' '.join(area_glyphs(rows, 'area_left'))} ];",
-        f"  @area_hui = [ {' '.join(hui)} ];",
-        f"  @area_jc = [ {' '.join(area_glyphs(rows, 'area_mod_jc'))} ];",
-        f"  @area_zhu = [ {' '.join(area_glyphs(rows, 'area_mod_zhu'))} ];",
-        f"  @area_right_all = [ {' '.join(area_glyphs(rows, 'area_right'))} ];",
-        f"  @area_string = [ {' '.join(area_glyphs(rows, 'area_string'))} ];",
-        "",
-        "  @area_cuo_bar = [ blank_bar ];",
+    lines = ["# area classes (generated from design.json)"]
+    for name, area in _design().areas.items():
+        lines.append(f"  @area_{name} = [ {' '.join(area.glyphs)} ];")
+    lines += [
+        "  # legacy aliases (classic gpos.py, edge_cases.fea)",
+        "  @area_right_all = @area_right;",
+        "  @area_cuo_bar = @area_bar;",
         "  @area_left_rt = @area_left;",
         "  @area_hui_rt = @area_hui;",
         "  @area_jc_rt = @area_jc;",
@@ -87,8 +112,7 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
         "",
         f"  @area_period_subs = [ {' '.join(PERIOD_SUBS)} ];",
         "",
-        "  @area_char_colon = [ blank_colon ];",
-        f"  @area_char = [ {' '.join(char_glyphs)} ];",
+        "  @area_char_colon = @area_colon;",
     ]
     for i in (1, 2, 3, 4):
         lines += [
@@ -109,7 +133,7 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
     for key, members in config.RIGHT_SELECTORS.items():
         lines.append(f"  @area_right__{key} = [ {' '.join(members)} ];")
     lines += [
-        f"  @area_chord__cuo = [ {' '.join(area_glyphs(rows, 'area_chord'))} ];",
+        "  @area_chord__cuo = @area_chord;",
         "",
         "  # special characters",
         "  @new_word_char = [ numbersign blank_colon ];",
@@ -125,15 +149,9 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
 def gen_s2j_lat_ch_period_liga() -> list[str]:
     """<ascii hui> <period-like char> <ascii decimal> -> md_H.D (e.g. 7点6)."""
     lines = ["lookup s2j_lat_ch_period_liga {"]
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else DIGIT[d]
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ascii(h)} @area_period_subs {dd} by md_{h}.{target};")
-        parts.append(f"sub ch_wai @area_period_subs {dd} by md_13.{target};")
-        for h in range(1, 11):
-            parts.append(f"sub {hui_ascii(h)} @area_period_subs {dd} by md_{h}.{target};")
+    for dd, target in decimals(DIGIT.__getitem__):
+        parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ascii)]
         lines.append("  " + "  ".join(parts))
     lines.append("} s2j_lat_ch_period_liga;")
     return lines
@@ -216,6 +234,27 @@ def gen_l2j_liga(rows: list[GlyphRow]) -> list[str]:
     return lines
 
 
+def digit_entries(rows: list[GlyphRow]) -> list[tuple[str, str]]:
+    """Latin spellings that contain a digit (zhi4, xi4, fu4), longest first.
+
+    The number lookups (s2j_*) run before latin input and would read the digit
+    as a string or position number (xi4 -> 息 + string 4), so these spellings
+    get their own lookup that runs ahead of the number lookups."""
+    out = [(k, g) for k, g in latin_entries(rows).items() if any(c.isdigit() for c in k)]
+    out.sort(key=lambda kg: (-len(kg[0]), kg[0]))
+    return out
+
+
+def gen_l2j_digit_liga(rows: list[GlyphRow]) -> list[str]:
+    entries = digit_entries(rows)
+    if not entries:
+        return []
+    lines = ["lookup l2j_digit_liga { # spellings with a digit, ahead of the number lookups"]
+    lines += [f"  sub {spell_latin(k)} by {g}; # {k}" for k, g in entries]
+    lines.append("} l2j_digit_liga;")
+    return lines
+
+
 def gen_l2j_single(rows: list[GlyphRow]) -> list[str]:
     entries = latin_entries(rows)
     single = [(k, g) for k, g in entries.items() if len(k) == 1 and k.isalpha()]
@@ -253,23 +292,12 @@ def gen_c2j_char_deci_period_liga() -> list[str]:
     """Chinese hui + period-like char (+ optional Chinese decimal)."""
     lines = ["lookup c2j_char_deci_period_liga {"]
     # bare hui + period char (十二徽 -> md_12)
-    parts = []
-    for h in (11, 12, 13):
-        parts.append(f"sub {hui_ch(h)} @area_period_subs by md_{h};")
-    parts.append("sub ch_wai @area_period_subs by md_13;")
-    for h in range(1, 11):
-        parts.append(f"sub {hui_ch(h)} @area_period_subs by md_{h};")
+    parts = [f"sub {tok} @area_period_subs by md_{h};" for tok, h in hui_sequence(hui_ch)]
     lines.append("  " + "  ".join(parts))
     # hui + period char + decimal (十点二 -> md_10.2)
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ch(h)} @area_period_subs {dd} by md_{h}.{target};")
-        parts.append(f"sub ch_wai @area_period_subs {dd} by md_13.{target};")
-        for h in range(1, 11):
-            parts.append(f"sub {hui_ch(h)} @area_period_subs {dd} by md_{h}.{target};")
+    for dd, target in decimals(hui_ch):
+        parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ch)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_period_liga;")
     return lines
@@ -284,35 +312,23 @@ def gen_c2j_char_deci_liga_parts() -> list[str]:
     merged away (part2). ch_10 alone ("十二" = 10+2 vs 12) needs its own
     pass (parts 3/4) so that 十一/十二/十三 aren't shadowed.
     """
+    # ch_10 is left out of parts 1/2 (last=9) and handled in parts 3/4 --
+    # here it would shadow 十一/十二/十三.
     lines = ["lookup c2j_char_deci_liga_part1 {"]
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub @area_left {hui_ch(h)} {dd}' by md_{h}.{target};")
-        parts.append(f"sub @area_left ch_wai {dd}' by md_13.{target};")
-        for h in range(1, 10):
-            parts.append(f"sub @area_left {hui_ch(h)} {dd}' by md_{h}.{target};")
-        # ch_10 handled in part3 (would shadow 十一/十二/十三 here)
+    for dd, target in decimals(hui_ch):
+        parts = [f"sub @area_left {tok} {dd}' by md_{h}.{target};"
+                 for tok, h in hui_sequence(hui_ch, last=9)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_liga_part1;")
 
     lines.append("lookup c2j_char_deci_liga_part2 {")
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub {hui_ch(h)} md_{h}.{d} by md_{h}.{d};")
-        parts.append(f"sub ch_wai md_13.{d} by md_13.{d};")
-        for h in range(1, 10):
-            parts.append(f"sub ch_{h} md_{h}.{d} by md_{h}.{d};")
+        parts = [f"sub {tok} md_{h}.{d} by md_{h}.{d};" for tok, h in hui_sequence(hui_ch, last=9)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_liga_part2;")
 
     lines.append("lookup c2j_char_deci_liga_part3 {")
-    for d in list(range(1, 10)) + ["ban"]:
-        target = 5 if d == "ban" else d
-        dd = "ch_ban" if d == "ban" else f"ch_{d}"
+    for dd, target in decimals(hui_ch):
         lines.append(f"  sub @area_left ch_10 {dd}' by md_10.{target};")
     lines.append("} c2j_char_deci_liga_part3;")
 
@@ -375,31 +391,19 @@ def gen_c2j_single(rows: list[GlyphRow], c2g: dict[str, str], col: str, name: st
 # md-glyph number lookups (post-conversion, shared by ASCII and Chinese input)
 
 
-def md_hui_names() -> list[str]:
-    return [f"md_{h}" for h in range(1, 14)] + ["md_wai"]
-
-
 def gen_char_deci_liga_parts() -> list[str]:
     """hui-glyph + string-glyph collapse (s7 5 -> s7.5) in Safari-safe steps."""
+    md_hui = "md_{}".format
     lines = ["lookup char_deci_liga_part1 {"]
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub @area_left md_{h} md_{d}' by md_{h}.{d};")
-        parts.append(f"sub @area_left md_wai md_{d}' by md_13.{d};")
-        for h in range(1, 11):
-            parts.append(f"sub @area_left md_{h} md_{d}' by md_{h}.{d};")
+        parts = [f"sub @area_left {tok} md_{d}' by md_{h}.{d};"
+                 for tok, h in hui_sequence(md_hui, wai="md_wai")]
         lines.append("  " + "  ".join(parts))
     lines.append("} char_deci_liga_part1;")
 
     lines.append("lookup char_deci_liga_part2 {")
     for d in range(1, 10):
-        parts = []
-        for h in (11, 12, 13):
-            parts.append(f"sub md_{h} md_{h}.{d} by md_{h}.{d};")
-        parts.append(f"sub md_wai md_13.{d} by md_13.{d};")
-        for h in range(1, 11):
-            parts.append(f"sub md_{h} md_{h}.{d} by md_{h}.{d};")
+        parts = [f"sub {tok} md_{h}.{d} by md_{h}.{d};" for tok, h in hui_sequence(md_hui, wai="md_wai")]
         lines.append("  " + "  ".join(parts))
     lines.append("} char_deci_liga_part2;")
     return lines
@@ -427,7 +431,7 @@ def gen_hui_and_commas(rows: list[GlyphRow]) -> list[str]:
 # feature block
 
 
-def gen_liga_feature() -> list[str]:
+def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
     wild_repeat = lambda n: " ".join(["@area_wild"] * n)
     lines = [
         "feature liga {",
@@ -445,9 +449,13 @@ def gen_liga_feature() -> list[str]:
         "  sub plus by advance; # for music programs where space separates words per note",
         "",
         "  # special cases (hand-maintained, see edge_cases.fea)",
-        "  lookup lat_zhi4_sub;",
         "  lookup ch_dc_sub;",
         "",
+    ]
+    if digit_lookup:
+        lines += ["  # latin spellings with a digit (zhi4, xi4): before the numbers read the digit",
+                  "  lookup l2j_digit_liga;", ""]
+    lines += [
         "  # common inputs",
         "  lookup s2j_lat_ch_period_liga; # 7点6",
         "  lookup s2j_liga; # 7.6",
@@ -491,9 +499,12 @@ def gen_liga_feature() -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def gen_gsub() -> list[str]:
-    rows = load_components()
-    validate_or_raise(rows, load_char_to_glyph_name_rows())
+def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[str]:
+    """The GSUB feature file. `rows` defaults to components.csv; the Builder's
+    preview passes unsaved rows (and validate=False: it reports clashes itself)."""
+    rows = load_components() if rows is None else rows
+    if validate:
+        validate_or_raise(rows, load_char_to_glyph_name_rows())
     c2g = resolve_char_to_glyph_name(rows)
     edge_cases = config.EDGE_CASES_FEA.read_text().splitlines()
 
@@ -503,6 +514,8 @@ def gen_gsub() -> list[str]:
          "languagesystem latn dflt;", ""],
         gen_classes(rows), [""],
         edge_cases, [""],
+        # defined before the number lookups: lookups run in definition order
+        gen_l2j_digit_liga(rows), [""],
         gen_s2j_lat_ch_period_liga(),
         gen_s2j_liga(),
         gen_s2j_single(), [""],
@@ -518,7 +531,7 @@ def gen_gsub() -> list[str]:
         gen_c2j_single(rows, c2g, "traditional", "c2j_trad_single"), [""],
         gen_char_deci_liga_parts(),
         gen_hui_and_commas(rows), [""],
-        gen_liga_feature(),
+        gen_liga_feature(digit_lookup=bool(digit_entries(rows))),
     ]
     out = []
     for s in sections:

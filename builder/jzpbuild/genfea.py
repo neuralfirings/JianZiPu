@@ -11,18 +11,17 @@ def load_layouts() -> dict:
     return json.loads(config.LAYOUTS_JSON.read_text())
 
 
-def generate() -> str:
+def generate(classic_pos: bool = False) -> str:
+    """GSUB from components.csv + design.json areas, then GPOS: the cursive
+    chain rules generated from design.json (default), or, with
+    `classic_pos`, the legacy per-frame rules from inputs/layouts.json and
+    gpos.py (kept only so the parity test can compare the two)."""
     lines = gen_gsub()
     lines.append("")
-    lines += gen_gpos(load_layouts())
-    return "\n".join(lines) + "\n"
-
-
-if __name__ == "__main__":
-    import sys
-    text = generate()
-    if len(sys.argv) > 1:
-        from pathlib import Path
-        Path(sys.argv[1]).write_text(text)
+    if classic_pos:
+        lines += gen_gpos(load_layouts())
     else:
-        sys.stdout.write(text)
+        from .data import load_design
+        from .positioning.emit import gen_gpos as gen_cursive_gpos
+        lines += gen_cursive_gpos(load_design()).lines
+    return "\n".join(lines) + "\n"

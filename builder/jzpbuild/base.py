@@ -5,10 +5,12 @@ GlyphRename and the manual Font Info dialogs.
 """
 
 from fontTools.ttLib import TTFont, newTable
+from fontTools.ttLib.tables._g_l_y_f import Glyph
 from fontTools.subset import Subsetter, Options
 
 from . import config
 from .data import load_char_to_glyph_name, load_components, referenced_chars
+from .glyphs import add_glyph
 
 
 def build_base() -> TTFont:
@@ -32,7 +34,8 @@ def build_base() -> TTFont:
     font["head"].unitsPerEm = config.UPEM
 
     rename_glyphs(font, renames)
-    add_control_glyphs(font)
+    for name, (code, width) in config.CONTROL_GLYPHS.items():
+        add_glyph(font, name, Glyph(), advance=width, lsb=0, codepoint=code)
     blank_out(font, "numbersign", width=config.UPEM)
     font["hmtx"]["space"] = (config.UPEM, 0)
     set_metadata(font)
@@ -62,33 +65,10 @@ def rename_glyphs(font: TTFont, renames: dict[str, str]) -> None:
     for table in font["cmap"].tables:
         table.cmap = {c: old_to_new.get(g, g) for c, g in table.cmap.items()}
     font.setGlyphOrder(new_order)
-    if hasattr(font, "_reverseGlyphOrderDict"):
-        del font._reverseGlyphOrderDict
     font["post"].glyphOrder = None  # re-derive names on compile
 
 
-def add_control_glyphs(font: TTFont) -> None:
-    from fontTools.ttLib.tables._g_l_y_f import Glyph
-
-    glyf = font["glyf"]
-    hmtx = font["hmtx"]
-    cmap_tables = [t for t in font["cmap"].tables if t.format in (4, 12)]
-    order = font.getGlyphOrder()
-    for name, (code, width) in config.CONTROL_GLYPHS.items():
-        glyf.glyphs[name] = Glyph()
-        hmtx.metrics[name] = (width, 0)
-        order.append(name)
-        for t in cmap_tables:
-            if t.format == 12 or code <= 0xFFFF:
-                t.cmap[code] = name
-    font.setGlyphOrder(order)
-    if hasattr(font, "_reverseGlyphOrderDict"):
-        del font._reverseGlyphOrderDict
-
-
 def blank_out(font: TTFont, name: str, width: int) -> None:
-    from fontTools.ttLib.tables._g_l_y_f import Glyph
-
     font["glyf"].glyphs[name] = Glyph()
     font["hmtx"].metrics[name] = (width, 0)
 
