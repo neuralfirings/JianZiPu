@@ -1,7 +1,7 @@
 """Tests for the web server's hosted (pilot) mode: read-only, signed-in testers only, builds of a
 tester's draft that belong to that tester. Supabase is stubbed; nothing leaves the machine.
 
-Run:  cd font && python3 -m pytest tests/test_hosted.py
+Run:  cd builder && python3 -m pytest tests/test_hosted.py
 """
 
 import json

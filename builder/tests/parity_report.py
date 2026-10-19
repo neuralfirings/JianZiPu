@@ -1,6 +1,6 @@
 """Position parity between two builds of the font (HarfBuzz).
 
-    cd font
+    cd builder
     python3 -m jzpbuild --classic_pos -o /tmp/classic.ttf --fea-out ""
     python3 -m jzpbuild -o /tmp/cursive.ttf --fea-out ""
     python3 tests/parity_report.py /tmp/classic.ttf /tmp/cursive.ttf

@@ -1,6 +1,6 @@
 """The web server for the JZP Font Builder app (local, or hosted with --hosted).
 
-    cd font && python3 -m jzpbuild.webserver [--port 5713]
+    cd builder && python3 -m jzpbuild.webserver [--port 5713]
 
 Serves the built app (app/build/, if present) and this folder as static
 files, plus a JSON API over the repo's input files. Local mode (default): single user,
@@ -742,12 +742,12 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main(argv=None):
     global SETTINGS, AUTH
-    p = argparse.ArgumentParser(description="JZP Font Builder web server")
+    p = argparse.ArgumentParser(description="JianZiPu Font Builder web server")
     p.add_argument("--host", default="127.0.0.1", help="address to listen on (0.0.0.0 in a container)")
     p.add_argument("--port", type=int, default=int(os.environ.get("PORT") or 5713))
     p.add_argument("--hosted", action="store_true", help="hosted pilot mode (also JZP_HOSTED=1); see hosted.py")
     args = p.parse_args(argv)
-    # local settings (Supabase URL and anon key for the Review screen) from font/.env
+    # local settings (Supabase URL and anon key for the Review screen) from builder/.env
     names = hosted.load_env_file(config.BUILDER_DIR / ".env")
     if names:
         print(f"read {', '.join(sorted(names))} from {config.BUILDER_DIR / '.env'}")
@@ -762,7 +762,7 @@ def main(argv=None):
         if config.SOURCE_FONT.exists():
             BUILD.start(MAIN)                     # the checked-in font, for previews and the Tester
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"JZP Font Builder ({'hosted' if SETTINGS.hosted else 'local'}): http://{args.host}:{args.port}/  "
+    print(f"JianZiPu Font Builder ({'hosted' if SETTINGS.hosted else 'local'}): http://{args.host}:{args.port}/  "
           f"(app: {'built' if APP_BUILD_DIR.exists() else 'not built -- run npm run build in app/, or npm run dev'})")
     # A plain `kill` (or a launcher stopping the server) skips atexit; turn it into a normal
     # exit so the temp build folders are removed either way.

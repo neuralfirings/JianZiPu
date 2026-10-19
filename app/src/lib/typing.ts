@@ -1,4 +1,4 @@
-// Spellings: how each glyph is typed (font/inputs/components.csv). Pure helpers, no
+// Spellings: how each glyph is typed (builder/inputs/components.csv). Pure helpers, no
 // Svelte state: the app keeps a `Typing` map in state.svelte.ts and edits it through here.
 // The checks mirror jzpbuild/typing_preview.py `issues()`; a clash or a malformed spelling
 // would fail the font build, so it pauses Save.

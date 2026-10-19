@@ -12,12 +12,12 @@ feature files.
 1. **Python >= 3.10.**
 2. **Install dependencies:**
    ```bash
-   cd font
+   cd builder
    pip install -e .          # fonttools, picosvg, skia-pathops, uharfbuzz
    pip install -e '.[test]'  # + pytest (uharfbuzz is a main dependency: the web server shapes test words with it)
    ```
 3. **Base font.** The pipeline subsets glyphs from a base Kai typeface, and
-   expects it at `font/src_font/TW-Kai-98.ttf`. This file is **gitignored
+   expects it at `builder/src_font/TW-Kai-98.ttf`. This file is **gitignored
    and not included in the repo** (36MB, binary, not something git handles
    well) — copy/paste your own copy of `TW-Kai-98.ttf` there before your
    first build. Using a different base font, or a different filename? Change
@@ -26,11 +26,11 @@ feature files.
    (`base.py`) just reads whatever path is set there.
 4. **The Builder app.** `cd ../app && npm install && npm run build` once (and
    after pulling app changes); the web server then serves it.
-5. **`font/inputs/`** holds everything the build reads — what the
+5. **`builder/inputs/`** holds everything the build reads — what the
    Builder edits (`design.json`, `components.csv`, `svg/`), the hand-maintained
    `glyphRename.csv` and `edge_cases.fea`, and `layouts.json` for the legacy
    `--classic_pos` build — and is tracked in git, so a fresh checkout already
-   has it — nothing to do here. A plain build reads `font/inputs/svg/` and `design.json`
+   has it — nothing to do here. A plain build reads `builder/inputs/svg/` and `design.json`
    unconditionally, with no fallback location — if this directory is ever
    missing or emptied, the build fails fast with `FileNotFoundError` rather
    than silently reading something stale (see "config.py's paths are the
@@ -47,7 +47,7 @@ at `/`, `inputs/` and `tests/` as static files (`/inputs/svg/...`,
 `/JianZiPu.ttf`, which is the latest UI build when there is one), and the JSON API the app uses:
 
 ```bash
-cd font
+cd builder
 python3 -m jzpbuild.webserver          # http://127.0.0.1:5713/
 python3 -m jzpbuild.webserver --port 9000
 ```
@@ -146,14 +146,14 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
 2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `JZP_FEEDBACK_URL` (a form or mailto:).
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
-3. **Your local Review**: copy `font/.env.example` to `font/.env` (gitignored) and
+3. **Your local Review**: copy `builder/.env.example` to `builder/.env` (gitignored) and
    fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the web server reads that file at start (the shell's
    own environment wins). Never the service key on your laptop. Open Review and sign in with your
    admin email. Without them, Review still opens `.zip` files.
 
 ```bash
-cd font && cp .env.example .env    # then edit .env
-cd font && python3 -m jzpbuild.webserver
+cd builder && cp .env.example .env    # then edit .env
+cd builder && python3 -m jzpbuild.webserver
 docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder   # the hosted image, locally
 ```
 
@@ -170,7 +170,7 @@ is marked "reviewed" in this browser; a later save by the tester shows "new sinc
 The Builder runs builds and checks for you; these are for scripting, CI and the tests.
 
 ```bash
-cd font
+cd builder
 python3 -m jzpbuild                          # build from inputs/ -> JianZiPu.ttf
 python3 -m jzpbuild --fea-only               # just regenerate the feature file (fast)
 python3 -m jzpbuild -o /path/to/JianZiPu.ttf # write the font somewhere else (e.g. a release copy)
@@ -181,27 +181,27 @@ python3 -m jzpbuild --help                   # full list of --input-* overrides
 python3 -m jzpbuild.webserver                # API + the Builder app at http://127.0.0.1:5713/
 ```
 
-By default the build writes to `font/JianZiPu.ttf`, and the
+By default the build writes to `builder/JianZiPu.ttf`, and the
 `--fea-out` inspection copy of the generated feature text to
-`font/JianZiPu.fea` — both build artifacts, both gitignored. So
+`builder/JianZiPu.fea` — both build artifacts, both gitignored. So
 running the pipeline never touches anything tracked: the shaping regression
 test always has an untouched golden reference (`config.CURRENT_FONT`,
 `tests/JianZiPu.ttf`) to compare against, and you can preview a build (via
 the Builder's Test & Build or Tester screen) before
 copying it anywhere with `-o`.
 
-**`font/inputs/` is the only source read at build time — no fallback.**
+**`builder/inputs/` is the only source read at build time — no fallback.**
 `config.py`'s paths are the single source of truth: a plain build reads SVGs
-from `config.COMPONENTS_DIR` (`font/inputs/svg/`) and the positioning
-design from `config.DESIGN_JSON` (`font/inputs/design.json`) with no
+from `config.COMPONENTS_DIR` (`builder/inputs/svg/`) and the positioning
+design from `config.DESIGN_JSON` (`builder/inputs/design.json`) with no
 alternate location to fall back to (unless overridden on the CLI — see
-"Overriding individual input paths" below). `font/inputs/` is tracked
+"Overriding individual input paths" below). `builder/inputs/` is tracked
 in git in full: a Save in the Builder shows up as a `git status` diff under it,
 to review and commit like any other source change.
 
 ### Overriding individual input paths
 
-Every path `config.py` defines under `font/inputs/` can be pointed
+Every path `config.py` defines under `builder/inputs/` can be pointed
 elsewhere for a single build via a matching `--input-*` flag, without
 touching `config.py`:
 
@@ -216,7 +216,7 @@ python3 -m jzpbuild --input-svg-dir ./scratch/svg
 Each defaults to the matching `config.py` constant (`COMPONENTS_CSV`,
 `GLYPH_RENAME_CSV`, `EDGE_CASES_FEA`, `LAYOUTS_JSON`, `COMPONENTS_DIR`)
 and only affects that one build invocation — nothing is written back to
-`font/inputs/`. Run `python3 -m jzpbuild --help` for the full, current
+`builder/inputs/`. Run `python3 -m jzpbuild --help` for the full, current
 list (it's generated from the same argparse definitions, so it can't drift
 from this doc).
 
@@ -224,11 +224,11 @@ from this doc).
 
 ```
 app/ (the Builder, served by jzpbuild.webserver) ──Save──▶ inputs/{design.json, components.csv, svg/}
-font/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
+builder/src_font/TW-Kai-98.ttf ──(base.py: fontTools subset + ch_* rename + metrics)──▶ base glyphs
 inputs/svg/*.svg ──(glyphs.py: picosvg + pathops + cu2qu)──▶ PUA component glyphs
 inputs/{components.csv, glyphRename.csv, edge_cases.fea} ──(features.py)──▶ GSUB feature text
 inputs/design.json ──(positioning/: shapes → resolve → emit)──▶ GPOS feature text
-                                       └──(feaLib)──▶ GSUB/GPOS ──▶ font/JianZiPu.ttf
+                                       └──(feaLib)──▶ GSUB/GPOS ──▶ builder/JianZiPu.ttf
 ```
 
 ## How compilation works
@@ -273,7 +273,7 @@ touched a font yet. This is exactly what `--fea-only` writes out and what
 `feadiff` compares.
 
 **2. Build the base font — `base.py::build_base()`.** Subsets
-`font/src_font/TW-Kai-98.ttf` down to printable ASCII/NBSP
+`builder/src_font/TW-Kai-98.ttf` down to printable ASCII/NBSP
 (`config.BASE_KEEP_CODEPOINTS`) plus every character referenced anywhere in
 `components.csv`'s `simplified`/`traditional` columns *or* listed in
 `glyphRename.csv` (`data.py::referenced_chars()` ∪ the override dict — a
@@ -305,7 +305,7 @@ components, no OpenType tables yet) to `fontTools.feaLib`, which resolves
 every class/lookup reference against the font's actual glyph set and
 produces real `GSUB`/`GPOS` tables. `font.save(out_path)` writes the `.ttf`.
 
-Upstream of all this, the Builder's Save writes `font/inputs/`;
+Upstream of all this, the Builder's Save writes `builder/inputs/`;
 the four steps above only ever read what's already sitting there.
 
 ## Sources of truth (what you edit)
@@ -316,8 +316,8 @@ the four steps above only ever read what's already sitting there.
 | which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
 | input keys / spellings             | Builder → Glyphs → Typing (writes `inputs/components.csv`)     |
-| Han char glyph names               | `font/inputs/glyphRename.csv`                         |
-| disambiguation rules               | `font/inputs/edge_cases.fea`                          |
+| Han char glyph names               | `builder/inputs/glyphRename.csv`                         |
+| disambiguation rules               | `builder/inputs/edge_cases.fea`                          |
 | metrics / naming / config          | `jzpbuild/config.py`                                           |
 
 Everything else — glyph classes, all substitution lookups, the 13×9 hui/
@@ -424,7 +424,7 @@ Printable ASCII + NBSP are kept unconditionally via
 `config.BASE_KEEP_CODEPOINTS` and pass through with their original TW-Kai
 glyph names, so they never need rows in this file.
 
-### `font/inputs/edge_cases.fea`
+### `builder/inputs/edge_cases.fea`
 
 Raw FEA `lookup { ... }` blocks, included verbatim into the generated
 feature file's `liga` feature. This is the one place where hand-written
@@ -498,7 +498,7 @@ identity/metrics change or a new right-hand technique family is added to
 ## Common tasks
 
 Two worked examples of adding new content. Both follow the same shape: get
-the SVG into `font/inputs/svg/`, add the glyph to an area and give
+the SVG into `builder/inputs/svg/`, add the glyph to an area and give
 it spellings in the Builder (Glyphs → Typing), rebuild. Neither needs a
 code change: a new *member* of an existing area is positionable everywhere
 that area already appears. New word types, parts and spacing rules are
@@ -623,8 +623,8 @@ quirks, see `docs/ROADMAP.md`).
 - The legacy pipeline (FontForge scripts, `scripts.cjs`, the
   hand-maintained `fontForgeFeatures.fea` and the wide CSVs, all in
   `src-fontforge/`) was removed on 2026-10-18 and is in git history under the
-  tag `fontforge-final`. The builder's slimmed CSVs (`font/inputs/components.csv`,
-  `font/inputs/glyphRename.csv`) are the live sources of truth.
+  tag `fontforge-final`. The builder's slimmed CSVs (`builder/inputs/components.csv`,
+  `builder/inputs/glyphRename.csv`) are the live sources of truth.
   `components.csv` is now `glyph_name,vert_variant,common,latin,latin_alt,
   simplified,traditional,pinyin`: `glyph_name` is the ID (the old
   ID/keys/filename columns duplicated it and were dropped), area membership

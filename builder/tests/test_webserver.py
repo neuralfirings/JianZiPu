@@ -1,7 +1,7 @@
 """Tests for the web server's glyph-file endpoints (PUT /api/svg/<name>, POST /api/svg/check)
 and the catalog they feed. Uses a temporary svg/ folder; never touches inputs/.
 
-Run:  cd font && python3 -m pytest tests/test_webserver.py
+Run:  cd builder && python3 -m pytest tests/test_webserver.py
 """
 
 import json

@@ -5,8 +5,15 @@
       "name": "builder",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "jzpbuild.webserver", "--port", "5713"],
-      "cwd": "font",
+      "cwd": "builder",
       "port": 5713
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5800", "--bind", "127.0.0.1"],
+      "cwd": "site",
+      "port": 5800
     },
     {
       "name": "app-dev",

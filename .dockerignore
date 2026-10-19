@@ -8,8 +8,8 @@
 app/build
 app/.svelte-kit
 docs
-font/src_font
-font/cache
-font/tests
-font/JianZiPu.ttf
-font/JianZiPu.fea
+builder/src_font
+builder/cache
+builder/tests
+builder/JianZiPu.ttf
+builder/JianZiPu.fea

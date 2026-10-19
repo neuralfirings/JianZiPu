@@ -5,7 +5,7 @@ import { cmapCodepoints, segments } from './cmap';
 // the app has no @types/node, so it is typed loosely here.
 const { readFileSync } = (await import(/* @vite-ignore */ 'node:' + 'fs')) as { readFileSync: (p: string) => Uint8Array };
 const cwd = (globalThis as unknown as { process: { cwd(): string } }).process.cwd();   // app/ (vitest runs there)
-const font = readFileSync(`${cwd}/../font/tests/JianZiPu.ttf`);
+const font = readFileSync(`${cwd}/../builder/tests/JianZiPu.ttf`);
 const buf = font.buffer.slice(font.byteOffset, font.byteOffset + font.byteLength) as ArrayBuffer;
 
 describe('cmapCodepoints', () => {

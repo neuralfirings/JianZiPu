@@ -1,6 +1,6 @@
 """HarfBuzz vs CoreText (macOS) on one font over the corpus (+extras).
 
-    cd font && python3 tests/shaper_parity.py JianZiPu.ttf
+    cd builder && python3 tests/shaper_parity.py JianZiPu.ttf
 
 Uses tests/ctshape.swift (run with the system `swift`). Every word must
 shape identically on both engines; a difference means a GPOS construct one

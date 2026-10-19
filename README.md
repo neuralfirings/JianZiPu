@@ -1,6 +1,6 @@
 This document is about making the font: the Builder app and the engineering behind it.
 
-For demo and info on how to use this font, please visit the [JianZiPu Font Website](https://guqintabs.com/jianzipu). 
+For demo and info on how to use this font, please visit the [JianZiPu Font Website](https://jianzipufont.com). 
 
 The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.
 
@@ -24,24 +24,38 @@ small Python server. Everything you design happens there:
 Start it on your machine:
 
 ```bash
-cd font
+cd builder
 pip install -e .                # once
 python3 -m jzpbuild.webserver   # open http://127.0.0.1:5713/
 ```
 
 The app needs building once (`cd app && npm install && npm run build`), and the
-base font `font/src_font/TW-Kai-98.ttf`, which is not in the repo,
+base font `builder/src_font/TW-Kai-98.ttf`, which is not in the repo,
 must be copied in once. Save in the Builder writes the files in
-`font/inputs/` (`design.json`, `components.csv`, `svg/`), which you
+`builder/inputs/` (`design.json`, `components.csv`, `svg/`), which you
 then commit. Invited testers use a hosted copy where their work stays in a
-private draft until it is reviewed; see `font/README.md` "Hosted pilot".
+private draft until it is reviewed; see `builder/README.md` "Hosted pilot".
+
+# The website
+
+`site/` is the public font page at [jianzipufont.com](https://jianzipufont.com):
+a static page that types in the released font. Cloudflare Pages deploys it from
+`main` (output directory `site`, no build command). To publish a new font,
+build it into the site and commit:
+
+```bash
+cd builder && python3 -m jzpbuild -o ../site/JianZiPu.ttf
+```
+
+The Builder itself runs at builder.jianzipufont.com (see `builder/README.md`
+"Hosted pilot").
 
 # Under the hood
 
-The font is built by a Python pipeline in `font/` (no FontForge, no
+The font is built by a Python pipeline in `builder/` (no FontForge, no
 hand-edited feature files). The Builder runs it for you; from the command line
-it is `cd font && python3 -m jzpbuild` (writes
-`font/JianZiPu.ttf`). See `font/README.md` for the
+it is `cd builder && python3 -m jzpbuild` (writes
+`builder/JianZiPu.ttf`). See `builder/README.md` for the
 architecture, the inputs, and how the build is verified (a HarfBuzz shaping
 regression test against a golden font).
 

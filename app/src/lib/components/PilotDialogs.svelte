@@ -51,7 +51,7 @@
     <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && close()}>
       {#if pilot.dialog === 'welcome'}
         <h3>Welcome, {hosted.firstName || 'and thank you'}</h3>
-        <p>Thank you for testing the JZP Font Builder. Three things to know:</p>
+        <p>Thank you for testing the JianZiPu Font Builder. Three things to know:</p>
         <ol class="three">
           <li><b>This is your own draft.</b> Change anything: glyphs, how they're typed, how words are laid out. Nothing you do changes the real font or anyone else's work.</li>
           <li><b>It saves itself</b> every 30 seconds, and when you press Save. ↶ undoes a step.</li>

@@ -2,7 +2,7 @@
 few are listed, each one is served (and downloadable) by id, old ones are pruned.
 Uses fake font files; never runs the real build (tests/test_shaping.py does that).
 
-Run:  cd font && python3 -m pytest tests/test_builds.py
+Run:  cd builder && python3 -m pytest tests/test_builds.py
 """
 
 import json

@@ -1,6 +1,6 @@
 """Unit tests for jzpbuild.glyphs: SVG -> flattened outline (what the font build makes of a file).
 
-Run:  cd font && python3 -m pytest tests/test_glyphs.py
+Run:  cd builder && python3 -m pytest tests/test_glyphs.py
 """
 
 import sys

@@ -94,7 +94,7 @@
 
 <div class="shell">
   <header>
-    <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JZP Font Builder</div>
+    <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JianZiPu Font Builder</div>
     {#if hosted.isHosted && hosted.user}
       <span class="pill-wrap">
         <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">

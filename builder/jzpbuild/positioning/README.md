@@ -1,7 +1,7 @@
 # jzpbuild.positioning
 
 Geometry-derived GPOS from `inputs/design.json`. The model and the file
-format are documented in `font/README.md` ("`jzpbuild/positioning/`
+format are documented in `builder/README.md` ("`jzpbuild/positioning/`
 and `inputs/design.json`") and in `schema.py`'s docstring; this file is the
 short map.
 

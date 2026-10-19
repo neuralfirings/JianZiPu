@@ -32,7 +32,7 @@
 
 <div class="wrap">
   <div class="card">
-    <div class="title">JZP Font Builder <span class="muted">· pilot</span></div>
+    <div class="title">JianZiPu Font Builder <span class="muted">· pilot</span></div>
     {#if step === 'form'}
       <p>For invited testers. Type the email Nancy invited, and we'll send you a link to sign in. No password needed.</p>
       <form onsubmit={(e) => { e.preventDefault(); send(); }}>

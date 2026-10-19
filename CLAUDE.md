@@ -16,27 +16,28 @@ GPOS) is the only layout model — see `docs/ROADMAP.md` for decisions and phase
 ```bash
 # The Builder (web UI): the primary interface for glyphs, spellings and layouts
 cd app && npm install && npm run build                 # build the Builder app (served by the webserver); npm run dev for HMR on :5173
-cd font && python3 -m jzpbuild.webserver      # API + Builder app at http://127.0.0.1:5713/
-cd font && python3 -m jzpbuild.webserver --hosted   # pilot mode: read-only, Supabase sign-in + drafts (needs SUPABASE_URL/ANON_KEY; see font/README.md "Hosted pilot")
+cd builder && python3 -m jzpbuild.webserver      # API + Builder app at http://127.0.0.1:5713/
+cd builder && python3 -m jzpbuild.webserver --hosted   # pilot mode: read-only, Supabase sign-in + drafts (needs SUPABASE_URL/ANON_KEY; see builder/README.md "Hosted pilot")
 
 # Font build from the command line (the Builder runs the same pipeline)
-cd font && python3 -m jzpbuild  # → font/JianZiPu.ttf
-cd font && python3 -m jzpbuild --fea-only  # regenerate feature file only
-cd font && python3 -m jzpbuild -o /path/to/JianZiPu.ttf  # write the font somewhere else
-cd font && python3 -m jzpbuild --classic_pos  # legacy positioning from inputs/layouts.json + gpos.py (parity only)
+cd builder && python3 -m jzpbuild  # → builder/JianZiPu.ttf
+cd builder && python3 -m jzpbuild --fea-only  # regenerate feature file only
+cd builder && python3 -m jzpbuild -o /path/to/JianZiPu.ttf  # write the font somewhere else
+cd builder && python3 -m jzpbuild -o ../site/JianZiPu.ttf   # publish a font release to the public site (then commit)
+cd builder && python3 -m jzpbuild --classic_pos  # legacy positioning from inputs/layouts.json + gpos.py (parity only)
 
 # Tests
-cd font && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
-cd font && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_typing.py tests/test_hosted.py  # unit tests (positioning model, SVG flattening, SVG endpoints, spellings/typing preview, hosted mode)
+cd builder && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
+cd builder && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_typing.py tests/test_hosted.py  # unit tests (positioning model, SVG flattening, SVG endpoints, spellings/typing preview, hosted mode)
 cd app && npm test                    # Vitest unit tests (rules, shapes, gaps, panels store, glyph editor scene/ops/tools, typing, cmap, draft bundle/merge, app state)
 ```
 
-Default build output is `font/JianZiPu.ttf` (gitignored, as is the
-`--fea-out` copy `font/JianZiPu.fea`); nothing tracked is
+Default build output is `builder/JianZiPu.ttf` (gitignored, as is the
+`--fea-out` copy `builder/JianZiPu.fea`); nothing tracked is
 overwritten unless you pass `-o`. A plain build reads only from
-`font/inputs/` (tracked: `design.json`, `components.csv`,
+`builder/inputs/` (tracked: `design.json`, `components.csv`,
 `svg/`; `layouts.json` only for `--classic_pos`). The base font
-`font/src_font/TW-Kai-98.ttf` is gitignored and must be copied in
+`builder/src_font/TW-Kai-98.ttf` is gitignored and must be copied in
 by hand once. Dev tool: the Builder app (`app/`, see below; its Tester screen
 live-tests any built .ttf). `.claude/launch.json` has a `builder` entry that
 starts the web server.
@@ -48,44 +49,45 @@ regression fallback is now the classic positioning path below
 (`--classic_pos`, golden `tests/JianZiPu.ttf`).
 
 Run both test suites after any code change (`npm test` in `app/`, `python3 -m pytest tests` in
-`font/`; `tests/test_shaping.py` additionally needs a freshly built font and compares it
+`builder/`; `tests/test_shaping.py` additionally needs a freshly built font and compares it
 with the golden).
 
 ## Architecture
 
 ### Repo layout
 
-- **`font/`** — the font build pipeline (below). `README.md` there is the detailed reference.
-- **`font/jzpbuild/positioning/`** — the positioning model: `schema.py` (design file) → `shapes.py` (word shapes) → `resolve.py` (x/y) → `emit.py` (cursive-attachment GPOS). `tests/test_positioning.py` covers it.
-- **`font/jzpbuild/webserver.py`** — stdlib HTTP server: JSON API (`/api/design`, `/api/resolve`, `/api/words`, `/api/glyphs`, `/api/typing/preview`, `/api/build`, `/api/config`, `/api/base`…) plus the built app at `/`. `--hosted` (`jzpbuild/hosted.py`) is the pilot mode on Railway: read-only, POSTs need a Supabase-signed-in tester, builds per tester from their draft, base font fetched from Supabase Storage.
+- **`builder/`** — the font build pipeline (below) and the web server that serves the Builder app (`app/`) at builder.jianzipufont.com; renamed from `font/` on 2026-10-19. `README.md` there is the detailed reference.
+- **`site/`** — the public font page at jianzipufont.com (static: `index.html`, `keyboard.png`, and the released `JianZiPu.ttf`), deployed by Cloudflare Pages from `main`. Publishing a font = `cd builder && python3 -m jzpbuild -o ../site/JianZiPu.ttf`, then commit. Preview with the `site` entry in `.claude/launch.json`.
+- **`builder/jzpbuild/positioning/`** — the positioning model: `schema.py` (design file) → `shapes.py` (word shapes) → `resolve.py` (x/y) → `emit.py` (cursive-attachment GPOS). `tests/test_positioning.py` covers it.
+- **`builder/jzpbuild/webserver.py`** — stdlib HTTP server: JSON API (`/api/design`, `/api/resolve`, `/api/words`, `/api/glyphs`, `/api/typing/preview`, `/api/build`, `/api/config`, `/api/base`…) plus the built app at `/`. `--hosted` (`jzpbuild/hosted.py`) is the pilot mode on Railway: read-only, POSTs need a Supabase-signed-in tester, builds per tester from their draft, base font fetched from Supabase Storage.
 - **Hosted pilot** — `Dockerfile` (Railway), `supabase/001_setup.sql` (profiles, private `drafts`/`assets` buckets, row rules), spec `docs/PILOT-UX.md`. A tester's work is a draft bundle (`app/src/lib/bundle.ts`: manifest + design.json + components.csv + changed SVGs + base copies) in Supabase Storage; the owner merges drafts in the local Builder's `/review` (three-way, `app/src/lib/merge.ts`) and commits. The Supabase service key stays on the server, never in the app or repo.
 - **`app/`** — the JZP Font Builder (SvelteKit 2 / Svelte 5, static build, no backend of its own). Screens: Glyphs (grouped by area; Tiles | Typing switch, Typing = spreadsheet of the `components.csv` spellings with clash checks, paste, CSV import/export, and Try it through the unsaved spellings via `/api/typing/preview` — see `docs/KEY-ENTRY-UX.md`; + the glyph editor at `/glyphs/<name>/edit` and `/glyphs/new`: Paper.js canvas, paperjs-offset for thicken/outline, esm-potrace-wasm for tracing, dockable panels like Layouts (Selection/Compare/Glyph/Typing/Try it/Checks/Tester); writes `inputs/svg/<name>.svg` via `PUT /api/svg/<name>`), Layouts (canvas + dockable panels: Structure/Spacing/Centering/Area Properties…; Area Properties (`AreaPanel.svelte`, helpers in `lib/areas.ts`) replaced the old Areas screen: area switcher, box size with a canvas preview before Enter applies it, members with the position decimals as a 13 × 10 grid, + New area and Delete area (only an empty area no word type uses; otherwise a banner says why); deep link `/layouts?area=<id>&g=<glyph>`; the panel frame is `PanelWorkspace` + one `PanelStore` per screen in `lib/panels.svelte.ts`, the word strip is the shared `WordTester`), Test & Build (each build goes to its own temp dir, served at `/api/builds/<id>/JianZiPu.ttf`, downloadable), Tester (`/tester`: one exact TTF loaded via FontFace under its own family, from a build or a local file), Review (`/review`, local mode: testers' drafts or a .zip, Keep/Skip per item, Apply = one undo step; hosted: Import a .zip, `?mine` = See my changes); Import/Export of `design.json`, draft .zip. Design and spelling edits stay in the browser until Save (hash-checked, writes `design.json` and/or `components.csv`, waits while a spelling clashes); glyph files save from the editor at once (hosted: into the draft), glyph files from a Review Apply wait in `app.pendingSvgs` for Save. App state is `lib/state.svelte.ts`; hosted sign-in `lib/hosted.svelte.ts`, draft storage `lib/drafts.ts`, pilot dialogs `lib/pilot.svelte.ts` + `PilotDialogs.svelte`. Characters a font lacks show in red (cmap parsed in `app/src/lib/cmap.ts`).
 - **`docs/`** — local only (gitignored since 2026-10-19; older copies are in git history): UX specs, one per screen or feature (`*-UX.md` plus Kat's HTML wireframes); `docs/BUILDER-UX.md` is the main spec (written against the previous data model; the app maps its Layouts screen onto `design.json`; areas live in the Area Properties panel, see `docs/AREAS-PLACEMENT-UX.md`). `docs/ROADMAP.md` holds the decisions. Superseded reviews and wireframes are in `docs/archive/`.
 
-### Font pipeline (font/, pure Python)
+### Font pipeline (builder/, pure Python)
 
 ```
-Builder app (app/) ──(webserver API)──▶ font/inputs/{design.json, components.csv, svg/}
-font/src_font/TW-Kai-98.ttf ──(jzpbuild/base.py: subset + ch_* rename + metrics)──▶ base glyphs
+Builder app (app/) ──(webserver API)──▶ builder/inputs/{design.json, components.csv, svg/}
+builder/src_font/TW-Kai-98.ttf ──(jzpbuild/base.py: subset + ch_* rename + metrics)──▶ base glyphs
 inputs/svg/*.svg ──(jzpbuild/glyphs.py: picosvg + pathops + cu2qu)──▶ PUA component glyphs
-font/inputs/{components.csv, edge_cases.fea} ──(features.py)──▶ GSUB .fea
-font/inputs/design.json ──(jzpbuild/positioning/)──▶ GPOS .fea   (--classic_pos: gpos.py + layouts.json)
-                                  └──(fontTools feaLib)──▶ font/JianZiPu.ttf
+builder/inputs/{components.csv, edge_cases.fea} ──(features.py)──▶ GSUB .fea
+builder/inputs/design.json ──(jzpbuild/positioning/)──▶ GPOS .fea   (--classic_pos: gpos.py + layouts.json)
+                                  └──(fontTools feaLib)──▶ builder/JianZiPu.ttf
 ```
 
 ### Key input files (sources of truth)
 
-- `font/inputs/design.json` — the positioning design (version 2): `areas` (box size, member glyphs, advance), `layouts` (word types: slots with alternatives/repeat, spacing `relationships` with glyph-conditional gaps, `center`). Edited by the Builder app; also importable/exportable there.
-- `font/inputs/components.csv` — the spellings: `glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin` (glyph_name is the ID; pinyin is reference only; a vertical form stores only the `vert_variant` link on its partner plus spellings of its own). Drives ALL generated substitution rules, including `l2j_digit_liga` for Latin spellings with a digit (zhi4/xi4/fu4). Edited in the Builder's Glyphs → Typing view; area membership lives in `design.json`.
-- `font/inputs/glyphRename.csv` — optional overrides: unicode char → ch_* glyph name for Han chars that want a mnemonic name; any other referenced character still builds fine with an auto-derived uniXXXX name
-- `font/inputs/edge_cases.fea` — the few hand-maintained disambiguation rules (today only `ch_dc_sub`)
-- `font/inputs/layouts.json` + `font/jzpbuild/gpos.py` — legacy classic positioning (frame geometry + declarative rule builders), only used by `--classic_pos` and `tests/parity_report.py`
-- `font/jzpbuild/config.py` — metrics, name table, PUA codepoints, all generated-artifact paths (single source of truth, no fallbacks)
+- `builder/inputs/design.json` — the positioning design (version 2): `areas` (box size, member glyphs, advance), `layouts` (word types: slots with alternatives/repeat, spacing `relationships` with glyph-conditional gaps, `center`). Edited by the Builder app; also importable/exportable there.
+- `builder/inputs/components.csv` — the spellings: `glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin` (glyph_name is the ID; pinyin is reference only; a vertical form stores only the `vert_variant` link on its partner plus spellings of its own). Drives ALL generated substitution rules, including `l2j_digit_liga` for Latin spellings with a digit (zhi4/xi4/fu4). Edited in the Builder's Glyphs → Typing view; area membership lives in `design.json`.
+- `builder/inputs/glyphRename.csv` — optional overrides: unicode char → ch_* glyph name for Han chars that want a mnemonic name; any other referenced character still builds fine with an auto-derived uniXXXX name
+- `builder/inputs/edge_cases.fea` — the few hand-maintained disambiguation rules (today only `ch_dc_sub`)
+- `builder/inputs/layouts.json` + `builder/jzpbuild/gpos.py` — legacy classic positioning (frame geometry + declarative rule builders), only used by `--classic_pos` and `tests/parity_report.py`
+- `builder/jzpbuild/config.py` — metrics, name table, PUA codepoints, all generated-artifact paths (single source of truth, no fallbacks)
 
 
 ### SVG components
 
-`font/inputs/svg/` contains all PUA glyph SVGs, drawn or imported in the Builder's glyph editor:
+`builder/inputs/svg/` contains all PUA glyph SVGs, drawn or imported in the Builder's glyph editor:
 - `lg_*` — large glyphs (strokes: 勾 gou, 挑 tiao, etc.)
 - `md_*` — medium glyphs (finger positions, strings)
 - Other prefixes for hui markers, decorations, etc.
