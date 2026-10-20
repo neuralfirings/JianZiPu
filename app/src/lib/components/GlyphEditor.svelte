@@ -340,8 +340,11 @@
     <button class="ghost" onclick={() => ed.undo()} disabled={!ed.canUndo} data-tip={ed.canUndo ? `Undo ${ed.undoLabel} (⌘Z)` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
     <button class="ghost" onclick={() => ed.redo()} disabled={!ed.canRedo} data-tip="Redo (⇧⌘Z)" aria-label="Redo"><I.Redo /></button>
     <button onclick={() => ed.discard()} disabled={!ed.dirty} title="Back to the file as loaded (can be undone)">Discard</button>
-    <button class="primary" onclick={() => save()} disabled={ed.saving || !!ed.trace || (!ed.dirty && !ed.isNew)} title="Write inputs/svg/{name}.svg (⌘S)">Save glyph</button>
+    <button class="primary" onclick={() => save()} disabled={ed.saving || !!ed.trace || (!ed.dirty && !ed.isNew) || !!app.lockOf(`glyph:${name}`)} title="Write inputs/svg/{name}.svg (⌘S)">Save glyph</button>
   </div>
+  {#if app.lockOf(`glyph:${name}`)}
+    <div class="banner info locked"><span class="ic"><I.Lock /></span>{app.lockMessage(`glyph:${name}`)} You can still draw here to try ideas; Save stays off.</div>
+  {/if}
 
   <div class="body">
     <!-- tool rail -->

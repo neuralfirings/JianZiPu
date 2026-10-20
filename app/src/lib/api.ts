@@ -85,6 +85,13 @@ export type BuildStatus = {
   builds: Build[];          // newest first
 };
 
+/** Where the release stands (local server only, jzpbuild/release.py), and the last step's log. */
+export type ReleaseStatus = {
+  git: { branch: string; release: string | null; version: string | null; dirty: string[]; tags: string[]; candidates: string[]; repo: string | null; error?: string };
+  job: { action: 'start' | 'candidate' | 'publish' | null; state: 'idle' | 'running' | 'done'; log: string[]; error: string | null;
+    result: { branch?: string; tag?: string; version?: string; pr_url?: string; release_url?: string } | null };
+};
+
 export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null };
 export type BaseInfo = { commit: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
 /** A draft to build instead of the files on disk (hosted mode). */
@@ -138,5 +145,9 @@ export const api = {
   build: (inputs?: BuildInputs) => call<{ ok: boolean; error: string | null; status: BuildStatus }>('POST', '/api/build', inputs ?? {}),
   config: () => call<ServerConfig>('GET', '/api/config'),
   base: () => call<BaseInfo>('GET', '/api/base'),
-  buildStatus: () => call<BuildStatus>('GET', '/api/build/status')
+  buildStatus: () => call<BuildStatus>('GET', '/api/build/status'),
+  releaseStatus: () => call<ReleaseStatus>('GET', '/api/release/status'),
+  /** One release step, in the background on the local server; poll releaseStatus for its log. */
+  release: (step: 'start' | 'candidate' | 'publish', body: { version?: string; notes?: string; message?: string } = {}) =>
+    call<ReleaseStatus & { ok: boolean; error: string | null }>('POST', `/api/release/${step}`, body)
 };

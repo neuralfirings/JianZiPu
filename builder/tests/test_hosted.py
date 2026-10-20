@@ -141,6 +141,14 @@ def test_read_only(server):
     assert status == 403 and r["readonly"] is True
 
 
+def test_releases_are_never_made_on_the_hosted_server(server):
+    status, r = call(server, "GET", "/api/release/status", token="tok-a")
+    assert status == 403
+    for step in ("start", "candidate", "publish"):
+        status, r = call(server, "POST", f"/api/release/{step}", {"version": "3.200"}, token="tok-a")
+        assert status == 403, step
+
+
 def test_posts_need_a_signed_in_tester(server):
     body = {"words": ["s7k5"]}
     status, r = call(server, "POST", "/api/words", body)

@@ -3,9 +3,9 @@
 --
 -- What it makes:
 --   profiles        one row per invited person (name, email, role 'tester' | 'admin')
---   bucket drafts   private; drafts/<user id>/draft.json, each person reads and writes only their own
---                   folder, admins read all of them (the local Builder's Review screen)
 --   bucket assets   private; only the server's service key reads it (the TW-Kai base font)
+-- Then run 002_drafts_table.sql (testers' drafts), 004_change_requests.sql (Change Requests) and
+-- 005_request_drafts.sql (a Change Request saved before sending).
 --
 -- After running it (docs: builder/README.md "Hosted pilot"):
 --   Authentication → Sign In / Providers → Email: turn OFF "Allow new users to sign up"
@@ -62,28 +62,7 @@ on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------- storage
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('drafts', 'drafts', false, 20971520, array['application/json'])
-on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
-
 insert into storage.buckets (id, name, public)
 values ('assets', 'assets', false)
 on conflict (id) do update set public = false;
 -- assets has no policies on purpose: only the service key (the server) can read it
-
-drop policy if exists "drafts: read own" on storage.objects;
-create policy "drafts: read own" on storage.objects for select to authenticated
-  using (bucket_id = 'drafts' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "drafts: add own" on storage.objects;
-create policy "drafts: add own" on storage.objects for insert to authenticated
-  with check (bucket_id = 'drafts' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "drafts: change own" on storage.objects;
-create policy "drafts: change own" on storage.objects for update to authenticated
-  using (bucket_id = 'drafts' and (storage.foldername(name))[1] = auth.uid()::text)
-  with check (bucket_id = 'drafts' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "drafts: delete own" on storage.objects;
-create policy "drafts: delete own" on storage.objects for delete to authenticated
-  using (bucket_id = 'drafts' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "drafts: admins read all" on storage.objects;
-create policy "drafts: admins read all" on storage.objects for select to authenticated
-  using (bucket_id = 'drafts' and public.is_admin());

@@ -4,7 +4,7 @@
 // page center, the stroke weight, the sample sets). An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
-import type { Area, Design, Layout } from './api';
+import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
 
@@ -66,6 +66,11 @@ function units(d: Design): Map<string, { unit: DesignUnit; value: unknown }> {
   return m;
 }
 
+/** The value of one design unit ("area:left", "layout:standard", "center"…), undefined if absent. */
+export function unitOf(d: Design, key: string): unknown {
+  return units(d).get(key)?.value;
+}
+
 export function designItems(base: Design, theirs: Design, current: Design): DesignItem[] {
   const B = units(base), Th = units(theirs), C = units(current), out: DesignItem[] = [];
   for (const key of new Set([...B.keys(), ...Th.keys()])) {
@@ -102,10 +107,8 @@ export function unitSummary(u: DesignUnit, b: unknown, t: unknown): string[] {
   }
   if (u.type === 'layout') {
     const a = b as Layout, z = t as Layout, out: string[] = [];
-    const key = (r: unknown) => JSON.stringify(r);
-    const removed = a.relationships.filter((r) => !z.relationships.some((x) => key(x) === key(r))).length;
-    const added = z.relationships.filter((r) => !a.relationships.some((x) => key(x) === key(r))).length;
-    if (added || removed) out.push(`${Math.max(added, removed)} spacing rule${Math.max(added, removed) === 1 ? '' : 's'} changed`);
+    const n = ruleChanges(a, z).length;
+    if (n) out.push(`${n} spacing rule${n === 1 ? '' : 's'} changed`);
     if (!same(a.slots, z.slots)) out.push('structure (parts) changed');
     if (!same(a.center, z.center)) out.push('centering changed');
     if ((a.label ?? '') !== (z.label ?? '')) out.push(`shown as "${z.label ?? ''}"`);
@@ -189,6 +192,72 @@ function setUnit(d: Design, u: DesignUnit, v: unknown) {
 /** Default choices: keep everything that doesn't conflict; conflicts keep the current font. */
 export function defaultKeep(items: Item[]): Record<string, boolean> {
   return Object.fromEntries(items.map((i) => [i.id, !i.conflict]));
+}
+
+// ---------------------------------------------------------------- undoing (Your changes)
+
+/** Put items back the way the draft started (each item's `base`), on top of `cur` (the draft now).
+ *  The items come from comparing the draft with its base (Review's "mine" view). */
+export function revertItems(items: Item[], cur: Current): Merged {
+  const back = items.map((it): Item =>
+    it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) } : { ...it, theirs: it.base } as Item);
+  return applyMerge(back, Object.fromEntries(back.map((i) => [i.id, true])), cur);
+}
+
+/** One spacing rule of a word type, as it differs between two versions of the layout. */
+export type RuleChange = { key: string; status: Status; base?: Relationship; theirs?: Relationship; label: string };
+
+/** A rule's identity within a word type: which part it places, on which axis, from what. */
+export function ruleKey(r: Relationship): string {
+  return [r.axis, r.elem, r.base ?? '', r.base_edge ?? '', r.elem_edge ?? ''].join('|');
+}
+/** Keys made unique within one layout (a repeat of the same placement gets #2, #3…). */
+function keyed(rs: Relationship[]): Map<string, Relationship> {
+  const m = new Map<string, Relationship>(), seen: Record<string, number> = {};
+  for (const r of rs) {
+    const k = ruleKey(r), n = (seen[k] = (seen[k] ?? 0) + 1);
+    m.set(n === 1 ? k : `${k}#${n}`, r);
+  }
+  return m;
+}
+export const gapText = (r: Relationship) => (typeof r.gap === 'number' ? `gap ${r.gap}` : `${r.gap.length} gap${r.gap.length === 1 ? '' : 's'} by glyph`);
+export function ruleLabel(r: Relationship): string {
+  return `${r.axis === 'x' ? 'Horizontal' : 'Vertical'} · ${r.elem} from ${r.base ?? 'the page'} · ${gapText(r)}`;
+}
+
+/** The spacing rules that differ between two versions of a word type. */
+export function ruleChanges(base: Layout, theirs: Layout): RuleChange[] {
+  const B = keyed(base.relationships), Th = keyed(theirs.relationships), out: RuleChange[] = [];
+  for (const key of new Set([...B.keys(), ...Th.keys()])) {
+    const b = B.get(key), t = Th.get(key);
+    if (same(b, t)) continue;
+    out.push({ key, status: status(b, t), base: b, theirs: t, label: ruleLabel((t ?? b)!) });
+  }
+  return out;
+}
+
+/** `layout` with one rule put back the way it is in `base` (removed if `base` doesn't have it). */
+export function revertRule(layout: Layout, base: Layout, key: string): Layout {
+  const B = keyed(base.relationships), Cur = keyed(layout.relationships);
+  const b = B.get(key);
+  const out: Relationship[] = [];
+  let placed = false;
+  for (const [k, r] of Cur) {
+    if (k !== key) out.push(r);
+    else if (b) { out.push(JSON.parse(JSON.stringify(b))); placed = true; }
+  }
+  if (b && !placed) {
+    // a rule the draft removed: back where it was among the base's rules that are still there
+    const order = [...B.keys()], i = order.indexOf(key);
+    const after = order.slice(0, i).reverse().map((k) => Cur.get(k)).find((r) => r && out.includes(r));
+    out.splice(after ? out.indexOf(after) + 1 : 0, 0, JSON.parse(JSON.stringify(b)));
+  }
+  return { ...layout, relationships: out };
+}
+
+/** What still uses a glyph: its spellings and the areas it is a member of (before undoing a new glyph). */
+export function usesOfGlyph(g: string, design: Design, typing: T.Typing): { spellings: boolean; areas: string[] } {
+  return { spellings: !T.isEmpty(typing[g]), areas: Object.entries(design.areas).filter(([, a]) => a.glyphs.includes(g)).map(([n]) => n) };
 }
 
 // ---------------------------------------------------------------- line diff (for showing a unit)

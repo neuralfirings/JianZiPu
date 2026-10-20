@@ -70,6 +70,9 @@ def main(argv=None):
                             f"(default {getattr(config, attr)})")
     p.add_argument("--design", type=str, default=None,
                    help=f"override the design file (default {config.DESIGN_JSON})")
+    p.add_argument("--source-commit", type=str, default=None,
+                   help="the commit this font is built from, added to its version "
+                        "(\"Version 3.200; git-1a2b3c4\"; release builds, jzpbuild/release.py)")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -79,6 +82,8 @@ def main(argv=None):
             setattr(config, attr, Path(val))
     if args.design is not None:
         config.DESIGN_JSON = Path(args.design)
+    if args.source_commit:
+        config.SOURCE_COMMIT = args.source_commit[:12]
 
     fea_out = Path(args.fea_out) if args.fea_out else None
     if args.fea_only:

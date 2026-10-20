@@ -116,8 +116,9 @@
             <p class="muted">{#if app.draftBase?.version.date}Based on the font of {day(app.draftBase.version.date)}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
             {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
             <div class="row">
-              <button onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
-              <button onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
+              <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
+              <button class="sm" onclick={() => { pill = false; goto('/requests'); }}>Change Requests{app.requests.length ? ` · ${app.requests.length}` : ''}</button>
+              <button class="sm" onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
             </div>
           </div>
         {/if}
@@ -178,6 +179,8 @@
       {#if menu}
         <div class="menu float" role="menu">
           {#if hosted.isHosted}
+            <button onclick={() => goto('/review?mine')}>See my changes and send them…</button>
+            <button onclick={() => goto('/requests')}>Your Change Requests</button>
             <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
             <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? 'Update my draft to the font…' : 'Update my draft · up to date'}</button>
@@ -192,6 +195,7 @@
             <button onclick={() => (dialog = 'export')}>Export…</button>
             <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
+            <button onclick={() => goto('/release')}>Make a release…</button>
             <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
             <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
             <hr />
@@ -347,6 +351,7 @@
   .moved { opacity: .8; }
   .pop { position: absolute; left: 0; top: 100%; margin-top: 6px; z-index: var(--z-popover); width: 300px; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
   .pop p { margin: 0; font-size: var(--t-small); line-height: 16px; }
+  .pop .row { flex-wrap: wrap; gap: var(--space-3); }
   .fb { height: auto; border: 0; background: none; font-size: var(--t-small); color: var(--link); padding: 0 var(--space-2); cursor: pointer; }
   .who { width: var(--control-md); padding: 0; border-radius: 50%; }
   .signed { padding: 4px 8px; font-size: var(--t-small); }

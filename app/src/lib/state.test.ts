@@ -20,11 +20,20 @@ vi.mock('./api', () => ({ api }));
 const store = vi.hoisted(() => ({ draft: null as null | { text: string; stamp: string }, n: 0 }));
 vi.mock('./drafts', async () => {
   const { fromJson, toJson } = await import('./bundle');
+  class DraftConflict extends Error {}
   return {
+    DraftConflict,
     draftStamp: vi.fn(async () => store.draft?.stamp ?? null),
     loadDraft: vi.fn(async () => (store.draft ? { bundle: fromJson(store.draft.text), stamp: store.draft.stamp } : null)),
-    saveDraft: vi.fn(async (_c: unknown, _u: string, b: Parameters<typeof toJson>[0]) => { store.draft = { text: toJson(b), stamp: `t${++store.n}` }; return store.draft.stamp; }),
-    deleteDraft: vi.fn(async () => { store.draft = null; })
+    // like save_draft(): only over the stamp the caller loaded
+    saveDraft: vi.fn(async (_c: unknown, _u: string, b: Parameters<typeof toJson>[0], expected: string | null) => {
+      if (expected !== (store.draft?.stamp ?? null)) throw new DraftConflict();
+      store.draft = { text: toJson(b), stamp: `t${++store.n}` };
+      return store.draft.stamp;
+    }),
+    deleteDraft: vi.fn(async () => { store.draft = null; }),
+    loadRequestDraft: vi.fn(async () => null),
+    saveRequestDraft: vi.fn(async () => {})
   };
 });
 const hosted = vi.hoisted(() => ({ isHosted: false, client: {}, user: { id: 'u1', name: 'Mei', email: 'mei@example.com' } as { id: string; name: string; email: string } | null, signedOut: false, firstName: 'Mei' }));
@@ -121,6 +130,48 @@ describe('hosted draft', () => {
     expect(app.fontMoved).toBe(false);
   });
 
+  it('counts rules and skipped shapes again for a loaded draft', async () => {
+    await app.load();
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    await app.save();
+    api.check.mockClear();
+    await app.load();
+    await new Promise((ok) => setTimeout(ok, 350));
+    expect(api.check).toHaveBeenCalledWith(expect.objectContaining({ areas: expect.objectContaining({ left: expect.objectContaining({ size: [380, 350] }) }) }));
+  });
+
+  it('undoes one change of the draft as one step, leaving the others', async () => {
+    const { diffBundle, revertItems } = await import('./merge');
+    await app.load();
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    app.edit('Page center', (d) => { d.center.x = 510; });
+    const b = app.bundle();
+    const items = diffBundle(b, { design: b.base.design, typing: b.base.typing, svgs: app.mainSvgs });
+    const area = items.filter((i) => i.id === 'design:area:left');
+    app.applyChanges('Undo: Area · Left hand', revertItems(area, { design: app.design!, typing: app.typing, svgs: app.svgs }));
+    expect(app.design!.areas.left.size).toEqual([350, 350]);
+    expect(app.design!.center.x).toBe(510);
+    app.undo();
+    expect(app.design!.areas.left.size).toEqual([380, 350]);
+  });
+
+  it('refuses edits to a change a sent Change Request holds, but lets the font update it', async () => {
+    await app.load();
+    app.requests = [{ id: 'r1', title: 'Wider left', status: 'sent', item_ids: ['design:area:left'], decisions: {}, created_at: '2026-10-20T10:00:00Z' } as never];
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    expect(app.design!.areas.left.size).toEqual([350, 350]);          // refused
+    app.edit('Page center', (d) => { d.center.x = 510; });
+    expect(app.design!.center.x).toBe(510);                           // anything else is fine
+    app.applyChanges('From a .zip', { design: { ...app.design!, areas: { ...app.design!.areas, left: { ...app.design!.areas.left, label: 'L' } } } });
+    expect(app.design!.areas.left.label).toBe('Left hand');            // refused too
+    expect(app.lockMessage('design:area:left')).toMatch(/^The area Left hand is in your Change Request "Wider left", sent /);
+    const moved = design();
+    moved.areas.left.size = [360, 350];
+    app.applyChanges('Update to the font', { design: moved, draftBase: { ...app.draftBase!, design: moved } });
+    expect(app.design!.areas.left.size).toEqual([360, 350]);          // the font's own update comes in
+    app.requests = [];
+  });
+
   it('refuses to overwrite a draft saved elsewhere unless told to', async () => {
     await app.load();
     store.draft = { text: '', stamp: 'other' };
@@ -134,7 +185,7 @@ describe('hosted draft', () => {
   it('keeps edits in the browser when the save fails, and retries', async () => {
     await app.load();
     const drafts = await import('./drafts');
-    vi.mocked(drafts.draftStamp).mockRejectedValueOnce(new Error('offline'));
+    vi.mocked(drafts.saveDraft).mockRejectedValueOnce(new Error('offline'));
     app.edit('x', (d) => { d.center.x = 510; });
     expect(await app.save()).toBe(false);
     expect(app.offline).toBe(true);

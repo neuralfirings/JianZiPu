@@ -182,6 +182,16 @@
     .download-bar a {
       color: #fff;
     }
+    .download-bar .font-version {
+      display: block;
+      color: #c8c8c8;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .download-bar .font-version a {
+      color: #c8c8c8;
+      text-decoration: underline;
+    }
     .text-entry-examples {
       font-size: 0.8em
     }
@@ -253,6 +263,7 @@
       Download JianZiPu Font
     </a>
     <!-- <button class="ml-onclick-form btn btn-primary" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">Download JianZiPu Font</button> -->
+    <small class="font-version" id="font-version"></small>
   </div>
   <div class="container">   
     <p>The JianZiPu font uses a <strong>glyph layering system</strong> where each musical notation character is built by combining multiple component glyphs that stack and position themselves relative to each other. So each character is made of a series of glyphs, similar to how an English word is made of a series of letters.</p>
@@ -1449,6 +1460,20 @@ Cv9,6|02 BLv9\6|02
         }
       });
     });
+  </script>
+  <script>
+    // The released version (site/version.json, written by each release): "Version 3.200 · Release notes · Older versions"
+    fetch('./version.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v) => {
+        if (!v || !v.version) return;
+        const el = document.getElementById('font-version');
+        const link = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text, target: '_blank', rel: 'noopener' });
+        el.append(`Version ${v.version}` + (v.date ? `, ${new Date(v.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}` : '') + ' · ');
+        if (v.notes_url) { el.append(link(v.notes_url, 'Release notes'), ' · '); }
+        el.append(link('https://github.com/neuralfirings/JianZiPu/releases', 'Older versions'));
+      })
+      .catch(() => {});
   </script>
   <script>
     // Safari -- removes <r> tags from <jzp> -- causes formatting issues

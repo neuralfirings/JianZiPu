@@ -199,6 +199,7 @@
         <p>Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own <strong>draft</strong>: only you see it, and nothing you do changes the real font or anyone else's work.</p>
         <ul>
           <li>The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows what your draft is based on and how much you've changed. <strong>See my changes</strong> lists them item by item.</li>
+          <li>On that list, <strong>Undo this change</strong> puts one item back the way your draft started: a glyph, a glyph's spellings, an area or a word type. For a word type, <strong>Show the spacing rules</strong> lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with <I.Undo class="inl" aria-label="Undo" />. To throw everything away at once, use <I.More class="inl" aria-label="More" /> → <strong>Discard my draft…</strong>.</li>
           <li>To share your work, <I.More class="inl" aria-label="More" /> → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
           <li>When the font is updated, a banner offers <strong>Update my draft…</strong>: the font's changes come in, and where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>.</li>
           <li><strong>Feedback</strong> in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.</li>
@@ -206,14 +207,44 @@
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
-      <section id="review">
-        <h2>Reviewing a draft</h2>
-        <p>On your own computer, <a href="/review">Review</a> brings a tester's draft into the font. Open a draft from the list (once signed in) or a <strong>.zip</strong> someone sent.</p>
+      <section id="requests">
+        <h2>Change Requests</h2>
+        <p>When some of your changes are ready for the real font, send them as a <strong>Change Request</strong> (a CR). The font's maintainer looks at each change, keeps or skips it, and replies.</p>
         <ul>
-          <li>Each change is shown before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. <strong>Keep</strong> or <strong>Skip</strong> each one, or <strong>Keep all</strong>.</li>
-          <li>A <span class="pill danger"><I.Problem size={14} />Conflict</span> means you changed the same thing since the draft started: pick whose version to use.</li>
-          <li><strong>Apply</strong> turns the kept changes into one undoable step of unsaved changes. Look them over in Layouts and Build & test, Save, then commit with the message the toast offers to copy.</li>
+          <li>On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong>. Every change is ticked to start with; untick any you want to keep working on. Give it a title, say what you changed and why, and how you'd like to be credited in the release notes: your name the way it should read, such as <em>Mei Chen</em> or <em>Mei Chen (Taipei Qin Society)</em>, or nothing for no credit.</li>
+          <li><strong>Save as draft</strong> keeps the request with your draft, ticks and notes included, so you can finish it later, on this computer or another. It shows on <a href="/requests">Your Change Requests</a> as <strong>Draft · not sent</strong>, with <strong>Continue…</strong> to pick it up again.</li>
+          <li>Before it goes, the Builder saves your draft, checks the chosen spellings don't clash, and builds a font with just those changes.</li>
+          <li>Once sent, those changes are <strong>locked</strong> in your draft <I.Lock class="inl" aria-label="locked" />: you can look at them and try words, but not edit or undo them. Everything else stays yours to change.</li>
+          <li><a href="/requests">Your Change Requests</a> shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.</li>
+          <li>Statuses: <strong>Sent</strong>, <strong>In review</strong>, <strong>In a release candidate</strong> (a test version of the next font), <strong>Released</strong>, <strong>Declined</strong>, <strong>Withdrawn</strong>. A request can be partly kept: "3 of 5 changes in v3.200".</li>
+          <li><strong>Withdraw…</strong> takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.</li>
+          <li>When your changes are released, <strong>Update my draft…</strong> brings in the new font, and they drop out of Your changes.</li>
         </ul>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── -->
+      <section id="review">
+        <h2>Reviewing Change Requests</h2>
+        <p>On your own computer, signed in as an admin, <a href="/review">Review</a> lists the Change Requests testers sent, newest first. An email with a link to each one arrives when it's sent.</p>
+        <ul>
+          <li>Open a request to see its title, notes and how its author wants to be credited, then each change before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. <strong>Keep</strong> or <strong>Skip</strong> each one, or <strong>Keep all</strong>.</li>
+          <li>Write a reply if you like, then <strong>Save decisions</strong>. Nothing goes into the font yet: the request becomes <strong>In review</strong> (or <strong>Declined</strong> if you skipped everything) and its author gets an email. Kept changes go into the next <a href="#release">release candidate</a>.</li>
+          <li><strong>Current drafts</strong> below the requests shows what each tester is working on now. Opening a draft or a <strong>.zip</strong> and choosing <strong>Apply</strong> brings changes in directly, as one undoable step of unsaved changes. A <span class="pill danger"><I.Problem size={14} />Conflict</span> means you changed the same thing since the draft started: pick whose version to use.</li>
+        </ul>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── -->
+      <section id="release">
+        <h2>Making a release</h2>
+        <p>On your own computer, <a href="/release">Release</a> (from Review, or <I.More class="inl" aria-label="More" /> → <strong>Make a release…</strong>) turns kept changes into a new version of the font. It runs git for you, with your own GitHub sign-in.</p>
+        <ol>
+          <li><strong>Start a release candidate</strong> with the next version number, such as 3.200. The Builder makes the branch <code>release/3.200</code> from main. A release branch holds only font files; Builder code goes to main on its own branch.</li>
+          <li><strong>Add kept changes</strong> brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.</li>
+          <li>Check the result in Layouts and Build & test, adjust, then Save.</li>
+          <li><strong>Build candidate</strong> runs the tests, builds the font, writes the version and the changelog entry, and tags <code>v3.200-rc.1</code>. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (<code>rc.2</code>).</li>
+          <li>Merge the pull request on GitHub, then <strong>Publish</strong>: main is tagged <code>v3.200</code>, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become <strong>Released</strong>.</li>
+        </ol>
+        <p>Version numbers have a three-digit minor part (3.100, 3.200, 3.201), because the font stores the version as a number. Raise the first number only when existing documents would look different or break.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->

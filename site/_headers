@@ -7,3 +7,9 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# A release replaces these files in place; keep caches short so people get the new font soon.
+/JianZiPu.ttf
+  Cache-Control: public, max-age=3600
+/version.json
+  Cache-Control: no-cache
