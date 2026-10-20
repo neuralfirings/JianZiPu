@@ -1,7 +1,9 @@
 <script lang="ts">
-  // Review a draft (docs/PILOT-UX.md "Review"). Local Builder: testers' drafts from Supabase (admin
-  // sign-in) or a .zip, applied into your unsaved changes. Hosted: a tester's "See my changes"
-  // (?mine) or an imported .zip (set by the ⋯ menu through `pilot.review`).
+  // Review (docs/PILOT-UX.md "Review"). Local Builder, signed in as an admin: testers' Change
+  // Requests (Keep / Skip each change and reply; saved on the request, applied later in a release
+  // candidate, see /release), their current drafts, or a .zip, applied into your unsaved changes.
+  // Hosted: a tester's Your changes (?mine) or an imported .zip (set by the ⋯ menu through `pilot.review`).
+  // ?request=<id> opens one Change Request (the link in the admins' email).
   import * as I from '$lib/icons';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -11,7 +13,9 @@
   import { diffBundle } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { day, downloadZip, hhmm, markReviewed, pilot, reviewedMarks } from '$lib/pilot.svelte';
+  import { allRequests, keptIds, OPEN, saveDecisions, STATUS_LABEL, type ChangeRequest, type RequestStatus } from '$lib/requests';
   import ReviewView from '$lib/components/ReviewView.svelte';
+  import RequestStatusPill from '$lib/components/RequestStatus.svelte';
 
   let mine = $derived(page.url.searchParams.has('mine'));
   let err = $state<string | null>(null);
@@ -34,6 +38,49 @@
         : (ex as Error).message;
     }
   }
+
+  // ---- Change Requests (local Builder signed in as the admin)
+  let requests = $state<ChangeRequest[] | null>(null);
+  let reqErr = $state<string | null>(null);
+  let show = $state<'open' | RequestStatus | 'all'>('open');
+  let current = $state<ChangeRequest | null>(null);
+  let reply = $state('');
+  let shown = $derived((requests ?? []).filter((r) => show === 'all' || (show === 'open' ? OPEN.includes(r.status) : r.status === show)));
+  $effect(() => {
+    if (!hosted.isHosted && hosted.user && hosted.isAdmin && requests === null && app.design) void loadRequests();
+  });
+  async function loadRequests() {
+    reqErr = null;
+    try {
+      requests = await allRequests(hosted.client!);
+      const id = page.url.searchParams.get('request');
+      if (id && !current) { const r = requests.find((x) => x.id === id); if (r) openRequest(r); }
+    } catch (e) {
+      reqErr = (e as Error).message;
+      requests = [];
+    }
+  }
+  function openRequest(r: ChangeRequest) {
+    pilot.review = null;
+    current = r;
+    reply = r.reply;
+  }
+  async function decide(d: Record<string, 'keep' | 'skip'>) {
+    const r = current!;
+    try {
+      await saveDecisions(hosted.client!, r, d, reply);
+      const kept = Object.values(d).filter((v) => v === 'keep').length;
+      pilot.say(kept ? `Saved: keeping ${kept} of ${r.item_ids.length} from "${r.title}". ${r.author_name} gets an email. Kept changes go into the next release candidate.` : `Declined "${r.title}". ${r.author_name} gets an email, and its changes unlock in their draft.`);
+      current = null;
+      requests = null;
+    } catch (e) {
+      err = (e as Error).message;
+    }
+  }
+  const changesText = (r: ChangeRequest) => {
+    const k = keptIds(r).length, n = r.item_ids.length;
+    return Object.keys(r.decisions).length ? `${n} · ${k} kept` : `${n}`;
+  };
 
   // ---- testers' drafts (local Builder signed in as the admin)
   type Row = DraftRow & { changes: number | null; behind: boolean; based: string | null };
@@ -95,7 +142,19 @@
   <input type="file" accept=".zip,application/zip" bind:this={fileInput} onchange={openZip} hidden />
   {#if err}<div class="err">{err} <button onclick={() => { err = null; fileInput?.click(); }}>Choose another file</button></div>{/if}
 
-  {#if mine && myBundle}
+  {#if current}
+    <div class="back"><button class="link" onclick={() => (current = null)}><I.Back size={14} /> All Change Requests</button></div>
+    <div class="crhead">
+      <h2>{current.title}</h2>
+      <RequestStatusPill status={current.status} release={current.release} />
+    </div>
+    <p class="muted">From {current.author_name}{#if current.author_email && current.author_email !== current.author_name} ({current.author_email}){/if} · sent {day(current.created_at)} {hhmm(current.created_at)} · {current.credit ? `credit as ${current.credit}` : 'no credit asked for'}</p>
+    {#if current.notes}<p class="notes">{current.notes}</p>{/if}
+    <label class="replybox">Your reply <span class="muted">(they see it on Your Change Requests and in the email)</span>
+      <textarea id="cr-reply" bind:value={reply} rows="3" maxlength="20000"></textarea>
+    </label>
+    <ReviewView bundle={current.bundle} mode="decide" name={current.title} decisions={current.decisions} ondecide={decide} />
+  {:else if mine && myBundle}
     <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} />
   {:else if pilot.review}
     <div class="back"><button class="link" onclick={() => (pilot.review = null)}><I.Back size={14} /> {hosted.isHosted ? 'Cancel' : 'All drafts'}</button></div>
@@ -123,6 +182,46 @@
       </div>
     {:else if !hosted.isAdmin}
       <p class="muted">Signed in as {hosted.user.email}, which isn't an admin: only admins see testers' drafts. <button class="link" onclick={() => hosted.signOut()}>Sign out</button></p>
+    {:else}
+      <div class="row top">
+        <h3>Change Requests</h3>
+        <span class="spacer"></span>
+        <label class="muted small">Show
+          <select id="cr-show" bind:value={show}>
+            <option value="open">To review</option>
+            {#each Object.entries(STATUS_LABEL) as [k, label]}<option value={k}>{label}</option>{/each}
+            <option value="all">All</option>
+          </select>
+        </label>
+      </div>
+      {#if requests === null}
+        <p class="muted">Loading Change Requests…</p>
+      {:else if reqErr}
+        <p class="err">Couldn't list Change Requests: {reqErr} <button onclick={loadRequests}>Try again</button></p>
+      {:else if !shown.length}
+        <p class="muted">{show === 'open' ? 'Nothing to review: no Change Request is waiting.' : 'None.'}</p>
+      {:else}
+        <table class="list">
+          <thead><tr><th>From</th><th>Title</th><th>Sent</th><th>Changes</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {#each shown as r (r.id)}
+              <tr>
+                <td><b>{r.author_name}</b></td>
+                <td>{r.title}</td>
+                <td>{day(r.created_at)} {hhmm(r.created_at)}</td>
+                <td>{changesText(r)}</td>
+                <td><RequestStatusPill status={r.status} release={r.release} /></td>
+                <td class="acts"><button class={OPEN.includes(r.status) ? 'primary' : ''} onclick={() => openRequest(r)}>{OPEN.includes(r.status) ? 'Review' : 'Open'}</button></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+      <h3>Current drafts</h3>
+      <p class="muted small">What each tester is working on now, sent or not. Applying a draft directly skips the Change Request; use it for a .zip or to look ahead.</p>
+    {/if}
+    {#if !hosted.canSignIn || !hosted.user || !hosted.isAdmin}
+      <!-- signed out: nothing more -->
     {:else if rows === null}
       <p class="muted">Loading drafts…</p>
     {:else if listErr}
@@ -163,6 +262,12 @@
   .list th, .list td { text-align: left; padding: var(--space-4); border-bottom: 1px solid var(--border); vertical-align: top; }
   .list th { font-weight: 500; color: var(--ink-muted); font-size: var(--t-small); }
   .acts { white-space: nowrap; }
+  h3 { margin: var(--space-5) 0 0; }
+  .crhead { display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
+  .notes { white-space: pre-wrap; max-width: 70ch; margin: 0; border-left: 2px solid var(--border-strong); padding-left: var(--space-4); }
+  .replybox { display: flex; flex-direction: column; gap: var(--space-2); max-width: 70ch; font-weight: 600; }
+  .replybox textarea { font: inherit; font-weight: 400; }
+  .replybox .muted { font-weight: 400; }
   .tag { font-size: var(--t-caption); padding: 1px 6px; border-radius: 8px; background: var(--bg-hover); color: var(--status-draft); }
   .new { color: var(--link); }
   .small { font-size: var(--t-small); }

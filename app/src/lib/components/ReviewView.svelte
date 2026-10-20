@@ -5,6 +5,8 @@
   //   mine   — a tester's "Your changes" (against what the draft started from): Undo this change
   //            puts one item, or one spacing rule, back the way the draft started
   //   sent   — a Change Request as it was sent (read-only, against what it started from)
+  //   decide — an admin's review of a Change Request: Keep / Skip each change, saved on the
+  //            request (nothing is applied; kept changes go into a release candidate later)
   // Apply and each Undo make one undo step of unsaved changes (glyph files included); nothing is
   // written until Save.
   import * as I from '$lib/icons';
@@ -19,15 +21,18 @@
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
-  let { bundle, mode, name, onapplied, onexport }: {
-    bundle: Bundle; mode: 'owner' | 'import' | 'mine' | 'sent'; name: string;
+  let { bundle, mode, name, onapplied, onexport, decisions = {}, ondecide }: {
+    bundle: Bundle; mode: 'owner' | 'import' | 'mine' | 'sent' | 'decide'; name: string;
     onapplied?: (r: { count: number; message: string }) => void;
     onexport?: () => void;
+    /** decide: the saved decisions to start from, and what Save decisions hands back. */
+    decisions?: Record<string, 'keep' | 'skip'>;
+    ondecide?: (d: Record<string, 'keep' | 'skip'>) => void;
   } = $props();
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
   let current = $derived.by(() => {
-    if (mode !== 'mine' && mode !== 'sent') return { design: app.design!, typing: app.typing, svgs: app.svgs };
+    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs };
     return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs) };
   });
   let items = $derived(diffBundle(bundle, current));
@@ -38,7 +43,7 @@
     const key = items.map((i) => i.id).join('|');
     if (key === seeded) return;
     seeded = key;
-    picks = Object.fromEntries(items.map((i) => [i.id, i.conflict ? undefined : true]));
+    picks = Object.fromEntries(items.map((i) => [i.id, i.conflict ? undefined : decisions[i.id] !== 'skip']));
   });
   let filter = $state<'all' | 'conflicts' | 'skipped'>('all');
   let open = $state<Record<string, boolean>>({});
@@ -143,7 +148,7 @@
   {#if mode !== 'sent'}
   <div class="head">
     <div>
-      <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : `${name}'s draft`}</h2>
+      <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : mode === 'decide' ? 'The changes' : `${name}'s draft`}</h2>
       <p class="muted">
         saved {day(m.updated)} {hhmm(m.updated)}
         {#if m.base.date}· based on the font of {day(m.base.date)}{/if}
@@ -277,7 +282,14 @@
     {/if}
   {/each}
 
-  {#if !readOnly && items.length}
+  {#if mode === 'decide' && items.length}
+    <div class="applybar">
+      <span>Keeping {keeping.length} of {items.length}</span>
+      <span class="muted small">Decisions are saved on the request; nothing goes into the font yet. Kept changes go into the next release candidate.</span>
+      <span class="spacer"></span>
+      <button class="primary" onclick={() => ondecide?.(Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'])))}>Save decisions</button>
+    </div>
+  {:else if !readOnly && items.length}
     <div class="applybar">
       <span>Keeping {keeping.length} of {items.length}{#if unpicked.length} · <b class="warn">{unpicked.length} conflict{unpicked.length === 1 ? '' : 's'} to pick</b>{/if}</span>
       <span class="muted small">{mode === 'owner' ? 'Applied changes become unsaved changes in your Builder. Nothing is written until you Save.' : 'Applied changes go into your draft as unsaved changes.'}</span>
