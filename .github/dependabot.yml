@@ -1,6 +1,10 @@
-# Weekly update PRs for the app's npm packages, the builder's pinned Python packages, the
-# Dockerfile's base images and the CI actions. Security updates also need "Dependabot security
-# updates" turned on in the repo's Settings -> Code security.
+# Update PRs for the app's npm packages, the builder's pinned Python packages, the Dockerfile's base
+# images and the CI actions. Security updates also need "Dependabot security updates" turned on in
+# the repo's Settings -> Code security.
+#
+# Major versions of the SvelteKit toolchain are ignored: they have to move together (SvelteKit 3
+# needs adapter-static 4, a matching vite-plugin-svelte and Vite, and TypeScript 6, not 7), so that
+# upgrade is done by hand on its own branch rather than in a Dependabot group.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -10,9 +14,25 @@ updates:
     groups:
       dev:
         dependency-type: development
+    ignore:
+      - dependency-name: "@sveltejs/kit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@sveltejs/adapter-static"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@sveltejs/vite-plugin-svelte"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+  # One monthly PR for all of them: each bump means a local font build and tests/test_shaping.py
+  # (CI can't build the font without the base font), so do that once, not per package.
   - package-ecosystem: pip
     directory: /builder
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    groups:
+      builder:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /
     schedule: { interval: monthly }
