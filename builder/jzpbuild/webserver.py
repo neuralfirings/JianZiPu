@@ -59,7 +59,7 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from . import config, data, glyphs, hosted, typing_preview
 from .positioning import emit, resolve, schema, shapes
@@ -534,6 +534,16 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
 
 # ---------------------------------------------------------------- HTTP
 
+def _safe_path(path: str) -> bool:
+    """False for a URL path that tries to leave the folder it names: a `..` or `.` segment
+    (also percent-encoded), a backslash or a NUL. Such a request gets a 404 before any
+    file lookup."""
+    p = unquote(path)
+    if "\\" in p or "\x00" in p:
+        return False
+    return not any(seg in ("..", ".") for seg in p.split("/"))
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=str(config.BUILDER_DIR), **kw)
@@ -581,13 +591,15 @@ class Handler(SimpleHTTPRequestHandler):
         super().log_message(fmt, *args)
 
     def _serve_app(self, path: str) -> bool:
-        """Serve the built SvelteKit app (SPA fallback to index.html)."""
+        """Serve the built SvelteKit app (SPA fallback to index.html). Never a file outside
+        app/build: the target is resolved (symlinks and all) and must stay inside it."""
         if not APP_BUILD_DIR.exists():
             return False
-        rel = path.lstrip("/") or "index.html"
-        target = (APP_BUILD_DIR / rel)
-        if not target.is_file():
-            target = APP_BUILD_DIR / "index.html"
+        root = APP_BUILD_DIR.resolve()
+        rel = unquote(path).lstrip("/") or "index.html"
+        target = (root / rel).resolve()
+        if not target.is_relative_to(root) or not target.is_file():
+            target = root / "index.html"
         ctype = self.guess_type(str(target))
         body = target.read_bytes()
         self.send_response(200)
@@ -601,6 +613,8 @@ class Handler(SimpleHTTPRequestHandler):
     # -- routes
     def do_GET(self):
         path = urlparse(self.path).path
+        if not _safe_path(path):
+            return self._json({"ok": False, "error": "not found"}, 404)
         try:
             if path == "/api/design":
                 return self._json(_design_payload())

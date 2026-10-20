@@ -150,3 +150,46 @@ def test_http_delete(server, svg_dir):
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.urlopen(req, timeout=10)
     assert e.value.code == 404
+
+
+# ---------------------------------------------------------------- path traversal
+
+TRAVERSALS = ["/../../builder/.env.example", "/" + "../" * 30 + "etc/passwd", "/%2e%2e/%2e%2e/builder/pyproject.toml",
+              "/assets/../../../builder/pyproject.toml", "/..%2f..%2fbuilder/pyproject.toml", "/inputs/../jzpbuild/config.py"]
+
+
+@pytest.fixture
+def app_build(tmp_path, monkeypatch):
+    d = tmp_path / "appbuild"
+    d.mkdir()
+    (d / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", d)
+    return d
+
+
+def raw_get(base, path):
+    """GET with the path sent exactly as written (urllib would leave it alone too, but be sure)."""
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("GET", path, skip_host=True)
+    c.putheader("Host", f"{host}:{port}")
+    c.endheaders()
+    r = c.getresponse()
+    body = r.read()
+    c.close()
+    return r.status, body
+
+
+@pytest.mark.parametrize("path", TRAVERSALS)
+def test_no_path_traversal(server, app_build, path):
+    status, body = raw_get(server, path)
+    assert status == 404 or body.startswith(b"<!doctype html><title>app")
+    assert b"root:" not in body and b"[project]" not in body and b"SUPABASE" not in body and b"SOURCE_FONT" not in body
+
+
+def test_safe_path():
+    assert webserver._safe_path("/glyphs/md_9/edit")
+    assert webserver._safe_path("/_app/immutable/x.js")
+    for p in ("/../x", "/a/../b", "/%2e%2e/x", "/a/./b", "/a\\b", "/a%00b", "/..%2fx"):
+        assert not webserver._safe_path(p), p

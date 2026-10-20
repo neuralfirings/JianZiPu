@@ -266,3 +266,22 @@ def test_a_draft_builds_into_a_font_with_its_new_glyph(runner):
     assert "md_zztest" in font.getGlyphOrder()
     assert config.DESIGN_JSON.read_text(encoding="utf-8") == before
     data.cache_clear_all()
+
+
+@pytest.mark.parametrize("path", ["/../../builder/.env.example", "/" + "../" * 30 + "etc/passwd",
+                                  "/%2e%2e/%2e%2e/builder/jzpbuild/hosted.py", "/" + "../" * 30 + "etc/hosts"])
+def test_no_path_traversal(server, tmp_path, monkeypatch, path):
+    import http.client
+    d = tmp_path / "appbuild"
+    d.mkdir()
+    (d / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", d)
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("GET", path, skip_host=True)
+    c.putheader("Host", f"{host}:{port}")
+    c.endheaders()
+    r = c.getresponse()
+    body = r.read()
+    assert r.status == 404 or body.startswith(b"<!doctype html><title>app")
+    assert b"root:" not in body and b"localhost" not in body and b"SERVICE-SECRET" not in body
