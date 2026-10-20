@@ -1,7 +1,8 @@
 <script lang="ts">
   // Area Properties (Layouts, docs/AREAS-PLACEMENT-UX.md): the area of the selected part, or
   // the one picked in the switcher. Its name, box (typed sizes preview on the canvas and only
-  // apply on Enter / leaving the fields), advance (Advanced), + New area and Delete area (only an
+  // apply on Enter / leaving the fields), advance (Advanced; always shown for the divider areas,
+  // whose advance is also the width of | or : in the font), + New area and Delete area (only an
   // empty area no word type uses; otherwise a banner says why), the word types that use it, and its glyphs: click = preview, double-click or "edit" = glyph editor, Manage =
   // remove / add. Position decimals sit in a text grid (13 hui × blank, .1–.9).
   import * as I from '$lib/icons';
@@ -22,6 +23,9 @@
   let area = $derived(areaId ? d.areas[areaId] ?? null : null);
   let el = $derived(areaId && editor.selected ? editor.elements.find((e) => e.name === editor.selected && e.area === areaId) ?? null : null);
   let uses = $derived(areaId ? usedIn(d, areaId) : []);
+  /** Built-in divider glyphs in this area (| and :): the area's advance is their width in the font. */
+  const SYMBOL: Record<string, string> = { blank_bar: '|', blank_colon: ':' };
+  let dividers = $derived((area?.glyphs ?? []).filter((g) => g in SYMBOL));
   let members = $derived(splitMembers(area?.glyphs ?? []));
   let manage = $state(false);
   let q = $state('');
@@ -43,6 +47,12 @@
 
   // ---- name, advance
   function setLabel(v: string) { const a = areaId!; app.edit(`Area ${a}: shown as "${v}"`, (x) => { x.areas[a].label = v; }); }
+  /** A divider's width: its advance and its box width together (one undo step). */
+  function setDividerWidth(v: number, sym: string) {
+    const a = areaId!;
+    if (!(v > 0)) return;
+    app.edit(`Area ${a}: width of ${sym} ${v}`, (x) => { x.areas[a].advance = v; x.areas[a].size = [v, x.areas[a].size[1]]; });
+  }
   function setAdvance(v: number) { const a = areaId!; app.edit(`Area ${a}: advance ${v}`, (x) => { if (v) x.areas[a].advance = v; else delete x.areas[a].advance; }); }
 
   // ---- box: typed sizes are previewed (editor.boxEdit + dragDesign), applied on Enter / leaving
@@ -181,7 +191,11 @@
         <input type="number" class="num" class:hot={changed} value={boxShown[0]} onfocus={beginBox} onblur={boxBlur} onkeydown={(e) => boxKey(0, e)} oninput={(e) => { beginBox(); setPending(0, +(e.target as HTMLInputElement).value); }} /> ×
         <input type="number" class="num" class:hot={changed} value={boxShown[1]} onfocus={beginBox} onblur={boxBlur} onkeydown={(e) => boxKey(1, e)} oninput={(e) => { beginBox(); setPending(1, +(e.target as HTMLInputElement).value); }} />
       </span>
-      {#if editor.advanced}
+      {#if dividers.length}
+        {@const sym = dividers.map((g) => SYMBOL[g]).join(' ')}
+        <label class="f" data-tip={`How far the pen moves after ${sym}, and ${sym}'s own width in the font. Sets the box width too.`}>Width of {sym} <input id="area-advance" type="number" class="num" min="1" value={area.advance ?? 0} onchange={(e) => setDividerWidth(+(e.target as HTMLInputElement).value, sym)} /></label>
+        {#if (area.advance ?? 0) && area.size[0] !== area.advance}<span class="f warn">the box is {area.size[0]} wide</span>{/if}
+      {:else if editor.advanced}
         <label class="f" title="A part with an advance moves the pen (the colon and the bar); 0 for ordinary parts">Advance <input type="number" class="num" value={area.advance ?? 0} onchange={(e) => setAdvance(+(e.target as HTMLInputElement).value)} /></label>
       {/if}
       <span class="f used">Used in
@@ -305,6 +319,7 @@
 <style>
   .ap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .props { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: var(--t-small); padding-bottom: 6px; border-bottom: 1px dashed var(--border); }
+  .f.warn { color: var(--status-draft); }
   .f { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-muted); }
   .f input { color: var(--ink); }
   .num { width: 58px; height: 24px; font-family: var(--font-mono); }
