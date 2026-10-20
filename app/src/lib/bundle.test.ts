@@ -2,7 +2,7 @@
 // (fflate tells files from folders with instanceof Uint8Array, which jsdom's realm breaks)
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
-import { applySvgs, BundleError, diffSvgs, fromJson, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
+import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
 import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
@@ -36,6 +36,12 @@ function draft() {
 describe('draft bundle', () => {
   it('lists added, changed and deleted glyph files, ignoring a trailing newline', () => {
     expect(diffSvgs({ a: 'x', b: 'y', c: 'z' }, { a: 'x\n', b: 'Y', d: 'w' })).toEqual({ added: ['d'], changed: ['b'], deleted: ['c'] });
+  });
+  it('reads a stored draft whether the jsonb column holds the object or the same JSON as a string', () => {
+    const b = draft();
+    expect(fromStored(JSON.parse(toJson(b)))).toEqual(fromJson(toJson(b)));
+    expect(fromStored(toJson(b))).toEqual(fromJson(toJson(b)));
+    expect(() => fromStored('"not a draft"')).toThrow(BundleError);
   });
   it('keeps only changed glyphs, plus the originals a merge needs', () => {
     const b = draft();

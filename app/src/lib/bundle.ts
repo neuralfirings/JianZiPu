@@ -115,6 +115,9 @@ function cleanAll(m: SvgMap): SvgMap {
 
 export const toJson = (b: Bundle) => JSON.stringify(b);
 export const fromJson = (text: string) => validate(JSON.parse(text));
+/** A bundle as Supabase hands back a jsonb column: normally the object, but a row pasted in by
+ *  hand can hold the same JSON as one string (jsonb_typeof = 'string'); read both. */
+export const fromStored = (v: unknown) => (typeof v === 'string' ? fromJson(v) : validate(JSON.parse(JSON.stringify(v))));
 
 /** Zip layout = the repo's inputs/ layout, plus manifest.json and the base copies under base/. */
 export function toZip(b: Bundle): Uint8Array {

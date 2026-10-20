@@ -5,7 +5,7 @@
 // change, once the request moves on to a release candidate).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
-import { diffSvgs, fromJson, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
+import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
 import { applyMerge, diffBundle, type Item } from './merge';
 import * as T from './typing';
 
@@ -86,7 +86,7 @@ export function buildInputs(b: Bundle, fontSvgs: SvgMap): BuildInputs {
 }
 
 type Row = Omit<ChangeRequest, 'bundle'> & { bundle: unknown };
-const fromRow = (r: Row): ChangeRequest => ({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromJson(JSON.stringify(r.bundle)) });
+const fromRow = (r: Row): ChangeRequest => ({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
 
 export async function sendRequest(c: SupabaseClient, r: { title: string; notes: string; credit: string; bundle: Bundle; itemIds: string[] }): Promise<ChangeRequest> {
   const { data, error } = await c.from(TABLE).insert({

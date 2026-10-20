@@ -3,7 +3,7 @@
 // read all of them. A save goes through save_draft(), which writes only if the row is still the one
 // this tab loaded (its updated_at, the "stamp"), so two tabs can't overwrite each other unseen.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromJson, toJson, type Bundle } from './bundle';
+import { fromStored, toJson, type Bundle } from './bundle';
 
 export const TABLE = 'drafts';
 
@@ -24,7 +24,7 @@ export async function loadDraft(c: SupabaseClient, uid: string): Promise<{ bundl
   if (error) throw new Error(error.message);
   if (!data) return null;
   const row = data as { bundle: unknown; updated_at: string };
-  return { bundle: fromJson(JSON.stringify(row.bundle)), stamp: row.updated_at };
+  return { bundle: fromStored(row.bundle), stamp: row.updated_at };
 }
 
 /** Write the draft over the one stamped `expected` (null: there was none); returns its new stamp.

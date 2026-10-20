@@ -179,6 +179,22 @@ def build_rules(design: Design) -> tuple[list[Rule], list, _Registry]:
     return rules, skipped, reg
 
 
+# fontTools compiles each run of rules between `subtable;` breaks as one block and gives up when a
+# block passes the 64 KB offset limit ("All candidates overflowed"), which a big design reaches at
+# ~1,600 rules. Breaking the run every so many rules keeps each block small; matching is unchanged,
+# because subtables are tried in order, just as the rules are within one.
+RULES_PER_SUBTABLE = 300
+
+
+def _with_breaks(lines: list[str]) -> list[str]:
+    out: list[str] = []
+    for i, line in enumerate(lines):
+        if i and i % RULES_PER_SUBTABLE == 0:
+            out.append("  subtable;")
+        out.append(line)
+    return out
+
+
 CLEANUP_RULES = (
     # hide stray glyphs of half-formed words (up to 10 deep), and give space
     # its advance back at word boundaries -- carried over from the classic build
@@ -192,10 +208,10 @@ def gen_gpos(design: Design) -> Emission:
     lines = ["# --- positioning (jzpbuild.positioning): one rule per word shape, cursive chains ---"]
     lines += reg.render()
     lines.append("lookup pos_y {")
-    lines += [r.render("y") for r in rules]
+    lines += _with_breaks([r.render("y") for r in rules])
     lines.append("} pos_y;")
     lines.append("lookup pos_x {")
-    lines += [r.render("x") for r in rules]
+    lines += _with_breaks([r.render("x") for r in rules])
     lines.append("} pos_x;")
     lines += ["", "feature kern {", "  lookup pos_y;", "  lookup pos_x;"]
     for context, marked, value in CLEANUP_RULES:
