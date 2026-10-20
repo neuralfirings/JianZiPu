@@ -128,6 +128,21 @@ describe('hosted draft', () => {
     expect(app.fontMoved).toBe(false);
   });
 
+  it('undoes one change of the draft as one step, leaving the others', async () => {
+    const { diffBundle, revertItems } = await import('./merge');
+    await app.load();
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    app.edit('Page center', (d) => { d.center.x = 510; });
+    const b = app.bundle();
+    const items = diffBundle(b, { design: b.base.design, typing: b.base.typing, svgs: app.mainSvgs });
+    const area = items.filter((i) => i.id === 'design:area:left');
+    app.applyChanges('Undo: Area · Left hand', revertItems(area, { design: app.design!, typing: app.typing, svgs: app.svgs }));
+    expect(app.design!.areas.left.size).toEqual([350, 350]);
+    expect(app.design!.center.x).toBe(510);
+    app.undo();
+    expect(app.design!.areas.left.size).toEqual([380, 350]);
+  });
+
   it('refuses to overwrite a draft saved elsewhere unless told to', async () => {
     await app.load();
     store.draft = { text: '', stamp: 'other' };

@@ -2,13 +2,16 @@
   // One draft's changes, item by item (docs/PILOT-UX.md "Review"). Three uses:
   //   owner  — Nancy reviewing a tester's draft or .zip: Keep / Skip, pick conflicts, Apply
   //   import — a tester opening a .zip into their own draft: the same, into their draft
-  //   mine   — a tester's read-only "See my changes" (against what the draft started from)
-  // Apply makes one undo step of unsaved changes (glyph files included); nothing is written until Save.
+  //   mine   — a tester's "Your changes" (against what the draft started from): Undo this change
+  //            puts one item, or one spacing rule, back the way the draft started
+  // Apply and each Undo make one undo step of unsaved changes (glyph files included); nothing is
+  // written until Save.
   import * as I from '$lib/icons';
   import type { Bundle } from '$lib/bundle';
-  import { applyMerge, diffBundle, hunks, lineDiff, pretty, type Item } from '$lib/merge';
+  import type { Layout } from '$lib/api';
+  import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { day, hhmm } from '$lib/pilot.svelte';
+  import { day, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
@@ -81,6 +84,41 @@
     onapplied?.({ count: m.applied.length, message: commitMessage(m.applied) });
   }
 
+  const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.key);
+  /** A new glyph that spellings or areas still use: its id while "undo all of it?" is showing. */
+  let asking = $state<string | null>(null);
+  function usesText(g: string) {
+    const u = usesOfGlyph(g, app.design!, app.typing);
+    return [...(u.spellings ? ['its spellings'] : []), ...u.areas.map((a) => `the area ${app.areaLabel(a)}`)].join(' and ');
+  }
+  /** Your changes: put one item back the way the draft started (one undo step). */
+  function undoItem(it: Item) {
+    if (!app.design) return;
+    let these = [it];
+    const newGlyph = it.kind === 'glyph' && it.status === 'added';
+    if (newGlyph) {
+      if (usesText(it.key) && asking !== it.id) { asking = it.id; return; }
+      const sp = items.find((i) => i.id === `spelling:${it.key}`);
+      if (sp) these = [it, sp];
+    }
+    asking = null;
+    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs });
+    if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
+    app.applyChanges(`Undo: ${nameOf(it)}`, m);
+    pilot.say(`${nameOf(it)} is back the way your draft started.`, { undo: true });
+  }
+  function undoRule(it: DesignItem, r: RuleChange) {
+    const base = it.base as Layout;
+    app.edit(`Undo: ${it.label} · ${r.label}`, (d) => {
+      const i = d.layouts.findIndex((l) => l.name === it.unit.name);
+      if (i >= 0) d.layouts[i] = revertRule(d.layouts[i], base, r.key);
+    });
+    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your draft started.`, { undo: true });
+  }
+  /** The spacing rules a changed word type differs in. */
+  const rulesOf = (it: Item) => (it.kind === 'design' && it.unit.type === 'layout' && it.status === 'changed'
+    ? ruleChanges(it.base as Layout, it.theirs as Layout) : []);
+
   /** The design with only this item applied (for "after" sample words). */
   function designWith(it: Item) {
     return applyMerge([it], { [it.id]: true }, current).design;
@@ -135,6 +173,9 @@
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             <span class="spacer"></span>
             {#if it.kind === 'design' && it.unit.type === 'area' && mode !== 'mine'}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}
+            {#if mode === 'mine'}
+              <button class="sm" onclick={() => undoItem(it)}><I.Undo size={14} /> Undo this change</button>
+            {/if}
             {#if !readOnly && !it.conflict}
               <div class="seg">
                 <button class:on={picks[it.id] === true} onclick={() => pick(it, true)}>Keep</button>
@@ -142,6 +183,15 @@
               </div>
             {/if}
           </div>
+          {#if asking === it.id}
+            <div class="banner draft" role="alert">
+              <span class="ic"><I.Warn /></span>
+              <span>{it.key} is still used by {usesText(it.key)}. Undoing the glyph takes those out too.</span>
+              <span class="spacer"></span>
+              <button class="sm" onclick={() => (asking = null)}>Cancel</button>
+              <button class="sm danger" onclick={() => undoItem(it)}>Undo all of it</button>
+            </div>
+          {/if}
 
           {#if it.kind === 'glyph'}
             <div class="views">
@@ -167,8 +217,24 @@
           {:else}
             <div class="more">
               <button class="link" onclick={() => (open = { ...open, [it.id + ':w']: !open[it.id + ':w'] })}>{open[it.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
+              {#if rulesOf(it).length}
+                <button class="link" onclick={() => (open = { ...open, [it.id + ':r']: !open[it.id + ':r'] })}>{open[it.id + ':r'] ? 'Hide' : 'Show'} the {rulesOf(it).length} spacing rule{rulesOf(it).length === 1 ? '' : 's'}</button>
+              {/if}
               <button class="link" onclick={() => (open = { ...open, [it.id]: !open[it.id] })}>{open[it.id] ? 'Hide' : 'Show'} JSON changes ({diffLines(it).filter((l) => l.op === '+' || l.op === '-').length} lines)</button>
             </div>
+            {#if open[it.id + ':r'] && it.kind === 'design'}
+              <ul class="rules">
+                {#each rulesOf(it) as r (r.key)}
+                  <li>
+                    <span class="tag {r.status}">{r.status}</span>
+                    <span>{r.label}</span>
+                    {#if r.status === 'changed' && r.base}<span class="muted">was {gapText(r.base)}</span>{/if}
+                    <span class="spacer"></span>
+                    {#if mode === 'mine'}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
             {#if open[it.id + ':w']}
               <div class="words">
                 <div><span class="muted">before</span><WordTester design={current.design} size={40} /></div>
@@ -240,6 +306,9 @@
   .opadd { color: var(--status-saved); }
   .opdel { color: var(--status-danger); }
   .opgap { color: var(--ink-muted); }
+  .rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--t-small); }
+  .rules li { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
+  .banner .spacer { flex: 1; }
   .pickrow { display: flex; gap: var(--space-4); align-items: center; }
   .applybar { position: sticky; bottom: 0; display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap; padding: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); box-shadow: var(--shadow-float); }
   .warn { color: var(--status-draft); }

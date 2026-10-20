@@ -199,6 +199,7 @@
         <p>Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own <strong>draft</strong>: only you see it, and nothing you do changes the real font or anyone else's work.</p>
         <ul>
           <li>The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows what your draft is based on and how much you've changed. <strong>See my changes</strong> lists them item by item.</li>
+          <li>On that list, <strong>Undo this change</strong> puts one item back the way your draft started: a glyph, a glyph's spellings, an area or a word type. For a word type, <strong>Show the spacing rules</strong> lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with <I.Undo class="inl" aria-label="Undo" />. To throw everything away at once, use <I.More class="inl" aria-label="More" /> → <strong>Discard my draft…</strong>.</li>
           <li>To share your work, <I.More class="inl" aria-label="More" /> → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
           <li>When the font is updated, a banner offers <strong>Update my draft…</strong>: the font's changes come in, and where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>.</li>
           <li><strong>Feedback</strong> in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.</li>
