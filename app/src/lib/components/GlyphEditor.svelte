@@ -17,6 +17,7 @@
   import TryIt from './TryIt.svelte';
   import WordTester from './WordTester.svelte';
   import { editorPanels, type EditorPanelId, type Meta } from '$lib/panels.svelte';
+  import { EDITOR_HELP } from '$lib/help';
 
   let { name, isNew = false, area = null, from = null, back = null }: {
     name: string; isNew?: boolean; area?: string | null; from?: 'file' | 'image' | null;
@@ -352,7 +353,7 @@
       <button onclick={() => (shortcuts = true)} title="Keyboard shortcuts (?)">?</button>
     </div>
 
-    <PanelWorkspace store={editorPanels} {meta} {body} centerMin={320}>
+    <PanelWorkspace store={editorPanels} {meta} {body} centerMin={320} help={EDITOR_HELP}>
       <!-- action bar -->
       <div class="actions">
         <span class="grp" title={canCombine ? 'Combine the selected shapes (point at a button to preview; ⇧ swaps the subtract order)' : 'Select 2 shapes to combine them'}>

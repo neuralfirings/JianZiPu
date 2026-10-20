@@ -7,9 +7,12 @@
   import { DOCK_LABEL, DOCK_MIN, type AnyPanels, type Dock, type Meta } from '$lib/panels.svelte';
   import PanelDock from './PanelDock.svelte';
   import Panel from './Panel.svelte';
+  import { helpAnchor, type PanelHelp } from '$lib/help';
 
-  let { store, meta, body, children, centerMin = 360 }: {
+  let { store, meta, body, children, centerMin = 360, help }: {
     store: AnyPanels;
+    /** Each panel's ? text (lib/help.ts), shared with the help page. */
+    help?: PanelHelp<any>;
     meta: (id: any) => Meta;
     /** The body of one panel. */
     body: Snippet<[any]>;
@@ -80,7 +83,7 @@
 
 {#snippet panel(id: string)}
   {@const m = meta(id)}
-  <Panel {id} {store} title={m.title} badge={m.badge} warn={m.warn} summary={m.summary} tag={m.tag}>{@render body(id)}</Panel>
+  <Panel {id} {store} help={help?.topics[id]} helpHref={help ? `/help#${helpAnchor(help.section, id)}` : undefined} title={m.title} badge={m.badge} warn={m.warn} summary={m.summary} tag={m.tag}>{@render body(id)}</Panel>
 {/snippet}
 {#snippet sideDock(dock: 'left' | 'right')}
   {#if visible(dock)}

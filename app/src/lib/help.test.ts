@@ -2,13 +2,16 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { HELP_SECTIONS } from './help';
+import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor } from './help';
+import { PANEL_IDS, EDITOR_PANEL_IDS } from './panels.svelte';
 
 const routes = resolve(__dirname, '../routes');
 const staticDir = resolve(__dirname, '../../static');
 const pageSrc = readFileSync(resolve(routes, 'help/+page.svelte'), 'utf8');
 // literal links only; the contents list's href="#{s.id}" comes from HELP_SECTIONS itself
 const hrefs = [...pageSrc.matchAll(/href="([^"]+)"/g)].map((m) => m[1]).filter((h) => !h.includes('{'));
+const topicHtml = [LAYOUTS_HELP, EDITOR_HELP].flatMap((h) => Object.values(h.topics).map((t) => t.html)).join('\n');
+const topicHrefs = [...topicHtml.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
 const imgs = [...pageSrc.matchAll(/<img src="([^"]+)"/g)].map((m) => m[1]);
 
 /** /glyphs/new → routes/glyphs/new; /glyphs/x/edit → routes/glyphs/[name]/edit. */
@@ -43,6 +46,23 @@ describe('help page', () => {
   it('jumps only to sections that exist', () => {
     const ids = new Set(HELP_SECTIONS.map((s) => s.id));
     for (const h of hrefs.filter((x) => x.startsWith('#'))) expect(ids.has(h.slice(1)), h).toBe(true);
+  });
+
+  it('has help for every panel, on both screens, under a section that exists', () => {
+    expect(Object.keys(LAYOUTS_HELP.topics).sort()).toEqual([...PANEL_IDS].sort());
+    expect(Object.keys(EDITOR_HELP.topics).sort()).toEqual([...EDITOR_PANEL_IDS].sort());
+    const sections = new Set(HELP_SECTIONS.map((s) => s.id));
+    for (const h of [LAYOUTS_HELP, EDITOR_HELP]) {
+      expect(sections.has(h.section)).toBe(true);
+      for (const [id, t] of Object.entries(h.topics)) {
+        expect(t.html.trim(), id).not.toBe('');
+        expect(sections.has(helpAnchor(h.section, id)), `${id} anchor clashes with a section`).toBe(false);
+      }
+    }
+  });
+
+  it('panel help links only to screens that exist', () => {
+    for (const h of topicHrefs) expect(routeExists(h.split(/[?#]/)[0]), h).toBe(true);
   });
 
   it('knows the old Tester route redirects rather than dangling', () => {

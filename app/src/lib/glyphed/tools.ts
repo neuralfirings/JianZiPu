@@ -92,9 +92,18 @@ export class Tools {
     else if (!on && this.before) { this.mode = this.before; this.before = null; this.onChange(); }
   }
 
+  /** `selected: true` = only the selected shapes, and only the handles of their selected points
+   *  (the ones drawn). Tested shape by shape: Paper's own `selected` hit filter, applied from the
+   *  glyph layer, matched nothing, so a click on a point fell through to moving the whole shape. */
   private hit(point: paper.Point, opts: Record<string, unknown>): paper.HitResult | null {
     const tol = paper.settings.hitTolerance / paper.view.zoom;
-    return this.scene.glyph.hitTest(point, { tolerance: tol, ...opts }) ?? null;
+    const { selected, ...rest } = opts;
+    if (!selected) return this.scene.glyph.hitTest(point, { tolerance: tol, ...rest }) ?? null;
+    for (const p of [...this.selectedPaths].reverse()) {      // topmost first
+      const h = p.hitTest(point, { tolerance: tol, ...rest, match: (r: paper.HitResult) => !r.type.startsWith('handle') || r.segment.selected });
+      if (h) return h;
+    }
+    return null;
   }
 
   // ---- events

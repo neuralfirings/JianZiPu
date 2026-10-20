@@ -362,6 +362,9 @@
   .seg button, .segs button { height: 22px; padding: 0 7px; border: 0; border-radius: 0; background: var(--bg-field); font-size: var(--t-caption); }
   .seg button + button, .segs button + button, .seg .n + button { border-left: 1px solid var(--border); }
   .seg .n { padding: 0 7px; line-height: 22px; font-family: var(--font-mono); font-size: var(--t-small); border-left: 1px solid var(--border); }
+  /* option labels can be long ("String (string_top) + String (string_bottom)"): grow, don't clip */
+  .segs { max-width: 100%; }
+  .segs button { height: auto; min-height: 22px; padding: 2px 7px; line-height: 16px; white-space: normal; text-align: left; }
   .segs button.on { background: var(--sel-bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--sel-border); }
   .card { margin: 0 0 4px 22px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 6px 8px; background: var(--bg-field); display: flex; flex-direction: column; gap: 5px; font-size: var(--t-small); }
   .wrap { flex-wrap: wrap; }

@@ -157,7 +157,7 @@
 
 <svg bind:this={svgEl} width={w} height={h} viewBox="{box.x} {box.y} {box.w} {box.h}" class="canvas" class:interactive={!!onselect} class:linking={!!link}
   onpointermove={move} onpointerup={up} onpointercancel={cancelDrag}
-  onpointerdown={(e) => { if (e.target === svgEl) { onselect?.(null); onselectarrow?.(null); } }} role="img">
+  onpointerdown={() => { onselect?.(null); onselectarrow?.(null); }} role="img"><!-- parts, arrows and handles stop their pointerdown, so anything reaching here (page, guides, empty space) deselects -->
   {#if showPage}
     <rect x={page[0]} y={-pageHeight[1]} width={page[1] - page[0]} height={pageHeight[1] - pageHeight[0]} class="page" />
     <line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />

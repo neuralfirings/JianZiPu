@@ -49,6 +49,12 @@ The old FontForge pipeline (`src-fontforge/`: `scripts.cjs`, the
 regression fallback is now the classic positioning path below
 (`--classic_pos`, golden `tests/JianZiPu.ttf`).
 
+Help text: the Builder's help lives in `app/src/lib/help.ts` (each panel's ? popover, `LAYOUTS_HELP`
+/ `EDITOR_HELP`, and the help page's sections list) and `app/src/routes/help/+page.svelte` (the rest
+of the page, which also renders the panel entries). Before committing a feature change, check
+whether any help text describes what changed and update it in that one place; retake screenshots
+with `npm run help:shots` when a screen's look changed.
+
 Run both test suites after any code change (`npm test` in `app/`, `python3 -m pytest tests` in
 `builder/`; `tests/test_shaping.py` additionally needs a freshly built font and compares it
 with the golden).

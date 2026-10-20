@@ -3,7 +3,7 @@
   // screen. Sections and their order come from lib/help.ts; help.test.ts checks the links.
   import { onMount } from 'svelte';
   import { hosted } from '$lib/hosted.svelte';
-  import { HELP_SECTIONS } from '$lib/help';
+  import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor, type PanelHelp } from '$lib/help';
 
   let scroller: HTMLElement;
   let current = $state(HELP_SECTIONS[0].id);
@@ -20,6 +20,14 @@
     return () => io.disconnect();
   });
 </script>
+
+{#snippet panelList(h: PanelHelp<string>)}
+  <dl class="panels">
+    {#each Object.entries(h.topics) as [id, t] (id)}
+      <dt id={helpAnchor(h.section, id)}>{t.title}</dt><dd>{@html t.html}</dd>
+    {/each}
+  </dl>
+{/snippet}
 
 <div class="page" bind:this={scroller}>
   <div class="layout">
@@ -118,17 +126,15 @@
         <h3>Drawing</h3>
         <ul>
           <li>Tools: Select <kbd>V</kbd>, Pen <kbd>P</kbd>, Pencil <kbd>⇧P</kbd>, Rectangle <kbd>R</kbd>, Ellipse <kbd>O</kbd>, Hand <kbd>H</kbd> (or hold Space), Zoom <kbd>Z</kbd>. <strong>?</strong> on the rail lists every shortcut.</li>
+          <li>To edit points, use Select (<kbd>V</kbd>): click a shape to show its points, then click a point and drag it (arrow keys nudge it, <kbd>⇧</kbd> × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; <kbd>⌥</kbd>-drag moves one handle alone. Double-click a point to switch it between corner and smooth. <kbd>⇧</kbd>-click adds points to the selection, and <kbd>⇧</kbd>-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.</li>
           <li>Combine two selected shapes with ∪ − ∩ ⊕ (hover to preview). <strong>Simplify…</strong> removes points; <strong>Thicken…</strong> makes strokes heavier or lighter; <strong>Clean up</strong> fixes overlaps.</li>
           <li>Lines drawn with the Pen or Pencil are strokes until <strong>Outline line(s)</strong> turns them into filled shapes. Save does this for you.</li>
           <li><strong>SVG file…</strong> imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.</li>
           <li><strong>Image to trace…</strong> turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then <strong>Use this outline</strong>. The image itself stays in your browser.</li>
         </ul>
-        <h3>Checking</h3>
-        <ul>
-          <li><strong>Compare</strong> shows a reference dot (<kbd>D</kbd>) at the stroke weight to aim for, another glyph to match (<kbd>G</kbd>), or the last saved outline (<kbd>L</kbd>).</li>
-          <li><strong>Checks</strong> flags an empty glyph, parts outside the box, open lines and specks, with a button to fix each.</li>
-          <li><strong>Tester</strong> and <strong>Try it</strong> show the glyph in real words as you draw.</li>
-        </ul>
+        <h3>The panels</h3>
+        <p>Each panel's <span class="q">?</span> shows the same text as below.</p>
+        {@render panelList(EDITOR_HELP)}
         <h3>Saving a glyph</h3>
         <p>The editor has its own <strong>Save glyph</strong> (<kbd>⌘S</kbd>) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. {#if hosted.isHosted}Saving puts the glyph into your draft.{:else}Saving writes <code>builder/inputs/svg/&lt;name&gt;.svg</code> at once; if the file changed on disk meanwhile, you're asked which version to keep.{/if} A new glyph joins its area on its first save. The font picks up the new drawing at the next <strong>Build font</strong>.</p>
       </section>
@@ -145,16 +151,8 @@
           <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
         </ul>
         <h3>The panels</h3>
-        <p>Panels can be docked left, right or below, folded and resized; ⋯ → <strong>Reset panel layouts</strong> puts them back.</p>
-        <dl class="panels">
-          <dt>Word types</dt><dd>Pick the word type to edit. Each shows how many positioning rules it makes.</dd>
-          <dt>Structure</dt><dd>The parts of the word type. Tick a part to include it in the example word, and pick which glyph it shows.</dd>
-          <dt>Spacing</dt><dd>How the selected part sits against the others, vertically and horizontally. A rule reads as a sentence ("its top edge sits at the bottom of 七 + gap"), with rows that change the gap when certain glyphs are present, and an <em>otherwise</em> row for the rest. <strong>+ new rule</strong> picks the glyphs it applies to; the canvas previews every combination.</dd>
-          <dt>Centering</dt><dd>Which parts the word is centred on, and where.</dd>
-          <dt>Area Properties</dt><dd>The shared areas: box size (type to preview, Enter applies, Esc cancels), which word types use the area, and its glyphs (<strong>Manage</strong> to add or remove). <strong>+ New area</strong> makes one; <strong>Delete area</strong> works only on an empty area nothing uses.</dd>
-          <dt>Font budget</dt><dd>How many positioning rules each word type makes and how big they are. The <span class="pill saved">✓ rules · KB</span> pill in the header opens it.</dd>
-          <dt>Tester</dt><dd>A strip of words drawn by the live preview. Click a word to put it on the canvas; <strong>Build & test ↗</strong> opens the same words there.</dd>
-        </dl>
+        <p>Panels can be docked left, right or below, folded and resized; ⋯ → <strong>Reset panel layouts</strong> puts them back. Each panel's <span class="q">?</span> shows the same text as below.</p>
+        {@render panelList(LAYOUTS_HELP)}
         <p>Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the <strong>Advanced</strong> checkbox in the header, so they aren't changed by accident. It's off again after a reload.</p>
       </section>
 
@@ -295,6 +293,9 @@
   .banner { margin-top: var(--space-5); flex-wrap: nowrap; }
   .banner > div { flex: 1; min-width: 0; }
   .miss { color: var(--status-danger); }
+  dt[id] { scroll-margin-top: var(--space-5); }
+  dt:target, dt:target + dd { background: var(--sel-bg); }
+  .q { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: var(--radius-pill); font: 600 var(--t-caption)/1 var(--font-serif); color: var(--ink-muted); vertical-align: -2px; }
   @media (max-width: 760px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
     .toc { position: static; flex-direction: row; flex-wrap: wrap; }

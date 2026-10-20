@@ -191,6 +191,47 @@ describe('tools (direct calls)', () => {
   });
 });
 
+describe('select tool (mouse)', () => {
+  type Ev = { point: paper.Point; delta?: paper.Point; modifiers: Record<string, boolean>; event: { button: number } };
+  const ev = (x: number, y: number, mods: Record<string, boolean> = {}): Ev => ({ point: new paper.Point(x, y), modifiers: mods, event: { button: 0 } });
+  // the tool's mouse handlers, as Paper calls them
+  const mouse = (t: Tools) => t as unknown as { down(e: Ev): void; dragMove(e: Ev): void; up(e: Ev): void };
+
+  it('a click on a point of the selected shape picks the point, and a drag moves only that point', () => {
+    scene.loadSvg(SQUARE);
+    const tools = new Tools(scene), m = mouse(tools);
+    const path = scene.paths[0] as paper.Path;
+    m.down(ev(60, 60)); m.up(ev(60, 60));                  // the fill: selects the shape
+    expect(path.selected).toBe(true);
+    const seg = path.segments.find((s) => s.point.equals(new paper.Point(10, 10)))!;
+    m.down(ev(11, 11));                                     // within the hit tolerance of (10, 10)
+    expect(seg.selected).toBe(true);
+    expect(tools.selectedSegments).toEqual([seg]);
+    m.dragMove({ ...ev(21, 16), delta: new paper.Point(10, 5) });
+    m.up(ev(21, 16));
+    expect(seg.point.equals(new paper.Point(20, 15))).toBe(true);
+    expect(path.bounds.right).toBe(110);                    // the rest of the shape stayed put
+    tools.destroy();
+  });
+
+  it("drags a selected point's handle, not the shape", () => {
+    scene.loadSvg(SQUARE);
+    const tools = new Tools(scene), m = mouse(tools);
+    const path = scene.paths[0] as paper.Path;
+    tools.selectPaths([path]);
+    const seg = path.segments.find((s) => s.point.equals(new paper.Point(110, 10)))!;
+    seg.handleOut = new paper.Point(0, 30);
+    seg.selected = true;
+    const end = seg.point.add(seg.handleOut);               // (110, 40)
+    m.down(ev(end.x, end.y));
+    m.dragMove({ ...ev(end.x + 10, end.y), delta: new paper.Point(10, 0) });
+    m.up(ev(end.x + 10, end.y));
+    expect(seg.handleOut.equals(new paper.Point(10, 30))).toBe(true);
+    expect(seg.point.equals(new paper.Point(110, 10))).toBe(true);
+    tools.destroy();
+  });
+});
+
 describe('compare overlays', () => {
   const GHOST = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M200 200h100v100h-100z" fill="black"/></svg>';
   it('picks the dot first, then the compare glyph only where it has ink', () => {
