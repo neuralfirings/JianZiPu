@@ -4,7 +4,7 @@
 # JZP_FEEDBACK_URL, optional JZP_BASE_FONT_OBJECT (default assets/TW-Kai-98.ttf). Railway sets PORT.
 # Local try: docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder
 
-FROM node:22-slim AS app
+FROM node:26-slim AS app
 WORKDIR /repo/app
 COPY app/package.json app/package-lock.json ./
 RUN npm ci
