@@ -66,6 +66,11 @@ function units(d: Design): Map<string, { unit: DesignUnit; value: unknown }> {
   return m;
 }
 
+/** The value of one design unit ("area:left", "layout:standard", "center"…), undefined if absent. */
+export function unitOf(d: Design, key: string): unknown {
+  return units(d).get(key)?.value;
+}
+
 export function designItems(base: Design, theirs: Design, current: Design): DesignItem[] {
   const B = units(base), Th = units(theirs), C = units(current), out: DesignItem[] = [];
   for (const key of new Set([...B.keys(), ...Th.keys()])) {

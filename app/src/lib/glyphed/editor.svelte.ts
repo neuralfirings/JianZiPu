@@ -439,6 +439,9 @@ export class GlyphEditor {
       design = JSON.parse(JSON.stringify(design)) as NonNullable<typeof design>;
       design.areas[this.area].glyphs.push(this.name);
     }
+    // a glyph in a sent Change Request stays as it was sent
+    const locked = app.lockedBy({ design: design ?? undefined, svgWrites: { [this.name]: text } });
+    if (locked) { this.error = app.lockMessage(locked); return { ok: false, error: this.error }; }
     app.applyChanges(`Glyph ${this.name}: ${this.isNew ? 'new' : 'new outline'}`, { design: design ?? undefined, svgWrites: { [this.name]: text } });
     s.markSaved();
     this.savedText = text; this.savedAt = new Date(); this.loadedHash = await sha16(text); this.conflictDisk = null;

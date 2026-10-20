@@ -117,6 +117,7 @@
             {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
             <div class="row">
               <button onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
+              <button onclick={() => { pill = false; goto('/requests'); }}>Change Requests{#if app.requests.length} · {app.requests.length}{/if}</button>
               <button onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
             </div>
           </div>
@@ -178,6 +179,8 @@
       {#if menu}
         <div class="menu float" role="menu">
           {#if hosted.isHosted}
+            <button onclick={() => goto('/review?mine')}>See my changes and send them…</button>
+            <button onclick={() => goto('/requests')}>Your Change Requests</button>
             <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
             <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? 'Update my draft to the font…' : 'Update my draft · up to date'}</button>

@@ -207,6 +207,21 @@
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
+      <section id="requests">
+        <h2>Change Requests</h2>
+        <p>When some of your changes are ready for the real font, send them as a <strong>Change Request</strong> (a CR). The font's maintainer looks at each change, keeps or skips it, and replies.</p>
+        <ul>
+          <li>On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong>. Every change is ticked to start with; untick any you want to keep working on. Give it a title, say what you changed and why, and how you'd like to be credited in the release notes (leave that empty for no credit).</li>
+          <li>Before it goes, the Builder saves your draft, checks the chosen spellings don't clash, and builds a font with just those changes.</li>
+          <li>Once sent, those changes are <strong>locked</strong> in your draft <I.Lock class="inl" aria-label="locked" />: you can look at them and try words, but not edit or undo them. Everything else stays yours to change.</li>
+          <li><a href="/requests">Your Change Requests</a> shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.</li>
+          <li>Statuses: <strong>Sent</strong>, <strong>In review</strong>, <strong>In a release candidate</strong> (a test version of the next font), <strong>Released</strong>, <strong>Declined</strong>, <strong>Withdrawn</strong>. A request can be partly kept: "3 of 5 changes in v3.200".</li>
+          <li><strong>Withdraw…</strong> takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.</li>
+          <li>When your changes are released, <strong>Update my draft…</strong> brings in the new font, and they drop out of Your changes.</li>
+        </ul>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── -->
       <section id="review">
         <h2>Reviewing a draft</h2>
         <p>On your own computer, <a href="/review">Review</a> brings a tester's draft into the font. Open a draft from the list (once signed in) or a <strong>.zip</strong> someone sent.</p>

@@ -9,7 +9,9 @@ import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type 
 import { diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, saveDraft } from './drafts';
 import { hosted } from './hosted.svelte';
-import { applyMerge, fontUpdateItems, type Item } from './merge';
+import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
+import { day, pilot } from './pilot.svelte';
+import { lockedItems, myRequests, type ChangeRequest, type Lock } from './requests';
 import * as T from './typing';
 
 const DRAFT_KEY = 'jzp-builder-draft';
@@ -86,6 +88,59 @@ class DesignState {
   offline = $state(false);
   /** Someone saved the draft elsewhere after it was loaded here: their timestamp. */
   savedElsewhere = $state<string | null>(null);
+  /** The tester's Change Requests (hosted); their sent changes are locked in the draft. */
+  requests = $state<ChangeRequest[]>([]);
+
+  /** Draft items (merge.ts ids) a Change Request holds, so they can't be edited or undone. */
+  get locks(): Record<string, Lock> {
+    return lockedItems(this.requests);
+  }
+  lockOf(id: string): Lock | undefined {
+    return this.locks[id];
+  }
+  /** What a locked item is called in a message ("Word type Standard word"). */
+  lockName(id: string): string {
+    const [kind, ...rest] = id.split(':'), name = rest.slice(1).join(':');
+    if (kind === 'glyph') return `The glyph ${rest.join(':')}`;
+    if (kind === 'spelling') return `The spellings of ${rest.join(':')}`;
+    if (rest[0] === 'area') return `The area ${this.areaLabel(name)}`;
+    if (rest[0] === 'layout') return `The word type ${this.design?.layouts.find((l) => l.name === name)?.label ?? name}`;
+    return { center: 'The page center', glyph_weight: 'The stroke weight', test_sets: 'The sample word sets' }[rest[0]] ?? 'That';
+  }
+  lockMessage(id: string): string {
+    const l = this.locks[id];
+    return l ? `${this.lockName(id)} is in your Change Request "${l.title}", sent ${day(l.sent)}, so it can't be changed here.` : '';
+  }
+  /** The first locked item an edit would change (hosted), or null. */
+  lockedBy(next: Partial<Changes>): string | null {
+    if (!this.design) return null;
+    const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    for (const id of Object.keys(this.locks)) {
+      const [kind, ...rest] = id.split(':'), key = rest.join(':');
+      if (kind === 'design' && next.design && !same(unitOf(this.design, key), unitOf(next.design, key))) return id;
+      if (kind === 'spelling' && next.typing && !same(T.get(this.typing, key), T.get(next.typing, key))) return id;
+      if (kind === 'glyph' && ((next.svgWrites && key in next.svgWrites && next.svgWrites[key] !== this.svgs[key]) || next.svgDeletes?.includes(key))) return id;
+    }
+    return null;
+  }
+  /** A Change Request went out: it holds its changes from now on, and the undo history starts
+   *  again here (undoing past the send would change what was sent). */
+  requestSent(r: ChangeRequest) {
+    this.requests = [r, ...this.requests.filter((x) => x.id !== r.id)];
+    this.undoStack = [];
+    this.redoStack = [];
+  }
+  /** Load the tester's requests again (a status may have moved on). */
+  async refreshRequests() {
+    const c = hosted.client, uid = hosted.user?.id;
+    if (c && uid) this.requests = await myRequests(c, uid);
+  }
+  /** Refuse an edit that would change a locked item, saying why. */
+  private refuses(next: Partial<Changes>): boolean {
+    const id = this.lockedBy(next);
+    if (id) pilot.say(this.lockMessage(id));
+    return !!id;
+  }
 
   get designDirty() {
     return this.design !== null && JSON.stringify(this.design) !== this.savedJson;
@@ -197,6 +252,7 @@ class DesignState {
       version: { commit: this.main?.commit ?? null, date: this.main?.date ?? null, design_hash: this.main?.design_hash ?? this.diskHash, csv_hash: this.main?.csv_hash ?? this.csvHash },
       design: clone(mainDesign), typing: clone(mainTyping), svgs: {}
     });
+    this.requests = c && uid ? await myRequests(c, uid).catch(() => []) : [];
     const got = c && uid ? await loadDraft(c, uid) : null;
     if (!got) {
       this.draftBase = fresh();
@@ -256,7 +312,7 @@ class DesignState {
     const next = clone(this.design);
     fn(next);
     const after = JSON.stringify(next);
-    if (after === before) return;
+    if (after === before || this.refuses({ design: next })) return;
     this.undoStack = [...this.undoStack.slice(-199), { label, json: before, typing: JSON.stringify(this.typing), svgs: JSON.stringify(this.pendingSvgs) }];
     this.redoStack = [];
     this.design = next;
@@ -272,7 +328,7 @@ class DesignState {
     const next: T.Typing = JSON.parse(before);
     fn(next);
     for (const [g, sp] of Object.entries(next)) if (T.isEmpty(sp)) delete next[g];
-    if (JSON.stringify(next) === before) return;
+    if (JSON.stringify(next) === before || this.refuses({ typing: next })) return;
     this.undoStack = [...this.undoStack.slice(-199), { label, json: JSON.stringify(this.design), typing: before, svgs: JSON.stringify(this.pendingSvgs) }];
     this.redoStack = [];
     this.typing = next;
@@ -293,6 +349,8 @@ class DesignState {
    *  Update my draft, the hosted glyph editor). Glyph files wait for Save like the rest. */
   applyChanges(label: string, c: Partial<Changes> & { draftBase?: DraftBase }) {
     if (!this.design) return;
+    // Update my draft (draftBase) brings in the font, which may change what a request holds
+    if (!c.draftBase && this.refuses(c)) return;
     this.undoStack = [...this.undoStack.slice(-199), this.snapshot(label, !!c.draftBase)];
     this.redoStack = [];
     if (c.draftBase) this.draftBase = clone(c.draftBase);

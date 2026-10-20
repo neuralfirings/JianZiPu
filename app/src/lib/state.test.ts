@@ -143,6 +143,23 @@ describe('hosted draft', () => {
     expect(app.design!.areas.left.size).toEqual([380, 350]);
   });
 
+  it('refuses edits to a change a sent Change Request holds, but lets the font update it', async () => {
+    await app.load();
+    app.requests = [{ id: 'r1', title: 'Wider left', status: 'sent', item_ids: ['design:area:left'], decisions: {}, created_at: '2026-10-20T10:00:00Z' } as never];
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    expect(app.design!.areas.left.size).toEqual([350, 350]);          // refused
+    app.edit('Page center', (d) => { d.center.x = 510; });
+    expect(app.design!.center.x).toBe(510);                           // anything else is fine
+    app.applyChanges('From a .zip', { design: { ...app.design!, areas: { ...app.design!.areas, left: { ...app.design!.areas.left, label: 'L' } } } });
+    expect(app.design!.areas.left.label).toBe('Left hand');            // refused too
+    expect(app.lockMessage('design:area:left')).toMatch(/^The area Left hand is in your Change Request "Wider left", sent /);
+    const moved = design();
+    moved.areas.left.size = [360, 350];
+    app.applyChanges('Update to the font', { design: moved, draftBase: { ...app.draftBase!, design: moved } });
+    expect(app.design!.areas.left.size).toEqual([360, 350]);          // the font's own update comes in
+    app.requests = [];
+  });
+
   it('refuses to overwrite a draft saved elsewhere unless told to', async () => {
     await app.load();
     store.draft = { text: '', stamp: 'other' };

@@ -29,6 +29,8 @@
   let bad = $derived(app.typingErrors.some((e) => (e.kind === 'clash' ? e.fields.some((f) => f.glyph === glyph && f.field === field) : e.glyph === glyph && e.field === field)));
   let changed = $derived(T.get(app.savedTyping, glyph)[field] !== own);
   let zh = $derived(field === 'simplified' || field === 'traditional');
+  /** In a sent Change Request: shown, not editable. */
+  let locked = $derived(!!app.lockOf(`spelling:${glyph}`));
   let input = $state<HTMLInputElement>() as HTMLInputElement;
 
   function commit() {
@@ -53,10 +55,11 @@
     <span class="ro" title={T.HELP.common}>{own}</span>
   {:else}
     <input bind:this={input} type="text" value={own} {placeholder} class:zh class:bad class:changed class:inh={!!inherited && !own}
+      readonly={locked} data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined}
       list={field === 'vert_variant' ? 'jzp-glyph-names' : undefined}
       title={inherited && !own ? `${T.LABEL[field]} of ${inherited}, its partner: typed after a colon` : T.HELP[field]}
       onfocus={() => { focused = true; draft = own; }}
-      onblur={() => { focused = false; commit(); }}
+      onblur={() => { focused = false; if (!locked) commit(); }}
       oninput={(e) => (draft = (e.target as HTMLInputElement).value)}
       {onkeydown} {onpaste} spellcheck="false" autocomplete="off" />
     {#if note && (note.level !== 'free' || (draft !== own && draft))}

@@ -14,6 +14,7 @@ export const HELP_SECTIONS: { id: string; title: string }[] = [
   { id: 'build', title: 'Build & test' },
   { id: 'saving', title: 'Saving and undo' },
   { id: 'draft', title: 'Your draft (online)' },
+  { id: 'requests', title: 'Change Requests' },
   { id: 'review', title: 'Reviewing a draft' },
   { id: 'keys', title: 'Keyboard shortcuts' },
   { id: 'trouble', title: 'When something looks wrong' }

@@ -4,6 +4,7 @@
   //   import — a tester opening a .zip into their own draft: the same, into their draft
   //   mine   — a tester's "Your changes" (against what the draft started from): Undo this change
   //            puts one item, or one spacing rule, back the way the draft started
+  //   sent   — a Change Request as it was sent (read-only, against what it started from)
   // Apply and each Undo make one undo step of unsaved changes (glyph files included); nothing is
   // written until Save.
   import * as I from '$lib/icons';
@@ -11,23 +12,23 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
+  import { startSvgs } from '$lib/requests';
   import { day, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
+  import SendRequestDialog from './SendRequestDialog.svelte';
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
   let { bundle, mode, name, onapplied, onexport }: {
-    bundle: Bundle; mode: 'owner' | 'import' | 'mine'; name: string;
+    bundle: Bundle; mode: 'owner' | 'import' | 'mine' | 'sent'; name: string;
     onapplied?: (r: { count: number; message: string }) => void;
     onexport?: () => void;
   } = $props();
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
   let current = $derived.by(() => {
-    if (mode !== 'mine') return { design: app.design!, typing: app.typing, svgs: app.svgs };
-    const svgs = { ...app.mainSvgs, ...bundle.base.svgs };
-    for (const n of bundle.manifest.svgs.added) delete svgs[n];
-    return { design: bundle.base.design, typing: bundle.base.typing, svgs };
+    if (mode !== 'mine' && mode !== 'sent') return { design: app.design!, typing: app.typing, svgs: app.svgs };
+    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs) };
   });
   let items = $derived(diffBundle(bundle, current));
   // true = take the draft's, false = keep what the Builder has, undefined = conflict not picked yet
@@ -42,8 +43,8 @@
   let filter = $state<'all' | 'conflicts' | 'skipped'>('all');
   let open = $state<Record<string, boolean>>({});
 
-  const readOnly = $derived(mode === 'mine');
-  const who = $derived(mode === 'owner' ? `${name}'s` : mode === 'mine' ? 'Your' : 'The draft’s');
+  const readOnly = $derived(mode === 'mine' || mode === 'sent');
+  const who = $derived(mode === 'owner' ? `${name}'s` : mode === 'mine' || mode === 'sent' ? 'Your' : 'The draft’s');
   let conflicts = $derived(items.filter((i) => i.conflict));
   let unpicked = $derived(conflicts.filter((i) => picks[i.id] === undefined));
   let skipped = $derived(items.filter((i) => picks[i.id] === false));
@@ -84,6 +85,10 @@
     onapplied?.({ count: m.applied.length, message: commitMessage(m.applied) });
   }
 
+  /** Your changes: items a sent Change Request holds can't be undone (or sent again). */
+  const lockOf = (it: Item) => (mode === 'mine' ? app.lockOf(it.id) : undefined);
+  let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id)) : []);
+  let sending = $state(false);
   const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.key);
   /** A new glyph that spellings or areas still use: its id while "undo all of it?" is showing. */
   let asking = $state<string | null>(null);
@@ -132,7 +137,10 @@
   const m = $derived(bundle.manifest);
 </script>
 
+{#if sending}<SendRequestDialog items={sendable} onclose={() => (sending = false)} />{/if}
+
 <div class="review">
+  {#if mode !== 'sent'}
   <div class="head">
     <div>
       <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : `${name}'s draft`}</h2>
@@ -145,7 +153,12 @@
     </div>
     <span class="spacer"></span>
     {#if readOnly}
+      {#if mode === 'mine'}<a class="btnlink" href="/requests">Your Change Requests</a>{/if}
       {#if onexport}<button onclick={onexport}>Export…</button>{/if}
+      {#if mode === 'mine'}
+        <button class="primary" onclick={() => (sending = true)} disabled={!sendable.length}
+          title={sendable.length ? '' : items.length ? 'Every change is already in a Change Request' : 'No changes to send yet'}><I.Send size={14} /> Send Change Request…</button>
+      {/if}
     {:else}
       <div class="seg" role="tablist">
         <button class:on={filter === 'all'} onclick={() => (filter = 'all')}>All {items.length}</button>
@@ -156,9 +169,10 @@
       <button onclick={() => setAll(false)}>Skip all</button>
     {/if}
   </div>
+  {/if}
 
   {#if !items.length}
-    <p class="empty">{mode === 'mine' ? 'No changes yet: your draft is the same as the font.' : 'Nothing to apply: the Builder already has every change in this draft.'}</p>
+    <p class="empty">{mode === 'sent' ? 'Everything in this request is already in the font.' : mode === 'mine' ? 'No changes yet: your draft is the same as the font.' : 'Nothing to apply: the Builder already has every change in this draft.'}</p>
   {/if}
 
   {#each sections as sec}
@@ -172,8 +186,11 @@
             {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             <span class="spacer"></span>
-            {#if it.kind === 'design' && it.unit.type === 'area' && mode !== 'mine'}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}
-            {#if mode === 'mine'}
+            {#if it.kind === 'design' && it.unit.type === 'area' && !readOnly}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}
+            {#if lockOf(it)}
+              {@const l = lockOf(it)!}
+              <a class="pill info" href="/requests#{l.id}"><I.Lock size={14} />Sent {day(l.sent)} · {l.title}</a>
+            {:else if mode === 'mine'}
               <button class="sm" onclick={() => undoItem(it)}><I.Undo size={14} /> Undo this change</button>
             {/if}
             {#if !readOnly && !it.conflict}
@@ -207,7 +224,7 @@
             </div>
           {:else if it.kind === 'spelling'}
             <table class="cells">
-              <thead><tr><th></th><th>before</th><th>{mode === 'mine' ? 'yours' : 'draft'}</th>{#if it.conflict && !readOnly}<th>your Builder now</th>{/if}</tr></thead>
+              <thead><tr><th></th><th>before</th><th>{readOnly ? 'yours' : 'draft'}</th>{#if it.conflict && !readOnly}<th>your Builder now</th>{/if}</tr></thead>
               <tbody>
                 {#each it.fields as f}
                   <tr class:cf={f.conflict && !readOnly}><th>{FIELD[f.field] ?? f.field}</th><td>{f.base || '—'}</td><td class="new">{f.theirs || '—'}</td>{#if it.conflict && !readOnly}<td>{f.current || '—'}</td>{/if}</tr>
@@ -230,7 +247,7 @@
                     <span>{r.label}</span>
                     {#if r.status === 'changed' && r.base}<span class="muted">was {gapText(r.base)}</span>{/if}
                     <span class="spacer"></span>
-                    {#if mode === 'mine'}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
+                    {#if mode === 'mine' && !lockOf(it)}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
                   </li>
                 {/each}
               </ul>
@@ -306,6 +323,8 @@
   .opadd { color: var(--status-saved); }
   .opdel { color: var(--status-danger); }
   .opgap { color: var(--ink-muted); }
+  .btnlink { align-self: center; }
+  a.pill { text-decoration: none; }
   .rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--t-small); }
   .rules li { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
   .banner .spacer { flex: 1; }

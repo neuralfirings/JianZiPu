@@ -205,6 +205,9 @@
     </span>
   </div>
 
+  {#if areaId && app.lockOf(`design:area:${areaId}`)}
+    <div class="banner info"><span class="ic"><I.Lock /></span><span>{app.lockMessage(`design:area:${areaId}`)}</span></div>
+  {/if}
   {#if delState && delState.problems.length && delState.area === areaId}
     <div class="banner danger" role="alert">
       <span class="ic"><I.Problem /></span>
