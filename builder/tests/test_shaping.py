@@ -104,6 +104,9 @@ def compare_fonts(old_path: str, new_path: str) -> int:
 
 def test_shaping_matches_current_font():
     import subprocess, tempfile
+    import pytest
+    if not config.SOURCE_FONT.exists():
+        pytest.skip("needs the base font (src_font/TW-Kai-98.ttf), which isn't in the repo")
     new = Path(tempfile.mkdtemp()) / "JianZiPu.new.ttf"
     subprocess.run(
         [sys.executable, "-m", "jzpbuild", "--classic_pos", "-o", str(new), "--fea-out", ""],  # golden is classic-positioned

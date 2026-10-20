@@ -1,0 +1,21 @@
+# Weekly update PRs for the app's npm packages, the builder's pinned Python packages, the
+# Dockerfile's base images and the CI actions. Security updates also need "Dependabot security
+# updates" turned on in the repo's Settings -> Code security.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /app
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      dev:
+        dependency-type: development
+  - package-ecosystem: pip
+    directory: /builder
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: monthly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
