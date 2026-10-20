@@ -63,8 +63,21 @@ The old manual pipeline (FontForge + `scripts.cjs`, the `.sfd` sources and the
 v3.x backups) lived in `src-fontforge/` until 2026-10-18. It is kept in git
 history under the tag `fontforge-final`.
 
----
+## License
 
-The font is licensed under SIL Open Font License 1.1
-The code is licensed under MIT License.
-The font is derived from TW-Kai font.
+- **The font** is licensed under the SIL Open Font License 1.1 with Reserved Font Name
+  "JianZiPu" (see [OFL.txt](OFL.txt)). That covers everything in `builder/inputs/` (the glyph
+  outlines in `svg/`, `design.json`, `components.csv`, `edge_cases.fea`, `glyphRename.csv`,
+  `layouts.json`), `site/JianZiPu.ttf`, `builder/tests/JianZiPu.ttf`, and any font built from them.
+- **The code** is licensed under the GNU General Public License v3 (see [LICENSE](LICENSE)):
+  `builder/jzpbuild/`, `builder/tests/` (apart from the .ttf above), `app/`, `site/index.html`,
+  `Dockerfile` and `supabase/`.
+- Fonts made with the Builder, and documents set in the font, are not covered by the GPL; the
+  GPL applies to the code, not to what it produces.
+- Portions of the font, including the glyph outlines, are derived from TW-Kai (全字庫正楷體),
+  (c) 2023 Ministry of Digital Affairs, Taiwan, from the CNS11643 full repertoire
+  (https://www.cns11643.gov.tw), used under the Open Government Data License, version 1.0
+  (https://data.gov.tw/license). The TW-Kai base font itself (`builder/src_font/TW-Kai-98.ttf`)
+  is not in this repository and is not redistributed as is.
+
+Copyright 2021–2026 Nancy Yi Liang, Nellodee LLC.

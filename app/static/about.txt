@@ -1,6 +1,6 @@
 This favicon was generated using the following font:
 
 - Font Title: Ma Shan Zheng
-- Font Author: undefined
+- Font Author: Ma ShanZheng
 - Font Source: https://fonts.gstatic.com/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMTsDIRSfr0.ttf
-- Font License: undefined)
+- Font License: SIL Open Font License 1.1 (https://openfontlicense.org)

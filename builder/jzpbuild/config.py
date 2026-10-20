@@ -62,8 +62,9 @@ WIN_ASCENT, WIN_DESCENT = 1100, 500
 
 NAMES = {
     "copyright": (
-        "Copyright (c) 2025, Nancy Yi Liang, Nellodee LLC. This font is licensed "
-        "under the SIL Open Font License, Version 1.1 (https://openfontlicense.org/)"
+        'Copyright 2021-2026 Nancy Yi Liang, Nellodee LLC, with Reserved Font Name "JianZiPu". '
+        "Portions derived from TW-Kai ((c) 2023 Ministry of Digital Affairs, Taiwan, CNS11643, "
+        "Open Government Data License, version 1.0)."
     ),
     "familyName": "JianZiPu",
     "styleName": "Regular",
@@ -71,7 +72,17 @@ NAMES = {
     "fullName": "JianZiPu",
     "version": f"Version {FONT_VERSION}",
     "psName": "JianZiPu",
+    "manufacturer": "Nellodee LLC",
+    "designer": "Nancy Yi Liang",
+    "vendorURL": "https://jianzipufont.com",
+    "licenseDescription": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
+    "licenseInfoURL": "https://openfontlicense.org",
 }
+
+# name table IDs (OpenType spec) for the NAMES keys above
+NAME_IDS = {0: "copyright", 1: "familyName", 2: "styleName", 3: "uniqueFontIdentifier", 4: "fullName",
+            5: "version", 6: "psName", 8: "manufacturer", 9: "designer", 11: "vendorURL",
+            13: "licenseDescription", 14: "licenseInfoURL"}
 
 # OS/2 fields carried over from the FontForge-era font
 OS2 = {
