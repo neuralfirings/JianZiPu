@@ -112,6 +112,11 @@ def font_date(files: list[Path]) -> str | None:
 
 # ---------------------------------------------------------------- who is asking
 
+class AuthUnavailable(Exception):
+    """Supabase couldn't be asked who a token belongs to (network, outage). Not the tester's fault:
+    the server answers 503 with a plain sentence, never the underlying error."""
+
+
 class Auth:
     """Checks a Supabase access token by asking Supabase who it belongs to (GET /auth/v1/user).
     Answers are cached for a few minutes so a busy editing session costs one lookup."""
@@ -130,9 +135,13 @@ class Auth:
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 user = json.loads(resp.read())
-        except urllib.error.HTTPError:
-            return None
-        return user if user.get("id") else None
+        except urllib.error.HTTPError as err:
+            if err.code >= 500:
+                raise AuthUnavailable("The sign-in service isn't answering. Try again in a minute.") from err
+            return None                      # 401/403: not a valid token
+        except (urllib.error.URLError, OSError, ValueError) as err:
+            raise AuthUnavailable("The sign-in service isn't answering. Try again in a minute.") from err
+        return user if isinstance(user, dict) and user.get("id") else None
 
     def user(self, token: str | None) -> dict | None:
         if not token:

@@ -297,3 +297,44 @@ def test_hosted_cross_site_posts_are_refused(server):
                                                                 "Authorization": "Bearer tok-a"})
         assert c.getresponse().status == want, origin
         c.close()
+
+
+def test_hosted_errors_carry_no_internals(server, monkeypatch, capsys):
+    """A crash answers with a plain sentence; the traceback goes to the server log only."""
+    def boom(*a, **k):
+        raise RuntimeError("secret detail /repo/builder/x.py")
+    monkeypatch.setattr(webserver, "typing_payload", boom)
+    status, r = call(server, "POST", "/api/typing/preview", {"rows": []}, token="tok-a")
+    assert status == 500 and "traceback" not in r and "secret detail" not in r["error"]
+
+
+def test_hosted_build_list_has_no_server_paths(server, runner):
+    fake_build(runner, "user-a")
+    status, r = call(server, "GET", "/api/build/status", token="tok-a")
+    assert status == 200 and r["build"] and "file" not in r["build"]
+    assert all("file" not in b for b in r["builds"])
+
+
+def test_sign_in_service_down_is_a_503_without_details(server, hosted_mode, monkeypatch):
+    def down(token):
+        raise hosted.AuthUnavailable("The sign-in service isn't answering. Try again in a minute.")
+    monkeypatch.setattr(webserver.AUTH, "fetch_user", down)
+    status, r = call(server, "POST", "/api/svg/check", {"svg": SQUARE}, token="tok-new")
+    assert status == 503 and "urlopen" not in r["error"]
+    status, r = call(server, "GET", "/api/build/status", token="tok-new")
+    assert status == 503
+
+
+def test_fetch_user_maps_network_errors(monkeypatch):
+    import urllib.error
+    a = hosted.Auth(hosted.Settings(hosted=True, supabase_url="https://example.supabase.co", supabase_anon_key="anon"))
+
+    def raise_(exc):
+        def f(*args, **kw):
+            raise exc
+        return f
+    monkeypatch.setattr(urllib.request, "urlopen", raise_(urllib.error.URLError("nodename nor servname")))
+    with pytest.raises(hosted.AuthUnavailable):
+        a.fetch_user("t")
+    monkeypatch.setattr(urllib.request, "urlopen", raise_(urllib.error.HTTPError("u", 401, "no", {}, None)))
+    assert a.fetch_user("t") is None

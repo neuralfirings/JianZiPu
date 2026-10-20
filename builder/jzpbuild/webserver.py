@@ -340,8 +340,11 @@ class BuildRunner:
         self.builds = []
 
     def public(self, b: dict) -> dict:
-        return {"id": b["id"], "time": b["time"], "bytes": b["bytes"], "ok": b["ok"], "seconds": b["seconds"],
-                "url": f"/api/builds/{b['id']}/JianZiPu.ttf", "file": str(b["path"])}
+        out = {"id": b["id"], "time": b["time"], "bytes": b["bytes"], "ok": b["ok"], "seconds": b["seconds"],
+               "url": f"/api/builds/{b['id']}/JianZiPu.ttf"}
+        if not SETTINGS.hosted:              # where it sits on the server is only your business locally
+            out["file"] = str(b["path"])
+        return out
 
     def status(self, owner: str = "local") -> dict:
         job = self.job(owner)
@@ -627,6 +630,16 @@ class Handler(SimpleHTTPRequestHandler):
         user = AUTH.user(token) if AUTH else None
         return user["id"] if user else None
 
+    def _fail(self, err: Exception, status: int = 500):
+        """An unexpected error. Locally the message and traceback go to the app (it's your machine);
+        hosted, they go to the server log and the tester gets a plain sentence."""
+        import traceback
+        tb = traceback.format_exc()
+        if SETTINGS.hosted:
+            sys.stderr.write(f"error {self.command} {urlparse(self.path).path}: {tb}\n")
+            return self._json({"ok": False, "error": "Something went wrong on the server. Try again, or send feedback."}, status)
+        return self._json({"ok": False, "error": str(err), "traceback": tb}, status)
+
     def _refused(self, method: str) -> bool:
         """Answer and return True when request_problem() refuses this request."""
         why = request_problem(method, self.headers, SETTINGS.hosted)
@@ -692,8 +705,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._font(b["path"], attachment="download=1" in (urlparse(self.path).query or ""))
             if path.startswith("/api/"):
                 return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
+        except hosted.AuthUnavailable as err:
+            return self._json({"ok": False, "error": str(err)}, 503)
         except Exception as err:  # noqa: BLE001
-            return self._json({"ok": False, "error": str(err)}, 500)
+            return self._fail(err)
         if path == "/JianZiPu.ttf":
             font = BUILD.latest_for(MAIN if SETTINGS.hosted else "local") or (
                 config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None)
@@ -741,11 +756,12 @@ class Handler(SimpleHTTPRequestHandler):
                 started, why = BUILD.start(owner, inputs or None)
                 return self._json({"ok": started, "status": BUILD.status(owner), "error": why})
             return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
+        except hosted.AuthUnavailable as err:
+            return self._json({"ok": False, "error": str(err)}, 503)
         except (schema.DesignError, ValueError, KeyError) as err:
             return self._json({"ok": False, "error": str(err)}, 400)
         except Exception as err:  # noqa: BLE001
-            import traceback
-            return self._json({"ok": False, "error": str(err), "traceback": traceback.format_exc()}, 500)
+            return self._fail(err)
 
     def do_PUT(self):
         if self._refused("PUT"):
@@ -788,8 +804,7 @@ class Handler(SimpleHTTPRequestHandler):
         except schema.DesignError as err:
             return self._json({"ok": False, "error": str(err)}, 400)
         except Exception as err:  # noqa: BLE001
-            import traceback
-            return self._json({"ok": False, "error": str(err), "traceback": traceback.format_exc()}, 500)
+            return self._fail(err)
 
 
     def do_DELETE(self):
