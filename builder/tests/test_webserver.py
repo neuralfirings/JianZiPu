@@ -254,3 +254,17 @@ def test_writes_need_json(server, svg_dir):
     assert not (svg_dir / "zz_z.svg").exists()
     status, _ = raw(server, "PUT", "/api/svg/zz_z", {"Content-Type": "application/json; charset=utf-8"}, body)
     assert status == 200
+
+
+def test_security_headers(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", "/api/config")
+    r = c.getresponse()
+    r.read()
+    assert r.getheader("X-Content-Type-Options") == "nosniff"
+    assert "frame-ancestors 'none'" in r.getheader("Content-Security-Policy")
+    assert r.getheader("X-Frame-Options") == "DENY"
+    assert "Python" not in (r.getheader("Server") or "")
+    assert r.getheader("Strict-Transport-Security") is None          # local: plain http

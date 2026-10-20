@@ -589,9 +589,30 @@ def _safe_path(path: str) -> bool:
     return not any(seg in ("..", ".") for seg in p.split("/"))
 
 
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    # the rest of the policy is in the page (<meta>, app/svelte.config.js); these parts only work as a header
+    "Content-Security-Policy": "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
+
+
 class Handler(SimpleHTTPRequestHandler):
+    server_version = "JZPBuilder"
+    sys_version = ""                         # no Python version in the Server header
+
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=str(config.BUILDER_DIR), **kw)
+
+    def end_headers(self):
+        for k, v in SECURITY_HEADERS.items():
+            self.send_header(k, v)
+        if SETTINGS.hosted:                  # served over HTTPS by the host's proxy
+            self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        super().end_headers()
 
     # -- plumbing
     def _json(self, obj, status=200):

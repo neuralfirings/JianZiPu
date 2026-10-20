@@ -338,3 +338,14 @@ def test_fetch_user_maps_network_errors(monkeypatch):
         a.fetch_user("t")
     monkeypatch.setattr(urllib.request, "urlopen", raise_(urllib.error.HTTPError("u", 401, "no", {}, None)))
     assert a.fetch_user("t") is None
+
+
+def test_hosted_sends_hsts(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", "/api/config")
+    r = c.getresponse()
+    r.read()
+    assert r.getheader("Strict-Transport-Security", "").startswith("max-age=")
+    assert r.getheader("X-Content-Type-Options") == "nosniff"
