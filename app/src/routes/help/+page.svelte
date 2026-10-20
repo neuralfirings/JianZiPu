@@ -235,7 +235,7 @@
       <!-- ─────────────────────────────────────────────── -->
       <section id="release">
         <h2>Making a release</h2>
-        <p>On your own computer, <a href="/release">Release</a> turns kept changes into a new version of the font. It runs git for you, with your own GitHub sign-in.</p>
+        <p>On your own computer, <a href="/release">Release</a> (from Review, or <I.More class="inl" aria-label="More" /> → <strong>Make a release…</strong>) turns kept changes into a new version of the font. It runs git for you, with your own GitHub sign-in.</p>
         <ol>
           <li><strong>Start a release candidate</strong> with the next version number, such as 3.200. The Builder makes the branch <code>release/3.200</code> from main. A release branch holds only font files; Builder code goes to main on its own branch.</li>
           <li><strong>Add kept changes</strong> brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.</li>

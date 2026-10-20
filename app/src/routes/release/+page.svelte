@@ -20,7 +20,7 @@
   let version = $state('');
   let requests = $state<ChangeRequest[] | null>(null);
   let notes = $state('');
-  let notesFor = '';
+  let notesFor: string | null = null;
   /** A request whose kept changes clash with what's already in: picked in Review's view. */
   let resolving = $state<{ r: ChangeRequest; bundle: ChangeRequest['bundle'] } | null>(null);
   /** Requests whose clashes you picked through by hand: in, whatever you picked. */

@@ -31,7 +31,7 @@
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
     ['/test', 'Build & test'],
-    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review'], ['/release', 'Release']] : []),
+    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : []),
     ['/help', 'Help']
   ]);
 
@@ -195,6 +195,7 @@
             <button onclick={() => (dialog = 'export')}>Export…</button>
             <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
+            <button onclick={() => goto('/release')}>Make a release…</button>
             <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
             <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
             <hr />

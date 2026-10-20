@@ -70,7 +70,7 @@
             {/if}
           {/if}
         </div>
-        <p class="muted small">Sent {day(r.created_at)} {hhmm(r.created_at)} · {outcome(r)}{#if r.credit} · credited as {r.credit}{/if}</p>
+        <p class="muted small">Sent {day(r.created_at)} {hhmm(r.created_at)} · {outcome(r)}{r.credit ? ` · credited as ${r.credit}` : ''}</p>
         {#if r.notes}<p class="notes">{r.notes}</p>{/if}
         {#if r.reply}
           <div class="reply"><b>The maintainer replied{r.reviewed_at ? ` on ${day(r.reviewed_at)}` : ''}</b><p>{r.reply}</p></div>

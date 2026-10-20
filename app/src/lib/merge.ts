@@ -107,10 +107,8 @@ export function unitSummary(u: DesignUnit, b: unknown, t: unknown): string[] {
   }
   if (u.type === 'layout') {
     const a = b as Layout, z = t as Layout, out: string[] = [];
-    const key = (r: unknown) => JSON.stringify(r);
-    const removed = a.relationships.filter((r) => !z.relationships.some((x) => key(x) === key(r))).length;
-    const added = z.relationships.filter((r) => !a.relationships.some((x) => key(x) === key(r))).length;
-    if (added || removed) out.push(`${Math.max(added, removed)} spacing rule${Math.max(added, removed) === 1 ? '' : 's'} changed`);
+    const n = ruleChanges(a, z).length;
+    if (n) out.push(`${n} spacing rule${n === 1 ? '' : 's'} changed`);
     if (!same(a.slots, z.slots)) out.push('structure (parts) changed');
     if (!same(a.center, z.center)) out.push('centering changed');
     if ((a.label ?? '') !== (z.label ?? '')) out.push(`shown as "${z.label ?? ''}"`);

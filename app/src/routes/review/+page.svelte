@@ -165,12 +165,13 @@
     <button class="primary" onclick={() => fileInput?.click()}>Choose a .zip…</button>
   {:else}
     <div class="row top">
-      <h2>Review a draft</h2>
+      <h2>Review</h2>
       <span class="spacer"></span>
+      <a href="/release">Release <I.Opens size={14} /></a>
       <button onclick={() => fileInput?.click()}>Open a .zip…</button>
     </div>
     {#if !hosted.canSignIn}
-      <p class="muted">Testers' drafts appear here when this Builder runs with the Supabase settings (SUPABASE_URL, SUPABASE_ANON_KEY). Open a .zip works without them.</p>
+      <p class="muted">Change Requests and testers' drafts appear here when this Builder runs with the Supabase settings (SUPABASE_URL, SUPABASE_ANON_KEY). Open a .zip works without them.</p>
     {:else if !hosted.user}
       <div class="signin">
         <p>Sign in to see testers' drafts (admin emails only). Open a .zip works without signing in.</p>

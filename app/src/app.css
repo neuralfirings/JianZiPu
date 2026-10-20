@@ -148,6 +148,7 @@ kbd { font: var(--t-caption) var(--font-mono); border: 1px solid var(--border); 
 /* Banner: a state that stays true until fixed. Tinted ground, edge and icon in the state colour, words in ink. */
 .banner { --tone: var(--status-info); display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap; padding: var(--space-4) var(--space-5); border: 1px solid var(--tone); border-radius: var(--radius-md); background: var(--status-info-bg); color: var(--ink); }
 .banner .ic { display: inline-flex; flex: none; color: var(--tone); }
+.banner > .ic + span { flex: 1 1 0; min-width: 0; }   /* the words beside the icon wrap there, not below it */
 .banner.draft, .banner.warn { --tone: var(--status-draft); background: var(--status-draft-bg); }
 .banner.danger, .banner.err { --tone: var(--status-danger); background: var(--status-danger-bg); }
 .banner.saved { --tone: var(--status-saved); background: var(--status-saved-bg); }
