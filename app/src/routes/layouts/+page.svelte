@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as I from '$lib/icons';
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
@@ -20,6 +21,7 @@
   import PanelWorkspace from '$lib/components/PanelWorkspace.svelte';
   import { usedIn } from '$lib/areas';
   import { panels, type Meta, type PanelId } from '$lib/panels.svelte';
+  import { LAYOUTS_HELP } from '$lib/help';
 
   const d = $derived(app.design!);
   // canvas zoom: 1 = the word fits the canvas area; more scrolls
@@ -113,22 +115,34 @@
 
   $effect(() => { void app.design; if (editor.layoutName && !app.design?.layouts.some((l) => l.name === editor.layoutName)) editor.setLayout(app.design?.layouts[0]?.name ?? ''); else editor.syncChoice(); });
 
-  // resolve (debounced, latest wins)
-  let seq = 0, timer: ReturnType<typeof setTimeout> | null = null;
+  // resolve: one request at a time, the latest waiting one runs next. Edits are debounced; a drag
+  // isn't (each move restarting the timer would show nothing until the mouse stops), so the
+  // part follows the pointer as fast as the server answers.
+  let seq = 0, shown = 0, timer: ReturnType<typeof setTimeout> | null = null;
+  let inflight = false, waiting: (() => Promise<void>) | null = null;
+  function run(job: () => Promise<void>) {
+    if (inflight) { waiting = job; return; }
+    inflight = true;
+    job().finally(() => { inflight = false; const next = waiting; waiting = null; if (next) run(next); });
+  }
   $effect(() => {
     const re = editor.ruleEdit ? $state.snapshot(editor.ruleEdit) : null;
     const name = editor.layoutName, choice = $state.snapshot(editor.choice), pinned = $state.snapshot(effPinned);
     const design = re && app.design ? applyRuleEdit(app.design, name, re, re.liveDelta) : editor.dragDesign ?? app.design;
     if (!design || !name || !choice.length) return;
+    const dragging = !!editor.dragDesign || !!re?.liveDelta;
     if (timer) clearTimeout(timer);
     const id = ++seq;
     editor.resolving = true;
-    timer = setTimeout(async () => {
+    const job = async () => {
       try {
         const r = await api.resolve(design, name, choice, pinned);
-        if (id === seq) { editor.resolved = r; editor.resolving = false; }
+        if (id > shown) { shown = id; editor.resolved = r; }   // answers arrive in order; skip only older ones
+        if (id === seq) editor.resolving = false;
       } catch (e) { if (id === seq) { editor.resolving = false; status = (e as Error).message; } }
-    }, 50);
+    };
+    if (dragging) run(job);
+    else timer = setTimeout(() => run(job), 50);
   });
 
   let elements = $derived.by(() => {
@@ -170,7 +184,7 @@
     const id = `${axis}:${index}`;
     if (axis === 'y') {
       const myEdge = (rel.elem_edge ?? 'top') === 'top' ? me.y + me.size[1] : me.y;
-      if (rel.base == null) { const x = me.x + me.size[0] / 2; return ghost ? null : { id, x, y1: 0, y2: me.y, label: `start ${Math.round(me.y)}`, axis, title, bars: { at: x, me: { name: me.name, box: me as Box, edge: 'bottom' } } }; }
+      if (rel.base == null) { const x = me.x + me.size[0] / 2; const c = centredStart('y', me.name); return ghost ? null : { id, x, y1: 0, y2: me.y, label: `start ${Math.round(me.y)}${c ? '*' : ''}`, axis, title: c ? CENTRED_NOTE.y : title, bars: { at: x, me: { name: me.name, box: me as Box, edge: 'bottom' } } }; }
       if (!base || base.x == null || base.y == null) return null;
       const be = (rel.base_edge ?? 'bottom') as Edge, mine = (rel.elem_edge ?? 'top') as Edge;
       const baseEdge = be === 'bottom' ? base.y : base.y + base.size[1];
@@ -180,7 +194,7 @@
     }
     const myEdge = (rel.elem_edge ?? 'right') === 'right' ? me.x + me.size[0] : me.x;
     const midY = me.y + me.size[1] / 2;
-    if (rel.base == null) return ghost ? null : { id, y: midY, x1: 0, x2: me.x, label: `x ${Math.round(me.x)}`, axis, title, bars: { at: midY, me: { name: me.name, box: me as Box, edge: 'left' } } };
+    if (rel.base == null) { const c = centredStart('x', me.name); return ghost ? null : { id, y: midY, x1: 0, x2: me.x, label: `x ${Math.round(me.x)}${c ? '*' : ''}`, axis, title: c ? CENTRED_NOTE.x : title, bars: { at: midY, me: { name: me.name, box: me as Box, edge: 'left' } } }; }
     if (!base || base.x == null || base.y == null) return null;
     const be = (rel.base_edge ?? 'left') as Edge, mine = (rel.elem_edge ?? 'right') as Edge;
     const baseEdge = be === 'left' ? base.x : base.x + base.size[0];
@@ -281,19 +295,23 @@
     if (!dragFrom) return;
     if (e.phase === 'move') {
       if (!e.dx && !e.dy) { editor.dragDesign = null; editor.dragLabel = null; return; }
+      if (centredStart(e.dx ? 'x' : 'y', e.name)) { editor.dragDesign = null; editor.dragLabel = CENTRED_NOTE[e.dx ? 'x' : 'y'].slice(2); return; }
       const copy: Design = JSON.parse(JSON.stringify(dragFrom.design));
       const label = applyDelta(copy, e.name, e.dx, e.dy, dragFrom.gaps[e.dx ? 'x' : 'y']);
       if (label) { editor.dragDesign = copy; editor.dragLabel = label; } else editor.dragLabel = 'This part has no rule to change for the current glyphs';
       return;
     }
     editor.dragDesign = null; editor.dragLabel = null;
+    if ((e.dx || e.dy) && centredStart(e.dx ? 'x' : 'y', e.name)) { dragFrom = null; return; }   // the footnote says why
     if (e.dx || e.dy) commit(e.name, e.dx, e.dy);
     dragFrom = null;
   }
   function nudge(dx: number, dy: number) {
     const re = editor.ruleEdit;
     if (re) { re.value += re.axis === 'y' ? dy : dx; return; }
-    if (editor.selected) commit(editor.selected, dx, dy);
+    if (!editor.selected) return;
+    if (centredStart(dx ? 'x' : 'y', editor.selected)) return;   // the footnote says why
+    commit(editor.selected, dx, dy);
   }
   /** Clicking the active arrow opens the rule in effect in the editor; a ghost arrow shows its rule in the panel. */
   function selectArrow(id: string | null) {
@@ -328,6 +346,22 @@
     }
     return false;
   }
+  /** A start height (or page x) that Centering overrides: the word is centred on this axis and the
+   *  centred parts hang off this part, so the whole word, this part included, is shifted back to the
+   *  target. The canvas marks it "start 910*" and a drag explains instead of recording a no-op edit. */
+  function centredStart(axis: 'x' | 'y', name: string): boolean {
+    const l = editor.layout;
+    const on = l?.center?.[axis];
+    const active = editor.activeRel(axis, name);
+    if (!l || !on?.length || !active || l.relationships[active.index].base != null) return false;
+    return on.some((c) => dependsOn(l, axis, c, name));
+  }
+  const CENTRED_NOTE = {
+    y: '* Set by Centering: the word is centred vertically, so changing this start height doesn\'t move it. To move this part, change the gaps of the parts below it; to move the whole word, change the y target in Centering.',
+    x: '* Set by Centering: the word is centred horizontally, so changing this x doesn\'t move it. To move this part, change the gaps of the parts beside it; to move the whole word, change the x target in Centering.'
+  };
+  let centredNotes = $derived(editor.selected && !editing ? (['y', 'x'] as const).filter((ax) => arrows.some((a) => a.axis === ax && !a.ghost && a.label.endsWith('*'))) : []);
+
   // ---- link: a handle dropped on another part's edge creates / re-attaches a rule
   function onlink(e: { name: string; edge: Edge; target: string; targetEdge: Edge }) {
     const l = editor.layout!;
@@ -439,21 +473,22 @@
   {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p) => editor.loadWord(p)} /></div>
   {/if}
 {/snippet}
-<PanelWorkspace store={panels} {meta} {body}>
+<PanelWorkspace store={panels} {meta} {body} help={LAYOUTS_HELP}>
   {#if editor.layout}
     <div class="toolbar row wrap">
       <label><input type="checkbox" bind:checked={editor.showBoxes} /> boxes</label>
       <label><input type="checkbox" bind:checked={editor.showGlyphs} /> glyphs</label>
       <span class="spacer"></span>
       <span class="zoom" title="Zoom: ⌘ + scroll or pinch on the canvas, + / − keys; ⇧1 fits">
-        <button class="ghost" onclick={() => setZoom(zoom / 1.25)} disabled={zoom <= 0.25} aria-label="Zoom out">−</button>
+        <button class="ghost" onclick={() => setZoom(zoom / 1.25)} disabled={zoom <= 0.25} aria-label="Zoom out" data-tip="Zoom out (−)"><I.Minus /></button>
         <span class="pct">{Math.round(zoom * 100)}%</span>
-        <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in">+</button>
+        <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in" data-tip="Zoom in (+)"><I.Plus /></button>
         <button class="ghost" onclick={() => setZoom(1)} disabled={zoom === 1} title="Fit the word to the canvas (⇧1)">Fit</button>
       </span>
       {#if editor.resolving}<span class="muted">Updating…</span>{/if}
     </div>
-    <div class="canvas-wrap" bind:this={wrapEl} bind:clientHeight={wrapH} bind:clientWidth={wrapW} onwheel={onWheel}>
+    <div class="canvas-wrap" role="presentation" bind:this={wrapEl} bind:clientHeight={wrapH} bind:clientWidth={wrapW} onwheel={onWheel}
+      onpointerdown={(e) => { if (!(e.target as Element).closest('svg') && !editing) { editor.select(null); editor.selectedArrow = null; } }}>
       <WordCanvas bind:this={canvasEl} {elements} width={Math.max(240, wrapW - 26) * zoom} maxHeight={Math.max(240, wrapH - 26) * zoom} showBoxes={editor.showBoxes} showGlyphs={editor.showGlyphs} showPage={true}
         emBox={d.center}
         center={{ x: editor.layout.center.x_target ?? d.center.x, y: editor.layout.center.y_target ?? d.center.y }}
@@ -463,15 +498,16 @@
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
         onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
     </div>
-    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}>×</button></div>{/if}
+    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">
       {#if editor.boxEdit && editor.dragDesign}{@const be = editor.boxEdit}{@const old = d.areas[be.area]?.size ?? be.size}Box of {app.areaLabel(be.area)} {old[0]} × {old[1]} → <b>{be.size[0]} × {be.size[1]}</b>, not applied: moves parts in {usedIn(d, be.area).length} word type{usedIn(d, be.area).length === 1 ? '' : 's'}. <b>Enter</b> applies · <b>Esc</b> cancels.
     {:else if editor.dragLabel}{editor.dragLabel}
-      {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><b>× Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
+      {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><I.Problem size={14} /> <b>Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
       {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
       {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
       {:else}Click a part to see and edit its spacing.{/if}
     </div>
+    {#each centredNotes as ax}<div class="foot">{CENTRED_NOTE[ax]}</div>{/each}
   {:else}
     <p class="muted" style="padding: var(--space-7)">No word types yet. Turn on Advanced and add one in the Word types panel.</p>
   {/if}
@@ -488,6 +524,7 @@
   .zoom .pct { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--t-small); }
   .note { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-5); border-top: 1px solid var(--border); background: var(--status-info-bg); font-size: var(--t-small); }
   .note span { flex: 1; min-width: 0; }
+  .foot { padding: 0 var(--space-5) 4px; font-size: var(--t-small); color: var(--ink-muted); }
   .status { padding: 4px var(--space-5); border-top: 1px solid var(--border); font-size: var(--t-small); color: var(--ink-muted); min-height: 26px; }
   .greyed { opacity: .45; pointer-events: none; }
   .small { font-size: var(--t-caption); }

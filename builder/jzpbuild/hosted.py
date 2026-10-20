@@ -10,7 +10,6 @@ folder on request. Settings come from the environment:
   SUPABASE_ANON_KEY          the public anon key (also handed to the app)
   SUPABASE_SERVICE_KEY       server-only key, used to fetch the base font from Storage
   JZP_BASE_FONT_OBJECT       Storage object of the base font (default assets/TW-Kai-98.ttf)
-  JZP_FEEDBACK_URL           where "Send feedback" points (a form or mailto: link)
   RAILWAY_GIT_COMMIT_SHA     the deployed commit (set by Railway); else `git rev-parse HEAD`
 
 Stdlib only (urllib), like the rest of the server.
@@ -64,7 +63,6 @@ class Settings:
     supabase_anon_key: str = ""
     supabase_service_key: str = field(default="", repr=False)
     base_font_object: str = "assets/TW-Kai-98.ttf"
-    feedback_url: str = ""
     commit: str | None = None
 
     @classmethod
@@ -75,15 +73,13 @@ class Settings:
             supabase_anon_key=os.environ.get("SUPABASE_ANON_KEY", ""),
             supabase_service_key=os.environ.get("SUPABASE_SERVICE_KEY", ""),
             base_font_object=os.environ.get("JZP_BASE_FONT_OBJECT", "assets/TW-Kai-98.ttf"),
-            feedback_url=os.environ.get("JZP_FEEDBACK_URL", ""),
             commit=current_commit(),
         )
 
     def public(self) -> dict:
         """What the app may know (GET /api/config). Never the service key."""
         return {"mode": "hosted" if self.hosted else "local", "commit": self.commit,
-                "supabase_url": self.supabase_url or None, "supabase_anon_key": self.supabase_anon_key or None,
-                "feedback_url": self.feedback_url or None}
+                "supabase_url": self.supabase_url or None, "supabase_anon_key": self.supabase_anon_key or None}
 
 
 def current_commit() -> str | None:

@@ -1,6 +1,7 @@
 <script lang="ts">
   // A dock: the panels it holds in order, drop markers while a panel is
   // dragged, and (bottom strip only) a tab bar collecting the folded panels.
+  import * as I from '$lib/icons';
   import { panels as layoutPanels, type Dock, type AnyPanels, type Meta } from '$lib/panels.svelte';
   import type { Snippet } from 'svelte';
   let { dock, panel, meta, store }: { dock: Dock; panel: Snippet<[any]>; meta: (id: any) => Meta; store?: AnyPanels } = $props();
@@ -25,8 +26,8 @@
       {#each tabs as id (id)}
         {@const m = meta(id)}
         <button class="tab" data-panel-slot={id} data-panel={id} title="Open {m.title}" onclick={() => panels.setFolded(id, false)}>
-          <span class="grip" onpointerdown={(e) => { e.preventDefault(); e.stopPropagation(); panels.dragging = id; panels.pointer = { x: e.clientX, y: e.clientY }; panels.over = null; }}>⠿</span>
-          <span class="chev">▸</span>{m.title}{#if m.badge != null && m.badge !== ''}<span class="bdg" class:warn={m.warn}>{m.badge}</span>{/if}
+          <span class="grip" onpointerdown={(e) => { e.preventDefault(); e.stopPropagation(); panels.dragging = id; panels.pointer = { x: e.clientX, y: e.clientY }; panels.over = null; }}><I.Grip size={14} /></span>
+          <span class="chev"><I.Folded size={14} /></span>{m.title}{#if m.badge != null && m.badge !== ''}<span class="bdg" class:warn={m.warn}>{m.badge}</span>{/if}
           {#if m.summary}<span class="sum">{m.summary}</span>{/if}
         </button>
       {/each}
@@ -48,8 +49,8 @@
   .tabbar { display: flex; flex-wrap: wrap; gap: 2px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); padding: 2px; margin-top: auto; }
   .tab { display: inline-flex; align-items: center; gap: 5px; height: var(--control-sm); padding: 0 8px 0 4px; border: 0; background: transparent; font: 600 var(--t-label)/1 var(--font-display); }
   .tab:hover { background: var(--bg-hover); }
-  .tab .grip { color: var(--ink-faint); cursor: grab; font-size: 12px; touch-action: none; }
-  .tab .chev { color: var(--ink-muted); font-size: 10px; }
+  .tab .grip { display: inline-flex; color: var(--ink-faint); cursor: grab; touch-action: none; }
+  .tab .chev { display: inline-flex; color: var(--ink-muted); }
   .tab .sum { font-weight: 400; color: var(--ink-muted); font-size: var(--t-caption); }
   .bdg { font-size: var(--t-caption); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 0 6px; line-height: 15px; color: var(--ink-muted); font-weight: 400; }
   .bdg.warn { border-color: var(--status-draft); color: var(--status-draft); }

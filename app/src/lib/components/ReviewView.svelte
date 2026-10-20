@@ -4,6 +4,7 @@
   //   import — a tester opening a .zip into their own draft: the same, into their draft
   //   mine   — a tester's read-only "See my changes" (against what the draft started from)
   // Apply makes one undo step of unsaved changes (glyph files included); nothing is written until Save.
+  import * as I from '$lib/icons';
   import type { Bundle } from '$lib/bundle';
   import { applyMerge, diffBundle, hunks, lineDiff, pretty, type Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
@@ -130,7 +131,7 @@
           <div class="ihead">
             <b class="key">{it.kind === 'design' ? it.label : it.key}</b>
             <span class="tag {it.status}">{it.status}</span>
-            {#if it.conflict && !readOnly}<span class="pill danger">× Conflict</span>{/if}
+            {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             <span class="spacer"></span>
             {#if it.kind === 'design' && it.unit.type === 'area' && mode !== 'mine'}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}

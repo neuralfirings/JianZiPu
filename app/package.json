@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "help:shots": "node scripts/help-shots.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.8",
@@ -17,6 +18,7 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "canvas": "^3.2.3",
     "jsdom": "^29.1.1",
+    "playwright-core": "^1.64.1",
     "svelte": "^5.25.0",
     "svelte-check": "^4.1.0",
     "typescript": "^5.7.0",
@@ -24,6 +26,7 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@lucide/svelte": "^1.59.0",
     "@fontsource-variable/eb-garamond": "^5.3.0",
     "@fontsource-variable/literata": "^5.3.0",
     "@supabase/supabase-js": "^2.45.4",

@@ -2,6 +2,7 @@
   // One spelling field of one glyph, edited in place. Checked as you type in a line under the
   // field; Enter (or leaving the field) saves it as one undo step; Esc puts the old value back.
   // A vertical form shows its partner's spelling greyed out as the placeholder.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
   let {
@@ -59,7 +60,7 @@
       oninput={(e) => (draft = (e.target as HTMLInputElement).value)}
       {onkeydown} {onpaste} spellcheck="false" autocomplete="off" />
     {#if note && (note.level !== 'free' || (draft !== own && draft))}
-      <span class="note {note?.level}" role="status">{note?.text}{#if note?.level === 'error'}<span class="muted"> · Enter keeps it; Save waits until it's fixed</span>{/if}</span>
+      <span class="note {note?.level}" role="status">{#if note?.level === 'error'}<I.Problem size={12} /> {:else if note?.level === 'shared'}<I.Pair size={12} /> {:else if note?.level === 'free'}<I.Check size={12} /> {/if}{note?.text}{#if note?.level === 'error'}<span class="muted"> · Enter keeps it; Save waits until it's fixed</span>{/if}</span>
     {/if}
   {/if}
 </span>

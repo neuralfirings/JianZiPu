@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config';
 // built font; in `npm run dev` the Vite server proxies to it.
 export default defineConfig({
   plugins: [sveltekit()],
+  // under Vitest, resolve Svelte's browser build so component tests can mount() (it is the client app anyway)
+  resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   test: {
     // unit tests next to the code: src/**/*.test.ts (npm test). jsdom + node-canvas let Paper.js run.
     environment: 'jsdom',

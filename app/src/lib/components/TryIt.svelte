@@ -4,6 +4,7 @@
   // shows in red; leftover letters (a spelling that didn't match) show as plain letters.
   // With `full`, also What changes (sample words that type differently than with the saved
   // spellings) and Issues.
+  import * as I from '$lib/icons';
   import { api, type TypingPreview } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
@@ -76,7 +77,7 @@
       {@const w = byWord.get(c.word)}
       <div class="chk" class:ok={w && same(w.glyphs, c.want)} class:bad={w && !same(w.glyphs, c.want)} title={w && !same(w.glyphs, c.want) ? `gives ${w.glyphs.join(' + ')}` : ''}>
         {#if w}{@render out(w.glyphs, w.texts)}{:else}<span class="muted">…</span>{/if}
-        <small class="mono">{c.label} {w ? (same(w.glyphs, c.want) ? '✓' : '⚠') : ''}</small>
+        <small class="mono">{c.label} {#if w}{#if same(w.glyphs, c.want)}<I.Check size={12} />{:else}<I.Warn size={12} />{/if}{/if}</small>
       </div>
     {:else}
       <span class="muted small">No spellings yet: type one and it previews here at once.</span>
@@ -110,8 +111,8 @@
   {#if full || errors.length || warnings.length}
     <div class="sub">
       {#if full}<h5>Issues</h5>{/if}
-      {#each errors as e}<div class="err small">✕ {e.message}</div>{/each}
-      {#each warnings as w}<div class="warn small">⚠ {w}</div>{/each}
+      {#each errors as e}<div class="err small"><I.Problem size={12} /> {e.message}</div>{/each}
+      {#each warnings as w}<div class="warn small"><I.Warn size={12} /> {w}</div>{/each}
       {#if full && !errors.length && !warnings.length}<span class="muted small">None.</span>{/if}
     </div>
   {/if}

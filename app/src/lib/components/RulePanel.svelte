@@ -1,6 +1,7 @@
 <script lang="ts">
   // Spacing rules of the selected part: the chain of bases (in search order)
   // and the rule rows of the viewed base, as glyph sentences.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor, gapEntryIndex } from '$lib/editor.svelte';
   import { elementLabel, elementNames } from '$lib/shape';
@@ -139,8 +140,8 @@
 
 <div class="rp">
   <div class="tabs">
-    <button class="tab" class:on={axis === 'y'} onclick={() => { editor.axis = 'y'; editor.viewedRel = null; }}>↕ Vertical</button>
-    <button class="tab" class:on={axis === 'x'} onclick={() => { editor.axis = 'x'; editor.viewedRel = null; }}>⇆ Horizontal</button>
+    <button class="tab" class:on={axis === 'y'} onclick={() => { editor.axis = 'y'; editor.viewedRel = null; }}><I.Vertical size={14} /> Vertical</button>
+    <button class="tab" class:on={axis === 'x'} onclick={() => { editor.axis = 'x'; editor.viewedRel = null; }}><I.Horizontal size={14} /> Horizontal</button>
     <label class="elsegaps" title="Draw the else entries as gray dashed arrows on the canvas: the gap this part gets in words without the bases before them. Hover an else pill to see just its arrow.">
       <input type="checkbox" bind:checked={editor.showElse} /> <svg width="16" height="8" aria-hidden="true"><line x1="0" x2="16" y1="4" y2="4" /></svg> else gaps
     </label>
@@ -154,10 +155,10 @@
         onpointerenter={() => (editor.hoverRel = c.index)} onpointerleave={() => { if (editor.hoverRel === c.index) editor.hoverRel = null; }}
         draggable="true" ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
         title={c.index === active ? 'In effect for the preview word' : basePresent(c.rel) ? 'Not in effect: an earlier base wins. Click to look at its rules (the preview drops the parts before it).' : 'Not in effect: this part is not in the word. Click to add it to the preview.'}
-        onclick={() => viewPill(c.index)}>{c.index === active ? '● ' : ''}{pillLabel(c.rel)}</button>
+        onclick={() => viewPill(c.index)}>{#if c.index === active}<I.Current size={12} />{/if}{pillLabel(c.rel)}</button>
     {/each}
     <span class="addwrap">
-      <button class="opt add" onclick={() => (addOpen = !addOpen)}>+ ▾</button>
+      <button class="opt add" onclick={() => (addOpen = !addOpen)} aria-label="Add a base"><I.Plus size={14} /><I.Dropdown size={12} /></button>
       {#if addOpen}
         <div class="menu">
           <div class="muted">relative to…</div>
@@ -167,7 +168,7 @@
     </span>
   </div>
   {#if chain.length === 0}
-    <p class="muted">No {axis === 'y' ? 'vertical' : 'horizontal'} rule yet: this part is not placed. Add a base with + or drag a ○ handle on the canvas.</p>
+    <p class="muted">No {axis === 'y' ? 'vertical' : 'horizontal'} rule yet: this part is not placed. Add a base with <I.Plus class="inl" aria-label="+" /> or drag a ○ handle on the canvas.</p>
   {:else if rel}
     <div class="sentence muted">
       {#if rel.base == null}
@@ -179,7 +180,7 @@
         {#if editor.advanced}<select value={rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')} onchange={(e) => setEdge('base_edge', (e.target as HTMLSelectElement).value)}>{#each EDGES as ed}<option value={ed}>{ed}</option>{/each}</select>{:else}{rel.base_edge ?? (axis === 'y' ? 'bottom' : 'left')}{/if}</span>
         + gap{#if axis === 'y'} <span title="Positive pulls it up into the base's box; negative leaves space">(+ overlaps, − leaves space)</span>{/if}
       {/if}
-      <button class="tiny" title="Remove this base from the chain" onclick={removeViewed}>remove ×</button>
+      <button class="tiny" title="Remove this base from the chain" onclick={removeViewed}>remove <I.Close size={12} /></button>
     </div>
     {#if viewed !== active}
       <div class="info">Viewing <b>{pillLabel(rel)}</b>: not in effect for the current word. <button class="tiny" onclick={() => viewPill(viewed!)}>show the word it applies to</button></div>
@@ -192,24 +193,24 @@
         <div class="rr" class:on={i === activeEntry} class:other
           draggable={!other} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
           role="button" tabindex="0" onclick={() => openEditor(i)} onkeydown={(ev) => { if (ev.key === 'Enter') openEditor(i); }}>
-          <span class="hdl">{other ? '⤓' : '≡'}</span>
+          <span class="hdl">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
           <span class="rn">{other ? '–' : i + 1}</span>
           <span class="chips">
             {#if other}
-              otherwise {#if missing.length === 0 && (showElem || showBase)}<span class="tiny muted">all covered ✓</span>{/if}
+              otherwise {#if missing.length === 0 && (showElem || showBase)}<span class="tiny muted">all covered <I.Check size={12} /></span>{/if}
             {:else}
               {#if showElem}{#if e.when_elem?.length}{#each e.when_elem as g}<span class="chip"><Glyph name={g} size={16} /></span>{/each}{:else}<span class="any">any</span>{/if}{/if}
               {#if showElem && showBase}<span class="muted">·</span>{/if}
               {#if showBase}{#if e.when_base?.length}{#each e.when_base as g}<span class="chip"><Glyph name={g} size={16} /></span>{/each}{:else}<span class="any">any</span>{/if}{/if}
             {/if}
           </span>
-          <span class="arrow" class:dot={i === activeEntry}>{i === activeEntry ? '● →' : '→'}</span>
+          <span class="arrow" class:dot={i === activeEntry}>{#if i === activeEntry}<I.Current size={12} />{/if}<I.Gives size={12} /></span>
           <input type="number" value={e.value} onclick={(ev) => ev.stopPropagation()} onchange={(ev) => setValue(i, +(ev.target as HTMLInputElement).value)} />
-          {#if !other || entries.length > 1}<button class="x" title="Remove this row" onclick={(ev) => { ev.stopPropagation(); removeEntry(i); }}>×</button>{/if}
+          {#if !other || entries.length > 1}<button class="x" title="Remove this row" onclick={(ev) => { ev.stopPropagation(); removeEntry(i); }} aria-label="Remove this row"><I.Close size={14} /></button>{/if}
         </div>
       {/each}
       {#if otherwiseIdx < 0}
-        <div class="rr other warn"><span class="hdl">⤓</span><span class="rn">–</span>
+        <div class="rr other warn"><span class="hdl"><I.Otherwise size={14} /></span><span class="rn">–</span>
           <span class="chips">otherwise: none set{#if missing.length} · {missing.length} {missingLabel} not placed: {#each missing as g (g)}<span class="chip" title={g}><Glyph name={g} size={16} /></span>{/each}{/if}</span>
           <span></span><button class="tiny" onclick={addOtherwise}>+ set</button></div>
       {:else if missing.length}
@@ -258,13 +259,13 @@
   .rr.on { border-color: var(--link); background: var(--sel-bg); }
   .rr.other { background: var(--bg-panel); }
   .rr.warn { border-style: dashed; color: var(--status-draft); }
-  .hdl { color: var(--ink-muted); text-align: center; cursor: grab; }
+  .hdl { display: inline-flex; justify-content: center; color: var(--ink-muted); cursor: grab; }
   .rn { display: inline-flex; width: 19px; height: 19px; border-radius: 50%; border: 1px solid var(--border); font-size: var(--t-caption); align-items: center; justify-content: center; font-family: var(--font-mono); }
   .rr.on .rn { border-color: var(--link); color: var(--link); }
   .chips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; min-width: 0; }
   .chip { display: inline-flex; padding: 1px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-field); }
   .any { font-size: var(--t-caption); color: var(--ink-muted); border: 1px dashed var(--border); border-radius: 10px; padding: 0 6px; }
-  .arrow { text-align: right; color: var(--ink-muted); font-size: var(--t-caption); }
+  .arrow { display: inline-flex; justify-content: flex-end; align-items: center; gap: 2px; color: var(--ink-muted); }
   .arrow.dot { color: var(--link); }
   .rr input { width: 62px; height: 24px; }
   .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); }

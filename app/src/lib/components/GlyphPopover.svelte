@@ -1,6 +1,7 @@
 <script lang="ts">
   // A floating glyph chooser: fixed to the viewport, anchored at a screen
   // point (right-aligned to it), with search when the list is long.
+  import * as I from '$lib/icons';
   import Glyph from './Glyph.svelte';
   let { title, glyphs, current = null, anchor, onpick, onclose }: {
     title: string; glyphs: string[]; current?: string | null;
@@ -20,7 +21,7 @@
 <div class="gpop" style="left:{left}px; top:{top}px; width:{width}px">
   <div class="phead"><span class="ptitle">{title}</span><span class="muted">{glyphs.length} glyphs</span>
     {#if glyphs.length > 24}<input class="psearch" placeholder="find…" bind:value={q} />{/if}
-    <button class="pclose" title="Close" onclick={onclose}>×</button></div>
+    <button class="pclose" title="Close" aria-label="Close" onclick={onclose}><I.Close size={14} /></button></div>
   <div class="pgrid">
     {#each shown as g (g)}
       <button class="pcell" class:on={g === current} title={g} onclick={() => onpick(g)}><Glyph name={g} size={36} /></button>

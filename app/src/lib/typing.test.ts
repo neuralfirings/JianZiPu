@@ -50,7 +50,7 @@ describe('cellNote', () => {
   it('says free, taken, shared, joins, invalid', () => {
     const t = base();
     expect(cellNote(t, 'lg_tuo', 'latin', 't')?.level).toBe('free');
-    expect(cellNote(t, 'lg_tuo', 'latin', 'k', undefined, (g) => (g === 'lg_gou' ? '勾' : ''))?.text).toBe('✕ already used by 勾 (lg_gou)');
+    expect(cellNote(t, 'lg_tuo', 'latin', 'k', undefined, (g) => (g === 'lg_gou' ? '勾' : ''))?.text).toBe('already used by 勾 (lg_gou)');
     expect(cellNote(t, 'md_lun', 'latin', 'lun')?.level).toBe('shared');
     expect(cellNote(t, 'lg_tuo', 'latin', 'ki')?.level).toBe('joins');
     expect(cellNote(t, 'lg_tuo', 'latin', '4k')?.level).toBe('error');

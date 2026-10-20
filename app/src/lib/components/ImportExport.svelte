@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import type { Design } from '$lib/api';
   import { designSummary } from '$lib/merge';
@@ -63,7 +64,7 @@
         <li>Areas: box sizes &amp; glyph members ({Object.keys(d.areas).length})</li>
         <li>Test word sets ({Object.keys(d.test_sets ?? {}).length})</li>
       </ul>
-      <p class="muted">Spellings live in components.csv: import or export them from Glyphs ⋯ (they save with the same Save). SVG files are not included.</p>
+      <p class="muted">Spellings live in components.csv: import or export them from Glyphs <I.More class="inl" aria-label="More" /> (they save with the same Save). SVG files are not included.</p>
       <div class="row"><button class="primary" onclick={download}>Download JSON</button><button onclick={onclose}>Close</button></div>
     {:else}
       <h3>Import</h3>

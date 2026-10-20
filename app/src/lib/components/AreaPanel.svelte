@@ -4,6 +4,7 @@
   // apply on Enter / leaving the fields), advance (Advanced), + New area and Delete area (only an
   // empty area no word type uses; otherwise a banner says why), the word types that use it, and its glyphs: click = preview, double-click or "edit" = glyph editor, Manage =
   // remove / add. Position decimals sit in a text grid (13 hui × blank, .1–.9).
+  import * as I from '$lib/icons';
   import { goto } from '$app/navigation';
   import { api, type ResolvedElement } from '$lib/api';
   import { app } from '$lib/state.svelte';
@@ -157,7 +158,7 @@
 <div class="ap">
   <div class="props">
     <span class="sw">
-      <button class="pick" title="Show another area" onclick={() => (switcher = !switcher)}>{#if area}{area.label || areaId} <span class="id">{areaId}</span>{:else}Pick an area{/if} ▾</button>
+      <button class="pick" title="Show another area" onclick={() => (switcher = !switcher)}>{#if area}{area.label || areaId} <span class="id">{areaId}</span>{:else}Pick an area{/if} <I.Dropdown size={14} /></button>
       {#if switcher}
         <div class="menu" role="menu">
           <table><tbody>
@@ -195,7 +196,7 @@
             <label>Id <input type="text" bind:value={newId} placeholder="thumb" class="mono" /></label>
             <label>Shown as <input type="text" bind:value={newLabel} placeholder="Thumb mark" /></label>
             <span class="tiny">Box {area ? `${area.size[0]} × ${area.size[1]}, copied from ${area.label || areaId}` : '350 × 350'}. Add glyphs with Manage, then use it in a word type's Structure.</span>
-            {#if newId && newProblem}<span class="err tiny">× {newProblem}</span>{/if}
+            {#if newId && newProblem}<span class="err tiny"><I.Problem size={12} /> {newProblem}</span>{/if}
             <div class="row"><span class="spacer"></span><button class="quiet" onclick={() => (newOpen = false)}>Cancel</button><button class="primary" disabled={!!newProblem} onclick={createArea}>Create area</button></div>
           </div>
         {/if}
@@ -206,11 +207,11 @@
 
   {#if delState && delState.problems.length && delState.area === areaId}
     <div class="banner danger" role="alert">
-      <span class="ic">×</span>
+      <span class="ic"><I.Problem /></span>
       <div class="why"><b>Can't delete {app.areaLabel(delState.area)} ({delState.area}).</b>
         <ul>{#each delState.problems as p (p)}<li>{p}</li>{/each}</ul>
       </div>
-      <button class="quiet sm" aria-label="Close" onclick={() => (delState = null)}>×</button>
+      <button class="quiet sm" aria-label="Close" onclick={() => (delState = null)}><I.Close /></button>
     </div>
   {/if}
   {#if delState && !delState.problems.length}
@@ -252,13 +253,13 @@
         <span class="cell">
           <button class="chip" class:on={previewed(g)} title="{g} · double-click to edit" onclick={() => preview(g)} ondblclick={() => goto(editUrl(g))}>
             <Glyph name={g} size={30} />
-            {#if manage}<span class="x" role="button" tabindex="-1" title="Remove from {areaId}" onclick={(e) => { e.stopPropagation(); remove(g); }} onkeydown={() => {}}>×</span>{/if}
+            {#if manage}<span class="x" role="button" tabindex="-1" title="Remove from {areaId}" onclick={(e) => { e.stopPropagation(); remove(g); }} onkeydown={() => {}}><I.Close size={10} /></span>{/if}
           </button>
           <a class="edit" href={editUrl(g)} title="Edit the outline of {g}">edit</a>
         </span>
       {/each}
       {#if area.glyphs.length === 1 && el}<span class="muted small">preview fixed: this part has one glyph</span>{/if}
-      {#if chips.length > LIMIT}<button class="small" onclick={() => (showAll = !showAll)}>{showAll ? 'show less ▴' : `show all ${chips.length} ▾`}</button>{/if}
+      {#if chips.length > LIMIT}<button class="small" onclick={() => (showAll = !showAll)}>{#if showAll}show less <I.Less size={12} />{:else}show all {chips.length} <I.Dropdown size={12} />{/if}</button>{/if}
     </div>
     {#if members.decimals.length}
       <div class="tiny">Position decimals · {wide ? 'hui across, decimal down' : 'hui down, decimal across'}{#if el} · click one to preview it{/if}</div>
@@ -289,7 +290,7 @@
     <span class="c" class:on={previewed(c.glyph)} class:hit={!!q && matches(c.glyph)} role="button" tabindex="0"
       title="{c.glyph} · {decimalPatterns(c.glyph).join(' · ')}{manage ? '' : ' · double-click to edit'}"
       onclick={() => preview(c.glyph)} ondblclick={() => goto(editUrl(c.glyph))} onkeydown={(e) => { if (e.key === 'Enter') preview(c.glyph); }}>
-      {c.label}{#if manage}<span class="cx" role="button" tabindex="-1" title="Remove from {areaId}" onclick={(e) => { e.stopPropagation(); remove(c.glyph); }} onkeydown={() => {}}>×</span>{/if}
+      {c.label}{#if manage}<span class="cx" role="button" tabindex="-1" title="Remove from {areaId}" onclick={(e) => { e.stopPropagation(); remove(c.glyph); }} onkeydown={() => {}}><I.Close size={10} /></span>{/if}
     </span>
   {:else if manage && c.exists}
     <button class="c miss" title="Add {c.glyph} to {areaId}" onclick={() => app.addToArea(areaId!, [c.glyph])}>+ {c.label}</button>
@@ -340,7 +341,7 @@
   .cell { display: inline-flex; flex-direction: column; align-items: center; }
   .chip { position: relative; height: 36px; width: 36px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-field); }
   .chip.on { border-color: var(--link); box-shadow: 0 0 0 1.5px var(--link); }
-  .x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-field); border: 1px solid var(--border); font-size: 11px; line-height: 13px; text-align: center; color: var(--ink-muted); }
+  .x { display: inline-flex; align-items: center; justify-content: center; position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-field); border: 1px solid var(--border); font-size: 11px; line-height: 13px; text-align: center; color: var(--ink-muted); }
   .edit { font-size: var(--t-caption); line-height: 16px; color: var(--ink-muted); text-decoration: none; padding: 0 4px; border-radius: 3px; }
   .edit:hover { color: var(--link); background: var(--sel-bg); }
   .dg { display: grid; gap: 2px; font-family: var(--font-mono); font-size: 11px; max-width: 640px; }
@@ -351,8 +352,8 @@
   .dg .c.hit { background: color-mix(in srgb, var(--status-draft) 18%, var(--bg-field)); border-color: var(--status-draft); }
   .dg .c.miss { border-style: dashed; color: var(--ink-muted); background: transparent; }
   .dg .c.none { border-style: dotted; color: var(--ink-muted); opacity: .5; cursor: default; }
-  .cx { display: none; position: absolute; top: -6px; right: -5px; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-field); font-size: 10px; line-height: 12px; color: var(--ink-muted); }
-  .dg .c:hover .cx { display: block; }
+  .cx { display: none; align-items: center; justify-content: center; position: absolute; top: -6px; right: -5px; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-field); font-size: 10px; line-height: 12px; color: var(--ink-muted); }
+  .dg .c:hover .cx { display: inline-flex; }
   .small { font-size: var(--t-caption); }
   .tiny { font-size: var(--t-caption); color: var(--ink-muted); }
   .err { color: var(--status-danger); }

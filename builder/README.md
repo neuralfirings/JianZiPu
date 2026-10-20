@@ -67,7 +67,7 @@ python3 -m jzpbuild.webserver --port 9000
 | `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only) |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
 | `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the caller's builds (`build` = latest, `builds` = newest first, last 8 kept). The body may carry a draft, `{design, rows, svgs, deleted}`, built instead of the files on disk (hosted mode) |
-| `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key, feedback_url}` (never the service key) |
+| `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key}` (never the service key) |
 | `GET /api/base` | the font version on disk: `{commit, date, design_hash, csv_hash, svg_hashes}`; a draft records it to notice when the font moves on |
 | `GET /api/builds/<id>/JianZiPu.ttf` | that exact build; `?download=1` sends it as an attachment. Build folders live in the system temp dir and are removed when the server stops |
 
@@ -94,12 +94,14 @@ rule editor with live canvas preview), Centering, Area Properties (the
 shared areas: switcher, box size previewed on the canvas until Enter,
 members with the position decimals as a grid, + New area under Advanced;
 see `docs/AREAS-PLACEMENT-UX.md`; the old Areas screen is gone); a live test strip;
-Advanced toggle for structural edits), **Test & Build** (live preview vs
-the built font, sample sets, Build button with log; each build is a
-separate file in a temp folder with Download and Open in Tester), **Tester**
-(type anything in one exact TTF: a build from this session or a `.ttf`
-opened from disk, loaded under its own font name so an installed JianZiPu
-never stands in; characters the file lacks are drawn in red by a system font; optional second font side by side),
+Advanced toggle for structural edits), **Build & test** (`/test`: Build button
+with log, each build a separate file in a temp folder with Download; one font
+picker, a build from this session or a `.ttf` opened from disk, loaded under its
+own font name so an installed JianZiPu never stands in, characters the file lacks
+drawn in red by a system font; a **Test the design** view, live preview vs the font per
+word over sample sets, and a **Test the font file** view, running text with liga / kern
+switches, vertical columns and an optional second font side by side; the old
+`/tester?build=…` links land on the font-file view),
 **Review** (a tester's draft, from Supabase or a `.zip`, item by item: glyphs before / after / overlay,
 spellings, design units with sample words and the JSON diff; Keep / Skip, conflicts picked by hand;
 Apply makes them unsaved changes; see "Hosted pilot" below). Edits are held in the
@@ -137,6 +139,14 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
   `components.csv`, `svg/` (added and changed glyphs only), `base/` (the versions the draft started
   from, for the three-way merge). Glyph files from someone else are sanitised before they are shown.
 
+To look at the hosted screens (the sign-in page, the draft pill) on your own machine, start the
+server in hosted mode with placeholder Supabase settings; the pages render, sign-in itself won't
+send anything:
+
+```bash
+cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=placeholder python3 -m jzpbuild.webserver --hosted --port 5716
+```
+
 ### Setting it up
 
 1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and
@@ -144,7 +154,7 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
    set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
    Review), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
 2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
-   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `JZP_FEEDBACK_URL` (a form or mailto:).
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`. The "Ask for an invite" and Feedback forms post to Formspree from the app (`app/src/lib/forms.ts`), so they need no setting.
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
 3. **Your local Review**: copy `builder/.env.example` to `builder/.env` (gitignored) and
    fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the web server reads that file at start (the shell's
@@ -161,8 +171,8 @@ docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jz
 
 Review → the tester's row → each item shows what changed; Keep or Skip it (a conflict, where your
 Builder also changed the same thing since the draft started, needs a pick). **Apply** turns the kept items
-into one undoable step of unsaved changes, glyph files included. Look them over in Layouts and the
-Tester, **Save**, then commit with the message the toast copies ("Apply Mei Chen's draft: …"). The row
+into one undoable step of unsaved changes, glyph files included. Look them over in Layouts and
+Build & test, **Save**, then commit with the message the toast copies ("Apply Mei Chen's draft: …"). The row
 is marked "reviewed" in this browser; a later save by the tester shows "new since you looked".
 
 ## Command line
@@ -187,7 +197,7 @@ By default the build writes to `builder/JianZiPu.ttf`, and the
 running the pipeline never touches anything tracked: the shaping regression
 test always has an untouched golden reference (`config.CURRENT_FONT`,
 `tests/JianZiPu.ttf`) to compare against, and you can preview a build (via
-the Builder's Test & Build or Tester screen) before
+the Builder's Build & test screen) before
 copying it anywhere with `-o`.
 
 **`builder/inputs/` is the only source read at build time — no fallback.**
@@ -563,7 +573,7 @@ underlying mechanism explains what "conflict" means here:
    Manage → + Add glyphs).
    Then Glyphs → select it → fill in its spellings (Latin Entry, 简体, 繁體,
    …) in the inspector or the Typing table; Save writes `components.csv`.
-3. **Save**, then Test & Build → **Build font**. Type `:<key>` in the test
+3. **Save**, then Build & test → **Build font**. Type `:<key>` in the test
    box: the live preview shows it as a row of a vertical word before the
    build finishes; the built font afterwards.
 
@@ -582,12 +592,13 @@ add it to those areas too; one glyph can be in several.
 
 ## Helpful Tools
 
-The Builder's **Tester** screen (`/tester`) loads one exact `.ttf` (a build
+The Builder's **Build & test** screen (`/test`) loads one exact `.ttf` (a build
 from the running server, or any file from disk) under its own font name, so
 an installed JianZiPu never stands in; characters the file lacks are drawn
-in red. **Test & Build** puts the live preview and the built font side by
+in red. Its **Test the design** view puts the live preview and that font side by
 side over sample sets (basic words, decimals, modifiers, chords, vertical
-words, Chinese input, edge cases).
+words, Chinese input, edge cases); its **Test the font file** view shows running text, with
+a second font to compare.
 
 ## Verification
 

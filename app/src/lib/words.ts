@@ -1,4 +1,4 @@
-// Sample word sets for the test strip and the Test & Build screen.
+// Sample word sets for the test strip and the Build & test screen.
 export const SAMPLE_SETS: Record<string, string[]> = {
   'Basic words': ['s7k5', 'd10u6', 'f9j3', 'v8h2', 'x5l1', 's76', '0k3', 'blk5', 'lun6', 'sanu1', 's7ju5', 's7ki5', 's7lo5'],
   Decimals: ['s7.5k5', 's7,5', '10.2', '13.9', '13+', '11.5', '7.5', '0.5', '1,3', 'fyd10.8ju6', 'U9,6', 's9U5,6'],

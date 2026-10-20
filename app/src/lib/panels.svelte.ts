@@ -136,5 +136,8 @@ const EDITOR_DEFAULTS: Defaults<EditorPanelId> = {
 };
 export const editorPanels = new PanelStore<EditorPanelId>('jzp-editor-panels-v1', EDITOR_PANEL_IDS, EDITOR_DEFAULTS);
 
+/** Which panel's ? popover is open (one at a time, on any screen). */
+export const panelHelp = $state<{ open: string | null }>({ open: null });
+
 /** Any screen's store, as the shared panel components see it. */
 export type AnyPanels = PanelStore<string>;

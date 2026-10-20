@@ -3,6 +3,7 @@
   // positions, unsaved outlines (Glyph.svelte reads app.preview first). One component for
   // every screen: the Layouts Tester panel (click a word to open it) and the glyph editor
   // (`glyph`: starts from sample words that use it and dims the words that don't).
+  import * as I from '$lib/icons';
   import { api, type Design, type WordPayload, type WordPiece } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { anchorNames, wordPage } from '$lib/shape';
@@ -69,7 +70,7 @@
     </select>
     <button onclick={random} title="Eight random sample words">Random</button>
     <span class="sizes" title="Size">{#each SIZES as s}<button class:on={size === s} onclick={() => (size = s)}>{s}</button>{/each}</span>
-    <a href="/test?words={encodeURIComponent(text)}" title="These words on Test & Build, next to the built font">Test & Build ↗</a>
+    <a href="/test?words={encodeURIComponent(text)}" title="These words on Build & test, next to the built font">Build & test <I.Opens size={12} /></a>
   </div>
   <div class="words">
     {#each result?.words ?? [] as w (w.word)}

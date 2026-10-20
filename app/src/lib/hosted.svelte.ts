@@ -39,7 +39,7 @@ class Hosted {
     try {
       this.config = await api.config();
     } catch {
-      this.config = { mode: 'local', commit: null, supabase_url: null, supabase_anon_key: null, feedback_url: null };
+      this.config = { mode: 'local', commit: null, supabase_url: null, supabase_anon_key: null };
     }
     session.token = () => this.token;
     session.onSignedOut = () => { if (this.isHosted && this.user) this.signedOut = true; };
