@@ -183,3 +183,39 @@ def test_a_tag_must_match_the_version_in_its_files_and_brings_its_notes(repo):
         release.tag_notes("v3.300", repo=repo)
     with pytest.raises(ReleaseError, match="isn't a release tag"):
         release.tag_notes("v3.2", repo=repo)
+
+
+PYTEST_OUTPUT = """........F.......
+=================================== FAILURES ===================================
+______________________ test_shaping_matches_current_font _______________________
+tests/test_shaping.py:114: in test_shaping_matches_current_font
+    assert compare_fonts(str(config.CURRENT_FONT), str(new)) == 0
+E   AssertionError: assert 5 == 0
+----------------------------- Captured stdout call -----------------------------
+DIFF for 'C88|99':
+  >> ('blank_bar', (500, 0, 0, 0))    ('blank_bar', (1000, 0, 0, 0))
+73/78 inputs shape identically
+=========================== short test summary info ============================
+FAILED tests/test_shaping.py::test_shaping_matches_current_font - AssertionError: assert 5 == 0
+1 failed, 155 passed in 113.63s (0:01:53)
+"""
+
+
+def test_a_failed_test_run_says_which_test_and_why():
+    failed, details = release.test_failures(PYTEST_OUTPUT)
+    assert failed == ["tests/test_shaping.py::test_shaping_matches_current_font"]
+    assert "E   AssertionError: assert 5 == 0" in details
+    assert "DIFF for 'C88|99':" in details and not any("short test summary" in l for l in details)
+
+
+def test_candidate_logs_the_failure_and_names_the_test(monkeypatch):
+    class R:
+        returncode = 1
+        stdout = PYTEST_OUTPUT
+        stderr = ""
+    monkeypatch.setattr(release.subprocess, "run", lambda *a, **k: R())
+    said = []
+    with pytest.raises(ReleaseError, match=r"tests failed \(test_shaping_matches_current_font\)"):
+        release.run_tests(said.append)
+    assert "  FAILED tests/test_shaping.py::test_shaping_matches_current_font" in said
+    assert "  E   AssertionError: assert 5 == 0" in said

@@ -437,13 +437,21 @@ class ReleaseRunner:
             self.job = {"action": action, "state": "running", "log": [], "result": None, "error": None}
         job = self.job
 
+        def log(line: str):
+            job["log"].append(line)
+            print(f"release {action}: {line}", flush=True)    # the server's own output too
+
         def run():
             try:
-                job["result"] = fn(job["log"].append)
+                job["result"] = fn(log)
+                print(f"release {action}: done", flush=True)
             except release.ReleaseError as e:
                 job["error"] = str(e)
+                print(f"release {action} failed: {e}", flush=True)
             except Exception as e:  # noqa: BLE001 — the screen shows it; it's your machine
+                import traceback
                 job["error"] = f"{type(e).__name__}: {e}"
+                log(traceback.format_exc())
             finally:
                 job["state"] = "done"
 

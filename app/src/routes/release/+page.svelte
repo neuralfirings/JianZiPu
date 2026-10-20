@@ -68,6 +68,8 @@
       st = await api.releaseStatus();
     }
     if (st.job.error) { err = st.job.error; return null; }
+    // a step can change the files under the Builder (Publish switches back to main): read them again
+    if (!app.dirty) await app.load();
     return st.job.result;
   }
 
