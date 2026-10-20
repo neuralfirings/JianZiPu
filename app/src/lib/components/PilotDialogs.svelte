@@ -57,9 +57,9 @@
           <li><b>It saves itself</b> every 30 seconds, and when you press Save. ↶ undoes a step.</li>
           <li><b>Tell us what you think.</b> Confusing, broken or lovely: Feedback (top right) takes a minute. To share your work itself, ⋯ → Export my draft.</li>
         </ol>
-        <p class="muted small">Good places to start: Tester (type a few words), then Glyphs → open a glyph → Edit.</p>
+        <p class="muted small">Good places to start: Build & test (type a few words), then Glyphs → open a glyph → Edit.</p>
         <div class="row end">
-          <button onclick={() => { markWelcomed(hosted.user!.id); close(); goto('/tester'); }}>Open the Tester</button>
+          <button onclick={() => { markWelcomed(hosted.user!.id); close(); goto('/test?view=text'); }}>Open Build & test</button>
           <button class="primary" onclick={() => { markWelcomed(hosted.user!.id); close(); }}>Start</button>
         </div>
       {:else if pilot.dialog === 'export'}

@@ -19,7 +19,7 @@ small Python server. Everything you design happens there:
   clash checks.
 - **Layouts**: how the parts of a character sit together, with spacing rules,
   areas and centering on a live canvas.
-- **Test & Build / Tester**: build the font and type in it.
+- **Build & test**: build the font and type in it, word by word or as running text.
 
 Start it on your machine:
 

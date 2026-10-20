@@ -69,7 +69,7 @@
     </select>
     <button onclick={random} title="Eight random sample words">Random</button>
     <span class="sizes" title="Size">{#each SIZES as s}<button class:on={size === s} onclick={() => (size = s)}>{s}</button>{/each}</span>
-    <a href="/test?words={encodeURIComponent(text)}" title="These words on Test & Build, next to the built font">Test & Build ↗</a>
+    <a href="/test?words={encodeURIComponent(text)}" title="These words on Build & test, next to the built font">Build & test ↗</a>
   </div>
   <div class="words">
     {#each result?.words ?? [] as w (w.word)}

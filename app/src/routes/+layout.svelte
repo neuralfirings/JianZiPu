@@ -23,9 +23,9 @@
   let nav = $derived([
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
-    ['/test', 'Test & Build'],
-    ['/tester', 'Tester'],
-    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : [])
+    ['/test', 'Build & test'],
+    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : []),
+    ['/help', 'Help']
   ]);
 
   /** Hosted: wait for sign-in, then load the tester's draft (and greet them the first time). */
@@ -103,7 +103,7 @@
         {#if pill}
           <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
             <strong>Your draft</strong>
-            <p>Only you see it. Builds and the Tester use it. The font itself doesn't change.</p>
+            <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
             <p class="muted">{#if app.draftBase?.version.date}Based on the font of {day(app.draftBase.version.date)}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
             {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
             <div class="row">
