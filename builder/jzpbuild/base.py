@@ -87,6 +87,9 @@ def set_metadata(font: TTFont) -> None:
     name = newTable("name")
     name.names = []
     font["name"] = name
+    names = {**config.NAMES, "version": config.version_string()}
     for nid, key in config.NAME_IDS.items():
-        name.setName(config.NAMES[key], nid, 3, 1, 0x409)
-        name.setName(config.NAMES[key], nid, 1, 0, 0)
+        name.setName(names[key], nid, 3, 1, 0x409)
+        name.setName(names[key], nid, 1, 0, 0)
+    # the version as a number too, matching name ID 5: apps compare it to tell which copy is newer
+    head.fontRevision = float(config.FONT_VERSION)

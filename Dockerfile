@@ -16,6 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 JZP_HOSTED=1
 WORKDIR /repo/builder
 COPY builder/pyproject.toml builder/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+COPY builder/VERSION ./
 COPY builder/jzpbuild ./jzpbuild
 COPY builder/inputs ./inputs
 COPY --from=app /repo/app/build /repo/app/build

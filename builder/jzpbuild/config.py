@@ -1,5 +1,6 @@
 """Paths and static configuration for the JianZiPu build."""
 
+import re
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -53,7 +54,22 @@ FEA_OUT_DEFAULT = BUILDER_DIR / "JianZiPu.fea"                  # build.py
 # font metrics / identity — used by: base.py, glyphs.py
 
 UPEM = 1000                                                   # glyphs.py, base.py
-FONT_VERSION = "3.1"                                          # internal only (feeds NAMES below)
+# The font's version, MAJOR.MINOR with a three-digit minor (3.100, 3.200, 3.201): it is a number
+# in the font (head.fontRevision), so 3.10 would equal 3.1. One line in builder/VERSION, written by
+# a release (jzpbuild/release.py), so a release never edits Python.
+VERSION_FILE = BUILDER_DIR / "VERSION"
+FONT_VERSION = VERSION_FILE.read_text(encoding="utf-8").strip()
+if not re.fullmatch(r"\d+\.\d{3}", FONT_VERSION):
+    raise ValueError(f"{VERSION_FILE}: expected a version like 3.200, got {FONT_VERSION!r}")
+# The commit a release font is built from (build --source-commit), added to name ID 5 so a font
+# file can be traced to its sources; None for everyday builds.
+SOURCE_COMMIT: str | None = None
+
+
+def version_string() -> str:
+    """name ID 5: "Version 3.200", plus "; git-1a2b3c4" for a release build."""
+    return f"Version {FONT_VERSION}" + (f"; git-{SOURCE_COMMIT}" if SOURCE_COMMIT else "")
+
 
 # Vertical metrics (README §1.1: OS/2 uses 1100 asc / 500 desc / 100 gap)
 HHEA_ASCENT, HHEA_DESCENT, HHEA_LINEGAP = 1100, -500, 100
@@ -68,9 +84,9 @@ NAMES = {
     ),
     "familyName": "JianZiPu",
     "styleName": "Regular",
-    "uniqueFontIdentifier": "jzpbuild : JianZiPu",
+    "uniqueFontIdentifier": f"{FONT_VERSION};JianZiPu",
     "fullName": "JianZiPu",
-    "version": f"Version {FONT_VERSION}",
+    "version": f"Version {FONT_VERSION}",                   # base.py adds the commit (version_string)
     "psName": "JianZiPu",
     "manufacturer": "Nellodee LLC",
     "designer": "Nancy Yi Liang",

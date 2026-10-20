@@ -36,6 +36,24 @@ def check(font: TTFont):
             assert rec.toUnicode() == want, (nid, plat)
 
 
+def test_version_is_one_number_in_both_places(monkeypatch):
+    font = TTFont(str(config.CURRENT_FONT))
+    monkeypatch.setattr(config, "FONT_VERSION", "3.200")
+    monkeypatch.setattr(config, "SOURCE_COMMIT", "1a2b3c4")
+    base.set_metadata(font)
+    assert font["head"].fontRevision == pytest.approx(3.2, abs=1e-4)
+    assert font["name"].getName(5, 3, 1, 0x409).toUnicode() == "Version 3.200; git-1a2b3c4"
+    monkeypatch.setattr(config, "SOURCE_COMMIT", None)
+    base.set_metadata(font)
+    assert font["name"].getName(5, 3, 1, 0x409).toUnicode() == "Version 3.200"
+
+
+def test_version_file_holds_a_three_digit_minor():
+    assert config.VERSION_FILE.read_text().strip() == config.FONT_VERSION
+    major, minor = config.FONT_VERSION.split(".")
+    assert major.isdigit() and len(minor) == 3
+
+
 def test_set_metadata_writes_the_license_names():
     font = TTFont(str(config.CURRENT_FONT))        # in memory; the golden file is never written
     base.set_metadata(font)

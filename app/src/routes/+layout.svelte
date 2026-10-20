@@ -31,7 +31,7 @@
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
     ['/test', 'Build & test'],
-    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : []),
+    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review'], ['/release', 'Release']] : []),
     ['/help', 'Help']
   ]);
 
