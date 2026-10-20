@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Your sign-in link</title>
+</head>
+<body style="margin:0;padding:0;background:#eeeeee;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eeeeee;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#fafafa;border:1px solid #c4c4c4;border-radius:6px;">
+        <tr>
+          <td style="padding:28px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:15px;line-height:1.4;color:#595959;">
+            JZP Font Builder
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:26px;line-height:1.25;font-weight:500;color:#2a2a2a;">
+            Your sign-in link
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 0 32px;font-family:Literata,Georgia,serif;font-size:15px;line-height:1.6;color:#2a2a2a;">
+            Use this link to sign in to the JZP Font Builder. Open it on the computer and in the browser where you asked for it. It works once and expires after a short time.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background:#2a2a2a;border-radius:4px;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:11px 22px;font-family:Literata,Georgia,serif;font-size:15px;line-height:1.2;color:#fafafa;text-decoration:none;">Sign in</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px 24px 32px;font-family:Literata,Georgia,serif;font-size:13px;line-height:1.6;color:#595959;">
+            If the button does not work, copy this address into your browser:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#0a5cbf;word-break:break-all;">{{ .ConfirmationURL }}</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 28px 32px;font-family:Literata,Georgia,serif;font-size:13px;line-height:1.6;color:#767676;border-top:1px solid #dcdcdc;">
+            This email went to {{ .Email }}. If you did not ask to sign in, you can ignore it.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

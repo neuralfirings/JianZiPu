@@ -11,6 +11,7 @@
 --   Authentication → Sign In / Providers → Email: turn OFF "Allow new users to sign up"
 --   Authentication → URL Configuration: Site URL = the pilot's address; Redirect URLs add
 --     https://<pilot domain>/** and http://127.0.0.1:5713/** (your local Builder's Review sign-in)
+--   Authentication → Emails: paste the subjects and HTML from supabase/emails/ (see its README)
 --   Authentication → Users → Invite user: each tester (and yourself)
 --   update public.profiles set role = 'admin', name = 'Nancy' where email = '<your email>';
 --   Storage → assets: upload TW-Kai-98.ttf

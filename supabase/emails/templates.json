@@ -1,0 +1,11 @@
+{
+  "_about": "Supabase auth email templates. Each entry: the HTML file here, the template's name in the dashboard (Authentication → Emails), its subject line, and whether the Builder's hosted pilot sends it today. Subjects are stored separately from the HTML in Supabase, so they live here.",
+  "templates": [
+    { "id": "invite",           "file": "invite.html",           "dashboard": "Invite user",          "subject": "You are invited to the JZP Font Builder", "sent": true,  "when": "An admin invites a tester (Authentication → Users → Invite user)." },
+    { "id": "magic_link",       "file": "magic_link.html",       "dashboard": "Magic Link",           "subject": "Your JZP Font Builder sign-in link",      "sent": true,  "when": "A tester asks for a sign-in link on the hosted Builder, or the admin signs in from the local Review screen." },
+    { "id": "confirm_signup",   "file": "confirm_signup.html",   "dashboard": "Confirm signup",       "subject": "Confirm your email address",              "sent": false, "when": "Someone signs up. Sign-ups are turned off for the pilot." },
+    { "id": "change_email",     "file": "change_email.html",     "dashboard": "Change Email Address", "subject": "Confirm your new email address",          "sent": false, "when": "A user changes their address. The Builder has no screen for this." },
+    { "id": "reset_password",   "file": "reset_password.html",   "dashboard": "Reset Password",       "subject": "Reset your JZP Font Builder password",    "sent": false, "when": "A password reset is requested. The pilot signs in by email link, without passwords." },
+    { "id": "reauthentication", "file": "reauthentication.html", "dashboard": "Reauthentication",     "subject": "Your JZP Font Builder confirmation code", "sent": false, "when": "A signed-in user must confirm a sensitive action. The Builder does not ask for this." }
+  ]
+}
