@@ -128,6 +128,16 @@ describe('hosted draft', () => {
     expect(app.fontMoved).toBe(false);
   });
 
+  it('counts rules and skipped shapes again for a loaded draft', async () => {
+    await app.load();
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    await app.save();
+    api.check.mockClear();
+    await app.load();
+    await new Promise((ok) => setTimeout(ok, 350));
+    expect(api.check).toHaveBeenCalledWith(expect.objectContaining({ areas: expect.objectContaining({ left: expect.objectContaining({ size: [380, 350] }) }) }));
+  });
+
   it('undoes one change of the draft as one step, leaving the others', async () => {
     const { diffBundle, revertItems } = await import('./merge');
     await app.load();

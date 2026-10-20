@@ -221,6 +221,9 @@ class DesignState {
       this.restoreBuffer();
       this.syncGlyphRows();
       this.error = null;
+      // the stats (rules, skipped shapes, size) came with the files; a draft or restored edits
+      // are a different design, so count again
+      if (JSON.stringify(this.design) !== JSON.stringify(d.design)) this.recheck();
     } catch (e) {
       this.error = hosted.isHosted
         ? `The Builder is taking a break: we can't reach it right now. Your saved draft is safe. (${(e as Error).message})`
