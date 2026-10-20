@@ -139,6 +139,14 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
   `components.csv`, `svg/` (added and changed glyphs only), `base/` (the versions the draft started
   from, for the three-way merge). Glyph files from someone else are sanitised before they are shown.
 
+To look at the hosted screens (the sign-in page, the draft pill) on your own machine, start the
+server in hosted mode with placeholder Supabase settings; the pages render, sign-in itself won't
+send anything:
+
+```bash
+cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=placeholder python3 -m jzpbuild.webserver --hosted --port 5716
+```
+
 ### Setting it up
 
 1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and

@@ -32,6 +32,8 @@
 
 <div class="wrap">
   <div class="card">
+    <figure class="art"><img src="/signin-word.webp" alt="A guqin character being laid out in the Builder: 名, 七, 勾 and 五 in their part boxes, with a spacing rule between them" width="441" height="689" /></figure>
+    <div class="body">
     <div class="title">JianZiPu Font Builder <span class="muted">· pilot</span></div>
     {#if step === 'form'}
       <p>For invited testers. Type the email Nancy invited, and we'll send you a link to sign in. No password needed.</p>
@@ -62,12 +64,21 @@
       <p>Links work once, for 1 hour. Send yourself a new one.</p>
       <button class="primary" onclick={() => { hosted.linkExpired = false; step = 'form'; }}>Email me a new link</button>
     {/if}
+    </div>
   </div>
 </div>
 
 <style>
   .wrap { min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-6); }
-  .card { width: 100%; max-width: 440px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-5); }
+  .card { width: 100%; max-width: 720px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-8); display: flex; gap: var(--space-8); align-items: center; }
+  .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-5); }
+  .art { flex: none; width: 220px; margin: 0; }
+  .art img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-canvas); }
+  @media (max-width: 640px) {
+    .card { flex-direction: column; align-items: stretch; gap: var(--space-6); padding: var(--space-6); }
+    .art { width: auto; }
+    .art img { width: auto; max-width: 100%; max-height: 220px; margin: 0 auto; }
+  }
   .title { font-weight: 600; font-size: var(--t-panel); }
   h2 { margin: 0; font-size: var(--t-panel); font-weight: 600; }
   p { margin: 0; line-height: 1.5; }
