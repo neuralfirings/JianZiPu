@@ -7,7 +7,7 @@
 // to Supabase (drafts.ts) instead of writing files, and saves itself every 30 s.
 import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type Stats } from './api';
 import { diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
-import { deleteDraft, draftStamp, loadDraft, saveDraft } from './drafts';
+import { deleteDraft, DraftConflict, draftStamp, loadDraft, saveDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, type Item } from './merge';
 import * as T from './typing';
@@ -80,7 +80,7 @@ class DesignState {
   mainTyping = $state<T.Typing>({});
   /** What the draft started from; null until loaded (and in local mode). */
   draftBase = $state<DraftBase | null>(null);
-  /** Storage timestamp of the draft as last loaded or saved here (null: no draft yet). */
+  /** The stored draft's updated_at as last loaded or saved here (null: no draft yet). */
   draftStamp = $state<string | null>(null);
   /** Save could not reach Supabase: the edits wait in this browser. */
   offline = $state(false);
@@ -510,13 +510,17 @@ class DesignState {
     if (!c || !uid || hosted.signedOut) return false;
     this.saving = true;
     try {
-      const remote = await draftStamp(c, uid);
-      if (!force && remote !== this.draftStamp) { this.savedElsewhere = remote ?? 'deleted'; return false; }
       const b = this.bundle();
-      if (isEmptyBundle(b) && !remote) {
-        this.draftStamp = null;
-      } else {
-        this.draftStamp = await saveDraft(c, uid, b);
+      if (!(isEmptyBundle(b) && !this.draftStamp && !force)) {
+        // "Keep this one" (force) writes over whatever is stored now
+        const expected = force ? await draftStamp(c, uid) : this.draftStamp;
+        try {
+          this.draftStamp = await saveDraft(c, uid, b, expected);
+        } catch (e) {
+          if (!(e instanceof DraftConflict)) throw e;
+          this.savedElsewhere = (await draftStamp(c, uid)) ?? 'deleted';
+          return false;
+        }
       }
       this.savedJson = JSON.stringify(this.design);
       this.savedTypingJson = JSON.stringify(this.typing);

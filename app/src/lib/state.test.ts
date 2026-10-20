@@ -20,10 +20,17 @@ vi.mock('./api', () => ({ api }));
 const store = vi.hoisted(() => ({ draft: null as null | { text: string; stamp: string }, n: 0 }));
 vi.mock('./drafts', async () => {
   const { fromJson, toJson } = await import('./bundle');
+  class DraftConflict extends Error {}
   return {
+    DraftConflict,
     draftStamp: vi.fn(async () => store.draft?.stamp ?? null),
     loadDraft: vi.fn(async () => (store.draft ? { bundle: fromJson(store.draft.text), stamp: store.draft.stamp } : null)),
-    saveDraft: vi.fn(async (_c: unknown, _u: string, b: Parameters<typeof toJson>[0]) => { store.draft = { text: toJson(b), stamp: `t${++store.n}` }; return store.draft.stamp; }),
+    // like save_draft(): only over the stamp the caller loaded
+    saveDraft: vi.fn(async (_c: unknown, _u: string, b: Parameters<typeof toJson>[0], expected: string | null) => {
+      if (expected !== (store.draft?.stamp ?? null)) throw new DraftConflict();
+      store.draft = { text: toJson(b), stamp: `t${++store.n}` };
+      return store.draft.stamp;
+    }),
     deleteDraft: vi.fn(async () => { store.draft = null; })
   };
 });
@@ -134,7 +141,7 @@ describe('hosted draft', () => {
   it('keeps edits in the browser when the save fails, and retries', async () => {
     await app.load();
     const drafts = await import('./drafts');
-    vi.mocked(drafts.draftStamp).mockRejectedValueOnce(new Error('offline'));
+    vi.mocked(drafts.saveDraft).mockRejectedValueOnce(new Error('offline'));
     app.edit('x', (d) => { d.center.x = 510; });
     expect(await app.save()).toBe(false);
     expect(app.offline).toBe(true);

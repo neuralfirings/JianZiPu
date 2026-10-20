@@ -118,7 +118,7 @@ changes the repo. Spec and copy: `docs/PILOT-UX.md`.
 
 ```
 browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
-        │  draft.json (bundle) ◀──────────▶ Supabase Storage  drafts/<user id>/draft.json
+        │  draft (bundle JSON) ◀─────────▶ Supabase table drafts (one row per tester)
         └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
                                       in a temp dir; base font fetched from Storage assets/)
 your machine: webserver (local) → /review → Supabase (admin) or a .zip → Apply → Save → git commit
@@ -132,7 +132,8 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
   `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once.
 - **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
   sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
-  tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first,
+  tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first
+  (`save_draft()` writes only over the row this tab loaded, so the check and the write are one step),
   the font-updated banner with Update my draft (three-way: the font's changes come in, conflicts are
   Keep mine / Take the font's), ⋯ → Export / Import a draft (.zip), Discard my draft, See my changes.
 - **Bundle** (a draft, an Export .zip, what Review opens): `manifest.json`, `design.json`,
@@ -149,8 +150,8 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 
 ### Setting it up
 
-1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and
-   `assets` buckets, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
+1. **Supabase**: a project; run `supabase/001_setup.sql`, then `002_drafts_table.sql`, in the SQL editor
+   (profiles, the `drafts` table, the private `assets` bucket, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
    set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
    Review), paste the email templates from `supabase/emails/` (its README says how;
    do this before inviting anyone), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
@@ -167,6 +168,21 @@ cd builder && cp .env.example .env    # then edit .env
 cd builder && python3 -m jzpbuild.webserver
 docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder   # the hosted image, locally
 ```
+
+### Moving drafts from the old bucket
+
+Drafts used to be files, `drafts/<user id>/draft.json` in a Storage bucket. To move a project that
+has them: run `supabase/002_drafts_table.sql`, then copy the files into the table with the service
+key given to this one command only (Dashboard → Project Settings → API keys; don't save it in
+`.env`):
+
+```bash
+cd builder && SUPABASE_SERVICE_KEY=... python3 -m jzpbuild.migrate_drafts --dry-run   # what it would copy
+cd builder && SUPABASE_SERVICE_KEY=... python3 -m jzpbuild.migrate_drafts             # copy; never overwrites a row
+```
+
+Check the rows (Table Editor → drafts), run `supabase/003_drop_drafts_bucket.sql`, then delete the
+`drafts` bucket in Storage.
 
 ### Merging a tester's draft
 
