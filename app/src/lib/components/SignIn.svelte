@@ -2,6 +2,7 @@
   // Hosted pilot: invite-only sign-in with an emailed link (docs/PILOT-UX.md "Sign-in").
   import { onDestroy } from 'svelte';
   import { hosted } from '$lib/hosted.svelte';
+  import ContactDialog from './ContactDialog.svelte';
 
   let email = $state('');
   let step = $state<'form' | 'sent' | 'not-invited' | 'expired'>(hosted.linkExpired ? 'expired' : 'form');
@@ -9,7 +10,7 @@
   let err = $state<string | null>(null);
   let wait = $state(0);
   let timer: ReturnType<typeof setInterval> | null = null;
-  const invite = hosted.config?.feedback_url;
+  let asking = $state(false);   // the "Ask for an invite" form
 
   async function send() {
     if (!email.trim() || busy) return;
@@ -43,7 +44,7 @@
         <button class="primary" disabled={busy || !email.trim()}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
       </form>
       {#if err}<p class="error">{err}</p>{/if}
-      {#if invite}<p class="foot"><a href={invite} target="_blank" rel="noopener">Want to try it? Ask for an invite ↗</a></p>{/if}
+      <p class="foot"><button class="linkish" onclick={() => (asking = true)}>Want to try it? Ask for an invite</button></p>
     {:else if step === 'sent'}
       <h2>Check your email</h2>
       <p>We sent a sign-in link to <b>{email}</b>. Open it on this computer, in this browser.</p>
@@ -57,7 +58,7 @@
       <p><b>{email}</b> wasn't invited. The pilot is for a few invited testers for now. If Nancy invited you at another address, use that one.</p>
       <div class="row">
         <button class="primary" onclick={() => (step = 'form')}>Try another email</button>
-        {#if invite}<a href={invite} target="_blank" rel="noopener">Ask for an invite ↗</a>{/if}
+        <button onclick={() => (asking = true)}>Ask for an invite</button>
       </div>
     {:else}
       <h2>This sign-in link has expired</h2>
@@ -67,6 +68,7 @@
     </div>
   </div>
 </div>
+{#if asking}<ContactDialog kind="invite" email={step === 'not-invited' ? email : ''} onclose={() => (asking = false)} />{/if}
 
 <style>
   .wrap { min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-6); }
@@ -85,5 +87,6 @@
   form { display: flex; flex-direction: column; gap: var(--space-4); }
   input { height: var(--control-md); padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
   .foot { font-size: var(--t-small); }
+  .linkish { height: auto; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
   .row { flex-wrap: wrap; }
 </style>

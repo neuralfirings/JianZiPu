@@ -9,6 +9,7 @@
   import ImportExport from '$lib/components/ImportExport.svelte';
   import PilotDialogs from '$lib/components/PilotDialogs.svelte';
   import SignIn from '$lib/components/SignIn.svelte';
+  import ContactDialog from '$lib/components/ContactDialog.svelte';
   import { editor } from '$lib/editor.svelte';
   import { hosted } from '$lib/hosted.svelte';
   import { day, downloadZip, hhmm, pilot, welcomed } from '$lib/pilot.svelte';
@@ -19,6 +20,7 @@
   let pill = $state(false);
   let dialog = $state<'import' | 'export' | null>(null);
   let showChanges = $state(false);
+  let feedback = $state(false);
 
   let nav = $derived([
     ['/glyphs', 'Glyphs'],
@@ -161,8 +163,8 @@
         {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
       </button>
     {/if}
-    {#if hosted.isHosted && hosted.config?.feedback_url}
-      <a class="fb" href={hosted.config.feedback_url} target="_blank" rel="noopener">Feedback</a>
+    {#if hosted.isHosted}
+      <button class="fb" onclick={() => (feedback = true)}>Feedback</button>
     {/if}
     <span class="menu-wrap">
       <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>
@@ -172,7 +174,7 @@
             <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
             <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? 'Update my draft to the font…' : 'Update my draft · up to date'}</button>
-            {#if hosted.config?.feedback_url}<a role="menuitem" href={hosted.config.feedback_url} target="_blank" rel="noopener">Send feedback ↗</a>{/if}
+            <button onclick={() => (feedback = true)}>Send feedback…</button>
             <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
             <hr />
             <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault}>Reset panel layouts</button>
@@ -289,6 +291,10 @@
     <ImportExport mode={dialog} onclose={() => (dialog = null)} />
   {/if}
   <PilotDialogs />
+  {#if feedback}
+    <ContactDialog kind="feedback" name={hosted.user?.name ?? ''} email={hosted.user?.email ?? ''}
+      context={{ page: page.url.pathname, version: hosted.config?.commit ?? '' }} onclose={() => (feedback = false)} />
+  {/if}
   {#if pilot.toast}
     <div class="toast" role="status" onmouseenter={holdToast} onmouseleave={releaseToast} onfocusin={holdToast} onfocusout={releaseToast}>
       <span>{pilot.toast.text}</span>
@@ -334,11 +340,9 @@
   .moved { opacity: .8; }
   .pop { position: absolute; left: 0; top: 100%; margin-top: 6px; z-index: var(--z-popover); width: 300px; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
   .pop p { margin: 0; font-size: var(--t-small); line-height: 16px; }
-  .fb { font-size: var(--t-small); color: var(--link); text-decoration: none; padding: 0 var(--space-2); }
+  .fb { height: auto; border: 0; background: none; font-size: var(--t-small); color: var(--link); padding: 0 var(--space-2); cursor: pointer; }
   .who { width: var(--control-md); padding: 0; border-radius: 50%; }
   .signed { padding: 4px 8px; font-size: var(--t-small); }
-  .menu a { padding: 0 var(--space-5); height: var(--control-md); display: flex; align-items: center; color: inherit; text-decoration: none; border-radius: var(--radius-md); }
-  .menu a:hover { background: var(--bg-hover); }
   .danger-item { color: var(--accent); }
   .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px)); max-width: min(720px, calc(100vw - 32px)); }
   .toast button { white-space: nowrap; }

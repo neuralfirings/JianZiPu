@@ -85,7 +85,7 @@ export type BuildStatus = {
   builds: Build[];          // newest first
 };
 
-export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null; feedback_url: string | null };
+export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null };
 export type BaseInfo = { commit: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
 /** A draft to build instead of the files on disk (hosted mode). */
 export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };

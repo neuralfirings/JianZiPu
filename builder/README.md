@@ -67,7 +67,7 @@ python3 -m jzpbuild.webserver --port 9000
 | `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only) |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
 | `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the caller's builds (`build` = latest, `builds` = newest first, last 8 kept). The body may carry a draft, `{design, rows, svgs, deleted}`, built instead of the files on disk (hosted mode) |
-| `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key, feedback_url}` (never the service key) |
+| `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key}` (never the service key) |
 | `GET /api/base` | the font version on disk: `{commit, date, design_hash, csv_hash, svg_hashes}`; a draft records it to notice when the font moves on |
 | `GET /api/builds/<id>/JianZiPu.ttf` | that exact build; `?download=1` sends it as an attachment. Build folders live in the system temp dir and are removed when the server stops |
 
@@ -154,7 +154,7 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
    set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
    Review), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
 2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
-   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `JZP_FEEDBACK_URL` (a form or mailto:).
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`. The "Ask for an invite" and Feedback forms post to Formspree from the app (`app/src/lib/forms.ts`), so they need no setting.
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
 3. **Your local Review**: copy `builder/.env.example` to `builder/.env` (gitignored) and
    fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the web server reads that file at start (the shell's

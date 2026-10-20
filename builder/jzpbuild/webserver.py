@@ -28,7 +28,7 @@ API (all JSON):
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
   PUT  /api/svg/<name>             {svg, base_hash?, overwrite?} -> write inputs/svg/<name>.svg; 409 when the file
                                    exists (no base_hash) or changed on disk since it was loaded (hash mismatch)
-  GET  /api/config                 {mode: local|hosted, commit, supabase_url, supabase_anon_key, feedback_url}
+  GET  /api/config                 {mode: local|hosted, commit, supabase_url, supabase_anon_key}
   GET  /api/base                   the checked-in version drafts start from: {commit, design_hash, csv_hash,
                                    svg_hashes}
   POST /api/build                  start a build (one at a time); each build goes to its own temp dir.

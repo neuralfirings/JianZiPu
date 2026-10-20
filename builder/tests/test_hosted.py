@@ -35,7 +35,7 @@ def runner(monkeypatch):
 @pytest.fixture
 def hosted_mode(monkeypatch, runner):
     s = hosted.Settings(hosted=True, supabase_url="https://example.supabase.co", supabase_anon_key="anon",
-                        supabase_service_key="SERVICE-SECRET", feedback_url="mailto:x@example.com", commit="abc123")
+                        supabase_service_key="SERVICE-SECRET", commit="abc123")
     auth = hosted.Auth(s)
     calls = []
 
@@ -123,7 +123,7 @@ def test_env_file(tmp_path, monkeypatch):
 def test_config_and_base(server):
     status, r = call(server, "GET", "/api/config")
     assert status == 200 and r["mode"] == "hosted" and r["commit"] == "abc123"
-    assert r["feedback_url"] == "mailto:x@example.com" and "SERVICE" not in json.dumps(r)
+    assert "feedback_url" not in r and "SERVICE" not in json.dumps(r)
     status, base = call(server, "GET", "/api/base")
     _, design = call(server, "GET", "/api/design")
     _, cat = call(server, "GET", "/api/glyphs")
