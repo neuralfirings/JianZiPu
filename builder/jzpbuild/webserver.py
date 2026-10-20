@@ -649,7 +649,8 @@ class Handler(SimpleHTTPRequestHandler):
         auth = self.headers.get("Authorization") or ""
         token = auth[7:].strip() if auth.lower().startswith("bearer ") else None
         user = AUTH.user(token) if AUTH else None
-        return user["id"] if user else None
+        self._who = user["id"] if user else None
+        return self._who
 
     def _fail(self, err: Exception, status: int = 500):
         """An unexpected error. Locally the message and traceback go to the app (it's your machine);
@@ -663,11 +664,24 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _refused(self, method: str) -> bool:
         """Answer and return True when request_problem() refuses this request."""
+        self._who = None                     # per request: who is asking (the audit log)
         why = request_problem(method, self.headers, SETTINGS.hosted)
         if why is None:
             return False
         self._json({"ok": False, "error": why[1]}, why[0])
         return True
+
+    def log_request(self, code="-", size="-"):
+        """Hosted: one line per API call for the audit trail -- time, client, method, path (no query),
+        status and the tester's id. Never the token or the body. Local: API calls stay quiet."""
+        path = urlparse(self.path).path
+        if SETTINGS.hosted and path.startswith("/api/"):
+            fwd = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip() or self.client_address[0]
+            code = getattr(code, "value", code)
+            sys.stderr.write(f"{self.log_date_time_string()} api {fwd} {self.command} {path} {code} "
+                             f"user={getattr(self, '_who', None) or '-'}\n")
+            return
+        super().log_request(code, size)
 
     def log_message(self, fmt, *args):
         if "/api/" in (args[0] if args else ""):

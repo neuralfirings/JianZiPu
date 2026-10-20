@@ -349,3 +349,14 @@ def test_hosted_sends_hsts(server):
     r.read()
     assert r.getheader("Strict-Transport-Security", "").startswith("max-age=")
     assert r.getheader("X-Content-Type-Options") == "nosniff"
+
+
+def test_hosted_api_calls_are_logged_without_tokens(server, capfd):
+    call(server, "POST", "/api/svg/check", {"svg": SQUARE}, token="tok-a")
+    call(server, "POST", "/api/svg/check", {"svg": SQUARE})
+    import time
+    time.sleep(0.2)
+    err = capfd.readouterr().err
+    assert "POST /api/svg/check 200 user=user-a" in err
+    assert "POST /api/svg/check 401 user=-" in err
+    assert "tok-a" not in err
