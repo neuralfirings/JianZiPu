@@ -4,6 +4,7 @@
   // position decimals fold inside 徽 position. The bottom panel shows what the view doesn't:
   // in Tiles it edits the spellings; in Typing the row is the editor, so it shows Try it,
   // What changes and Issues. View, group, filter and selection live in the URL.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
   import * as T from '$lib/typing';
@@ -125,7 +126,6 @@
   });
 
   let sel = $derived(app.glyphs.find((r) => r.glyph === selected) ?? null);
-  const mark = (g: string) => (errGlyphs.has(g) ? '✕' : warnGlyphs.has(g) ? '⚠' : '');
 
   // CSV import / export of the spellings
   function exportCsv() {
@@ -176,7 +176,7 @@
       Reference weight <input type="number" min="1" max="200" value={app.design?.glyph_weight ?? DEFAULT_WEIGHT} onchange={(e) => setWeight(+(e.target as HTMLInputElement).value)} /> <span class="muted">units</span>
     </label>
     <span class="menu-wrap">
-      <button onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More glyph actions">⋯</button>
+      <button onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More glyph actions" data-tip="Import or export spellings (CSV)"><I.More /></button>
       {#if menu}
         <div class="menu" role="menu" tabindex="-1" onmouseleave={() => (menu = false)}>
           <button onclick={() => { menu = false; fileInput.click(); }}>Import spellings (CSV)…</button>
@@ -189,13 +189,13 @@
   </div>
 
   {#if app.typingErrors.length}
-    <div class="banner err"><span class="ic">×</span> {app.typingErrors.length} spelling problem{app.typingErrors.length === 1 ? '' : 's'}: {app.typingErrors[0].message}{app.typingErrors.length > 1 ? ' …' : ''} Save waits until {app.typingErrors.length === 1 ? 'it is' : 'they are'} fixed.
+    <div class="banner err"><span class="ic"><I.Problem /></span> {app.typingErrors.length} spelling problem{app.typingErrors.length === 1 ? '' : 's'}: {app.typingErrors[0].message}{app.typingErrors.length > 1 ? ' …' : ''} Save waits until {app.typingErrors.length === 1 ? 'it is' : 'they are'} fixed.
       <button onclick={() => { view = 'typing'; filter = 'attention'; group = 'all'; }}>Show</button></div>
   {:else if typingCheck.roundtrip.length}
-    <div class="banner warn"><span class="ic">!</span> {typingCheck.roundtrip.length} spelling{typingCheck.roundtrip.length === 1 ? '' : 's'} type something else ({typingCheck.roundtrip.slice(0, 3).map((r) => r.value).join(', ')}). Save still works.
+    <div class="banner warn"><span class="ic"><I.Warn /></span> {typingCheck.roundtrip.length} spelling{typingCheck.roundtrip.length === 1 ? '' : 's'} type something else ({typingCheck.roundtrip.slice(0, 3).map((r) => r.value).join(', ')}). Save still works.
       <button onclick={() => { filter = 'attention'; group = 'all'; }}>Show</button></div>
   {/if}
-  {#if typingCheck.error}<div class="banner warn"><span class="ic">!</span> Spelling check: {typingCheck.error}</div>{/if}
+  {#if typingCheck.error}<div class="banner warn"><span class="ic"><I.Warn /></span> Spelling check: {typingCheck.error}</div>{/if}
 
   <div class="body">
     <aside class="groups">
@@ -231,7 +231,7 @@
       {/if}
       {#if tiles.length === 0 && !foldedDecimals}
         <div class="empty">
-          {#if filter === 'nospell'}<p class="ok">✓ Every glyph in an area can be typed.</p>
+          {#if filter === 'nospell'}<p class="ok"><I.Check size={14} /> Every glyph in an area can be typed.</p>
           {:else if filter}<p class="muted">Nothing here{needle ? ` matching “${q}”` : ''}.</p>
           {:else}<p class="muted">No glyph is typed as “{q}”, and no character or reading matches it.</p>{/if}
           <button onclick={() => { q = ''; filter = ''; }}>Show all</button>
@@ -243,15 +243,15 @@
             <div class="tile" class:on={selected === g} class:unassigned={!areasOf[g]?.length} role="button" tabindex="0"
               onclick={() => (selected = g)} ondblclick={() => goto(editUrl(g))}
               onkeydown={(e) => { if (e.key === 'Enter') goto(editUrl(g)); }}>
-              {#if mark(g)}<span class="mark" class:e={errGlyphs.has(g)}>{mark(g)}</span>{/if}
+              {#if errGlyphs.has(g)}<span class="mark e"><I.Problem size={14} /></span>{:else if warnGlyphs.has(g)}<span class="mark"><I.Warn size={14} /></span>{/if}
               <div class="art"><Glyph name={g} size={72} /></div>
               <div class="name">{g}</div>
-              <div class="sub muted">{#if T.isDecimal(g)}{T.decimalPatterns(g)[0]}{:else if !areasOf[g]?.length}no area yet{:else}{fs?.text ?? '—'}{#if fs?.inherited || partnerOf[g] || T.get(app.typing, g).vert_variant} <span class="pair">⇄</span>{/if}{/if}</div>
+              <div class="sub muted">{#if T.isDecimal(g)}{T.decimalPatterns(g)[0]}{:else if !areasOf[g]?.length}no area yet{:else}{fs?.text ?? '—'}{#if fs?.inherited || partnerOf[g] || T.get(app.typing, g).vert_variant} <span class="pair"><I.Pair size={12} /></span>{/if}{/if}</div>
               <a class="edit" href={editUrl(g)} title="Edit the outline" onclick={(e) => e.stopPropagation()}>Edit</a>
             </div>
           {/each}
           {#if foldedDecimals}
-            <button class="tile fold" onclick={() => (group = 'decimals')}><span>{foldedDecimals} position decimals</span><span class="muted small">typed by pattern ▸</span></button>
+            <button class="tile fold" onclick={() => (group = 'decimals')}><span>{foldedDecimals} position decimals</span><span class="muted small">typed by pattern <I.Folded size={12} /></span></button>
           {/if}
         </div>
       {:else}
@@ -281,7 +281,7 @@
       </div>
       {#if view === 'tiles'}
         <div class="col">
-          <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· ⇄ vertical pair</span>{/if}</div>
+          <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
           <TypingFields glyph={sel.glyph} />
         </div>
         <div class="col">

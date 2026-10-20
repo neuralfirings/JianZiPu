@@ -9,6 +9,7 @@
   import { app } from '$lib/state.svelte';
   import { glyphEditor as ed } from '$lib/glyphed/editor.svelte';
   import type { Mode } from '$lib/glyphed/tools';
+  import * as I from '$lib/icons';
   import Glyph from './Glyph.svelte';
   import GlyphPopover from './GlyphPopover.svelte';
   import PanelWorkspace from './PanelWorkspace.svelte';
@@ -63,7 +64,7 @@
       case 'selection': return { title: 'Selection', summary: sel.kind === 'points' ? `${sel.n} point${sel.n === 1 ? '' : 's'}` : sel.kind === 'shapes' ? `${sel.n} shape${sel.n === 1 ? '' : 's'}` : sel.kind === 'overlay' ? 'compare overlay' : `${ed.stats.paths} shapes · ${ed.stats.nodes} points` };
       case 'compare': return { title: 'Compare', summary: [ed.dot && 'dot', ed.ghostName, ed.ghostSaved && 'last saved'].filter(Boolean).join(' · ') || 'off' };
       case 'glyph': return { title: 'Glyph', summary: `${areaName ? app.areaLabel(areaName) : 'no area'} · ${ed.box[0]} × ${ed.box[1]}` };
-      case 'typing': return { title: 'Typing', badge: glyphErrors ? `${glyphErrors} ✕` : null, warn: !!glyphErrors, summary: typedAs || 'no spelling yet' };
+      case 'typing': return { title: 'Typing', badge: glyphErrors || null, warn: !!glyphErrors, summary: typedAs || 'no spelling yet' };
       case 'tryit': return { title: 'Try it', summary: 'live, saved or not' };
       case 'checks': return { title: 'Checks', badge: checkWarnings || null, warn: !!checkWarnings, summary: checkWarnings ? `${checkWarnings} to look at` : 'all fine' };
       case 'tester': return { title: 'Tester', summary: 'words with this glyph' };
@@ -230,7 +231,7 @@
   const r1 = (v: number) => Math.round(v * 10) / 10;
   const num = (e: Event) => +(e.target as HTMLInputElement).value;
   const TOOLS: [Mode, string, string][] = [['select', 'V', 'Select'], ['pen', 'P', 'Pen'], ['pencil', '⇧P', 'Pencil'], ['rect', 'R', 'Rectangle'], ['ellipse', 'O', 'Ellipse'], ['hand', 'H', 'Hand'], ['zoom', 'Z', 'Zoom']];
-  const ICON: Record<Mode, string> = { select: '↖', pen: '✒', pencil: '✎', rect: '▭', ellipse: '◯', hand: '✋', zoom: '🔍' };
+  const ICON = { select: I.ToolSelect, pen: I.ToolPen, pencil: I.ToolPencil, rect: I.ToolRect, ellipse: I.ToolEllipse, hand: I.ToolHand, zoom: I.ToolZoom } satisfies Record<Mode, unknown>;
 </script>
 
 {#snippet body(id: EditorPanelId)}
@@ -285,8 +286,8 @@
       {#if ed.sessionWeight != null}<button class="sm" onclick={() => ed.setSessionWeight(null)} title="Back to the design's reference weight">Reset</button>{:else}<span class="muted small">design's reference</span>{/if}</div>
     <p class="muted small">Match the body of main strokes to the reference, not the tapers.</p>
     <div class="f"><span>Glyph</span>
-      <button class="sm" data-gpop-anchor onclick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); ghostPick = ghostPick ? null : { x: r.left, y: r.bottom + 4 }; }}>{ed.ghostName ?? 'choose…'} ▾</button>
-      {#if ed.ghostName}<button class="sm" onclick={() => ed.setGhost(null)}>×</button>{/if}
+      <button class="sm" data-gpop-anchor onclick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); ghostPick = ghostPick ? null : { x: r.left, y: r.bottom + 4 }; }}>{ed.ghostName ?? 'choose…'} <I.Dropdown /></button>
+      {#if ed.ghostName}<button class="sm" onclick={() => ed.setGhost(null)} data-tip="No comparison glyph" aria-label="Clear"><I.Close /></button>{/if}
     </div>
     {#if ed.ghostName}<p class="muted small">Drag the blue glyph to move it; the outline stays editable where they overlap.</p>{/if}
     {#if sameArea.length}<div class="chips">{#each sameArea as g}<button class="gchip" class:on={ed.ghostName === g} onclick={() => ed.setGhost(ed.ghostName === g ? null : g)} title={g}><Glyph name={g} size={22} /></button>{/each}</div>{/if}
@@ -323,7 +324,7 @@
 <div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()} onpaste={onPaste}>
   <!-- glyph bar -->
   <div class="gbar">
-    <a href={backHref} class="back">← {backLabel}</a>
+    <a href={backHref} class="back"><I.Back />{backLabel}</a>
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
     {#if app.charOf(name)}<span class="char">{app.charOf(name)}</span>{/if}
@@ -331,13 +332,13 @@
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
       {:else if ed.isNew && !ed.dirty}<span class="chip">new · not saved yet</span>
-      {:else if ed.dirty}<span class="chip accent">● Edited · {ed.changeCount} change{ed.changeCount === 1 ? '' : 's'}</span>
+      {:else if ed.dirty}<span class="chip accent"><I.Unsaved size={14} />Edited · {ed.changeCount} change{ed.changeCount === 1 ? '' : 's'}</span>
       {:else if ed.savedAt}<span class="chip">Saved {ed.savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       {:else}<span class="chip">Saved</span>{/if}
     </span>
     <span class="spacer"></span>
-    <button class="ghost" onclick={() => ed.undo()} disabled={!ed.canUndo} title={ed.canUndo ? `Undo ${ed.undoLabel} (⌘Z)` : 'Nothing to undo'}>↶</button>
-    <button class="ghost" onclick={() => ed.redo()} disabled={!ed.canRedo} title="Redo (⇧⌘Z)">↷</button>
+    <button class="ghost" onclick={() => ed.undo()} disabled={!ed.canUndo} data-tip={ed.canUndo ? `Undo ${ed.undoLabel} (⌘Z)` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
+    <button class="ghost" onclick={() => ed.redo()} disabled={!ed.canRedo} data-tip="Redo (⇧⌘Z)" aria-label="Redo"><I.Redo /></button>
     <button onclick={() => ed.discard()} disabled={!ed.dirty} title="Back to the file as loaded (can be undone)">Discard</button>
     <button class="primary" onclick={() => save()} disabled={ed.saving || !!ed.trace || (!ed.dirty && !ed.isNew)} title="Write inputs/svg/{name}.svg (⌘S)">Save glyph</button>
   </div>
@@ -346,29 +347,30 @@
     <!-- tool rail -->
     <div class="rail">
       {#each TOOLS as [m, k, label]}
-        <button class:on={ed.mode === m} onclick={() => ed.setMode(m)} title="{label} ({k})" disabled={!!ed.trace && m !== 'hand' && m !== 'zoom'}><span class="ic">{ICON[m]}</span><span class="k">{k}</span></button>
+        {@const Ic = ICON[m]}
+        <button class:on={ed.mode === m} onclick={() => ed.setMode(m)} data-tip="{label} ({k})" data-tip-side="right" aria-label={label} disabled={!!ed.trace && m !== 'hand' && m !== 'zoom'}><Ic /><span class="k">{k}</span></button>
       {/each}
       <span class="spacer"></span>
-      <button class:on={ed.grid} onclick={() => ed.setGrid(!ed.grid)} title="Grid (⇧G)">#</button>
-      <button onclick={() => (shortcuts = true)} title="Keyboard shortcuts (?)">?</button>
+      <button class:on={ed.grid} onclick={() => ed.setGrid(!ed.grid)} data-tip="Grid (⇧G)" data-tip-side="right" aria-label="Grid"><I.Grid /></button>
+      <button onclick={() => (shortcuts = true)} data-tip="Keyboard shortcuts (?)" data-tip-side="right" aria-label="Keyboard shortcuts"><I.Shortcuts /></button>
     </div>
 
     <PanelWorkspace store={editorPanels} {meta} {body} centerMin={320} help={EDITOR_HELP}>
       <!-- action bar -->
       <div class="actions">
-        <span class="grp" title={canCombine ? 'Combine the selected shapes (point at a button to preview; ⇧ swaps the subtract order)' : 'Select 2 shapes to combine them'}>
-          <button disabled={!canCombine} onmouseenter={(e) => combineHover('unite', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('unite', e)} title="Union (⌥⇧U)">∪</button>
-          <button disabled={!canCombine} onmouseenter={(e) => combineHover('subtract', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('subtract', e)} title="Subtract: the newest shape cuts the others; ⇧ swaps (⌥⇧S)">−</button>
-          <button disabled={!canCombine} onmouseenter={(e) => combineHover('intersect', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('intersect', e)} title="Intersect (⌥⇧I)">∩</button>
-          <button disabled={!canCombine} onmouseenter={(e) => combineHover('exclude', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('exclude', e)} title="Exclude (⌥⇧E)">⊕</button>
+        <span class="grp">
+          <button disabled={!canCombine} onmouseenter={(e) => combineHover('unite', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('unite', e)} data-tip={canCombine ? 'Union (⌥⇧U)' : 'Union: select 2 shapes first'} aria-label="Union"><I.Union /></button>
+          <button disabled={!canCombine} onmouseenter={(e) => combineHover('subtract', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('subtract', e)} data-tip={canCombine ? 'Subtract: the newest shape cuts the others; ⇧ swaps (⌥⇧S)' : 'Subtract: select 2 shapes first'} aria-label="Subtract"><I.Subtract /></button>
+          <button disabled={!canCombine} onmouseenter={(e) => combineHover('intersect', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('intersect', e)} data-tip={canCombine ? 'Intersect (⌥⇧I)' : 'Intersect: select 2 shapes first'} aria-label="Intersect"><I.Intersect /></button>
+          <button disabled={!canCombine} onmouseenter={(e) => combineHover('exclude', e)} onmouseleave={combineLeave} onclick={(e) => combineClick('exclude', e)} data-tip={canCombine ? 'Exclude (⌥⇧E)' : 'Exclude: select 2 shapes first'} aria-label="Exclude"><I.Exclude /></button>
         </span>
         <button class:on={popover === 'simplify'} disabled={!ed.stats.paths || !!ed.trace} onclick={() => (popover === 'simplify' ? cancelPopover() : openPopover('simplify'))} title="Fewer points, same shape">Simplify…</button>
         <button class:on={popover === 'thicken'} disabled={!ed.stats.paths || !!ed.trace} onclick={() => (popover === 'thicken' ? cancelPopover() : openPopover('thicken'))} title="Make the outline heavier or lighter">Thicken…</button>
         <button disabled={!ed.stats.open} onclick={() => ed.outlineLines()} title="Turn open lines into filled outlines at the line weight (⌥⌘O); Save does this too">Outline line{ed.stats.open > 1 ? 's' : ''}</button>
         <button disabled={!ed.stats.paths} onclick={() => ed.cleanUp()} title="Remove self-overlaps and fix winding (what the font build does)">Clean up</button>
         <span class="grp">
-          <button disabled={!ed.stats.paths} onclick={() => ed.flip('h')} title="Flip horizontal (⇧H)">⇆</button>
-          <button disabled={!ed.stats.paths} onclick={() => ed.flip('v')} title="Flip vertical (⇧V)">⇅</button>
+          <button disabled={!ed.stats.paths} onclick={() => ed.flip('h')} data-tip="Flip horizontal (⇧H)" aria-label="Flip horizontal"><I.FlipH /></button>
+          <button disabled={!ed.stats.paths} onclick={() => ed.flip('v')} data-tip="Flip vertical (⇧V)" aria-label="Flip vertical"><I.FlipV /></button>
         </span>
         <span class="grp" title="Import">
           <button onclick={() => svgInput.click()} title="Add the shapes of an SVG file (or drop it on the canvas, or paste SVG text)">SVG file…</button>
@@ -377,7 +379,7 @@
         <input type="file" accept=".svg,image/svg+xml" bind:this={svgInput} onchange={onSvgFile} hidden />
         <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" bind:this={imgInput} onchange={onImgFile} hidden />
         <span class="spacer"></span>
-        <span class="zoom"><button class="ghost" onclick={() => ed.zoomBy(1 / 1.25)}>−</button><button class="ghost" onclick={() => ed.fit()} title="Fit (⇧1)">{Math.round(ed.zoom * 100)}%</button><button class="ghost" onclick={() => ed.zoomBy(1.25)}>+</button></span>
+        <span class="zoom"><button class="ghost" onclick={() => ed.zoomBy(1 / 1.25)} data-tip="Zoom out (−)" aria-label="Zoom out"><I.Minus /></button><button class="ghost" onclick={() => ed.fit()} data-tip="Fit (⇧1)">{Math.round(ed.zoom * 100)}%</button><button class="ghost" onclick={() => ed.zoomBy(1.25)} data-tip="Zoom in (+)" aria-label="Zoom in"><I.Plus /></button></span>
       </div>
 
       {#if popover === 'simplify' && ed.preview?.kind === 'simplify'}
@@ -501,7 +503,7 @@
 <style>
   .ge { display: flex; flex-direction: column; height: 100%; min-height: 0; }
   .gbar { display: flex; align-items: center; gap: var(--space-4); padding: 6px var(--space-6); border-bottom: 1px solid var(--border); background: var(--bg-panel); }
-  .back { text-decoration: none; margin-right: var(--space-4); }
+  .back { display: inline-flex; align-items: center; gap: var(--space-2); text-decoration: none; margin-right: var(--space-4); }
   .thumb { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
   .mono { font-family: var(--font-mono); }
   .char { font-size: var(--t-panel); }
@@ -512,7 +514,6 @@
   .rail { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4) 6px; border-right: 1px solid var(--border); background: var(--bg-panel); }
   .rail button { width: 40px; height: 40px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
   .rail button.on { background: var(--sel-bg); border-color: var(--link); color: var(--link); }
-  .rail .ic { font-size: 16px; line-height: 18px; }
   .rail .k { font-size: 9px; color: var(--ink-muted); }
   .actions { display: flex; align-items: center; gap: var(--space-4); padding: 6px var(--space-5); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .actions button { height: 26px; padding: 0 8px; font-size: var(--t-small); }
@@ -521,6 +522,7 @@
   .grp button { border-radius: 0; margin-left: -1px; min-width: 30px; }
   .grp button:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); margin-left: 0; }
   .grp button:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .zoom { display: inline-flex; align-items: center; gap: 2px; }
   .zoom button { min-width: 28px; }
   .pop { display: flex; align-items: center; gap: var(--space-4); padding: 6px var(--space-5); background: var(--sel-bg); border-bottom: 1px solid var(--border); font-size: var(--t-small); flex-wrap: wrap; }
   .pop input[type=range] { width: 180px; }

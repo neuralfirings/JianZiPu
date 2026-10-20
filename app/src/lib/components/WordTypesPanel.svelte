@@ -1,6 +1,7 @@
 <script lang="ts">
   // The word types of the design: pick one to edit; rule / skipped counts;
   // Advanced: rename, duplicate, add, delete.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
   import SkipList from './SkipList.svelte';
@@ -39,7 +40,7 @@
         {#if perLayout[l.name]}<span class="muted small" title="Positioning rules this word type adds to the font: one per word shape and glyph bucket">{perLayout[l.name].rules} rules</span>{/if}
       </button>
       {#if perLayout[l.name]?.skipped}
-        <button class="badge-warn tskip" class:on={skipsFor === l.name} title="Word shapes that get no rule. Click to see why." onclick={() => { skipsFor = skipsFor === l.name ? null : l.name; editor.setLayout(l.name); }}>{perLayout[l.name].skipped} skipped {skipsFor === l.name ? '▾' : '▸'}</button>
+        <button class="badge-warn tskip" class:on={skipsFor === l.name} title="Word shapes that get no rule. Click to see why." onclick={() => { skipsFor = skipsFor === l.name ? null : l.name; editor.setLayout(l.name); }}>{perLayout[l.name].skipped} skipped {#if skipsFor === l.name}<I.Unfolded size={12} />{:else}<I.Folded size={12} />{/if}</button>
       {/if}
       {#if skipsFor === l.name}
         <div class="skips"><SkipList layoutName={l.name} onclose={() => (skipsFor = null)} /></div>

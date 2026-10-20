@@ -136,19 +136,19 @@ export function issues(t: Typing, known?: Set<string>): Issue[] {
 }
 
 export type CellNote = { level: 'free' | 'error' | 'shared' | 'joins'; text: string };
-/** The line under a cell while typing `value` into glyph `g`'s field `f`. */
+/** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level). */
 export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string): CellNote | null {
   const v = value.trim();
   if (!v || f === 'pinyin') return null;
   const p = formatProblem(f, v, known);
-  if (p) return { level: 'error', text: `✕ ${p}` };
+  if (p) return { level: 'error', text: p };
   const space = spaceOf(f);
   if (!space) return null;
   const name = (x: string) => (char?.(x) ? `${char(x)} (${x})` : x);
   const others = Object.entries(t).filter(([o, s]) => o !== g && SPACES[space](s).some(([, k]) => k === v)).map(([o]) => o);
   const clash = others.filter((o) => !isPair(t, g, o));
-  if (clash.length) return { level: 'error', text: `✕ already used by ${clash.map(name).join(', ')}` };
-  if (others.length) return { level: 'shared', text: `⇄ shared with ${others[0]}, its vertical ${t[g]?.vert_variant === others[0] ? 'form' : 'partner'}` };
+  if (clash.length) return { level: 'error', text: `already used by ${clash.map(name).join(', ')}` };
+  if (others.length) return { level: 'shared', text: `shared with ${others[0]}, its vertical ${t[g]?.vert_variant === others[0] ? 'form' : 'partner'}` };
   if (space === 'latin' && v.length > 1) {
     const keys = new Map<string, string>();
     for (const [o, s] of Object.entries(t)) if (o !== g) for (const [, k] of latinKeys(s)) keys.set(k, o);
@@ -157,7 +157,7 @@ export function cellNote(t: Typing, g: string, f: SpellField, value: string, kno
       if (a && b) return { level: 'joins', text: `joins ${v.slice(0, i)} + ${v.slice(i)}: typing ${v} gives this glyph instead of ${name(a)} then ${name(b)}` };
     }
   }
-  return { level: 'free', text: `✓ free` };
+  return { level: 'free', text: 'free' };
 }
 
 /** Glyphs whose spelling differs from the saved one. */

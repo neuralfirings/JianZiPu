@@ -2,6 +2,7 @@
   // Review a draft (docs/PILOT-UX.md "Review"). Local Builder: testers' drafts from Supabase (admin
   // sign-in) or a .zip, applied into your unsaved changes. Hosted: a tester's "See my changes"
   // (?mine) or an imported .zip (set by the ⋯ menu through `pilot.review`).
+  import * as I from '$lib/icons';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { BundleError, fromZip } from '$lib/bundle';
@@ -97,7 +98,7 @@
   {#if mine && myBundle}
     <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} />
   {:else if pilot.review}
-    <div class="back"><button class="link" onclick={() => (pilot.review = null)}>← {hosted.isHosted ? 'Cancel' : 'All drafts'}</button></div>
+    <div class="back"><button class="link" onclick={() => (pilot.review = null)}><I.Back size={14} /> {hosted.isHosted ? 'Cancel' : 'All drafts'}</button></div>
     <ReviewView bundle={pilot.review.bundle} mode={hosted.isHosted ? 'import' : 'owner'} name={pilot.review.source.name} onapplied={applied} />
   {:else if hosted.isHosted}
     <h2>Import a draft</h2>

@@ -7,6 +7,7 @@
   // Enter saves and moves down, Tab moves right, Esc puts the old value back; a pasted range
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
   import * as T from '$lib/typing';
@@ -73,18 +74,18 @@
       {#if !flat}
         <tr class="grp"><td colspan={COLS.length + 2 + (showAreas ? 1 : 0)}>
           <strong>{s.title}</strong> <span class="muted">{s.sub ?? ''} · {s.glyphs.length}</span>
-          {#if s.decimals}<button class="lnk" onclick={() => (openDecimals = !openDecimals)}>{openDecimals ? '▾ hide' : '▸ show'}</button> <span class="muted">typed by pattern, nothing to fill</span>{/if}
+          {#if s.decimals}<button class="lnk" onclick={() => (openDecimals = !openDecimals)}>{#if openDecimals}<I.Unfolded size={12} /> hide{:else}<I.Folded size={12} /> show{/if}</button> <span class="muted">typed by pattern, nothing to fill</span>{/if}
         </td></tr>
       {/if}
       {#if !s.decimals}
         {#each s.glyphs as g (g)}
           {@const partner = partnerOf[g]}
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
-            <td class="st {status(g)}" title={issueText(g)}>{status(g) === 'err' ? '✕' : status(g) === 'warn' ? '⚠' : ''}</td>
+            <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
             <td class="gl"><span class="ga"><Glyph name={g} size={26} /></span><span class="gn">{g}</span></td>
             {#each COLS as f}
               <td data-f={f}>
-                {#if f === 'vert_variant' && partner}<span class="muted small" title="This is the vertical form of {partner}: typed after a colon">↖ of {partner}</span>
+                {#if f === 'vert_variant' && partner}<span class="muted small" title="This is the vertical form of {partner}: typed after a colon"><I.PartnerOf size={12} /> of {partner}</span>
                 {:else}<SpellInput glyph={g} field={f} cell onenter={(dir) => move(g, f, dir)} onpastegrid={(grid) => paste(g, f, grid)} />{/if}
               </td>
             {/each}

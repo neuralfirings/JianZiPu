@@ -1,6 +1,7 @@
 <script lang="ts">
   // One dockable panel: the shared header (drag grip, fold chevron, title,
   // badge, summary when folded, ? help, ⋯ menu) and the body.
+  import * as I from '$lib/icons';
   import { panels as layoutPanels, panelHelp, DOCKS, DOCK_LABEL, type AnyPanels } from '$lib/panels.svelte';
   import type { HelpTopic } from '$lib/help';
   import type { Snippet } from 'svelte';
@@ -50,26 +51,26 @@
 
 <section class="pn" class:folded class:lifted data-panel={id}>
   <div class="ph" class:warn>
-    <span class="grip" title="Drag to move this panel" onpointerdown={gripDown}>⠿</span>
+    <span class="grip" title="Drag to move this panel" onpointerdown={gripDown}><I.Grip size={14} /></span>
     <button class="fold" title={folded ? 'Unfold' : 'Fold'} onclick={() => panels.toggle(id)} onkeydown={onkey}>
-      <span class="chev">{folded ? '▸' : '▾'}</span><span class="t" id={titleId}>{title}</span>
+      <span class="chev">{#if folded}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}</span><span class="t" id={titleId}>{title}</span>
     </button>
     {#if badge != null && badge !== ''}<span class="bdg" class:warn>{badge}</span>{/if}
     {#if tag}<span class="tag">{tag}</span>{/if}
     {#if folded && summary}<span class="sum" title={summary}>{summary}</span>{:else}<span class="sp"></span>{/if}
     {#if help}
-      <button class="ph-help" bind:this={helpBtn} title="About this panel" aria-label="About {title}" aria-haspopup="dialog" aria-expanded={helpOpen} aria-controls={helpId}
-        onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); toggleHelp(); }}><span class="q">?</span></button>
+      <button class="ph-help" bind:this={helpBtn} data-tip="About this panel" aria-label="About {title}" aria-haspopup="dialog" aria-expanded={helpOpen} aria-controls={helpId}
+        onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); toggleHelp(); }}><I.Help /></button>
     {/if}
     <span class="mw">
-      <button class="pm" title="Panel menu" onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); menu = !menu; if (menu) closeHelp(); }}>⋯</button>
+      <button class="pm" data-tip="Panel menu: fold, move" onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); menu = !menu; if (menu) closeHelp(); }} aria-label="Panel menu"><I.More /></button>
       {#if menu}
         <div class="menu" onpointerdown={(e) => e.stopPropagation()}>
           {#if help}<button onclick={() => { menu = false; toggleHelp(); }}>About this panel</button><hr />{/if}
           <button onclick={() => { panels.toggle(id); menu = false; }}>{folded ? 'Unfold' : 'Fold'}</button>
           <hr />
           {#each DOCKS as d (d)}
-            <button disabled={d === dock} onclick={() => { panels.move(id, d, panels.a.docks[d].length); menu = false; }}>{d === dock ? '✓ ' : 'Move to '}{DOCK_LABEL[d]}</button>
+            <button disabled={d === dock} onclick={() => { panels.move(id, d, panels.a.docks[d].length); menu = false; }}>{#if d === dock}<I.Check size={14} /> {:else}Move to {/if}{DOCK_LABEL[d]}</button>
           {/each}
           <hr />
           <button onclick={() => { panels.nudge(id, -1); menu = false; }}>Move up</button>
@@ -96,11 +97,11 @@
   .pn.lifted { opacity: .35; border-style: dashed; }
   .ph { display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--hairline); background: var(--bg-panel); border-radius: var(--radius-lg) var(--radius-lg) 0 0; white-space: nowrap; }
   .folded .ph { border-bottom: 0; border-radius: var(--radius-lg); }
-  .grip { color: var(--ink-faint); font-size: 13px; cursor: grab; padding: 0 2px; user-select: none; touch-action: none; }
+  .grip { display: inline-flex; color: var(--ink-faint); cursor: grab; user-select: none; touch-action: none; }
   .grip:active { cursor: grabbing; }
   .fold { display: inline-flex; align-items: center; gap: var(--space-3); height: 28px; padding: 0 var(--space-1); border: 0; background: transparent; font: 600 var(--t-panel)/20px var(--font-display); min-width: 0; }
   .fold:hover { background: transparent; color: var(--link); }
-  .chev { color: var(--ink-muted); font-size: 10px; width: 9px; }
+  .chev { display: inline-flex; color: var(--ink-muted); }
   .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bdg { font-size: var(--t-caption); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 0 7px; line-height: 18px; color: var(--ink-muted); }
   .bdg.warn { border-color: var(--status-draft); border-style: dashed; color: var(--status-draft); background: var(--status-draft-bg); }
@@ -114,7 +115,6 @@
   .ph-help { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 22px; width: 22px; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink-faint); }
   .ph-help:hover { color: var(--ink); background: var(--bg-hover); }
   .ph-help[aria-expanded="true"] { color: var(--link); background: var(--sel-bg); }
-  .ph-help .q { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: var(--radius-pill); font: 600 var(--t-caption)/1 var(--font-serif); }
   .help-pop { position: fixed; z-index: 60; padding: var(--space-4) var(--space-5); white-space: normal; font: var(--t-label)/20px var(--font-serif); color: var(--ink); }
   .help-pop p { margin: 0; }
   .help-pop .more { display: block; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--hairline); color: var(--link); }

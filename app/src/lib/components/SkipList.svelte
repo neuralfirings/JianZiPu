@@ -1,6 +1,7 @@
 <script lang="ts">
   // Why some word shapes of a layout get no positioning rule, grouped by
   // cause, with examples that open in the editor.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
   import { elementLabel } from '$lib/shape';
@@ -21,7 +22,7 @@
 </script>
 
 <div class="skips">
-  <div class="row"><strong>Why {groups.reduce((n, g) => n + g.count, 0)} shapes are skipped</strong><span class="spacer"></span><button class="tiny" onclick={onclose}>×</button></div>
+  <div class="row"><strong>Why {groups.reduce((n, g) => n + g.count, 0)} shapes are skipped</strong><span class="spacer"></span><button class="tiny" onclick={onclose} aria-label="Close"><I.Close size={14} /></button></div>
   <div class="muted small">A skipped shape gets no positioning rule: those words shape, but the parts are not placed. Each line is one cause; open an example to fix it in the editor.</div>
   {#if unsupported}
     <div class="warn small">The running web server is older than this app build and does not report causes. Restart it, then reload this page:

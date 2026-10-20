@@ -3,6 +3,7 @@
   // a bottom strip under the center, drag a panel's grip to another dock, drag a
   // splitter to resize (shut to hide; a rail brings the dock back). Used by Layouts
   // and the glyph editor, each with its own store (src/lib/panels.svelte.ts).
+  import * as I from '$lib/icons';
   import { onMount, type Snippet } from 'svelte';
   import { DOCK_LABEL, DOCK_MIN, type AnyPanels, type Dock, type Meta } from '$lib/panels.svelte';
   import PanelDock from './PanelDock.svelte';
@@ -113,7 +114,7 @@
   {@render sideDock('right')}
 </div>
 {#if store.dragging}
-  <div class="ghost" style="left: {store.pointer.x + 12}px; top: {store.pointer.y - 12}px">⠿ {meta(store.dragging).title}</div>
+  <div class="ghost" style="left: {store.pointer.x + 12}px; top: {store.pointer.y - 12}px"><I.Grip size={14} /> {meta(store.dragging).title}</div>
 {/if}
 
 <style>

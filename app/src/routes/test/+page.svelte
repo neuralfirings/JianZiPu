@@ -4,6 +4,7 @@
   // (a build or a file you open), with liga / kern switches, vertical columns and a second
   // font to compare. Each font is loaded into this page under a family of its own, so an
   // installed JianZiPu never stands in for it.
+  import * as I from '$lib/icons';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
@@ -129,11 +130,11 @@
     <div class="row wrap">
       <span class="muted">
         {#if status?.build}Built {fmtTime(status.build.time)} from saved files{:else}No build yet{/if}
-        {#if app.dirty} · ⚠ {app.changes.length} unsaved change{app.changes.length === 1 ? '' : 's'} not in the font{/if}
+        {#if app.dirty} · <I.Warn size={14} /> {app.changes.length} unsaved change{app.changes.length === 1 ? '' : 's'} not in the font{/if}
       </span>
       <span class="spacer"></span>
       {#if status?.state === 'done'}
-        <span class={status.ok ? 'badge-ok' : 'badge-danger'}>{status.ok ? '✓ last build ok' : '✗ last build failed'}{#if status.finished && status.started} · {(status.finished - status.started).toFixed(1)} s{/if}</span>
+        <span class={status.ok ? 'badge-ok' : 'badge-danger'}>{#if status.ok}<I.Check size={14} /> last build ok{:else}<I.Problem size={14} /> last build failed{/if}{#if status.finished && status.started} · {(status.finished - status.started).toFixed(1)} s{/if}</span>
       {/if}
       <button class="primary" onclick={build} disabled={status?.state === 'running'}>{buildLabel}</button>
     </div>
@@ -154,7 +155,7 @@
     <div class="row wrap">
       <strong>Font</strong>
       {#if font}
-        <span class="chip accent" title="Loaded into this page as its own font family; nothing installed on this computer is used">● {font.label}</span>
+        <span class="chip accent" title="Loaded into this page as its own font family; nothing installed on this computer is used"><I.Current size={14} />{font.label}</span>
       {:else}
         <span class="chip dashed">none loaded</span>
       {/if}
@@ -165,7 +166,7 @@
         </select>
       {/if}
       <label class="file"><input type="file" accept=".ttf,.otf,font/ttf" onchange={(e) => useFile(e)} /> Open a .ttf file…</label>
-      <button class="quiet" onclick={refreshStatus} title="Re-read the list of builds">↻</button>
+      <button class="quiet" onclick={refreshStatus} data-tip="Re-read the list of builds" aria-label="Refresh"><I.Refresh /></button>
       {#if loading}<span class="muted">loading…</span>{/if}
     </div>
 
@@ -197,7 +198,7 @@
     {#if view === 'text' && compare}
       <div class="row wrap">
         <strong>Second font</strong>
-        {#if secondFont}<span class="chip">● {secondFont.label}</span>{:else}<span class="chip dashed">none</span>{/if}
+        {#if secondFont}<span class="chip"><I.Current size={14} />{secondFont.label}</span>{:else}<span class="chip dashed">none</span>{/if}
         {#if builds.length}<select onchange={(e) => pick(e, 'second')}>
           <option value="">Pick a build…</option>{#each builds as o}<option value={o.id}>{o.id} · {fmtTime(o.time)}</option>{/each}</select>{/if}
         <label class="file"><input type="file" accept=".ttf,.otf,font/ttf" onchange={(e) => useFile(e, 'second')} /> Open a .ttf file…</label>
@@ -234,7 +235,7 @@
               <div class="font" style="font-family: '{font.family}'; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
             {/key}
           {/if}
-          <div class="keys muted">{w.word}{#if w.pieces.some((p) => p.layout === null && p.glyphs.some((g) => !['space', 'numbersign', 'advance'].includes(g)))} <span class="badge-warn" title="Some glyphs matched no word type">⚠</span>{/if}</div>
+          <div class="keys muted">{w.word}{#if w.pieces.some((p) => p.layout === null && p.glyphs.some((g) => !['space', 'numbersign', 'advance'].includes(g)))} <span class="badge-warn" title="Some glyphs matched no word type"><I.Warn size={14} /></span>{/if}</div>
           <div class="id">{w.glyphs.join(' ')}</div>
         </div>
       {/each}

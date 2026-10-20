@@ -1,6 +1,7 @@
 <script lang="ts">
   // The bottom panel's Typing column (Tiles view): this glyph's spellings as fields.
   // A vertical form shows its partner's spellings greyed; a position decimal its pattern.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
   import SpellInput from './SpellInput.svelte';
@@ -20,7 +21,7 @@
     <p class="muted small">The same for all 130 position decimals.</p>
   {:else}
     {#if partner}
-      <p class="small">Vertical form of <a href="/glyphs?g={encodeURIComponent(partner)}">{partner}</a> ⇄. Typed after a colon (<span class="mono">:{T.shown(app.typing, glyph, 'latin').value || T.shown(app.typing, glyph, 'simplified').value}</span>). Greyed values come from {partner}; edit them there. A spelling of its own can go here.</p>
+      <p class="small">Vertical form of <a href="/glyphs?g={encodeURIComponent(partner)}">{partner}</a> <I.Pair size={12} />. Typed after a colon (<span class="mono">:{T.shown(app.typing, glyph, 'latin').value || T.shown(app.typing, glyph, 'simplified').value}</span>). Greyed values come from {partner}; edit them there. A spelling of its own can go here.</p>
     {/if}
     <div class="grid">
       {#each FIELDS as f}

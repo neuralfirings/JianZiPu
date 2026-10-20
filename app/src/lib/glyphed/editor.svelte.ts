@@ -9,13 +9,13 @@ import { loadImage, thresholdImage, traceCanvas, TRACE_DEFAULTS, type TraceOptio
 import { api, type SvgCheck } from '$lib/api';
 import { app } from '$lib/state.svelte';
 import { hosted } from '$lib/hosted.svelte';
+import { sha256 } from '$lib/sha256';
 
 export const DEFAULT_WEIGHT = 36;
 const DRAFT_PREFIX = 'jzp-glyph-draft:';
 
 export async function sha16(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  return (await sha256(text)).slice(0, 16);   // matches the server's file hash
 }
 
 export type Selection =

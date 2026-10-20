@@ -2,6 +2,7 @@
   // How to use the Builder: one page, a contents list on the left (scroll-spied), a section per
   // screen. Sections and their order come from lib/help.ts; help.test.ts checks the links.
   import { onMount } from 'svelte';
+  import * as I from '$lib/icons';
   import { hosted } from '$lib/hosted.svelte';
   import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor, type PanelHelp } from '$lib/help';
 
@@ -52,7 +53,7 @@
           <dt><a href="/test">Build & test</a></dt><dd>Build the real font file and type in it.</dd>
         </dl>
         <p>A usual round: change a glyph or a rule, watch it in the live preview, <strong>Save</strong>, then <strong>Build font</strong> and check the result in real text.</p>
-        <div class="banner info"><span class="ic">◐</span><div>
+        <div class="banner info"><span class="ic"><I.Info /></span><div>
           {#if hosted.isHosted}
             You're using the online Builder. Everything you do goes into <a href="#draft">your own draft</a>; the real font doesn't change until your draft is reviewed.
           {:else}
@@ -112,8 +113,8 @@
         <ul>
           <li>Enter keeps a cell and moves down (⇧Enter moves up), Tab moves right, Esc puts the old value back.</li>
           <li>Paste a range copied from a spreadsheet to fill down and across in one step.</li>
-          <li>⋯ → <strong>Import spellings (CSV)…</strong> and <strong>Export spellings (CSV)</strong> move the whole table in and out. An import only changes the screen until you Save.</li>
-          <li>Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a <span class="pill danger">× clash</span> holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.</li>
+          <li><I.More class="inl" aria-label="More" /> → <strong>Import spellings (CSV)…</strong> and <strong>Export spellings (CSV)</strong> move the whole table in and out. An import only changes the screen until you Save.</li>
+          <li>Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a <span class="pill danger"><I.Problem size={14} />clash</span> holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.</li>
           <li>The <strong>Typing</strong> filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.</li>
         </ul>
       </section>
@@ -125,15 +126,15 @@
         <figure><a href="/help/editor.jpg" target="_blank"><img src="/help/editor.jpg" alt="The glyph editor with 勾 on the canvas, tools on the left, Selection, Compare and Glyph panels on the right and the Tester below" width="1280" height="800" loading="lazy" /></a><figcaption>勾 in the editor: tools on the left, panels on the right, and the Tester showing it in words below.</figcaption></figure>
         <h3>Drawing</h3>
         <ul>
-          <li>Tools: Select <kbd>V</kbd>, Pen <kbd>P</kbd>, Pencil <kbd>⇧P</kbd>, Rectangle <kbd>R</kbd>, Ellipse <kbd>O</kbd>, Hand <kbd>H</kbd> (or hold Space), Zoom <kbd>Z</kbd>. <strong>?</strong> on the rail lists every shortcut.</li>
+          <li>Tools: Select <kbd>V</kbd>, Pen <kbd>P</kbd>, Pencil <kbd>⇧P</kbd>, Rectangle <kbd>R</kbd>, Ellipse <kbd>O</kbd>, Hand <kbd>H</kbd> (or hold Space), Zoom <kbd>Z</kbd>. <I.Shortcuts class="inl" aria-label="Keyboard shortcuts" /> on the rail lists every shortcut.</li>
           <li>To edit points, use Select (<kbd>V</kbd>): click a shape to show its points, then click a point and drag it (arrow keys nudge it, <kbd>⇧</kbd> × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; <kbd>⌥</kbd>-drag moves one handle alone. Double-click a point to switch it between corner and smooth. <kbd>⇧</kbd>-click adds points to the selection, and <kbd>⇧</kbd>-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.</li>
-          <li>Combine two selected shapes with ∪ − ∩ ⊕ (hover to preview). <strong>Simplify…</strong> removes points; <strong>Thicken…</strong> makes strokes heavier or lighter; <strong>Clean up</strong> fixes overlaps.</li>
+          <li>Combine two selected shapes with Union <I.Union class="inl" />, Subtract <I.Subtract class="inl" />, Intersect <I.Intersect class="inl" /> or Exclude <I.Exclude class="inl" /> (hover to preview). <strong>Simplify…</strong> removes points; <strong>Thicken…</strong> makes strokes heavier or lighter; <strong>Clean up</strong> fixes overlaps.</li>
           <li>Lines drawn with the Pen or Pencil are strokes until <strong>Outline line(s)</strong> turns them into filled shapes. Save does this for you.</li>
           <li><strong>SVG file…</strong> imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.</li>
           <li><strong>Image to trace…</strong> turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then <strong>Use this outline</strong>. The image itself stays in your browser.</li>
         </ul>
         <h3>The panels</h3>
-        <p>Each panel's <span class="q">?</span> shows the same text as below.</p>
+        <p>Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(EDITOR_HELP)}
         <h3>Saving a glyph</h3>
         <p>The editor has its own <strong>Save glyph</strong> (<kbd>⌘S</kbd>) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. {#if hosted.isHosted}Saving puts the glyph into your draft.{:else}Saving writes <code>builder/inputs/svg/&lt;name&gt;.svg</code> at once; if the file changed on disk meanwhile, you're asked which version to keep.{/if} A new glyph joins its area on its first save. The font picks up the new drawing at the next <strong>Build font</strong>.</p>
@@ -151,7 +152,7 @@
           <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
         </ul>
         <h3>The panels</h3>
-        <p>Panels can be docked left, right or below, folded and resized; ⋯ → <strong>Reset panel layouts</strong> puts them back. Each panel's <span class="q">?</span> shows the same text as below.</p>
+        <p>Panels can be docked left, right or below, folded and resized; <I.More class="inl" aria-label="More" /> → <strong>Reset panel layouts</strong> puts them back. Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(LAYOUTS_HELP)}
         <p>Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the <strong>Advanced</strong> checkbox in the header, so they aren't changed by accident. It's off again after a reload.</p>
       </section>
@@ -172,22 +173,22 @@
           <dt>Test the font file</dt><dd>Running text in the font file, as a reader sees it. Switch <strong>liga</strong> (substitution) and <strong>kern</strong> (positioning) off to see the raw parts, try <strong>vertical columns</strong>, or <strong>compare with a second font</strong> side by side.</dd>
         </dl>
         <figure><a href="/help/build-font.jpg" target="_blank"><img src="/help/build-font.jpg" alt="Build and test, Test the font file view: the same words as running text in the built font" width="1280" height="800" loading="lazy" /></a><figcaption><strong>Test the font file</strong>: the same words as running text in the built font.</figcaption></figure>
-        <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <span class="badge-warn">⚠</span> under a word means some of its parts matched no word type.</p>
+        <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <I.Warn class="inl badge-warn" aria-label="warning" /> under a word means some of its parts matched no word type.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
       <section id="saving">
         <h2>Saving and undo</h2>
         <ul>
-          <li>Edits to the design and the spellings stay in the browser until you <strong>Save</strong> (<kbd>⌘S</kbd>). The header shows <span class="pill draft">● unsaved</span> with a count; click it to see the list or <strong>Discard all</strong>.</li>
-          <li>↶ ↷ in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
+          <li>Edits to the design and the spellings stay in the browser until you <strong>Save</strong> (<kbd>⌘S</kbd>). The header shows <span class="pill draft"><I.Unsaved size={14} />unsaved</span> with a count; click it to see the list or <strong>Discard all</strong>.</li>
+          <li><I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
           <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a>.</li>
           <li>Unsaved work survives a reload: the Builder offers to restore it.</li>
           {#if hosted.isHosted}
             <li>Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.</li>
           {:else}
             <li>Save writes <code>design.json</code> and <code>components.csv</code> in <code>builder/inputs/</code> (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.</li>
-            <li>⋯ → <strong>Export…</strong> / <strong>Import…</strong> move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.</li>
+            <li><I.More class="inl" aria-label="More" /> → <strong>Export…</strong> / <strong>Import…</strong> move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.</li>
           {/if}
         </ul>
       </section>
@@ -197,8 +198,8 @@
         <h2>Your draft (online)</h2>
         <p>Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own <strong>draft</strong>: only you see it, and nothing you do changes the real font or anyone else's work.</p>
         <ul>
-          <li>The <span class="pill draft">◌ Your draft</span> pill in the header shows what your draft is based on and how much you've changed. <strong>See my changes</strong> lists them item by item.</li>
-          <li>To share your work, ⋯ → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
+          <li>The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows what your draft is based on and how much you've changed. <strong>See my changes</strong> lists them item by item.</li>
+          <li>To share your work, <I.More class="inl" aria-label="More" /> → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
           <li>When the font is updated, a banner offers <strong>Update my draft…</strong>: the font's changes come in, and where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>.</li>
           <li><strong>Feedback</strong> in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.</li>
         </ul>
@@ -210,7 +211,7 @@
         <p>On your own computer, <a href="/review">Review</a> brings a tester's draft into the font. Open a draft from the list (once signed in) or a <strong>.zip</strong> someone sent.</p>
         <ul>
           <li>Each change is shown before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. <strong>Keep</strong> or <strong>Skip</strong> each one, or <strong>Keep all</strong>.</li>
-          <li>A <span class="pill danger">× Conflict</span> means you changed the same thing since the draft started: pick whose version to use.</li>
+          <li>A <span class="pill danger"><I.Problem size={14} />Conflict</span> means you changed the same thing since the draft started: pick whose version to use.</li>
           <li><strong>Apply</strong> turns the kept changes into one undoable step of unsaved changes. Look them over in Layouts and Build & test, Save, then commit with the message the toast offers to copy.</li>
         </ul>
       </section>
@@ -250,7 +251,7 @@
         <dl class="panels">
           <dt>A character shows in red</dt><dd>The font doesn't have it yet: a new glyph or spelling isn't in a build. <strong>Build font</strong> again. In Try it, red means "not in the font until the next build".</dd>
           <dt>The live preview and the font differ</dt><dd>The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.</dd>
-          <dt>⚠ under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.</dd>
+          <dt><I.Warn class="inl badge-warn" aria-label="warning" /> under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.</dd>
           <dt>Save is waiting</dt><dd>A spelling clashes with another glyph's or isn't valid. <strong>Show them</strong> lists the cells to fix.</dd>
           <dt>A new glyph never appears in words</dt><dd>It needs an area (<strong>Unassigned</strong> in Glyphs) and at least one spelling.</dd>
           <dt>The build failed</dt><dd>The first error is shown above the build log; the log has the rest. A spelling clash or an over-large set of rules (see Font budget) are the usual causes.</dd>
@@ -295,7 +296,6 @@
   .miss { color: var(--status-danger); }
   dt[id] { scroll-margin-top: var(--space-5); }
   dt:target, dt:target + dd { background: var(--sel-bg); }
-  .q { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: var(--radius-pill); font: 600 var(--t-caption)/1 var(--font-serif); color: var(--ink-muted); vertical-align: -2px; }
   @media (max-width: 760px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
     .toc { position: static; flex-direction: row; flex-wrap: wrap; }

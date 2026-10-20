@@ -87,6 +87,9 @@ a { color: var(--link); }
 
 /* Button: default (field + strong edge), .primary (ink fill, one per view), .quiet, .danger (discards work) */
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Lucide icons (size and stroke set in routes/+layout.svelte): square caps and mitred corners */
+.lucide-icon { flex: none; vertical-align: -0.2em; stroke-linecap: square; stroke-linejoin: miter; }
+.lucide-icon.inl:not([class*='badge-']) { color: var(--ink-muted); }   /* an icon named in running text */
 button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-3); height: var(--control-md); padding: 0 var(--space-5); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-field); font-weight: 600; cursor: pointer; transition: background 120ms ease-out; }
 button:hover { background: var(--bg-hover); }
 button.primary { background: var(--ink); border-color: var(--ink); color: var(--bg-panel); }
@@ -137,11 +140,14 @@ kbd { font: var(--t-caption) var(--font-mono); border: 1px solid var(--border); 
 .dialog, .modal { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); padding: var(--space-6); }
 .modal h2, .modal h3 { margin: 0; font-size: var(--t-heading); line-height: 28px; }
 /* Menus and popovers float */
+/* instant tooltip for icon-only buttons (lib/tooltip.ts, data-tip) */
+.tip { position: fixed; left: 0; top: 0; z-index: var(--z-toast); max-width: 280px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-bar); color: var(--on-bar); font-size: var(--t-caption); line-height: 1.4; pointer-events: none; box-shadow: var(--shadow-float); }
+.tip[hidden] { display: none; }
 .float { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); }
 
 /* Banner: a state that stays true until fixed. Tinted ground, edge and icon in the state colour, words in ink. */
 .banner { --tone: var(--status-info); display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap; padding: var(--space-4) var(--space-5); border: 1px solid var(--tone); border-radius: var(--radius-md); background: var(--status-info-bg); color: var(--ink); }
-.banner .ic { color: var(--tone); font: 600 14px/18px var(--font-mono); }
+.banner .ic { display: inline-flex; flex: none; color: var(--tone); }
 .banner.draft, .banner.warn { --tone: var(--status-draft); background: var(--status-draft-bg); }
 .banner.danger, .banner.err { --tone: var(--status-danger); background: var(--status-danger-bg); }
 .banner.saved { --tone: var(--status-saved); background: var(--status-saved-bg); }

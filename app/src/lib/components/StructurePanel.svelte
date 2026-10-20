@@ -3,6 +3,7 @@
   // Everyday: include in the preview, preview glyph (popover), select the part,
   // pick an option / row count. Advanced: drag to reorder, "edit ▸" card with
   // the structural settings, add part, recognition fold.
+  import * as I from '$lib/icons';
   import { app, parseElement } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
   import { panels } from '$lib/panels.svelte';
@@ -199,22 +200,22 @@
     {@const c = editor.choice[i]}
     <div class="line" class:sel={slotSelected(s)} class:off={!on} class:dragover={dragSlot != null && dragSlot !== i}
       ondragover={(e) => { if (dragSlot != null) e.preventDefault(); }} ondrop={() => dropSlot(i)} role="group">
-      <span class="grip" draggable="true" ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order">⠿</span>
+      <span class="grip" draggable="true" ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order"><I.Grip size={14} /></span>
       {#if s.optional}
         <input type="checkbox" checked={on} title={on ? 'Leave this part out of the preview word' : 'Put this part back into the preview word'} onchange={() => editor.setChoice(i, on ? null : s.repeat ? [0] : 0)} />
       {:else}
-        <span class="req" title="Always in the word">●</span>
+        <span class="req" title="Always in the word"><I.Required size={12} /></span>
       {/if}
       {#if s.repeat}
         <button class="lbl" onclick={() => selectSlot(s)}>{slotLabel(s)} <span class="id">{s.name}</span></button>
         {#if on}
-          <span class="seg"><button onclick={() => setRows(i, (c as number[]).length - 1)} disabled={(c as number[]).length <= s.repeat[0]}>−</button><span class="n">{(c as number[]).length}</span><button onclick={() => setRows(i, (c as number[]).length + 1)} disabled={(c as number[]).length >= s.repeat[1]}>+</button></span>
+          <span class="seg"><button onclick={() => setRows(i, (c as number[]).length - 1)} disabled={(c as number[]).length <= s.repeat[0]} aria-label="One row fewer"><I.Minus size={12} /></button><span class="n">{(c as number[]).length}</span><button onclick={() => setRows(i, (c as number[]).length + 1)} disabled={(c as number[]).length >= s.repeat[1]} aria-label="One row more"><I.Plus size={12} /></button></span>
           <span class="tiny">rows</span>
         {/if}
       {:else if on}
         {#each elemsOf(s) as e, k (e.name)}
           {#if k > 0}<span class="plus">+</span>{/if}
-          <button class="gp" data-gpop-anchor title="{e.name}: choose the preview glyph" onclick={(ev) => openMenu(ev, e)}><Glyph name={glyphOf(e)} size={20} /><span class="dd">▾</span></button>
+          <button class="gp" data-gpop-anchor title="{e.name}: choose the preview glyph" onclick={(ev) => openMenu(ev, e)}><Glyph name={glyphOf(e)} size={20} /><span class="dd"><I.Dropdown size={12} /></span></button>
           <button class="lbl" class:on={editor.selected === e.name} title="Select {e.name}" onclick={() => editor.select(e.name)}>{elemsOf(s).length > 1 ? elLabel(e) : slotLabel(s)} <span class="id">{e.name}</span></button>
           {#if anchors.has(e.name)}<span class="tag red" title="First glyph of the attachment chain: carries the word's absolute position">anchor</span>{/if}
           {#if editor.resolved?.pins?.[e.name]}<span class="tag dot" title="A spacing rule depends on which glyph this part shows">by glyph</span>{/if}
@@ -233,7 +234,7 @@
         {#if s.repeat}<span class="tag">{s.repeat[0]}–{s.repeat[1]} rows</span>{/if}
         {#if s.alternatives.length > 1}<span class="tag">{s.alternatives.length} options</span>{/if}
         {#if s.requires?.length}<span class="tag" title="only when {s.requires.join(', ')} is also there">needs {s.requires.join(', ')}</span>{/if}
-        <button class="exp" class:on={editing === s.name} onclick={() => (editing = editing === s.name ? null : s.name)}>edit {editing === s.name ? '▾' : '▸'}</button>
+        <button class="exp" class:on={editing === s.name} onclick={() => (editing = editing === s.name ? null : s.name)}>edit {#if editing === s.name}<I.Unfolded size={12} />{:else}<I.Folded size={12} />{/if}</button>
       {/if}
     </div>
 
@@ -250,7 +251,7 @@
             <span class="segs">{#each s.alternatives as alt, a}<button class:on={k === a} onclick={() => setInstanceAlt(i, j, a)}>{altLabel(alt)}</button>{/each}</span>
           {/if}
           {#each editor.elements.filter((e) => e.slot === s.name && e.instance === j + 1) as e (e.name)}
-            <button class="gp" data-gpop-anchor title="{e.name}: choose the preview glyph" onclick={(ev) => openMenu(ev, e)}><Glyph name={glyphOf(e)} size={20} /><span class="dd">▾</span></button>
+            <button class="gp" data-gpop-anchor title="{e.name}: choose the preview glyph" onclick={(ev) => openMenu(ev, e)}><Glyph name={glyphOf(e)} size={20} /><span class="dd"><I.Dropdown size={12} /></span></button>
             <button class="lbl small" class:on={editor.selected === e.name} onclick={() => editor.select(e.name)}>{elLabel(e)}{#if anchors.has(e.name)} <span class="tag red">anchor</span>{/if}</button>
           {/each}
         </div>
@@ -267,9 +268,9 @@
         </div>
         <div class="row wrap">
           <span class="tiny">only when this part is also there:</span>
-          {#each s.requires ?? [] as r (r)}<span class="ec">{nameLabel(r)}<button class="x" onclick={() => setRequires(i, (s.requires ?? []).filter((x) => x !== r))}>×</button></span>{/each}
+          {#each s.requires ?? [] as r (r)}<span class="ec">{nameLabel(r)}<button class="x" onclick={() => setRequires(i, (s.requires ?? []).filter((x) => x !== r))} aria-label="Remove"><I.Close size={12} /></button></span>{/each}
           <select class="add" value="" onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) setRequires(i, [...(s.requires ?? []), v]); (e.target as HTMLSelectElement).value = ''; }}>
-            <option value="">+ ▾</option>{#each layout.slots.filter((x) => x.name !== s.name && !(s.requires ?? []).includes(x.name)) as x}<option value={x.name}>{slotLabel(x)} ({x.name})</option>{/each}
+            <option value="">+</option>{#each layout.slots.filter((x) => x.name !== s.name && !(s.requires ?? []).includes(x.name)) as x}<option value={x.name}>{slotLabel(x)} ({x.name})</option>{/each}
           </select>
         </div>
         <div class="tiny">{s.repeat ? 'each row holds one of:' : 'holds one of:'}</div>
@@ -283,8 +284,8 @@
               <span class="ec edit">
                 <select value={pe.area} title="area" onchange={(e) => changeArea(i, a, k, (e.target as HTMLSelectElement).value)}>{#each areaKeys as ak}<option value={ak}>{areaLabel(ak)}</option>{/each}</select>
                 <input type="text" class="idin" value={pe.name} title="element id (used by spacing rules)" onchange={(e) => renameEl(i, a, k, (e.target as HTMLInputElement).value)} />
-                <button class="x" title="Remove from this option" onclick={() => removeFromAlt(i, a, k)}>×</button>
-                <button class="arealink" title="Show this area in Area Properties (name, box, glyphs)" onclick={() => { editor.showArea(pe.area); panels.setFolded('glyphs', false); }}>area ↗</button>
+                <button class="x" title="Remove from this option" onclick={() => removeFromAlt(i, a, k)} aria-label="Remove"><I.Close size={12} /></button>
+                <button class="arealink" title="Show this area in Area Properties (name, box, glyphs)" onclick={() => { editor.showArea(pe.area); panels.setFolded('glyphs', false); }}>area <I.Opens size={12} /></button>
               </span>
             {/each}
             <select class="add" value="" title="Add an area to this option" onchange={(e) => { addToAlt(i, a, (e.target as HTMLSelectElement).value); (e.target as HTMLSelectElement).value = ''; }}>
@@ -304,7 +305,7 @@
 
   {#if advanced}
     <select class="addpart" value="" onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') newArea = { id: '', label: '' }; else addSlot(v); (e.target as HTMLSelectElement).value = ''; }}>
-      <option value="">+ Add part ▾ (pick an area; it lands at the bottom)</option>
+      <option value="">+ Add part (pick an area; it lands at the bottom)</option>
       {#each areaKeys as ak}<option value={ak}>{areaLabel(ak)} ({ak})</option>{/each}
       <option value="__new">New area… (makes the area and the part)</option>
     </select>
@@ -339,10 +340,10 @@
   .line.sel { background: var(--sel-bg); border-color: var(--link); }
   .line.off { opacity: .55; }
   .line.dragover { border-top-color: var(--link); }
-  .grip { color: var(--ink-muted); cursor: grab; font-size: 13px; }
-  .req { color: var(--ink-muted); font-size: 8px; width: 13px; text-align: center; }
+  .grip { display: inline-flex; color: var(--ink-muted); cursor: grab; }
+  .req { display: inline-flex; justify-content: center; color: var(--ink-muted); width: 13px; }
   .gp { display: inline-flex; align-items: center; gap: 1px; height: 26px; padding: 0 3px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
-  .gp .dd { font-size: 9px; color: var(--ink-muted); }
+  .gp .dd { display: inline-flex; color: var(--ink-muted); }
   .gp.dim { opacity: .8; }
   .lbl { height: 26px; padding: 0 4px; border: 0; background: transparent; font-weight: 500; text-align: left; white-space: nowrap; }
   .lbl:hover { color: var(--link); background: transparent; }

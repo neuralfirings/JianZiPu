@@ -3,6 +3,9 @@
   import '@fontsource-variable/eb-garamond/wght.css';
   import '../app.css';
   import { onMount } from 'svelte';
+  import { setLucideProps } from '@lucide/svelte/context';
+  import * as I from '$lib/icons';
+  import { installTooltips } from '$lib/tooltip';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
@@ -15,6 +18,8 @@
   import { day, downloadZip, hhmm, pilot, welcomed } from '$lib/pilot.svelte';
   import { panels, editorPanels } from '$lib/panels.svelte';
   let { children } = $props();
+  // Icons: Lucide, drawn the design system's way (16px, 1.5px line; caps in app.css).
+  setLucideProps({ size: 16, strokeWidth: 1.5, absoluteStrokeWidth: true });
   let menu = $state(false);
   let person = $state(false);
   let pill = $state(false);
@@ -43,6 +48,7 @@
 
   onMount(() => {
     void start();
+    const offTips = installTooltips();
     const onHide = () => { if (document.visibilityState === 'hidden') app.flush(); };
     document.addEventListener('visibilitychange', onHide);
     const onUnload = (e: BeforeUnloadEvent) => { if (hosted.isHosted && app.dirty) { app.flush(); e.preventDefault(); } };
@@ -63,6 +69,7 @@
     const onClick = () => { menu = false; person = false; pill = false; };
     window.addEventListener('click', onClick);
     return () => {
+      offTips();
       window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick);
       document.removeEventListener('visibilitychange', onHide); window.removeEventListener('beforeunload', onUnload);
     };
@@ -100,7 +107,7 @@
     {#if hosted.isHosted && hosted.user}
       <span class="pill-wrap">
         <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-          ◌ Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
+          <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
         </button>
         {#if pill}
           <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
@@ -130,28 +137,28 @@
     {/if}
     {#if budget}
       <a class="pill {budget.level === 'warn' ? 'draft' : 'saved'} budget" href="/layouts?budget=1" title={budget.skipped ? `GPOS rules generated from this design; ${budget.skipped} skipped` : 'GPOS rules generated from this design'}>
-        {budget.level === 'warn' ? '!' : '✓'} {budget.rules} rules · {budget.kb.toFixed(0)} KB
+        {#if budget.level === 'warn'}<I.Warn size={14} />{:else}<I.Check size={14} />{/if}{budget.rules} rules · {budget.kb.toFixed(0)} KB
       </a>
     {/if}
     {#if !inGlyphEditor}
       <button class="quiet" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
-        title={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label}` : 'Nothing to undo'}>↶</button>
+        data-tip={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label} (⌘Z)` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
       <button class="quiet" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
-        title={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'}>↷</button>
+        data-tip={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label} (⇧⌘Z)` : 'Nothing to redo'} aria-label="Redo"><I.Redo /></button>
     {/if}
     <span class="status" role="status">
       {#if hosted.isHosted && app.offline}
-        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>! Not saved · offline</button>
+        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Alert size={14} />Not saved · offline</button>
       {:else if hosted.isHosted && app.saving}
-        <span class="pill info">◐ Saving…</span>
+        <span class="pill info"><I.Working size={14} />Saving…</span>
       {:else if app.dirty}
-        <button class="pill draft" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}>● {inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
+        <button class="pill draft" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Unsaved size={14} />{inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
       {:else if hosted.isHosted && app.lastSaved}
-        <span class="pill saved">✓ Saved to your draft · {hhmm(app.lastSaved)}</span>
+        <span class="pill saved"><I.Check size={14} />Saved to your draft · {hhmm(app.lastSaved)}</span>
       {:else if app.lastSaved}
-        <span class="pill saved">✓ {inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
+        <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
       {:else if !app.loading}
-        <span class="pill saved">✓ {inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
+        <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
       {/if}
     </span>
     {#if hosted.isHosted}
@@ -167,7 +174,7 @@
       <button class="fb" onclick={() => (feedback = true)}>Feedback</button>
     {/if}
     <span class="menu-wrap">
-      <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More">⋯</button>
+      <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More" data-tip="More: import, export, reset panels"><I.More /></button>
       {#if menu}
         <div class="menu float" role="menu">
           {#if hosted.isHosted}
@@ -215,14 +222,14 @@
     </div>
   {/if}
   {#if hosted.isHosted && hosted.signedOut}
-    <div class="banner danger"><span class="ic">!</span> <b>You've been signed out.</b> Your unsaved changes are kept in this browser. <button onclick={() => hosted.signOut()}>Sign in again</button></div>
+    <div class="banner danger"><span class="ic"><I.Alert /></span> <b>You've been signed out.</b> Your unsaved changes are kept in this browser. <button onclick={() => hosted.signOut()}>Sign in again</button></div>
   {:else if hosted.isHosted && app.offline}
-    <div class="banner danger"><span class="ic">!</span> <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
+    <div class="banner danger"><span class="ic"><I.Alert /></span> <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
       <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button></div>
   {/if}
   {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
     <div class="banner info">
-      <span class="ic">i</span>
+      <span class="ic"><I.Info /></span>
       <span><b>The font was updated{app.main?.date ? ` on ${day(app.main.date)}` : ''}</b>{app.draftBase?.version.date ? ` (since your draft started on ${day(app.draftBase.version.date)})` : ''}.</span>
       <span class="spacer"></span>
       <button onclick={() => (pilot.updateDismissed = true)}>Not now</button>
@@ -230,7 +237,7 @@
     </div>
   {/if}
   {#if app.draftRestored}
-    <div class="banner draft"><span class="ic">●</span>
+    <div class="banner draft"><span class="ic"><I.Unsaved /></span>
       {#if hosted.isHosted}
         Restored {plural(app.unsavedCount, 'change')} from your last visit that hadn't reached your draft.
         <button onclick={() => { app.draftRestored = false; app.save(); }}>Save them</button>
@@ -242,7 +249,7 @@
     </div>
   {/if}
   {#if app.error}
-    <div class="banner danger"><span class="ic">×</span> {app.error} <button onclick={() => app.load()}>Retry</button></div>
+    <div class="banner danger"><span class="ic"><I.Problem /></span> {app.error} <button onclick={() => app.load()}>Retry</button></div>
   {/if}
   {#if app.paused}
     <div class="scrim">
@@ -300,7 +307,7 @@
       <span>{pilot.toast.text}</span>
       {#if pilot.toast.copy}<button onclick={() => copyMessage(pilot.toast!.copy!)}>Copy commit message</button>{/if}
       {#if pilot.toast.undo}<button onclick={() => { app.undo(); pilot.toast = null; }}>Undo</button>{/if}
-      <button class="x" onclick={() => (pilot.toast = null)} aria-label="Close">×</button>
+      <button class="x" onclick={() => (pilot.toast = null)} aria-label="Close"><I.Close /></button>
     </div>
   {/if}
 </div>

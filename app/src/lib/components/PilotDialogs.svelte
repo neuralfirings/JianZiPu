@@ -1,6 +1,7 @@
 <script lang="ts">
   // The hosted pilot's dialogs (docs/PILOT-UX.md): welcome note, Export / Discard my draft,
   // "saved somewhere else", and Update my draft to the font.
+  import * as I from '$lib/icons';
   import { goto } from '$app/navigation';
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
@@ -54,8 +55,8 @@
         <p>Thank you for testing the JianZiPu Font Builder. Three things to know:</p>
         <ol class="three">
           <li><b>This is your own draft.</b> Change anything: glyphs, how they're typed, how words are laid out. Nothing you do changes the real font or anyone else's work.</li>
-          <li><b>It saves itself</b> every 30 seconds, and when you press Save. ↶ undoes a step.</li>
-          <li><b>Tell us what you think.</b> Confusing, broken or lovely: Feedback (top right) takes a minute. To share your work itself, ⋯ → Export my draft.</li>
+          <li><b>It saves itself</b> every 30 seconds, and when you press Save. <I.Undo class="inl" aria-label="Undo" /> undoes a step.</li>
+          <li><b>Tell us what you think.</b> Confusing, broken or lovely: Feedback (top right) takes a minute. To share your work itself, <I.More class="inl" aria-label="More" /> → Export my draft.</li>
         </ol>
         <p class="muted small">Good places to start: Build & test (type a few words), then Glyphs → open a glyph → Edit.</p>
         <div class="row end">
@@ -64,7 +65,7 @@
         </div>
       {:else if pilot.dialog === 'export'}
         <h3>Export your draft</h3>
-        <p>One .zip with everything in your draft. Send it to Nancy, or keep it as a backup: ⋯ → Import opens it again.</p>
+        <p>One .zip with everything in your draft. Send it to Nancy, or keep it as a backup: <I.More class="inl" aria-label="More" /> → Import opens it again.</p>
         {#if counts}<p class="muted">{plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}, with design.json and components.csv.</p>{/if}
         {#if app.dirty}<p class="muted small">Includes unsaved edits too ({app.unsavedCount} right now), so what you download is what you see.</p>{/if}
         <div class="row end">
@@ -117,7 +118,7 @@
           </div>
         {/if}
         {#if auto.length}
-          <button class="link" onclick={() => (showAuto = !showAuto)}>{showAuto ? '▾' : '▸'} {plural(auto.length, 'change')} that come in on their own</button>
+          <button class="link" onclick={() => (showAuto = !showAuto)}>{#if showAuto}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if} {plural(auto.length, 'change')} that come in on their own</button>
           {#if showAuto}<ul class="auto">{#each auto as it}<li>{what(it)}{#if it.kind === 'design'} <span class="muted">· {it.summary.join(', ')}</span>{/if}</li>{/each}</ul>{/if}
         {/if}
         <div class="row end">

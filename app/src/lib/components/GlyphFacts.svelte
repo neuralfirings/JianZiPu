@@ -2,6 +2,7 @@
   // One glyph's facts: name, the areas it belongs to (× removes, + adds: a design edit,
   // saved with the design), the box it gets from its first area, and its SVG file.
   // Shown in the Glyphs inspector and in the glyph editor's Glyph panel.
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   let { glyph, showBox = true, showName = true }: { glyph: string; showBox?: boolean; showName?: boolean } = $props();
 
@@ -17,7 +18,7 @@
     <div class="h"><strong class="mono">{glyph}</strong>{#if app.charOf(glyph)} <span>{app.charOf(glyph)}</span>{/if}{#if !svg}<span class="badge-warn"> · no SVG on disk</span>{/if}</div>
   {/if}
   <div class="row"><span class="k">In areas</span>
-    {#each mine as a (a)}<span class="chip">{app.areaLabel(a)} <span class="id">{a}</span> <button class="x" title="Remove from {a}" onclick={() => app.removeFromArea(a, glyph)}>×</button></span>{/each}
+    {#each mine as a (a)}<span class="chip">{app.areaLabel(a)} <span class="id">{a}</span> <button class="x" title="Remove from {a}" onclick={() => app.removeFromArea(a, glyph)} aria-label="Remove from {a}"><I.Close size={12} /></button></span>{/each}
     <select onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) app.addToArea(v, [glyph]); (e.target as HTMLSelectElement).value = ''; }}>
       <option value="">+ Add to area…</option>
       {#each areaNames.filter((a) => !mine.includes(a)) as a}<option value={a}>{app.areaLabel(a)} ({a})</option>{/each}

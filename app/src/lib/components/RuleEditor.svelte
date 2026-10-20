@@ -1,6 +1,7 @@
 <script lang="ts">
   // Edit one rule: which glyphs of the part and of its base it covers, and
   // the gap. The canvas previews the rule live (overlay or one combination).
+  import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
   import { elementLabel, elementNames } from '$lib/shape';
@@ -116,7 +117,7 @@
           <button class="cell" class:on class:shadow={sh > 0} title={sh > 0 ? `${g}: already caught by rule ${sh}, this rule will not reach it` : `${g} (shift-click to preview)`} onclick={(ev) => cellClick(ev, 'elem', g)}>
             <Glyph name={g} size={30} />{#if sh > 0}<span class="sn">{sh}</span>{/if}
           </button>
-          {#if canPreview('elem', g)}<button class="eye" title="Preview {g} on the canvas" onclick={() => preview('elem', g)}>◉</button>{/if}
+          {#if canPreview('elem', g)}<button class="eye" title="Preview {g} on the canvas" onclick={() => preview('elem', g)} aria-label="Preview {g}"><I.Preview size={10} /></button>{/if}
         </span>
       {/each}
     </div>
@@ -134,7 +135,7 @@
           <button class="cell" class:on class:shadow={sh > 0} title={sh > 0 ? `${g}: already caught by rule ${sh}` : `${g} (shift-click to preview)`} onclick={(ev) => cellClick(ev, 'base', g)}>
             <Glyph name={g} size={30} />{#if sh > 0}<span class="sn">{sh}</span>{/if}
           </button>
-          {#if canPreview('base', g)}<button class="eye" title="Preview {g} on the canvas" onclick={() => preview('base', g)}>◉</button>{/if}
+          {#if canPreview('base', g)}<button class="eye" title="Preview {g} on the canvas" onclick={() => preview('base', g)} aria-label="Preview {g}"><I.Preview size={10} /></button>{/if}
         </span>
       {/each}
     </div>
@@ -161,14 +162,14 @@
       <label><input type="checkbox" bind:checked={re.overlay} /> overlay all {combos.n} combinations</label>
       {#if !re.overlay}
         <span class="spacer"></span>
-        <button class="tiny" onclick={() => (re.step -= 1)}>◀</button>
+        <button class="tiny" onclick={() => (re.step -= 1)} aria-label="Previous"><I.Prev size={14} /></button>
         <span class="small mono">{combos.k + 1}/{combos.n}</span>
-        <button class="tiny" onclick={() => (re.step += 1)}>▶</button>
+        <button class="tiny" onclick={() => (re.step += 1)} aria-label="Next"><I.Next size={14} /></button>
         <button class="tiny" title="Show a random combination" onclick={randomCombo}>random</button>
         <span class="shown">
-          {#if combos.shown.elem}<button class="thumb" data-gpop-anchor title="Choose which {label} glyph to preview" onclick={(ev) => openMenu(ev, 'elem')}><Glyph name={combos.shown.elem} size={18} />{#if combos.elems.length > 1}<span class="dd">▾</span>{/if}</button>{/if}
+          {#if combos.shown.elem}<button class="thumb" data-gpop-anchor title="Choose which {label} glyph to preview" onclick={(ev) => openMenu(ev, 'elem')}><Glyph name={combos.shown.elem} size={18} />{#if combos.elems.length > 1}<span class="dd"><I.Dropdown size={12} /></span>{/if}</button>{/if}
           {#if combos.shown.elem && combos.shown.base}<span class="muted">·</span>{/if}
-          {#if combos.shown.base}<button class="thumb" data-gpop-anchor title="Choose which {baseLabel} glyph to preview" onclick={(ev) => openMenu(ev, 'base')}><Glyph name={combos.shown.base} size={18} />{#if combos.bases.length > 1}<span class="dd">▾</span>{/if}</button>{/if}
+          {#if combos.shown.base}<button class="thumb" data-gpop-anchor title="Choose which {baseLabel} glyph to preview" onclick={(ev) => openMenu(ev, 'base')}><Glyph name={combos.shown.base} size={18} />{#if combos.bases.length > 1}<span class="dd"><I.Dropdown size={12} /></span>{/if}</button>{/if}
         </span>
       {/if}
     </div>
@@ -196,7 +197,7 @@
   .cellwrap.shown { box-shadow: 0 0 0 2px var(--ink); }
   .cell { position: relative; width: 36px; height: 36px; padding: 2px; border: 1px solid transparent; background: transparent; border-radius: 4px; }
   .eye { position: absolute; left: -3px; bottom: -3px; width: 16px; height: 16px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-field); color: var(--ink-muted); font-size: 10px; line-height: 14px; display: none; }
-  .cellwrap:hover .eye, .cellwrap.shown .eye { display: block; }
+  .cellwrap:hover .eye, .cellwrap.shown .eye { display: inline-flex; }
   .cellwrap.shown .eye { color: var(--ink); border-color: var(--ink); }
   .eye:hover { color: var(--link); border-color: var(--link); }
   .cell:hover { border-color: var(--border); }
@@ -213,6 +214,6 @@
   .shown { display: inline-flex; align-items: center; gap: 3px; }
   .thumb { display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
   .thumb:hover { border-color: var(--link); }
-  .dd { font-size: 9px; color: var(--ink-muted); }
+  .dd { display: inline-flex; color: var(--ink-muted); }
   .wrap { flex-wrap: wrap; }
 </style>

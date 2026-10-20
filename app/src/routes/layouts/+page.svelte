@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as I from '$lib/icons';
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
@@ -479,9 +480,9 @@
       <label><input type="checkbox" bind:checked={editor.showGlyphs} /> glyphs</label>
       <span class="spacer"></span>
       <span class="zoom" title="Zoom: ⌘ + scroll or pinch on the canvas, + / − keys; ⇧1 fits">
-        <button class="ghost" onclick={() => setZoom(zoom / 1.25)} disabled={zoom <= 0.25} aria-label="Zoom out">−</button>
+        <button class="ghost" onclick={() => setZoom(zoom / 1.25)} disabled={zoom <= 0.25} aria-label="Zoom out" data-tip="Zoom out (−)"><I.Minus /></button>
         <span class="pct">{Math.round(zoom * 100)}%</span>
-        <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in">+</button>
+        <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in" data-tip="Zoom in (+)"><I.Plus /></button>
         <button class="ghost" onclick={() => setZoom(1)} disabled={zoom === 1} title="Fit the word to the canvas (⇧1)">Fit</button>
       </span>
       {#if editor.resolving}<span class="muted">Updating…</span>{/if}
@@ -497,11 +498,11 @@
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
         onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
     </div>
-    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}>×</button></div>{/if}
+    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">
       {#if editor.boxEdit && editor.dragDesign}{@const be = editor.boxEdit}{@const old = d.areas[be.area]?.size ?? be.size}Box of {app.areaLabel(be.area)} {old[0]} × {old[1]} → <b>{be.size[0]} × {be.size[1]}</b>, not applied: moves parts in {usedIn(d, be.area).length} word type{usedIn(d, be.area).length === 1 ? '' : 's'}. <b>Enter</b> applies · <b>Esc</b> cancels.
     {:else if editor.dragLabel}{editor.dragLabel}
-      {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><b>× Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
+      {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><I.Problem size={14} /> <b>Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
       {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
       {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
       {:else}Click a part to see and edit its spacing.{/if}

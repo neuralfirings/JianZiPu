@@ -1,6 +1,7 @@
 <script lang="ts">
   // "Ask for an invite" and "Feedback": a dialog that posts to Formspree (lib/forms.ts) and
   // thanks you in place. Feedback also sends the screen it was opened from and the app version.
+  import * as I from '$lib/icons';
   import { onMount } from 'svelte';
   import { sendForm, type FormKind } from '$lib/forms';
 
@@ -61,7 +62,7 @@
         {/if}
         <!-- Formspree's spam trap: people never see or fill it -->
         <input class="trap" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" bind:value={gotcha} />
-        {#if err}<p class="banner danger" role="alert"><span class="ic">×</span>{err}</p>{/if}
+        {#if err}<p class="banner danger" role="alert"><span class="ic"><I.Problem /></span>{err}</p>{/if}
         <div class="row end">
           <button type="button" onclick={onclose}>Cancel</button>
           <button class="primary" disabled={!ready || busy}>{busy ? 'Sending…' : kind === 'invite' ? 'Ask for an invite' : 'Send feedback'}</button>

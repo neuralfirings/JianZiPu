@@ -120,6 +120,12 @@ toasts, dialogs, drags); sentence case, no emoji, no exclamation marks.
   (dialog), `.float` (menus, popovers).
 - Fonts are self-hosted from `@fontsource-variable/{literata,eb-garamond}` (imported in
   `routes/+layout.svelte`); Chinese falls back to Noto Serif SC / Songti.
+- Icons are Lucide (`@lucide/svelte`), imported only through `app/src/lib/icons.ts`, which names each
+  one by its job (`<I.Close />`, `<I.Folded />`, `<I.Warn />`…); 16px / 1.5px is set once in
+  `routes/+layout.svelte`, square caps in `app.css`. Use those names instead of text symbols
+  (×, ▾, ⋯, ✓…); `{@html}` help strings can't hold components, so name the button in words there.
+- Icon-only buttons say what they do with `data-tip="…"` (instant tooltip, `lib/tooltip.ts`; add
+  `data-tip-side="right"` beside a left rail) plus an `aria-label`, not `title`, which shows only after a delay.
 - Canvas: part boxes 1px `--ov-part`, anchor `--ov-anchor`, active part 2px `--ov-active` with
   `--ov-handle` handles, area/rule base `--ov-area`, measurements `--ov-measure`, guides dashed
   `--ov-guide`; Review's Before / After use `--ov-before` (dashed) / `--ov-after` (`SvgText` `tone`).
