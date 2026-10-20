@@ -6,6 +6,10 @@ Serves the built app (app/build/, if present) and this folder as static
 files, plus a JSON API over the repo's input files. Local mode (default): single user,
 binds 127.0.0.1, every write goes to the real files under inputs/.
 
+Every request first passes request_problem(): locally the Host header must name this machine
+(DNS-rebinding guard), a write carrying a foreign Origin is refused, and POST/PUT bodies must be
+application/json. URL paths with `..` segments get a 404.
+
 Hosted mode (--hosted or JZP_HOSTED=1, see hosted.py): the pilot on a public host. Read-only
 (PUTs answer 403; testers' work lives in their own drafts, kept by the app in Supabase), every
 POST needs a signed-in tester (Supabase access token in `Authorization: Bearer`), builds take the
@@ -59,7 +63,7 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from . import config, data, glyphs, hosted, typing_preview
 from .positioning import emit, resolve, schema, shapes
@@ -69,7 +73,9 @@ APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
 SETTINGS = hosted.Settings()          # replaced in main(); local mode by default
 AUTH: hosted.Auth | None = None
 MAIN = "main"                         # owner of the checked-in font's build (hosted mode)
-MAX_BODY = 32 * 1024 * 1024
+MAX_BODY = 16 * 1024 * 1024           # a whole draft (design, spellings, changed SVGs) fits many times over
+MAX_WORDS = 2000                      # per request, for /api/words and /api/typing/preview
+MAX_WORD_LEN = 200
 
 
 # ---------------------------------------------------------------- helpers
@@ -233,6 +239,24 @@ def words_payload(design: schema.Design, words: list[str], runs: list[list[str]]
     return {"ok": True, "words": out}
 
 
+def word_list(body: dict, key: str = "words") -> list[str]:
+    """The non-empty words of body[key], refusing lists or words too big to shape on request."""
+    words = body.get(key) or []
+    if not isinstance(words, list):
+        raise ValueError(f"{key} must be a list")
+    if len(words) > MAX_WORDS:
+        raise ValueError(f"too many words ({len(words)}); at most {MAX_WORDS} at a time")
+    out = []
+    for w in words:
+        if not isinstance(w, str):
+            raise ValueError(f"{key} must be strings")
+        if len(w) > MAX_WORD_LEN:
+            raise ValueError(f"a word longer than {MAX_WORD_LEN} characters")
+        if w:
+            out.append(w)
+    return out
+
+
 # ---------------------------------------------------------------- build runner
 
 class BuildRunner:
@@ -243,6 +267,7 @@ class BuildRunner:
     font built at start-up. Ids are random, so a build's URL is only known to its owner."""
 
     KEEP = 8                                  # per owner
+    COOLDOWN = 20                             # hosted: seconds between one tester's build starts
 
     def __init__(self):
         self.lock = threading.Lock()
@@ -256,11 +281,16 @@ class BuildRunner:
         return self.jobs.setdefault(owner, {"state": "idle", "log": [], "started": None, "finished": None, "ok": None})
 
     def start(self, owner: str = "local", inputs: dict | None = None) -> tuple[bool, str | None]:
-        """Start a build of the files on disk, or of `inputs` (a draft). False + why when busy."""
+        """Start a build of the files on disk, or of `inputs` (a draft). False + why when busy, or
+        (hosted) when the same tester started one less than COOLDOWN seconds ago."""
         with self.lock:
             if self.running is not None:
                 return False, ("a build is already running" if self.running == owner
                                else "Another font is being built right now; try again in a minute.")
+            last = self.jobs.get(owner, {}).get("started")
+            if SETTINGS.hosted and owner != MAIN and last and time.time() - last < self.COOLDOWN:
+                wait = int(self.COOLDOWN - (time.time() - last)) + 1
+                return False, f"You just built a font; try again in {wait} seconds."
             self._seq += 1
             work = Path(tempfile.mkdtemp(prefix=f"jzp-build-{self._seq}-"))
             job = self.job(owner)
@@ -336,8 +366,11 @@ class BuildRunner:
         self.builds = []
 
     def public(self, b: dict) -> dict:
-        return {"id": b["id"], "time": b["time"], "bytes": b["bytes"], "ok": b["ok"], "seconds": b["seconds"],
-                "url": f"/api/builds/{b['id']}/JianZiPu.ttf", "file": str(b["path"])}
+        out = {"id": b["id"], "time": b["time"], "bytes": b["bytes"], "ok": b["ok"], "seconds": b["seconds"],
+               "url": f"/api/builds/{b['id']}/JianZiPu.ttf"}
+        if not SETTINGS.hosted:              # where it sits on the server is only your business locally
+            out["file"] = str(b["path"])
+        return out
 
     def status(self, owner: str = "local") -> dict:
         job = self.job(owner)
@@ -515,7 +548,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     prev = typing_preview.FONTS.get(base, rows, design)
     out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars,
                roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
-    words = [w for w in body.get("words", []) if w]
+    words = word_list(body)
     if words:
         shaped = typing_preview.shape(prev, words)
         sd = schema.parse_design(design)
@@ -523,7 +556,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         for w, s in zip(laid, shaped):
             w["texts"] = s["texts"]
         out["words"] = laid
-    compare = [w for w in body.get("compare_words", []) if w]
+    compare = word_list(body, "compare_words")
     if compare and body.get("base_rows") is not None:
         before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design), compare)
         after = typing_preview.shape(prev, compare)
@@ -534,9 +567,78 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
 
 # ---------------------------------------------------------------- HTTP
 
+LOOPBACK = {"127.0.0.1", "localhost", "::1"}
+EXTRA_HOSTS: set[str] = set()          # main(): the --host address, when it isn't a wildcard
+
+
+def _hostname(value: str | None) -> str | None:
+    """'localhost:5713' / '[::1]:5713' / 'http://x.y:1' -> the bare, lower-case host name."""
+    if not value:
+        return None
+    try:
+        return urlparse(value if "//" in value else f"//{value}").hostname
+    except ValueError:
+        return None
+
+
+def request_problem(method: str, headers, hosted_mode: bool) -> tuple[int, str] | None:
+    """Why a request is refused before it is handled, or None. Guards the local server against
+    DNS rebinding (a site whose name points at 127.0.0.1) and cross-site requests:
+      - local mode: the Host header must name this machine (loopback, or the --host address);
+      - writes (POST/PUT/DELETE) carrying an Origin must come from the same host the request
+        names (hosted, behind the proxy) or from a loopback origin (local, incl. the Vite dev server);
+      - a POST/PUT body must be JSON, so a plain cross-site form can't send one."""
+    host = _hostname(headers.get("Host"))
+    if not hosted_mode and host not in LOOPBACK | EXTRA_HOSTS:
+        return 403, "This Builder only answers on localhost."
+    if method in ("POST", "PUT", "DELETE"):
+        origin = headers.get("Origin")
+        if origin:
+            o = _hostname(origin)
+            ok = (o == host) if hosted_mode else (o in LOOPBACK | EXTRA_HOSTS)
+            if not ok:
+                return 403, "Cross-site request refused."
+    if method in ("POST", "PUT") and int(headers.get("Content-Length") or 0) > 0:
+        ctype = (headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return 415, "Send JSON (Content-Type: application/json)."
+    return None
+
+
+def _safe_path(path: str) -> bool:
+    """False for a URL path that tries to leave the folder it names: a `..` or `.` segment
+    (also percent-encoded), a backslash or a NUL. Such a request gets a 404 before any
+    file lookup."""
+    p = unquote(path)
+    if "\\" in p or "\x00" in p:
+        return False
+    return not any(seg in ("..", ".") for seg in p.split("/"))
+
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    # the rest of the policy is in the page (<meta>, app/svelte.config.js); these parts only work as a header
+    "Content-Security-Policy": "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
+
+
 class Handler(SimpleHTTPRequestHandler):
+    server_version = "JZPBuilder"
+    sys_version = ""                         # no Python version in the Server header
+
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=str(config.BUILDER_DIR), **kw)
+
+    def end_headers(self):
+        for k, v in SECURITY_HEADERS.items():
+            self.send_header(k, v)
+        if SETTINGS.hosted:                  # served over HTTPS by the host's proxy
+            self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        super().end_headers()
 
     # -- plumbing
     def _json(self, obj, status=200):
@@ -573,7 +675,39 @@ class Handler(SimpleHTTPRequestHandler):
         auth = self.headers.get("Authorization") or ""
         token = auth[7:].strip() if auth.lower().startswith("bearer ") else None
         user = AUTH.user(token) if AUTH else None
-        return user["id"] if user else None
+        self._who = user["id"] if user else None
+        return self._who
+
+    def _fail(self, err: Exception, status: int = 500):
+        """An unexpected error. Locally the message and traceback go to the app (it's your machine);
+        hosted, they go to the server log and the tester gets a plain sentence."""
+        import traceback
+        tb = traceback.format_exc()
+        if SETTINGS.hosted:
+            sys.stderr.write(f"error {self.command} {urlparse(self.path).path}: {tb}\n")
+            return self._json({"ok": False, "error": "Something went wrong on the server. Try again, or send feedback."}, status)
+        return self._json({"ok": False, "error": str(err), "traceback": tb}, status)
+
+    def _refused(self, method: str) -> bool:
+        """Answer and return True when request_problem() refuses this request."""
+        self._who = None                     # per request: who is asking (the audit log)
+        why = request_problem(method, self.headers, SETTINGS.hosted)
+        if why is None:
+            return False
+        self._json({"ok": False, "error": why[1]}, why[0])
+        return True
+
+    def log_request(self, code="-", size="-"):
+        """Hosted: one line per API call for the audit trail -- time, client, method, path (no query),
+        status and the tester's id. Never the token or the body. Local: API calls stay quiet."""
+        path = urlparse(self.path).path
+        if SETTINGS.hosted and path.startswith("/api/"):
+            fwd = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip() or self.client_address[0]
+            code = getattr(code, "value", code)
+            sys.stderr.write(f"{self.log_date_time_string()} api {fwd} {self.command} {path} {code} "
+                             f"user={getattr(self, '_who', None) or '-'}\n")
+            return
+        super().log_request(code, size)
 
     def log_message(self, fmt, *args):
         if "/api/" in (args[0] if args else ""):
@@ -581,13 +715,15 @@ class Handler(SimpleHTTPRequestHandler):
         super().log_message(fmt, *args)
 
     def _serve_app(self, path: str) -> bool:
-        """Serve the built SvelteKit app (SPA fallback to index.html)."""
+        """Serve the built SvelteKit app (SPA fallback to index.html). Never a file outside
+        app/build: the target is resolved (symlinks and all) and must stay inside it."""
         if not APP_BUILD_DIR.exists():
             return False
-        rel = path.lstrip("/") or "index.html"
-        target = (APP_BUILD_DIR / rel)
-        if not target.is_file():
-            target = APP_BUILD_DIR / "index.html"
+        root = APP_BUILD_DIR.resolve()
+        rel = unquote(path).lstrip("/") or "index.html"
+        target = (root / rel).resolve()
+        if not target.is_relative_to(root) or not target.is_file():
+            target = root / "index.html"
         ctype = self.guess_type(str(target))
         body = target.read_bytes()
         self.send_response(200)
@@ -600,7 +736,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     # -- routes
     def do_GET(self):
+        if self._refused("GET"):
+            return
         path = urlparse(self.path).path
+        if not _safe_path(path):
+            return self._json({"ok": False, "error": "not found"}, 404)
         try:
             if path == "/api/design":
                 return self._json(_design_payload())
@@ -626,8 +766,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._font(b["path"], attachment="download=1" in (urlparse(self.path).query or ""))
             if path.startswith("/api/"):
                 return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
+        except hosted.AuthUnavailable as err:
+            return self._json({"ok": False, "error": str(err)}, 503)
         except Exception as err:  # noqa: BLE001
-            return self._json({"ok": False, "error": str(err)}, 500)
+            return self._fail(err)
         if path == "/JianZiPu.ttf":
             font = BUILD.latest_for(MAIN if SETTINGS.hosted else "local") or (
                 config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None)
@@ -643,6 +785,8 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        if self._refused("POST"):
+            return
         path = urlparse(self.path).path
         try:
             owner = self._owner()
@@ -660,7 +804,7 @@ class Handler(SimpleHTTPRequestHandler):
                                                   body.get("center", True)))
             if path == "/api/words":
                 design = _design_from(body)
-                return self._json(words_payload(design, list(body.get("words", [])), font=BUILD.font_for(owner)))
+                return self._json(words_payload(design, word_list(body), font=BUILD.font_for(owner)))
             if path == "/api/typing/preview":
                 return self._json(typing_payload(body, owner))
             if path == "/api/svg/check":
@@ -673,13 +817,16 @@ class Handler(SimpleHTTPRequestHandler):
                 started, why = BUILD.start(owner, inputs or None)
                 return self._json({"ok": started, "status": BUILD.status(owner), "error": why})
             return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
+        except hosted.AuthUnavailable as err:
+            return self._json({"ok": False, "error": str(err)}, 503)
         except (schema.DesignError, ValueError, KeyError) as err:
             return self._json({"ok": False, "error": str(err)}, 400)
         except Exception as err:  # noqa: BLE001
-            import traceback
-            return self._json({"ok": False, "error": str(err), "traceback": traceback.format_exc()}, 500)
+            return self._fail(err)
 
     def do_PUT(self):
+        if self._refused("PUT"):
+            return
         path = urlparse(self.path).path
         if SETTINGS.hosted:
             return self._json({"ok": False, "readonly": True,
@@ -718,11 +865,12 @@ class Handler(SimpleHTTPRequestHandler):
         except schema.DesignError as err:
             return self._json({"ok": False, "error": str(err)}, 400)
         except Exception as err:  # noqa: BLE001
-            import traceback
-            return self._json({"ok": False, "error": str(err), "traceback": traceback.format_exc()}, 500)
+            return self._fail(err)
 
 
     def do_DELETE(self):
+        if self._refused("DELETE"):
+            return
         path = urlparse(self.path).path
         if SETTINGS.hosted:
             return self._json({"ok": False, "readonly": True,
@@ -752,6 +900,8 @@ def main(argv=None):
     if names:
         print(f"read {', '.join(sorted(names))} from {config.BUILDER_DIR / '.env'}")
     SETTINGS = hosted.Settings.from_env(hosted=True if args.hosted else None)
+    if args.host not in ("0.0.0.0", "::", ""):
+        EXTRA_HOSTS.add(args.host.lower())
     if not SETTINGS.hosted and SETTINGS.supabase_service_key:
         print("note: SUPABASE_SERVICE_KEY is only for the hosted server; this local server doesn't need it")
     if SETTINGS.hosted:

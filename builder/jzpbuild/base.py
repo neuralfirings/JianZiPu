@@ -87,8 +87,6 @@ def set_metadata(font: TTFont) -> None:
     name = newTable("name")
     name.names = []
     font["name"] = name
-    ids = {0: "copyright", 1: "familyName", 2: "styleName",
-           3: "uniqueFontIdentifier", 4: "fullName", 5: "version", 6: "psName"}
-    for nid, key in ids.items():
+    for nid, key in config.NAME_IDS.items():
         name.setName(config.NAMES[key], nid, 3, 1, 0x409)
         name.setName(config.NAMES[key], nid, 1, 0, 0)

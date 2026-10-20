@@ -160,6 +160,8 @@ def test_write_refuses_a_clash_and_leaves_the_file(csv_copy):
 @pytest.fixture(scope="session")
 def built_font(tmp_path_factory):
     import subprocess
+    if not config.SOURCE_FONT.exists():
+        pytest.skip("needs the base font (src_font/TW-Kai-98.ttf), which isn't in the repo")
     out = tmp_path_factory.mktemp("font") / "JianZiPu.ttf"
     subprocess.run([sys.executable, "-m", "jzpbuild", "-o", str(out), "--fea-out", ""],
                    cwd=Path(__file__).resolve().parent.parent, check=True, capture_output=True)

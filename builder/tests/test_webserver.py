@@ -150,3 +150,121 @@ def test_http_delete(server, svg_dir):
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.urlopen(req, timeout=10)
     assert e.value.code == 404
+
+
+# ---------------------------------------------------------------- path traversal
+
+TRAVERSALS = ["/../../builder/.env.example", "/" + "../" * 30 + "etc/passwd", "/%2e%2e/%2e%2e/builder/pyproject.toml",
+              "/assets/../../../builder/pyproject.toml", "/..%2f..%2fbuilder/pyproject.toml", "/inputs/../jzpbuild/config.py"]
+
+
+@pytest.fixture
+def app_build(tmp_path, monkeypatch):
+    d = tmp_path / "appbuild"
+    d.mkdir()
+    (d / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", d)
+    return d
+
+
+def raw_get(base, path):
+    """GET with the path sent exactly as written (urllib would leave it alone too, but be sure)."""
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("GET", path, skip_host=True)
+    c.putheader("Host", f"{host}:{port}")
+    c.endheaders()
+    r = c.getresponse()
+    body = r.read()
+    c.close()
+    return r.status, body
+
+
+@pytest.mark.parametrize("path", TRAVERSALS)
+def test_no_path_traversal(server, app_build, path):
+    status, body = raw_get(server, path)
+    assert status == 404 or body.startswith(b"<!doctype html><title>app")
+    assert b"root:" not in body and b"[project]" not in body and b"SUPABASE" not in body and b"SOURCE_FONT" not in body
+
+
+def test_safe_path():
+    assert webserver._safe_path("/glyphs/md_9/edit")
+    assert webserver._safe_path("/_app/immutable/x.js")
+    for p in ("/../x", "/a/../b", "/%2e%2e/x", "/a/./b", "/a\\b", "/a%00b", "/..%2fx"):
+        assert not webserver._safe_path(p), p
+
+
+# ---------------------------------------------------------------- Host / Origin / Content-Type
+
+def raw(base, method, path, headers, body=b""):
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest(method, path, skip_host=True)
+    hs = {"Host": f"{host}:{port}", **headers}
+    if body:
+        hs["Content-Length"] = str(len(body))
+    for k, v in hs.items():
+        if v is not None:
+            c.putheader(k, v)
+    c.endheaders(body or None)
+    r = c.getresponse()
+    out = r.status, r.read()
+    c.close()
+    return out
+
+
+def test_foreign_host_is_refused(server):
+    """DNS rebinding: a page on evil.example whose name resolves to 127.0.0.1."""
+    status, body = raw(server, "GET", "/api/design", {"Host": "evil.example:5713"})
+    assert status == 403 and b"localhost" in body
+
+
+@pytest.mark.parametrize("host", ["localhost:5173", "127.0.0.1:5713", "[::1]:5713", "LOCALHOST"])
+def test_loopback_hosts_are_fine(server, host):
+    status, _ = raw(server, "GET", "/api/config", {"Host": host})
+    assert status == 200
+
+
+def test_cross_site_writes_are_refused(server, svg_dir):
+    body = json.dumps({"svg": SQUARE}).encode()
+    for method, path in (("PUT", "/api/svg/zz_x"), ("POST", "/api/svg/check"), ("DELETE", "/api/svg/zz_x")):
+        status, _ = raw(server, method, path, {"Origin": "https://evil.example", "Content-Type": "application/json"},
+                        body if method != "DELETE" else b"")
+        assert status == 403, method
+    assert not (svg_dir / "zz_x.svg").exists()
+
+
+def test_same_origin_and_dev_server_writes_work(server, svg_dir):
+    body = json.dumps({"svg": SQUARE}).encode()
+    status, _ = raw(server, "PUT", "/api/svg/zz_y", {"Origin": server, "Content-Type": "application/json"}, body)
+    assert status == 200
+    status, _ = raw(server, "POST", "/api/svg/check", {"Origin": "http://localhost:5173", "Host": "localhost:5173",
+                                                       "Content-Type": "application/json"}, body)
+    assert status == 200
+
+
+def test_writes_need_json(server, svg_dir):
+    """A cross-site <form> or a text/plain fetch can't send application/json without a preflight."""
+    body = json.dumps({"svg": SQUARE}).encode()
+    for ctype in ("text/plain", "application/x-www-form-urlencoded", None):
+        status, _ = raw(server, "PUT", "/api/svg/zz_z", {"Content-Type": ctype}, body)
+        assert status == 415, ctype
+    assert not (svg_dir / "zz_z.svg").exists()
+    status, _ = raw(server, "PUT", "/api/svg/zz_z", {"Content-Type": "application/json; charset=utf-8"}, body)
+    assert status == 200
+
+
+def test_security_headers(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", "/api/config")
+    r = c.getresponse()
+    r.read()
+    assert r.getheader("X-Content-Type-Options") == "nosniff"
+    assert "frame-ancestors 'none'" in r.getheader("Content-Security-Policy")
+    assert r.getheader("X-Frame-Options") == "DENY"
+    assert "Python" not in (r.getheader("Server") or "")
+    assert r.getheader("Strict-Transport-Security") is None          # local: plain http

@@ -266,3 +266,129 @@ def test_a_draft_builds_into_a_font_with_its_new_glyph(runner):
     assert "md_zztest" in font.getGlyphOrder()
     assert config.DESIGN_JSON.read_text(encoding="utf-8") == before
     data.cache_clear_all()
+
+
+@pytest.mark.parametrize("path", ["/../../builder/.env.example", "/" + "../" * 30 + "etc/passwd",
+                                  "/%2e%2e/%2e%2e/builder/jzpbuild/hosted.py", "/" + "../" * 30 + "etc/hosts"])
+def test_no_path_traversal(server, tmp_path, monkeypatch, path):
+    import http.client
+    d = tmp_path / "appbuild"
+    d.mkdir()
+    (d / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", d)
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("GET", path, skip_host=True)
+    c.putheader("Host", f"{host}:{port}")
+    c.endheaders()
+    r = c.getresponse()
+    body = r.read()
+    assert r.status == 404 or body.startswith(b"<!doctype html><title>app")
+    assert b"root:" not in body and b"localhost" not in body and b"SERVICE-SECRET" not in body
+
+
+def test_hosted_cross_site_posts_are_refused(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    body = json.dumps({"svg": SQUARE}).encode()
+    for origin, want in (("https://evil.example", 403), (f"http://{host}:{port}", 200)):
+        c = http.client.HTTPConnection(host, int(port), timeout=10)
+        c.request("POST", "/api/svg/check", body=body, headers={"Origin": origin, "Content-Type": "application/json",
+                                                                "Authorization": "Bearer tok-a"})
+        assert c.getresponse().status == want, origin
+        c.close()
+
+
+def test_hosted_errors_carry_no_internals(server, monkeypatch, capsys):
+    """A crash answers with a plain sentence; the traceback goes to the server log only."""
+    def boom(*a, **k):
+        raise RuntimeError("secret detail /repo/builder/x.py")
+    monkeypatch.setattr(webserver, "typing_payload", boom)
+    status, r = call(server, "POST", "/api/typing/preview", {"rows": []}, token="tok-a")
+    assert status == 500 and "traceback" not in r and "secret detail" not in r["error"]
+
+
+def test_hosted_build_list_has_no_server_paths(server, runner):
+    fake_build(runner, "user-a")
+    status, r = call(server, "GET", "/api/build/status", token="tok-a")
+    assert status == 200 and r["build"] and "file" not in r["build"]
+    assert all("file" not in b for b in r["builds"])
+
+
+def test_sign_in_service_down_is_a_503_without_details(server, hosted_mode, monkeypatch):
+    def down(token):
+        raise hosted.AuthUnavailable("The sign-in service isn't answering. Try again in a minute.")
+    monkeypatch.setattr(webserver.AUTH, "fetch_user", down)
+    status, r = call(server, "POST", "/api/svg/check", {"svg": SQUARE}, token="tok-new")
+    assert status == 503 and "urlopen" not in r["error"]
+    status, r = call(server, "GET", "/api/build/status", token="tok-new")
+    assert status == 503
+
+
+def test_fetch_user_maps_network_errors(monkeypatch):
+    import urllib.error
+    a = hosted.Auth(hosted.Settings(hosted=True, supabase_url="https://example.supabase.co", supabase_anon_key="anon"))
+
+    def raise_(exc):
+        def f(*args, **kw):
+            raise exc
+        return f
+    monkeypatch.setattr(urllib.request, "urlopen", raise_(urllib.error.URLError("nodename nor servname")))
+    with pytest.raises(hosted.AuthUnavailable):
+        a.fetch_user("t")
+    monkeypatch.setattr(urllib.request, "urlopen", raise_(urllib.error.HTTPError("u", 401, "no", {}, None)))
+    assert a.fetch_user("t") is None
+
+
+def test_hosted_sends_hsts(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", "/api/config")
+    r = c.getresponse()
+    r.read()
+    assert r.getheader("Strict-Transport-Security", "").startswith("max-age=")
+    assert r.getheader("X-Content-Type-Options") == "nosniff"
+
+
+def test_hosted_api_calls_are_logged_without_tokens(server, capfd):
+    call(server, "POST", "/api/svg/check", {"svg": SQUARE}, token="tok-a")
+    call(server, "POST", "/api/svg/check", {"svg": SQUARE})
+    import time
+    time.sleep(0.2)
+    err = capfd.readouterr().err
+    assert "POST /api/svg/check 200 user=user-a" in err
+    assert "POST /api/svg/check 401 user=-" in err
+    assert "tok-a" not in err
+
+
+def test_word_lists_are_capped():
+    assert webserver.word_list({"words": ["ab", "", "cd"]}) == ["ab", "cd"]
+    for bad in ({"words": ["x"] * (webserver.MAX_WORDS + 1)}, {"words": ["x" * (webserver.MAX_WORD_LEN + 1)]},
+                {"words": "not a list"}, {"words": [1]}):
+        with pytest.raises(ValueError):
+            webserver.word_list(bad)
+
+
+def test_oversized_body_is_refused(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("POST", "/api/svg/check")
+    c.putheader("Content-Type", "application/json")
+    c.putheader("Authorization", "Bearer tok-a")
+    c.putheader("Content-Length", str(webserver.MAX_BODY + 1))
+    c.endheaders()
+    assert c.getresponse().status == 400
+
+
+def test_hosted_build_cooldown(runner, hosted_mode, monkeypatch):
+    runner.job("user-a")["started"] = __import__("time").time()
+    ok, why = runner.start("user-a")
+    assert not ok and "seconds" in why
+    assert runner.running is None
+    runner.job("user-a")["started"] -= runner.COOLDOWN + 1
+    monkeypatch.setattr(webserver, "write_build_inputs", lambda w, i: [])
+    monkeypatch.setattr(runner, "_run", lambda *a: setattr(runner, "running", None))
+    ok, why = runner.start("user-a")
+    assert ok, why
