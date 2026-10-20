@@ -73,7 +73,9 @@ APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
 SETTINGS = hosted.Settings()          # replaced in main(); local mode by default
 AUTH: hosted.Auth | None = None
 MAIN = "main"                         # owner of the checked-in font's build (hosted mode)
-MAX_BODY = 32 * 1024 * 1024
+MAX_BODY = 16 * 1024 * 1024           # a whole draft (design, spellings, changed SVGs) fits many times over
+MAX_WORDS = 2000                      # per request, for /api/words and /api/typing/preview
+MAX_WORD_LEN = 200
 
 
 # ---------------------------------------------------------------- helpers
@@ -237,6 +239,24 @@ def words_payload(design: schema.Design, words: list[str], runs: list[list[str]]
     return {"ok": True, "words": out}
 
 
+def word_list(body: dict, key: str = "words") -> list[str]:
+    """The non-empty words of body[key], refusing lists or words too big to shape on request."""
+    words = body.get(key) or []
+    if not isinstance(words, list):
+        raise ValueError(f"{key} must be a list")
+    if len(words) > MAX_WORDS:
+        raise ValueError(f"too many words ({len(words)}); at most {MAX_WORDS} at a time")
+    out = []
+    for w in words:
+        if not isinstance(w, str):
+            raise ValueError(f"{key} must be strings")
+        if len(w) > MAX_WORD_LEN:
+            raise ValueError(f"a word longer than {MAX_WORD_LEN} characters")
+        if w:
+            out.append(w)
+    return out
+
+
 # ---------------------------------------------------------------- build runner
 
 class BuildRunner:
@@ -247,6 +267,7 @@ class BuildRunner:
     font built at start-up. Ids are random, so a build's URL is only known to its owner."""
 
     KEEP = 8                                  # per owner
+    COOLDOWN = 20                             # hosted: seconds between one tester's build starts
 
     def __init__(self):
         self.lock = threading.Lock()
@@ -260,11 +281,16 @@ class BuildRunner:
         return self.jobs.setdefault(owner, {"state": "idle", "log": [], "started": None, "finished": None, "ok": None})
 
     def start(self, owner: str = "local", inputs: dict | None = None) -> tuple[bool, str | None]:
-        """Start a build of the files on disk, or of `inputs` (a draft). False + why when busy."""
+        """Start a build of the files on disk, or of `inputs` (a draft). False + why when busy, or
+        (hosted) when the same tester started one less than COOLDOWN seconds ago."""
         with self.lock:
             if self.running is not None:
                 return False, ("a build is already running" if self.running == owner
                                else "Another font is being built right now; try again in a minute.")
+            last = self.jobs.get(owner, {}).get("started")
+            if SETTINGS.hosted and owner != MAIN and last and time.time() - last < self.COOLDOWN:
+                wait = int(self.COOLDOWN - (time.time() - last)) + 1
+                return False, f"You just built a font; try again in {wait} seconds."
             self._seq += 1
             work = Path(tempfile.mkdtemp(prefix=f"jzp-build-{self._seq}-"))
             job = self.job(owner)
@@ -522,7 +548,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     prev = typing_preview.FONTS.get(base, rows, design)
     out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars,
                roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
-    words = [w for w in body.get("words", []) if w]
+    words = word_list(body)
     if words:
         shaped = typing_preview.shape(prev, words)
         sd = schema.parse_design(design)
@@ -530,7 +556,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         for w, s in zip(laid, shaped):
             w["texts"] = s["texts"]
         out["words"] = laid
-    compare = [w for w in body.get("compare_words", []) if w]
+    compare = word_list(body, "compare_words")
     if compare and body.get("base_rows") is not None:
         before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design), compare)
         after = typing_preview.shape(prev, compare)
@@ -778,7 +804,7 @@ class Handler(SimpleHTTPRequestHandler):
                                                   body.get("center", True)))
             if path == "/api/words":
                 design = _design_from(body)
-                return self._json(words_payload(design, list(body.get("words", [])), font=BUILD.font_for(owner)))
+                return self._json(words_payload(design, word_list(body), font=BUILD.font_for(owner)))
             if path == "/api/typing/preview":
                 return self._json(typing_payload(body, owner))
             if path == "/api/svg/check":

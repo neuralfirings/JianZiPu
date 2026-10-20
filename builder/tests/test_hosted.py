@@ -360,3 +360,35 @@ def test_hosted_api_calls_are_logged_without_tokens(server, capfd):
     assert "POST /api/svg/check 200 user=user-a" in err
     assert "POST /api/svg/check 401 user=-" in err
     assert "tok-a" not in err
+
+
+def test_word_lists_are_capped():
+    assert webserver.word_list({"words": ["ab", "", "cd"]}) == ["ab", "cd"]
+    for bad in ({"words": ["x"] * (webserver.MAX_WORDS + 1)}, {"words": ["x" * (webserver.MAX_WORD_LEN + 1)]},
+                {"words": "not a list"}, {"words": [1]}):
+        with pytest.raises(ValueError):
+            webserver.word_list(bad)
+
+
+def test_oversized_body_is_refused(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest("POST", "/api/svg/check")
+    c.putheader("Content-Type", "application/json")
+    c.putheader("Authorization", "Bearer tok-a")
+    c.putheader("Content-Length", str(webserver.MAX_BODY + 1))
+    c.endheaders()
+    assert c.getresponse().status == 400
+
+
+def test_hosted_build_cooldown(runner, hosted_mode, monkeypatch):
+    runner.job("user-a")["started"] = __import__("time").time()
+    ok, why = runner.start("user-a")
+    assert not ok and "seconds" in why
+    assert runner.running is None
+    runner.job("user-a")["started"] -= runner.COOLDOWN + 1
+    monkeypatch.setattr(webserver, "write_build_inputs", lambda w, i: [])
+    monkeypatch.setattr(runner, "_run", lambda *a: setattr(runner, "running", None))
+    ok, why = runner.start("user-a")
+    assert ok, why
