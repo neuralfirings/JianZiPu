@@ -7,6 +7,7 @@
   import { onMount } from 'svelte';
   import { beforeNavigate, goto } from '$app/navigation';
   import { app } from '$lib/state.svelte';
+  import { hosted } from '$lib/hosted.svelte';
   import { glyphEditor as ed } from '$lib/glyphed/editor.svelte';
   import type { Mode } from '$lib/glyphed/tools';
   import * as I from '$lib/icons';
@@ -93,7 +94,7 @@
       ed.resize(r.width, r.height); ed.fit();
       const ps = ed.pendingStart; ed.pendingStart = null;
       if (ps?.kind === 'svg') ps.file.text().then((t) => askImport(t));
-      else if (ps?.kind === 'image') ed.startTrace(ps.file);
+      else if (ps?.kind === 'image') void trace(ps.file);
     });
     const onKey = (e: KeyboardEvent) => key(e);
     const onKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') ed.holdHand(false); };
@@ -193,11 +194,12 @@
     importAsk = { text, box: info.box, dropped: info.dropped, strokes: info.strokes, fit: differs, replace: hasPaths && from === 'file' };
   }
   async function onSvgFile(e: Event) { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; starting = null; if (f) askImport(await f.text()); }
-  async function onImgFile(e: Event) { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; starting = null; if (f) ed.startTrace(f); }
+  async function trace(f: File) { if (!(await ed.startTrace(f)) && ed.error) say(ed.error); }
+  async function onImgFile(e: Event) { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; starting = null; if (f) void trace(f); }
   async function onDrop(e: DragEvent) {
     e.preventDefault();
     const f = e.dataTransfer?.files?.[0]; if (!f) return;
-    if (f.type === 'image/svg+xml' || f.name.endsWith('.svg')) askImport(await f.text()); else if (f.type.startsWith('image/')) ed.startTrace(f);
+    if (f.type === 'image/svg+xml' || f.name.endsWith('.svg')) askImport(await f.text()); else if (f.type.startsWith('image/')) void trace(f);
   }
   async function onPaste(e: ClipboardEvent) {
     if (typing(e as unknown as KeyboardEvent)) return;
@@ -209,7 +211,9 @@
   async function save(overwrite = false) {
     const r = await ed.save(overwrite);
     if (r.ok) {
-      say(`Saved inputs/svg/${name}.svg · Layouts and the Tester use it now; the font needs a Build.`);
+      if (r.waiting) say(`${name} is in your draft, not saved yet: ${r.waiting}. It's kept in this browser meanwhile.`);
+      else if (r.draft) say(`Saved ${name} to your draft · Layouts and the Tester use it now; the font needs a Build.`);
+      else say(`Saved inputs/svg/${name}.svg · Layouts and the Tester use it now; the font needs a Build.`);
       if (isNew) { isNew = false; goto(`/glyphs/${encodeURIComponent(name)}/edit`, { replaceState: true }); }
     } else if (r.exists) say(`${name}.svg already exists on disk.`);
     else if (!r.conflict) say(r.error ?? 'could not save');
@@ -473,7 +477,7 @@
   <div class="modal-bg" role="presentation">
     <div class="modal" role="dialog" tabindex="-1">
       <h3 style="margin:0">Unsaved edits to {name}</h3>
-      <p>{ed.changeCount} change{ed.changeCount === 1 ? '' : 's'} not written to the file yet.</p>
+      <p>{ed.changeCount} change{ed.changeCount === 1 ? '' : 's'} {hosted.isHosted ? 'not saved to your draft yet' : 'not written to the file yet'}.</p>
       <div class="row"><button onclick={() => (leave = null)}>Keep editing</button><button onclick={() => doLeave('discard')}>Discard and leave</button><button class="primary" onclick={() => doLeave('save')}>Save and leave</button></div>
     </div>
   </div>

@@ -81,14 +81,17 @@ export function isEmptyBundle(b: Bundle): boolean {
 
 // ---------------------------------------------------------------- checks
 
-export class BundleError extends Error {}
+/** A draft this app can't open. `newer`: made by a newer Builder (a reload may bring that one). */
+export class BundleError extends Error {
+  constructor(message: string, readonly newer = false) { super(message); }
+}
 
 /** Throws a readable BundleError when `x` is not a draft this version of the app can open. */
 export function validate(x: unknown): Bundle {
   const b = x as Bundle;
   const m = b?.manifest;
   if (!m || m.kind !== 'jzp-draft') throw new BundleError('This is not a JZP draft (no manifest).');
-  if (m.format > BUNDLE_FORMAT) throw new BundleError(`This draft was made by a newer Builder (format ${m.format}); update the app to open it.`);
+  if (m.format > BUNDLE_FORMAT) throw new BundleError(`This draft was made by a newer Builder (format ${m.format}); update the app to open it.`, true);
   if (!b.design || b.design.version !== 2 || !b.design.areas || !Array.isArray(b.design.layouts)) throw new BundleError('The draft has no usable design.json.');
   if (!b.base?.design) throw new BundleError('The draft is missing the version it started from.');
   for (const n of [...Object.keys(b.svgs ?? {}), ...m.svgs.deleted]) {
@@ -114,7 +117,11 @@ function cleanAll(m: SvgMap): SvgMap {
 // ---------------------------------------------------------------- JSON (storage) and zip (export)
 
 export const toJson = (b: Bundle) => JSON.stringify(b);
-export const fromJson = (text: string) => validate(JSON.parse(text));
+export function fromJson(text: string): Bundle {
+  let x: unknown;
+  try { x = JSON.parse(text); } catch { throw new BundleError('The stored draft is not valid JSON.'); }
+  return validate(x);
+}
 
 /** Zip layout = the repo's inputs/ layout, plus manifest.json and the base copies under base/. */
 export function toZip(b: Bundle): Uint8Array {

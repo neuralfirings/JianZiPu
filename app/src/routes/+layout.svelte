@@ -147,8 +147,8 @@
         data-tip={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label} (⇧⌘Z)` : 'Nothing to redo'} aria-label="Redo"><I.Redo /></button>
     {/if}
     <span class="status" role="status">
-      {#if hosted.isHosted && app.offline}
-        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Alert size={14} />Not saved · offline</button>
+      {#if hosted.isHosted && (app.offline || app.saveRefused)}
+        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Alert size={14} />{app.offline ? 'Not saved · offline' : 'Not saved'}</button>
       {:else if hosted.isHosted && app.saving}
         <span class="pill info"><I.Working size={14} />Saving…</span>
       {:else if app.dirty}
@@ -163,7 +163,7 @@
     </span>
     {#if hosted.isHosted}
       <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving || hosted.signedOut} title="Save to your draft (⌘S). It also saves itself every 30 seconds.">
-        {app.saving ? 'Saving…' : app.offline ? 'Try again' : 'Save'}
+        {app.saving ? 'Saving…' : app.offline || app.saveRefused ? 'Try again' : 'Save'}
       </button>
     {:else}
       <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json, components.csv and merged glyph files (the glyph has its own Save, ⌘S)' : 'Write design.json, components.csv and merged glyph files (⌘S)'}>
@@ -226,6 +226,9 @@
   {:else if hosted.isHosted && app.offline}
     <div class="banner danger"><span class="ic"><I.Alert /></span> <b>Your draft isn't saved.</b> We can't reach the server. Your changes are kept in this browser and will save when you're back online. Don't close this browser's private window or clear its data.
       <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button></div>
+  {:else if hosted.isHosted && app.saveRefused}
+    <div class="banner danger"><span class="ic"><I.Alert /></span> <b>Your draft isn't saved.</b> The server turned it down: {app.saveRefused}. Your changes are kept in this browser. If trying again doesn't work, export your draft so you have a copy, and send feedback.
+      <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button> <button onclick={() => (feedback = true)}>Send feedback</button></div>
   {/if}
   {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
     <div class="banner info">
@@ -249,7 +252,14 @@
     </div>
   {/if}
   {#if app.error}
-    <div class="banner danger"><span class="ic"><I.Problem /></span> {app.error} <button onclick={() => app.load()}>Retry</button></div>
+    <div class="banner danger"><span class="ic"><I.Problem /></span> {app.error}
+      {#if app.errorFix === 'load'}<button onclick={() => app.load()}>Retry</button>
+      {:else if app.errorFix === 'save'}<button onclick={() => app.save()}>Try again</button>
+      {:else if app.errorFix === 'check'}<button onclick={() => app.recheck()}>Check again</button>
+      {:else if app.errorFix === 'undo' && app.undoStack.length}<button onclick={() => app.undo()}>Undo: {app.undoStack.at(-1)?.label}</button>
+      {:else if app.errorFix === 'reload'}<button onclick={() => location.reload()}>Reload the page</button>
+      {:else if app.errorFix === 'feedback' && hosted.isHosted}<button onclick={() => (feedback = true)}>Send feedback</button>{/if}
+    </div>
   {/if}
   {#if app.paused}
     <div class="scrim">

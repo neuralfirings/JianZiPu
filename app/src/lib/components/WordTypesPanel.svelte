@@ -5,19 +5,31 @@
   import { app } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
   import SkipList from './SkipList.svelte';
+  import { wordTypeIdProblem } from '$lib/areas';
   const d = $derived(app.design!);
   let perLayout = $derived(app.stats?.per_layout ?? {});
   let skipsFor = $state<string | null>(null);
+  /** Ask for a new word type id until it's usable (the reason shows above the question); null = cancelled. */
+  function askId(question: string, suggestion: string): string | null {
+    let value = suggestion, problem: string | null = null;
+    for (;;) {
+      const v = prompt(problem ? `${problem}\n\n${question}` : question, value);
+      if (v == null) return null;
+      value = v.trim();
+      problem = wordTypeIdProblem(d, value);
+      if (!problem) return value;
+    }
+  }
   function addLayout() {
-    const name = prompt('Id for the new word type (letters, digits, _):', 'new_word');
-    if (!name || !/^[a-z][a-z0-9_]*$/i.test(name) || d.layouts.some((l) => l.name === name)) return;
+    const name = askId('Id for the new word type (letters, digits, _):', 'new_word');
+    if (!name) return;
     app.edit(`New word type ${name}`, (dd) => { dd.layouts.push({ name, label: name, slots: [], relationships: [], center: {} }); });
     editor.setLayout(name);
   }
   function duplicateLayout() {
     const src = editor.layout!;
-    const name = prompt('Id for the copy:', `${src.name}_copy`);
-    if (!name || d.layouts.some((l) => l.name === name)) return;
+    const name = askId('Id for the copy (letters, digits, _):', `${src.name}_copy`);
+    if (!name) return;
     app.edit(`Duplicate ${src.label ?? src.name} as ${name}`, (dd) => { dd.layouts.push({ ...JSON.parse(JSON.stringify(src)), name, label: `${src.label ?? src.name} copy` }); });
     editor.setLayout(name);
   }

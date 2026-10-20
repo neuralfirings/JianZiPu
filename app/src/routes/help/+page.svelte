@@ -283,8 +283,11 @@
 
         <h3 id="messages-draft">Your draft (online)</h3>
         <dl class="panels messages">
-          <dt>“Your draft isn't saved. We can't reach the server.”</dt><dd>Saving the draft failed. Your changes are kept in this browser and save when the connection is back; <strong>Try again</strong> retries now. Don't clear the browser's data or close a private window meanwhile. If your internet works and it keeps failing, <strong>Export my draft</strong> to keep a copy and send <strong>Feedback</strong>.</dd>
-          <dt>“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”</dt><dd>Loading failed; the reason is in brackets at the end. Press <strong>Retry</strong> in a minute. If the brackets say the draft was made by a newer Builder or has no usable design.json, retrying won't help: send <strong>Feedback</strong>.</dd>
+          <dt>“Your draft isn't saved. We can't reach the server.”</dt><dd>You're offline, or the server can't be reached (the header says <strong>Not saved · offline</strong>). Your changes are kept in this browser and save by themselves when the connection is back; <strong>Try again</strong> retries now. Don't clear the browser's data or close a private window meanwhile.</dd>
+          <dt>“Your draft isn't saved. The server turned it down: …”</dt><dd>The connection works, but the draft storage said no; the reason follows. Your changes are kept in this browser. Press <strong>Try again</strong>; if it fails again, <strong>Export my draft</strong> to keep a copy and <strong>Send feedback</strong> with the reason.</dd>
+          <dt>“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”</dt><dd>The Builder's server didn't answer while loading; the reason is in brackets at the end. Press <strong>Retry</strong> in a minute.</dd>
+          <dt>“Your draft was saved by a newer version of the Builder than this page. Reload the page to get it.”</dt><dd>You (or another tab) used a newer Builder since this page loaded. <strong>Reload the page</strong>.</dd>
+          <dt>“Your saved draft can't be opened: … It is still stored and nothing has been changed.”</dt><dd>The stored draft is damaged; the reason follows. Retrying won't help, and nothing is lost yet: <strong>Send feedback</strong> so it can be recovered.</dd>
           <dt>“Your draft was saved somewhere else”</dt><dd>Another tab or computer saved (or discarded) your draft after you opened it here. Pick the version that stays; <strong>Export this one first</strong> keeps a copy of this tab's.</dd>
           <dt>“Restored <em>n</em> changes from your last visit that hadn't reached your draft.”</dt><dd>Edits from last time that hadn't been saved yet. <strong>Save them</strong> or <strong>Discard them</strong>. On your own computer it reads “Restored unsaved changes from your last session.”</dd>
           <dt>“This Builder is read-only: your changes are kept in your own draft.”</dt><dd>The page is an old copy of the Builder. Reload it.</dd>
@@ -294,6 +297,7 @@
         <dl class="panels messages">
           <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
           <dt>“design.json changed on disk” / “components.csv changed on disk”</dt><dd>On your own computer: the file changed since you opened it (a git pull, another tab, an editor). <strong>Export mine first</strong>, then <strong>Reload from disk</strong>; or <strong>Overwrite</strong> if yours should win.</dd>
+          <dt>“Not saved: …”</dt><dd>On your own computer: the server couldn't write a file; the reason follows (“Not saved: <em>name</em>.svg: …” for a glyph file). Your changes are still here. Fix the cause, then <strong>Try again</strong>. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press <strong>Try again</strong>.</dd>
           <dt>“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”</dt><dd>On your own computer: the Builder's server isn't running. Start it with that command and reload.</dd>
           <dt>“This Builder only answers on localhost.”</dt><dd>Open it at <code>http://127.0.0.1:5713</code>, or start the server with <code>--host</code> and the address you use.</dd>
           <dt>“unknown endpoint <em>path</em>”</dt><dd>The page and the server are different versions. Restart the server and reload.</dd>
@@ -316,7 +320,8 @@
 
         <h3 id="messages-editor">The glyph editor</h3>
         <dl class="panels messages">
-          <dt>“Saved inputs/svg/<em>name</em>.svg · Layouts and the Tester use it now; the font needs a Build.”</dt><dd>The glyph is saved (online, into your draft). The font shows it after the next <strong>Build font</strong>.</dd>
+          <dt>“Saved inputs/svg/<em>name</em>.svg · Layouts and the Tester use it now; the font needs a Build.” / “Saved <em>name</em> to your draft · …”</dt><dd>The glyph is saved (to the file on your own computer, to your draft online). The font shows it after the next <strong>Build font</strong>.</dd>
+          <dt>“<em>name</em> is in your draft, not saved yet: …”</dt><dd>Online: the outline is in your draft, but the draft itself didn't save; the reason follows (spelling problems to fix first, offline, or the server turned it down). It's kept in this browser, and the banner at the top says what to do.</dd>
           <dt>“<em>name</em>.svg already exists on disk.” / “<em>name</em> already exists.”</dt><dd>A new glyph's name is taken. Open that glyph instead, or pick another name.</dd>
           <dt>“<em>name</em>.svg changed on disk”</dt><dd>Someone, or another tab, wrote the file since you opened it. <strong>Compare</strong> shows the disk version as a dashed outline; then <strong>Load disk version</strong> or <strong>Overwrite with mine</strong>.</dd>
           <dt>“the glyph is empty” / “Empty: nothing to save yet”</dt><dd>There is nothing to save: draw or import something first.</dd>
@@ -327,7 +332,7 @@
           <dt>“Unable to convert to picosvg: BadElement: …”</dt><dd>The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.</dd>
           <dt>“syntax error: line <em>n</em>, column <em>n</em>”</dt><dd>The file isn't a valid SVG. Export it again from the drawing program.</dd>
           <dt>“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”</dt><dd>Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).</dd>
-          <dt>“trace failed: …”</dt><dd>The tracer couldn't use the image. Try a PNG or JPEG.</dd>
+          <dt>“Can't trace <em>file</em>: it isn't an image this browser can read. Try a PNG or JPEG.”</dt><dd>The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.</dd>
         </dl>
 
         <h3 id="messages-layouts">Layouts and areas</h3>
@@ -337,7 +342,9 @@
           <dt>“no unconditional last entry; words whose glyphs match no entry are not positioned”</dt><dd>In Font budget: a spacing rule has only rows for particular glyphs. Add an otherwise row.</dd>
           <dt>“Can't attach <em>A</em> to <em>B</em>: <em>B</em> is already placed relative to <em>A</em>”</dt><dd>That would go round in a circle. Attach the other way round, or remove the existing rule first.</dd>
           <dt>“Can't delete <em>area</em>”</dt><dd>Only an empty area that no word type uses can be deleted. The banner lists what's left: remove its glyphs, and take it out of those word types in Structure (Advanced).</dd>
-          <dt>Messages that start with a word type's name, such as “standard/hui: unknown area 'x'”</dt><dd>The design names something that isn't there any more, usually after an import or a merge renamed an area or a part. Undo the last change, or fix the named word type in Layouts with <strong>Advanced</strong> on.</dd>
+          <dt>“The font can't be built from this design: …”</dt><dd>The design names something that isn't there any more, such as “standard/hui: unknown area 'x'”, usually after an edit, an import or a merge renamed or removed an area or a part. The banner's <strong>Undo</strong> button takes back the last change; or fix the named word type in Layouts with <strong>Advanced</strong> on.</dd>
+          <dt>“Couldn't check the design: …”</dt><dd>The server didn't answer the check run after each edit. <strong>Check again</strong>; if the server stopped, start it again.</dd>
+          <dt>“"<em>x</em>" is already a word type.” / “"<em>x</em>" can't be an id: use letters, digits and _ only, starting with a letter.”</dt><dd>When adding or duplicating a word type: the question asks again with the reason. Type another id, or Cancel.</dd>
         </dl>
 
         <h3 id="messages-build">Build & test</h3>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
-import { addArea, areaIdProblem, decimalGrid, deleteAreaProblems, splitMembers, usedIn } from './areas';
+import { addArea, areaIdProblem, wordTypeIdProblem, decimalGrid, deleteAreaProblems, splitMembers, usedIn } from './areas';
 
 const design = (): Design => ({
   version: 2,
@@ -52,5 +52,13 @@ describe('areas', () => {
     expect(areaIdProblem(d, 'thumb')).toBeNull();
     addArea(d, 'thumb', ' Thumb mark ', [350, 300]);
     expect(d.areas.thumb).toEqual({ label: 'Thumb mark', size: [350, 300], glyphs: [] });
+  });
+  it('says why a word type id is not usable', () => {
+    const d = design();
+    const taken = d.layouts[0].name;
+    expect(wordTypeIdProblem(d, '')).toMatch(/Give/);
+    expect(wordTypeIdProblem(d, 'new word')).toMatch(/letters, digits and _/);
+    expect(wordTypeIdProblem(d, taken)).toBe(`"${taken}" is already a word type.`);
+    expect(wordTypeIdProblem(d, 'chord_2')).toBeNull();
   });
 });

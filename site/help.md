@@ -233,8 +233,11 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### Your draft (online)
 
-- **“Your draft isn't saved. We can't reach the server.”**: Saving the draft failed. Your changes are kept in this browser and save when the connection is back; **Try again** retries now. Don't clear the browser's data or close a private window meanwhile. If your internet works and it keeps failing, **Export my draft** to keep a copy and send **Feedback**.
-- **“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”**: Loading failed; the reason is in brackets at the end. Press **Retry** in a minute. If the brackets say the draft was made by a newer Builder or has no usable design.json, retrying won't help: send **Feedback**.
+- **“Your draft isn't saved. We can't reach the server.”**: You're offline, or the server can't be reached (the header says **Not saved · offline**). Your changes are kept in this browser and save by themselves when the connection is back; **Try again** retries now. Don't clear the browser's data or close a private window meanwhile.
+- **“Your draft isn't saved. The server turned it down: …”**: The connection works, but the draft storage said no; the reason follows. Your changes are kept in this browser. Press **Try again**; if it fails again, **Export my draft** to keep a copy and **Send feedback** with the reason.
+- **“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”**: The Builder's server didn't answer while loading; the reason is in brackets at the end. Press **Retry** in a minute.
+- **“Your draft was saved by a newer version of the Builder than this page. Reload the page to get it.”**: You (or another tab) used a newer Builder since this page loaded. **Reload the page**.
+- **“Your saved draft can't be opened: … It is still stored and nothing has been changed.”**: The stored draft is damaged; the reason follows. Retrying won't help, and nothing is lost yet: **Send feedback** so it can be recovered.
 - **“Your draft was saved somewhere else”**: Another tab or computer saved (or discarded) your draft after you opened it here. Pick the version that stays; **Export this one first** keeps a copy of this tab's.
 - **“Restored *n* changes from your last visit that hadn't reached your draft.”**: Edits from last time that hadn't been saved yet. **Save them** or **Discard them**. On your own computer it reads “Restored unsaved changes from your last session.”
 - **“This Builder is read-only: your changes are kept in your own draft.”**: The page is an old copy of the Builder. Reload it.
@@ -243,6 +246,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 - **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
 - **“design.json changed on disk” / “components.csv changed on disk”**: On your own computer: the file changed since you opened it (a git pull, another tab, an editor). **Export mine first**, then **Reload from disk**; or **Overwrite** if yours should win.
+- **“Not saved: …”**: On your own computer: the server couldn't write a file; the reason follows (“Not saved: *name*.svg: …” for a glyph file). Your changes are still here. Fix the cause, then **Try again**. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press **Try again**.
 - **“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”**: On your own computer: the Builder's server isn't running. Start it with that command and reload.
 - **“This Builder only answers on localhost.”**: Open it at `http://127.0.0.1:5713`, or start the server with `--host` and the address you use.
 - **“unknown endpoint *path*”**: The page and the server are different versions. Restart the server and reload.
@@ -263,7 +267,8 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### The glyph editor
 
-- **“Saved inputs/svg/*name*.svg · Layouts and the Tester use it now; the font needs a Build.”**: The glyph is saved (online, into your draft). The font shows it after the next **Build font**.
+- **“Saved inputs/svg/*name*.svg · Layouts and the Tester use it now; the font needs a Build.” / “Saved *name* to your draft · …”**: The glyph is saved (to the file on your own computer, to your draft online). The font shows it after the next **Build font**.
+- **“*name* is in your draft, not saved yet: …”**: Online: the outline is in your draft, but the draft itself didn't save; the reason follows (spelling problems to fix first, offline, or the server turned it down). It's kept in this browser, and the banner at the top says what to do.
 - **“*name*.svg already exists on disk.” / “*name* already exists.”**: A new glyph's name is taken. Open that glyph instead, or pick another name.
 - **“*name*.svg changed on disk”**: Someone, or another tab, wrote the file since you opened it. **Compare** shows the disk version as a dashed outline; then **Load disk version** or **Overwrite with mine**.
 - **“the glyph is empty” / “Empty: nothing to save yet”**: There is nothing to save: draw or import something first.
@@ -274,7 +279,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Unable to convert to picosvg: BadElement: …”**: The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.
 - **“syntax error: line *n*, column *n*”**: The file isn't a valid SVG. Export it again from the drawing program.
 - **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).
-- **“trace failed: …”**: The tracer couldn't use the image. Try a PNG or JPEG.
+- **“Can't trace *file*: it isn't an image this browser can read. Try a PNG or JPEG.”**: The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.
 
 ### Layouts and areas
 
@@ -283,7 +288,9 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“no unconditional last entry; words whose glyphs match no entry are not positioned”**: In Font budget: a spacing rule has only rows for particular glyphs. Add an otherwise row.
 - **“Can't attach *A* to *B*: *B* is already placed relative to *A*”**: That would go round in a circle. Attach the other way round, or remove the existing rule first.
 - **“Can't delete *area*”**: Only an empty area that no word type uses can be deleted. The banner lists what's left: remove its glyphs, and take it out of those word types in Structure (Advanced).
-- **Messages that start with a word type's name, such as “standard/hui: unknown area 'x'”**: The design names something that isn't there any more, usually after an import or a merge renamed an area or a part. Undo the last change, or fix the named word type in Layouts with **Advanced** on.
+- **“The font can't be built from this design: …”**: The design names something that isn't there any more, such as “standard/hui: unknown area 'x'”, usually after an edit, an import or a merge renamed or removed an area or a part. The banner's **Undo** button takes back the last change; or fix the named word type in Layouts with **Advanced** on.
+- **“Couldn't check the design: …”**: The server didn't answer the check run after each edit. **Check again**; if the server stopped, start it again.
+- **“"*x*" is already a word type.” / “"*x*" can't be an id: use letters, digits and _ only, starting with a letter.”**: When adding or duplicating a word type: the question asks again with the reason. Type another id, or Cancel.
 
 ### Build & test
 
