@@ -16,7 +16,8 @@ export const HELP_SECTIONS: { id: string; title: string }[] = [
   { id: 'draft', title: 'Your draft (online)' },
   { id: 'review', title: 'Reviewing a draft' },
   { id: 'keys', title: 'Keyboard shortcuts' },
-  { id: 'trouble', title: 'When something looks wrong' }
+  { id: 'trouble', title: 'When something looks wrong' },
+  { id: 'messages', title: 'Messages and errors' }
 ];
 
 /** One panel's help: `html` is trusted, static markup (links, <strong>, <kbd>, <code>). */

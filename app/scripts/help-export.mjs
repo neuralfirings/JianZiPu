@@ -210,6 +210,7 @@ const page = `<!DOCTYPE html>
     section { padding-top: 24px; margin-bottom: 32px; border-top: 1px solid var(--border); scroll-margin-top: 16px; }
     code, kbd { font: 13px ui-monospace, Menlo, Consolas, monospace; background: var(--panel); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; white-space: nowrap; }
     dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 24px; } dt { font-weight: 600; } dd { margin: 0; }
+    dl.messages { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.messages dd { margin-bottom: 14px; } h3[id] { scroll-margin-top: 16px; }
     table { width: 100%; border-collapse: collapse; margin: 0 0 20px; }
     th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--border); }
     thead th { font-size: 13px; color: var(--muted); }

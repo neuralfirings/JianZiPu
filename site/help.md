@@ -216,7 +216,93 @@ On your own computer, [Review](https://builder.jianzipufont.com/review) brings a
 - **warning under a word**: Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.
 - **Save is waiting**: A spelling clashes with another glyph's or isn't valid. **Show them** lists the cells to fix.
 - **A new glyph never appears in words**: It needs an area (**Unassigned** in Glyphs) and at least one spelling.
-- **The build failed**: The first error is shown above the build log; the log has the rest. A spelling clash or an over-large set of rules (see Font budget) are the usual causes.
+- **The build failed**: The first error is shown above the build log; the log has the rest. [Messages and errors](https://jianzipufont.com/help/#messages-build) lists the usual ones and their fixes.
+
+## Messages and errors
+
+What the Builder's messages say, word for word, and what to do about each. Words in *italics* stand for a name or number that changes.
+
+### Signing in
+
+- **“This email isn't on the pilot list”**: That address wasn't invited: the online Builder is for a few invited testers. If you were invited at another address, use that one; otherwise press **Ask for an invite**.
+- **“This sign-in link has expired”**: A link works once, for an hour, in the browser you asked for it from. Press **Email me a new link** and open the new one in the same browser.
+- **“We can't reach the sign-in service right now. Try again in a minute.”**: The sign-in service isn't answering. Check your connection and send the link again in a minute. “The sign-in service isn't answering. Try again in a minute.” is the same thing, seen from the server.
+- **“For security purposes, you can only request this after *n* seconds.”**: Links were asked for too quickly (the sign-in service's own words; “Email rate limit exceeded” is another). Wait, then send again.
+- **“You've been signed out. Your unsaved changes are kept in this browser.”**: The sign-in ran out. Press **Sign in again** and open the emailed link; your changes are still there afterwards. “Sign in first.” means the same.
+- **“Sign-in is not set up on this server.”**: The server has no sign-in settings. Only whoever runs it can fix this (`SUPABASE_URL` and `SUPABASE_ANON_KEY`).
+
+### Your draft (online)
+
+- **“Your draft isn't saved. We can't reach the server.”**: Saving the draft failed. Your changes are kept in this browser and save when the connection is back; **Try again** retries now. Don't clear the browser's data or close a private window meanwhile. If your internet works and it keeps failing, **Export my draft** to keep a copy and send **Feedback**.
+- **“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”**: Loading failed; the reason is in brackets at the end. Press **Retry** in a minute. If the brackets say the draft was made by a newer Builder or has no usable design.json, retrying won't help: send **Feedback**.
+- **“Your draft was saved somewhere else”**: Another tab or computer saved (or discarded) your draft after you opened it here. Pick the version that stays; **Export this one first** keeps a copy of this tab's.
+- **“Restored *n* changes from your last visit that hadn't reached your draft.”**: Edits from last time that hadn't been saved yet. **Save them** or **Discard them**. On your own computer it reads “Restored unsaved changes from your last session.”
+- **“This Builder is read-only: your changes are kept in your own draft.”**: The page is an old copy of the Builder. Reload it.
+
+### Saving
+
+- **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
+- **“design.json changed on disk” / “components.csv changed on disk”**: On your own computer: the file changed since you opened it (a git pull, another tab, an editor). **Export mine first**, then **Reload from disk**; or **Overwrite** if yours should win.
+- **“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”**: On your own computer: the Builder's server isn't running. Start it with that command and reload.
+- **“This Builder only answers on localhost.”**: Open it at `http://127.0.0.1:5713`, or start the server with `--host` and the address you use.
+- **“unknown endpoint *path*”**: The page and the server are different versions. Restart the server and reload.
+
+### Spellings
+
+- **“*k*” types 2 glyphs (*a, b*). A spelling can make only one glyph.**: A clash (under the cell: “already used by …”): two glyphs share a spelling, and Save waits until it's fixed. Give one of them another spelling. If one is the vertical form of the other, link them in **Vertical form** instead of repeating the spelling.
+- **“start with a letter: a leading digit is read as a string or position number”**: A Latin Entry must start with a letter; digits at the start mean strings and hui.
+- **“use only letters a–z, A–Z and digits”**: Latin entries take no spaces, accents or symbols; symbols go in Number/Symbol.
+- **“alone it marks a position; it can't type a glyph”**: 点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “*x*” alone marks a position; it can't type a glyph.
+- **“Chinese characters only”**: The 简体 and 繁體 columns take only Chinese characters.
+- **“*name* doesn't exist” / “Vertical form *name* doesn't exist.”**: The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.
+- **“joins *a* + *b*: typing *ab* gives this glyph instead of …”**: A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.
+- **Typing “*x*” gives *a + b*, not *glyph*.**: Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.
+- **“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”**: The spelling or glyph is newer than the last build. **Build font** in [Build & test](https://builder.jianzipufont.com/test).
+- **“Build the font once to preview spellings.”**: Try it needs one build first: **Build font**.
+- **“Can't read *file*: no glyph_name column”**: A spellings CSV needs a header row that includes `glyph_name`. **Export spellings (CSV)** gives a file of the right shape to start from.
+
+### The glyph editor
+
+- **“Saved inputs/svg/*name*.svg · Layouts and the Tester use it now; the font needs a Build.”**: The glyph is saved (online, into your draft). The font shows it after the next **Build font**.
+- **“*name*.svg already exists on disk.” / “*name* already exists.”**: A new glyph's name is taken. Open that glyph instead, or pick another name.
+- **“*name*.svg changed on disk”**: Someone, or another tab, wrote the file since you opened it. **Compare** shows the disk version as a dashed outline; then **Load disk version** or **Overwrite with mine**.
+- **“the glyph is empty” / “Empty: nothing to save yet”**: There is nothing to save: draw or import something first.
+- **“Sticks out of the box”**: Part of the drawing is outside the glyph's box, and Layouts places glyphs by their box. **Fit to box** or **Center** in the Selection panel, or change the area's box size in Layouts → Area Properties.
+- **“*n* open lines: outlined on save”**: Pen or Pencil lines that aren't filled shapes yet. **Outline now**, or let Save do it.
+- **“*n* specks under 6 units”**: Tiny bits, usually left by tracing. **Remove them**.
+- **“the SVG needs a viewBox (or width and height)”**: The SVG file has no size. Export it again from the drawing program with a size or artboard.
+- **“Unable to convert to picosvg: BadElement: …”**: The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.
+- **“syntax error: line *n*, column *n*”**: The file isn't a valid SVG. Export it again from the drawing program.
+- **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).
+- **“trace failed: …”**: The tracer couldn't use the image. Try a PNG or JPEG.
+
+### Layouts and areas
+
+- **“Not placed: *part* has no vertical rule in this shape”**: Nothing tells the part where to sit in this word, so it's drawn at 0 in a red dashed box. Select it and add a rule in Spacing. If it already has one, look at the rule's rows: when none matches the glyphs in this word and there's no “otherwise” row, the rule doesn't apply. Add an otherwise row, or one for these glyphs.
+- **“*n* skipped” / “Why *n* shapes are skipped”**: Some combinations of parts get no positioning rule, so the font won't place those words. The list gives the reason for each; usually “no rule row for … and no "otherwise"”: add an otherwise row to that rule.
+- **“no unconditional last entry; words whose glyphs match no entry are not positioned”**: In Font budget: a spacing rule has only rows for particular glyphs. Add an otherwise row.
+- **“Can't attach *A* to *B*: *B* is already placed relative to *A*”**: That would go round in a circle. Attach the other way round, or remove the existing rule first.
+- **“Can't delete *area*”**: Only an empty area that no word type uses can be deleted. The banner lists what's left: remove its glyphs, and take it out of those word types in Structure (Advanced).
+- **Messages that start with a word type's name, such as “standard/hui: unknown area 'x'”**: The design names something that isn't there any more, usually after an import or a merge renamed an area or a part. Undo the last change, or fix the named word type in Layouts with **Advanced** on.
+
+### Build & test
+
+- **“ValidationError: input validation failed”**: The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) and build again.
+- **“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”**: A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.
+- **“FileNotFoundError: … src_font/TW-Kai-98.ttf”**: The base font is missing. On your own computer, copy `TW-Kai-98.ttf` into `builder/src_font/` (it isn't in git). Online, the server couldn't fetch it: send **Feedback**.
+- **“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in *n* seconds.”**: Builds run one at a time, with a short pause between yours online. Wait, then **Build font** again.
+- **“no build *id* (builds live only while this server runs)” / “could not load build …”**: Builds are kept only until the server restarts. Build again.
+- **“too many words (*n*); at most 2000 at a time”**: Test fewer words at once.
+- **“Something went wrong on the server. Try again, or send feedback.”**: An error the server didn't expect. Try again; if it happens again, send **Feedback** saying what you did just before.
+
+### Drafts, review and import
+
+- **“*file* isn't a Builder draft: it has no manifest.json.”**: The .zip wasn't made by **Export my draft**. A design file goes in through **More** → **Import…** instead.
+- **“This draft was made with a newer Builder. Update this Builder first.”**: On your own computer: pull the latest code, rebuild the app (`npm run build` in `app/`) and restart the server.
+- **“That file is not a .zip.” / “… in the zip is not valid JSON.” / “The draft has no usable design.json.” / “The draft lists … but has no file for it.”**: The file is damaged or was changed by hand. Ask for a fresh export.
+- **“Pick *n* conflicts first”**: Apply waits until every **Conflict** has a side picked.
+- **“This isn't a Builder design file (needs version 2, layouts[] and areas{}).”**: **Import…** takes a design.json exported by the Builder.
+- **“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”**: **Feedback** or **Ask for an invite** didn't go. Check your connection (an ad blocker can stop it too) and send again.
 
 ---
 

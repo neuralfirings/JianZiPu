@@ -262,7 +262,103 @@
           <dt><I.Warn class="inl badge-warn" aria-label="warning" /> under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.</dd>
           <dt>Save is waiting</dt><dd>A spelling clashes with another glyph's or isn't valid. <strong>Show them</strong> lists the cells to fix.</dd>
           <dt>A new glyph never appears in words</dt><dd>It needs an area (<strong>Unassigned</strong> in Glyphs) and at least one spelling.</dd>
-          <dt>The build failed</dt><dd>The first error is shown above the build log; the log has the rest. A spelling clash or an over-large set of rules (see Font budget) are the usual causes.</dd>
+          <dt>The build failed</dt><dd>The first error is shown above the build log; the log has the rest. <a href="#messages-build">Messages and errors</a> lists the usual ones and their fixes.</dd>
+        </dl>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── -->
+      <section id="messages">
+        <h2>Messages and errors</h2>
+        <p>What the Builder's messages say, word for word, and what to do about each. Words in <em>italics</em> stand for a name or number that changes.</p>
+
+        <h3 id="messages-signin">Signing in</h3>
+        <dl class="panels messages">
+          <dt>“This email isn't on the pilot list”</dt><dd>That address wasn't invited: the online Builder is for a few invited testers. If you were invited at another address, use that one; otherwise press <strong>Ask for an invite</strong>.</dd>
+          <dt>“This sign-in link has expired”</dt><dd>A link works once, for an hour, in the browser you asked for it from. Press <strong>Email me a new link</strong> and open the new one in the same browser.</dd>
+          <dt>“We can't reach the sign-in service right now. Try again in a minute.”</dt><dd>The sign-in service isn't answering. Check your connection and send the link again in a minute. “The sign-in service isn't answering. Try again in a minute.” is the same thing, seen from the server.</dd>
+          <dt>“For security purposes, you can only request this after <em>n</em> seconds.”</dt><dd>Links were asked for too quickly (the sign-in service's own words; “Email rate limit exceeded” is another). Wait, then send again.</dd>
+          <dt>“You've been signed out. Your unsaved changes are kept in this browser.”</dt><dd>The sign-in ran out. Press <strong>Sign in again</strong> and open the emailed link; your changes are still there afterwards. “Sign in first.” means the same.</dd>
+          <dt>“Sign-in is not set up on this server.”</dt><dd>The server has no sign-in settings. Only whoever runs it can fix this (<code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code>).</dd>
+        </dl>
+
+        <h3 id="messages-draft">Your draft (online)</h3>
+        <dl class="panels messages">
+          <dt>“Your draft isn't saved. We can't reach the server.”</dt><dd>Saving the draft failed. Your changes are kept in this browser and save when the connection is back; <strong>Try again</strong> retries now. Don't clear the browser's data or close a private window meanwhile. If your internet works and it keeps failing, <strong>Export my draft</strong> to keep a copy and send <strong>Feedback</strong>.</dd>
+          <dt>“The Builder is taking a break: we can't reach it right now. Your saved draft is safe.”</dt><dd>Loading failed; the reason is in brackets at the end. Press <strong>Retry</strong> in a minute. If the brackets say the draft was made by a newer Builder or has no usable design.json, retrying won't help: send <strong>Feedback</strong>.</dd>
+          <dt>“Your draft was saved somewhere else”</dt><dd>Another tab or computer saved (or discarded) your draft after you opened it here. Pick the version that stays; <strong>Export this one first</strong> keeps a copy of this tab's.</dd>
+          <dt>“Restored <em>n</em> changes from your last visit that hadn't reached your draft.”</dt><dd>Edits from last time that hadn't been saved yet. <strong>Save them</strong> or <strong>Discard them</strong>. On your own computer it reads “Restored unsaved changes from your last session.”</dd>
+          <dt>“This Builder is read-only: your changes are kept in your own draft.”</dt><dd>The page is an old copy of the Builder. Reload it.</dd>
+        </dl>
+
+        <h3 id="messages-saving">Saving</h3>
+        <dl class="panels messages">
+          <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
+          <dt>“design.json changed on disk” / “components.csv changed on disk”</dt><dd>On your own computer: the file changed since you opened it (a git pull, another tab, an editor). <strong>Export mine first</strong>, then <strong>Reload from disk</strong>; or <strong>Overwrite</strong> if yours should win.</dd>
+          <dt>“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”</dt><dd>On your own computer: the Builder's server isn't running. Start it with that command and reload.</dd>
+          <dt>“This Builder only answers on localhost.”</dt><dd>Open it at <code>http://127.0.0.1:5713</code>, or start the server with <code>--host</code> and the address you use.</dd>
+          <dt>“unknown endpoint <em>path</em>”</dt><dd>The page and the server are different versions. Restart the server and reload.</dd>
+        </dl>
+
+        <h3 id="messages-typing">Spellings</h3>
+        <dl class="panels messages">
+          <dt>“<em>k</em>” types 2 glyphs (<em>a, b</em>). A spelling can make only one glyph.</dt><dd>A clash (under the cell: “already used by …”): two glyphs share a spelling, and Save waits until it's fixed. Give one of them another spelling. If one is the vertical form of the other, link them in <strong>Vertical form</strong> instead of repeating the spelling.</dd>
+          <dt>“start with a letter: a leading digit is read as a string or position number”</dt><dd>A Latin Entry must start with a letter; digits at the start mean strings and hui.</dd>
+          <dt>“use only letters a–z, A–Z and digits”</dt><dd>Latin entries take no spaces, accents or symbols; symbols go in Number/Symbol.</dd>
+          <dt>“alone it marks a position; it can't type a glyph”</dt><dd>点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “<em>x</em>” alone marks a position; it can't type a glyph.</dd>
+          <dt>“Chinese characters only”</dt><dd>The 简体 and 繁體 columns take only Chinese characters.</dd>
+          <dt>“<em>name</em> doesn't exist” / “Vertical form <em>name</em> doesn't exist.”</dt><dd>The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.</dd>
+          <dt>“joins <em>a</em> + <em>b</em>: typing <em>ab</em> gives this glyph instead of …”</dt><dd>A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.</dd>
+          <dt>Typing “<em>x</em>” gives <em>a + b</em>, not <em>glyph</em>.</dt><dd>Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.</dd>
+          <dt>“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”</dt><dd>The spelling or glyph is newer than the last build. <strong>Build font</strong> in <a href="/test">Build & test</a>.</dd>
+          <dt>“Build the font once to preview spellings.”</dt><dd>Try it needs one build first: <strong>Build font</strong>.</dd>
+          <dt>“Can't read <em>file</em>: no glyph_name column”</dt><dd>A spellings CSV needs a header row that includes <code>glyph_name</code>. <strong>Export spellings (CSV)</strong> gives a file of the right shape to start from.</dd>
+        </dl>
+
+        <h3 id="messages-editor">The glyph editor</h3>
+        <dl class="panels messages">
+          <dt>“Saved inputs/svg/<em>name</em>.svg · Layouts and the Tester use it now; the font needs a Build.”</dt><dd>The glyph is saved (online, into your draft). The font shows it after the next <strong>Build font</strong>.</dd>
+          <dt>“<em>name</em>.svg already exists on disk.” / “<em>name</em> already exists.”</dt><dd>A new glyph's name is taken. Open that glyph instead, or pick another name.</dd>
+          <dt>“<em>name</em>.svg changed on disk”</dt><dd>Someone, or another tab, wrote the file since you opened it. <strong>Compare</strong> shows the disk version as a dashed outline; then <strong>Load disk version</strong> or <strong>Overwrite with mine</strong>.</dd>
+          <dt>“the glyph is empty” / “Empty: nothing to save yet”</dt><dd>There is nothing to save: draw or import something first.</dd>
+          <dt>“Sticks out of the box”</dt><dd>Part of the drawing is outside the glyph's box, and Layouts places glyphs by their box. <strong>Fit to box</strong> or <strong>Center</strong> in the Selection panel, or change the area's box size in Layouts → Area Properties.</dd>
+          <dt>“<em>n</em> open lines: outlined on save”</dt><dd>Pen or Pencil lines that aren't filled shapes yet. <strong>Outline now</strong>, or let Save do it.</dd>
+          <dt>“<em>n</em> specks under 6 units”</dt><dd>Tiny bits, usually left by tracing. <strong>Remove them</strong>.</dd>
+          <dt>“the SVG needs a viewBox (or width and height)”</dt><dd>The SVG file has no size. Export it again from the drawing program with a size or artboard.</dd>
+          <dt>“Unable to convert to picosvg: BadElement: …”</dt><dd>The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.</dd>
+          <dt>“syntax error: line <em>n</em>, column <em>n</em>”</dt><dd>The file isn't a valid SVG. Export it again from the drawing program.</dd>
+          <dt>“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”</dt><dd>Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).</dd>
+          <dt>“trace failed: …”</dt><dd>The tracer couldn't use the image. Try a PNG or JPEG.</dd>
+        </dl>
+
+        <h3 id="messages-layouts">Layouts and areas</h3>
+        <dl class="panels messages">
+          <dt>“Not placed: <em>part</em> has no vertical rule in this shape”</dt><dd>Nothing tells the part where to sit in this word, so it's drawn at 0 in a red dashed box. Select it and add a rule in Spacing. If it already has one, look at the rule's rows: when none matches the glyphs in this word and there's no “otherwise” row, the rule doesn't apply. Add an otherwise row, or one for these glyphs.</dd>
+          <dt>“<em>n</em> skipped” / “Why <em>n</em> shapes are skipped”</dt><dd>Some combinations of parts get no positioning rule, so the font won't place those words. The list gives the reason for each; usually “no rule row for … and no "otherwise"”: add an otherwise row to that rule.</dd>
+          <dt>“no unconditional last entry; words whose glyphs match no entry are not positioned”</dt><dd>In Font budget: a spacing rule has only rows for particular glyphs. Add an otherwise row.</dd>
+          <dt>“Can't attach <em>A</em> to <em>B</em>: <em>B</em> is already placed relative to <em>A</em>”</dt><dd>That would go round in a circle. Attach the other way round, or remove the existing rule first.</dd>
+          <dt>“Can't delete <em>area</em>”</dt><dd>Only an empty area that no word type uses can be deleted. The banner lists what's left: remove its glyphs, and take it out of those word types in Structure (Advanced).</dd>
+          <dt>Messages that start with a word type's name, such as “standard/hui: unknown area 'x'”</dt><dd>The design names something that isn't there any more, usually after an import or a merge renamed an area or a part. Undo the last change, or fix the named word type in Layouts with <strong>Advanced</strong> on.</dd>
+        </dl>
+
+        <h3 id="messages-build">Build & test</h3>
+        <dl class="panels messages">
+          <dt>“ValidationError: input validation failed”</dt><dd>The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> and build again.</dd>
+          <dt>“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”</dt><dd>A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.</dd>
+          <dt>“FileNotFoundError: … src_font/TW-Kai-98.ttf”</dt><dd>The base font is missing. On your own computer, copy <code>TW-Kai-98.ttf</code> into <code>builder/src_font/</code> (it isn't in git). Online, the server couldn't fetch it: send <strong>Feedback</strong>.</dd>
+          <dt>“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in <em>n</em> seconds.”</dt><dd>Builds run one at a time, with a short pause between yours online. Wait, then <strong>Build font</strong> again.</dd>
+          <dt>“no build <em>id</em> (builds live only while this server runs)” / “could not load build …”</dt><dd>Builds are kept only until the server restarts. Build again.</dd>
+          <dt>“too many words (<em>n</em>); at most 2000 at a time”</dt><dd>Test fewer words at once.</dd>
+          <dt>“Something went wrong on the server. Try again, or send feedback.”</dt><dd>An error the server didn't expect. Try again; if it happens again, send <strong>Feedback</strong> saying what you did just before.</dd>
+        </dl>
+
+        <h3 id="messages-review">Drafts, review and import</h3>
+        <dl class="panels messages">
+          <dt>“<em>file</em> isn't a Builder draft: it has no manifest.json.”</dt><dd>The .zip wasn't made by <strong>Export my draft</strong>. A design file goes in through <I.More class="inl" aria-label="More" /> → <strong>Import…</strong> instead.</dd>
+          <dt>“This draft was made with a newer Builder. Update this Builder first.”</dt><dd>On your own computer: pull the latest code, rebuild the app (<code>npm run build</code> in <code>app/</code>) and restart the server.</dd>
+          <dt>“That file is not a .zip.” / “… in the zip is not valid JSON.” / “The draft has no usable design.json.” / “The draft lists … but has no file for it.”</dt><dd>The file is damaged or was changed by hand. Ask for a fresh export.</dd>
+          <dt>“Pick <em>n</em> conflicts first”</dt><dd>Apply waits until every <span class="pill danger"><I.Problem size={14} />Conflict</span> has a side picked.</dd>
+          <dt>“This isn't a Builder design file (needs version 2, layouts[] and areas&#123;&#125;).”</dt><dd><strong>Import…</strong> takes a design.json exported by the Builder.</dd>
+          <dt>“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”</dt><dd><strong>Feedback</strong> or <strong>Ask for an invite</strong> didn't go. Check your connection (an ad blocker can stop it too) and send again.</dd>
         </dl>
       </section>
     </article>
@@ -303,6 +399,10 @@
   .banner > div { flex: 1; min-width: 0; }
   .miss { color: var(--status-danger); }
   dt[id] { scroll-margin-top: var(--space-5); }
+  /* messages are long: the quote above, what to do below */
+  dl.messages { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+  dl.messages dd { margin-bottom: var(--space-4); }
+  h3[id] { scroll-margin-top: var(--space-5); }
   dt:target, dt:target + dd { background: var(--sel-bg); }
   @media (max-width: 760px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
