@@ -188,6 +188,18 @@ def test_no_path_traversal(server, app_build, path):
     assert b"root:" not in body and b"[project]" not in body and b"SUPABASE" not in body and b"SOURCE_FONT" not in body
 
 
+def test_missing_files_are_404_but_screens_get_the_app(server, app_build):
+    (app_build / "llms.txt").write_text("# JianZiPu 减字谱", encoding="utf-8")
+    with urllib.request.urlopen(server + "/llms.txt", timeout=10) as r:
+        assert r.headers["Content-Type"] == "text/plain; charset=utf-8"
+        assert r.read().decode("utf-8") == "# JianZiPu 减字谱"
+    for p in ("/robots.txt", "/help.md", "/sitemap.xml", "/nope.png"):
+        assert raw_get(server, p)[0] == 404, p
+    for p in ("/", "/help", "/glyphs/md_1.1/edit", "/layouts"):
+        status, body = raw_get(server, p)
+        assert status == 200 and body.startswith(b"<!doctype html><title>app"), p
+
+
 def test_safe_path():
     assert webserver._safe_path("/glyphs/md_9/edit")
     assert webserver._safe_path("/_app/immutable/x.js")

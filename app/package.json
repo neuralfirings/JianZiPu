@@ -11,7 +11,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "help:shots": "node scripts/help-shots.mjs"
+    "help:shots": "node scripts/help-shots.mjs",
+    "help:export": "node scripts/help-export.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.8",

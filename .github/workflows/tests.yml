@@ -25,6 +25,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npm test
+      - run: npm run help:export -- --check   # site/help*, llms.txt match the help page
       - run: npx svelte-check
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=moderate

@@ -6,6 +6,11 @@
   import { hosted } from '$lib/hosted.svelte';
   import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor, type PanelHelp } from '$lib/help';
 
+  // everyone: the copy for the public help (scripts/help-export.mjs), with both the online and the
+  // own-computer wording; in the app only the one that applies shows.
+  let { everyone = false }: { everyone?: boolean } = $props();
+  let online = $derived(everyone || hosted.isHosted);
+  let local = $derived(everyone || !hosted.isHosted);
   let scroller: HTMLElement;
   let current = $state(HELP_SECTIONS[0].id);
 
@@ -54,7 +59,9 @@
         </dl>
         <p>A usual round: change a glyph or a rule, watch it in the live preview, <strong>Save</strong>, then <strong>Build font</strong> and check the result in real text.</p>
         <div class="banner info"><span class="ic"><I.Info /></span><div>
-          {#if hosted.isHosted}
+          {#if everyone}
+            The Builder runs in two ways. <strong>Online</strong>, for invited testers, everything you do goes into <a href="#draft">your own draft</a>; the real font doesn't change until your draft is reviewed. <strong>On your own computer</strong> (the <span class="chip dashed">Local files</span> chip in the header), Save writes the files in <code>builder/inputs/</code>, which you then commit.
+          {:else if hosted.isHosted}
             You're using the online Builder. Everything you do goes into <a href="#draft">your own draft</a>; the real font doesn't change until your draft is reviewed.
           {:else}
             You're using the Builder on your own computer (the <span class="chip dashed">Local files</span> chip in the header). Save writes the files in <code>builder/inputs/</code>, which you then commit.
@@ -137,7 +144,7 @@
         <p>Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(EDITOR_HELP)}
         <h3>Saving a glyph</h3>
-        <p>The editor has its own <strong>Save glyph</strong> (<kbd>⌘S</kbd>) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. {#if hosted.isHosted}Saving puts the glyph into your draft.{:else}Saving writes <code>builder/inputs/svg/&lt;name&gt;.svg</code> at once; if the file changed on disk meanwhile, you're asked which version to keep.{/if} A new glyph joins its area on its first save. The font picks up the new drawing at the next <strong>Build font</strong>.</p>
+        <p>The editor has its own <strong>Save glyph</strong> (<kbd>⌘S</kbd>) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. {#if online}Online, saving puts the glyph into your draft.{/if} {#if local}On your own computer, saving writes <code>builder/inputs/svg/&lt;name&gt;.svg</code> at once; if the file changed on disk meanwhile, you're asked which version to keep.{/if} A new glyph joins its area on its first save. The font picks up the new drawing at the next <strong>Build font</strong>.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -162,7 +169,7 @@
         <h2>Build & test</h2>
         <p><a href="/test">Build & test</a> makes the real font file and shows text in it.</p>
         <ul>
-          <li><strong>Build font</strong> builds from the saved files. {#if hosted.isHosted}Online, it builds from your draft as it is now, unsaved edits included.{:else}With unsaved changes the button reads <strong>Save & build</strong> and saves first.{/if} It takes about half a minute; the build log opens below.</li>
+          <li><strong>Build font</strong> builds from the saved files. {#if online}Online, it builds from your draft as it is now, unsaved edits included.{/if} {#if local}On your own computer, with unsaved changes the button reads <strong>Save & build</strong> and saves first.{/if} It takes about half a minute; the build log opens below.</li>
           <li>Each build is a separate file. <strong>Download JianZiPu.ttf</strong> saves it; earlier builds from this session stay in the list.</li>
           <li><strong>Font</strong> is the font the page shows: the newest build, an earlier one, or any <strong>.ttf file</strong> you open (the released font, say). It's loaded into the page under its own name, so a JianZiPu installed on your computer never stands in for it.</li>
         </ul>
@@ -184,11 +191,12 @@
           <li><I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
           <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a>.</li>
           <li>Unsaved work survives a reload: the Builder offers to restore it.</li>
-          {#if hosted.isHosted}
+          {#if online}
             <li>Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.</li>
-          {:else}
-            <li>Save writes <code>design.json</code> and <code>components.csv</code> in <code>builder/inputs/</code> (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.</li>
-            <li><I.More class="inl" aria-label="More" /> → <strong>Export…</strong> / <strong>Import…</strong> move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.</li>
+          {/if}
+          {#if local}
+            <li>On your own computer, Save writes <code>design.json</code> and <code>components.csv</code> in <code>builder/inputs/</code> (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.</li>
+            <li>On your own computer, <I.More class="inl" aria-label="More" /> → <strong>Export…</strong> / <strong>Import…</strong> move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.</li>
           {/if}
         </ul>
       </section>
