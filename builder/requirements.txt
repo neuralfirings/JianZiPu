@@ -1,6 +1,6 @@
 # Exact versions for the hosted image (Dockerfile) and CI; pyproject.toml keeps the ranges.
 # Bump deliberately: rebuild, run the tests, and compare with tests/test_shaping.py.
 fonttools==4.59.0
-picosvg==0.22.3
+picosvg==0.23.0
 skia-pathops==0.9.2
 uharfbuzz==0.55.0
