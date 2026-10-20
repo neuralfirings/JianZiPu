@@ -169,3 +169,17 @@ def test_the_local_server_runs_one_release_step_at_a_time(monkeypatch):
             break
         threading.Event().wait(0.02)
     assert r.job["error"] == "not merged"
+
+
+def test_a_tag_must_match_the_version_in_its_files_and_brings_its_notes(repo):
+    release.start("3.200", repo=repo, log=lambda _: None)
+    (repo / "builder" / "inputs" / "design.json").write_text('{"v": 2}\n')
+    candidate(repo, notes="### Changed\n\n- Hui spacing (thanks to Mei Chen)")
+    notes = release.tag_notes("v3.200-rc.1", repo=repo)
+    assert notes.startswith("This is a release candidate")
+    assert "- Hui spacing (thanks to Mei Chen)" in notes and "3.100" not in notes
+    assert not release.tag_notes("v3.200", repo=repo).startswith("This is a release candidate")
+    with pytest.raises(ReleaseError, match="version 3.200"):
+        release.tag_notes("v3.300", repo=repo)
+    with pytest.raises(ReleaseError, match="isn't a release tag"):
+        release.tag_notes("v3.2", repo=repo)

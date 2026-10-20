@@ -40,12 +40,11 @@ private draft until it is reviewed; see `builder/README.md` "Hosted pilot".
 
 `site/` is the public font page at [jianzipufont.com](https://jianzipufont.com):
 a static page that types in the released font. Cloudflare Pages deploys it from
-`main` (output directory `site`, no build command). To publish a new font,
-build it into the site and commit:
-
-```bash
-cd builder && python3 -m jzpbuild -o ../site/JianZiPu.ttf
-```
+`main` (output directory `site`, no build command). A new font is published as a
+release from the local Builder's Release screen: it builds the font into
+`site/JianZiPu.ttf`, tags it, and GitHub publishes it on the
+[releases page](https://github.com/neuralfirings/JianZiPu/releases). See
+`builder/README.md` "Releases", and `CHANGELOG.md` for what each version changed.
 
 The Builder itself runs at builder.jianzipufont.com (see `builder/README.md`
 "Hosted pilot").

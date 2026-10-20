@@ -7,6 +7,7 @@ command line does the same:
     python3 -m jzpbuild.release candidate --notes notes.md     # commit, build, tag v3.200-rc.N, push
     python3 -m jzpbuild.release publish                        # after the release PR is merged: tag v3.200
     python3 -m jzpbuild.release scope --base origin/main --head HEAD --branch <name>   # CI check
+    python3 -m jzpbuild.release notes v3.200-rc.1    # CI: check the tag matches the files, print its notes
 
 A release branch carries only font files (FONT_PATHS); Builder code goes to main on its own
 branches. `scope` checks both directions, here and in CI (.github/workflows/scope.yml).
@@ -268,6 +269,29 @@ def publish(version: str | None = None, repo: Path = REPO, log: Log = print, pus
     return {"tag": tag, "version": version, "release_url": f"https://github.com/{slug}/releases/tag/{tag}"}
 
 
+def changelog_section(text: str, version: str) -> str:
+    """The body of one version's CHANGELOG section (empty if there is none)."""
+    m = re.search(rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    return m.group(1).strip() if m else ""
+
+
+def tag_notes(tag: str, repo: Path = REPO) -> str:
+    """For the release workflow: refuse a tag that doesn't match the version in the files it
+    points at, and return the release notes (its CHANGELOG section)."""
+    m = re.fullmatch(r"v(\d+\.\d{3})(-rc\.\d+)?", tag)
+    if not m:
+        raise ReleaseError(f"{tag} isn't a release tag (v3.200 or v3.200-rc.1)")
+    version = m.group(1)
+    have = (repo / "builder" / "VERSION").read_text().strip()
+    site = json.loads((repo / "site" / "version.json").read_text()).get("version") if (repo / "site" / "version.json").exists() else None
+    if have != version or site != version:
+        raise ReleaseError(f"{tag} points at files for version {have} (site/version.json: {site}); build the release with the Release screen")
+    cl = repo / "CHANGELOG.md"
+    body = changelog_section(cl.read_text(), version) if cl.exists() else ""
+    pre = "This is a release candidate: a test version of the next font. " if m.group(2) else ""
+    return f"{pre}{body}\n\nDownload JianZiPu.ttf below, or from https://jianzipufont.com.".strip() + "\n"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="jzpbuild.release", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -281,6 +305,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("publish")
     p.add_argument("version", nargs="?")
     p.add_argument("--no-push", action="store_true")
+    p = sub.add_parser("notes", help="check a tag against the files and print its release notes (CI)")
+    p.add_argument("tag")
     p = sub.add_parser("scope", help="list files this branch may not change (CI)")
     p.add_argument("--base", default="origin/main")
     p.add_argument("--head", default="HEAD")
@@ -296,6 +322,8 @@ def main(argv=None) -> int:
             print(json.dumps(candidate(notes, args.message, push=not args.no_push), indent=2))
         elif args.cmd == "publish":
             print(json.dumps(publish(args.version, push=not args.no_push), indent=2))
+        elif args.cmd == "notes":
+            sys.stdout.write(tag_notes(args.tag))
         elif args.cmd == "scope":
             files = git("diff", "--name-only", f"{args.base}...{args.head}").splitlines()
             bad = scope(files, args.branch)

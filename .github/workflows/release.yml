@@ -1,0 +1,38 @@
+# A release tag (pushed by the Release screen, jzpbuild/release.py) becomes a GitHub Release with the
+# font attached: v3.200-rc.1 is a pre-release, v3.200 the latest release. The font is the one
+# committed in site/JianZiPu.ttf at that tag (CI can't build it: TW-Kai isn't in the repo).
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the tag against the files, and write the notes
+        working-directory: builder
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python -m jzpbuild.release notes "$TAG" > "$RUNNER_TEMP/notes.md"
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"; version="${version%%-rc.*}"
+          if [[ "$TAG" == *-rc.* ]]; then
+            gh release create "$TAG" site/JianZiPu.ttf --title "JianZiPu $version, release candidate ${TAG##*-rc.}" \
+              --notes-file "$RUNNER_TEMP/notes.md" --prerelease
+          else
+            gh release create "$TAG" site/JianZiPu.ttf --title "JianZiPu $version" \
+              --notes-file "$RUNNER_TEMP/notes.md" --latest
+          fi

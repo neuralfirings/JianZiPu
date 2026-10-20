@@ -121,7 +121,8 @@ browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only
         │  draft (bundle JSON) ◀─────────▶ Supabase table drafts (one row per tester)
         └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
                                       in a temp dir; base font fetched from Storage assets/)
-your machine: webserver (local) → /review → Supabase (admin) or a .zip → Apply → Save → git commit
+        └─ Change Requests ──▶ Supabase table change_requests ──webhook──▶ Edge Function notify ──▶ email
+your machine: webserver (local) → /review (decide) → /release (candidate branch, tags) → GitHub
 ```
 
 - **Server** (`webserver --hosted` or `JZP_HOSTED=1`, `jzpbuild/hosted.py`): PUT and DELETE answer 403;
@@ -184,13 +185,63 @@ cd builder && SUPABASE_SERVICE_KEY=... python3 -m jzpbuild.migrate_drafts       
 Check the rows (Table Editor → drafts), run `supabase/003_drop_drafts_bucket.sql`, then delete the
 `drafts` bucket in Storage.
 
-### Merging a tester's draft
+### Change Requests
 
-Review → the tester's row → each item shows what changed; Keep or Skip it (a conflict, where your
-Builder also changed the same thing since the draft started, needs a pick). **Apply** turns the kept items
-into one undoable step of unsaved changes, glyph files included. Look them over in Layouts and
-Build & test, **Save**, then commit with the message the toast copies ("Apply Mei Chen's draft: …"). The row
-is marked "reviewed" in this browser; a later save by the tester shows "new since you looked".
+A tester sends chosen changes from their draft as a **Change Request** (Your changes → Send Change
+Request…: title, notes, how to credit them). Before it goes, the draft is saved, the chosen spellings
+are checked and a font is built from just those changes. Sent changes are locked in the tester's
+draft until the request is withdrawn (possible until an admin keeps one of its changes) or
+declined. Table, row rules and the two RPCs: `supabase/004_change_requests.sql`; app side
+`app/src/lib/requests.ts`; emails `supabase/functions/notify/` (its README has the setup).
+
+Review (local, signed in as the admin) lists them: open one, Keep or Skip each change, reply, **Save
+decisions**. That writes the decisions on the request and emails its author; nothing goes into the
+font until a release candidate (below).
+
+### Merging a tester's draft directly
+
+Review → Current drafts → the tester's row (or Open a .zip) → each item shows what changed; Keep or
+Skip it (a conflict, where your Builder also changed the same thing since the draft started, needs a
+pick). **Apply** turns the kept items into one undoable step of unsaved changes, glyph files
+included. Look them over in Layouts and Build & test, **Save**, then commit with the message the
+toast copies ("Apply Mei Chen's draft: …"). The row is marked "reviewed" in this browser; a later
+save by the tester shows "new since you looked".
+
+## Releases
+
+A release turns kept changes into a new version of the font. The local Builder's **Release** screen
+walks through it, and runs git for you with your own GitHub sign-in (`jzpbuild/release.py`; the same
+steps on the command line: `python3 -m jzpbuild.release status|start|candidate|publish`):
+
+1. **Start a release candidate** `3.200`: the branch `release/3.200` from `origin/main`.
+2. **Add kept changes**: every kept change of the reviewed Change Requests, oldest first, as unsaved
+   changes (where two requests change the same thing, you pick). Check in Layouts and Build & test, Save.
+3. **Build candidate**: runs the builder tests, commits `builder/inputs/`, builds the font into
+   `site/JianZiPu.ttf` (name ID 5 "Version 3.200; git-<commit>", `head.fontRevision` 3.2), writes
+   `builder/VERSION`, `site/version.json` and the `CHANGELOG.md` entry, tags `v3.200-rc.1` and pushes.
+   `.github/workflows/release.yml` publishes the tag as a GitHub pre-release with the font attached;
+   the included requests become In a release candidate and their authors get an email. Open the pull
+   request from the link. A fix means another candidate (`rc.2`).
+4. Merge the pull request, then **Publish**: tags `v3.200` on main; the workflow publishes the release
+   as the latest, Cloudflare serves the new `site/JianZiPu.ttf` (the MailerLite download email links to
+   `https://jianzipufont.com/JianZiPu.ttf`, so it always sends the newest), Railway redeploys the hosted
+   Builder from main, and the requests become Released.
+
+Versions are `MAJOR.MINOR` with a three-digit minor (`3.100`, `3.200`, `3.201`): the font stores the
+version as a number, so 3.10 would equal 3.1. Raise the major number only when existing documents would
+look different or break (PUA codepoints move, a spelling is removed or changes meaning).
+
+**What a branch may change.** A release branch carries only font files: `builder/inputs/`,
+`builder/VERSION`, `CHANGELOG.md`, `site/JianZiPu.ttf`, `site/version.json` (and
+`builder/tests/JianZiPu.ttf`); every other branch carries none of them. `release.py scope` checks
+this, in Build candidate and in `.github/workflows/scope.yml` on every pull request. The label
+`font-files` on a pull request lets an admin pass it on purpose (say, a design.json format change that
+converts the file).
+
+**The ruleset on main** (GitHub → Settings → Rules → Rulesets → New branch ruleset; target `main`):
+require a pull request before merging (0 approvals is fine), require the status checks `scope`,
+`app`, `builder` and `emails`, and add Repository admin to the bypass list so an emergency fix can
+still go straight in. Rulesets are free on public repositories.
 
 ## Command line
 
@@ -415,7 +466,7 @@ font) are the two columns the build actually reads; two more,
   which file/function to also touch.
 - `type=unreferenced` — kept for a future feature, not currently used by
   anything (`弦`/`絃` `ch_xian`/`ch_xian_trad`: added to the font ahead of
-  a planned string-indicator feature described in `versions.md`, but never
+  a planned string-indicator feature described in `CHANGELOG.md`, but never
   wired into `components.csv`).
 
 Every other Chinese-spelled character (the vast majority — anything used in
