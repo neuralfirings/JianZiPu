@@ -3,23 +3,28 @@
   // you changed and why, and how you'd like to be credited. Before it goes: the draft is saved,
   // the chosen spellings mustn't clash, and a font built from just those changes must build.
   // Once sent, those changes are locked in the draft until the request is withdrawn or declined.
+  // Save as draft keeps the form (ticks, title, notes, credit) with the tester's draft in Supabase,
+  // to finish later, here or on another computer; it opens again from where it was.
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
-  import { buildInputs, myCredit, sendRequest, setCredit, snapshot } from '$lib/requests';
+  import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
-  // everything ticked to start with (the list doesn't change while the dialog is open)
-  const allTicked = () => Object.fromEntries(items.map((i) => [i.id, true]));
-  let chosen = $state<Record<string, boolean>>(allTicked());
-  let title = $state('');
-  let notes = $state('');
-  let credit = $state('');
+  // everything ticked to start with, or where a saved draft request left off (the list doesn't
+  // change while the dialog is open)
+  const saved = () => app.requestDraft;
+  const ticks = () => startingTicks(items.map((i) => i.id), saved());
+  let chosen = $state<Record<string, boolean>>(ticks());
+  let title = $state(saved()?.title ?? '');
+  let notes = $state(saved()?.notes ?? '');
+  let credit = $state(saved()?.credit ?? '');
+  let keeping = $state(false);
   let savedCredit = '';
   let step = $state<'form' | 'checking' | 'sending'>('form');
   let problem = $state<string | null>(null);
@@ -53,6 +58,22 @@
     return s.ok ? null : (s.log.join('\n').match(/.*Error.*/)?.[0] ?? 'The font did not build with these changes.');
   }
 
+  /** Keep the form to finish later (the draft is saved first, so the request has a row to sit on). */
+  async function saveAsDraft() {
+    problem = null;
+    keeping = true;
+    try {
+      if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
+      await app.keepRequestDraft({ title, notes, credit, chosen: picked.map((i) => i.id), seen: items.map((i) => i.id), saved_at: new Date().toISOString() });
+      pilot.say(`Saved "${title.trim() || 'your Change Request'}" as a draft. Finish it from Your Change Requests, or here.`);
+      onclose();
+    } catch (e) {
+      problem = (e as Error).message;
+    } finally {
+      keeping = false;
+    }
+  }
+
   async function send() {
     problem = null;
     const c = hosted.client;
@@ -71,6 +92,7 @@
       if (credit.trim() !== savedCredit) await setCredit(c, credit).catch(() => {});
       const r = await sendRequest(c, { title, notes, credit, bundle, itemIds });
       app.requestSent(r);
+      if (app.requestDraft) await app.keepRequestDraft(null).catch(() => {});
       pilot.say(`Sent "${r.title}". Its changes are locked in your draft while it's reviewed.`);
       onclose();
     } catch (e) {
@@ -85,6 +107,7 @@
   <div class="modal send" role="dialog" aria-modal="true" aria-labelledby="send-h" tabindex="-1"
     onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && step === 'form' && onclose()}>
     <h3 id="send-h">Send a Change Request</h3>
+    {#if app.requestDraft}<p class="muted small">Your draft from {new Date(app.requestDraft.saved_at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}. Changes you made since are ticked.</p>{/if}
     <p class="muted">The font's maintainer reviews it and keeps or skips each change. Once it's sent, these changes are locked in your draft: you can read them, but not edit or undo them, unless you withdraw the request or it's declined.</p>
 
     <fieldset>
@@ -105,8 +128,8 @@
       <textarea id="cr-notes" bind:value={notes} rows="5" maxlength="20000" placeholder="Which words look better now, what you tried, anything you're unsure about."></textarea>
     </label>
     <label class="field">How would you like to be credited?
-      <input id="cr-credit" type="text" bind:value={credit} maxlength="200" placeholder="Your name as it should appear in the release notes" />
-      <span class="muted small">Used in the changelog and release notes when your changes go into a release. Leave it empty for no credit. It's remembered for next time.</span>
+      <input id="cr-credit" type="text" bind:value={credit} maxlength="200" placeholder="Mei Chen" />
+      <span class="muted small">Your name the way it should read in the release notes, which say "thanks to" before it. For example <b>Mei Chen</b>, or with a group: <b>Mei Chen (Taipei Qin Society)</b>. Leave it empty for no credit. It's remembered for next time.</span>
     </label>
 
     {#if problem}<div class="banner danger" role="alert"><span class="ic"><I.Problem /></span><span>{problem}</span></div>{/if}
@@ -115,8 +138,9 @@
     {/if}
 
     <div class="row end">
-      <button onclick={onclose} disabled={step !== 'form'}>Cancel</button>
-      <button class="primary" onclick={send} disabled={step !== 'form' || !picked.length}><I.Send size={14} /> {step === 'sending' ? 'Sending…' : step === 'checking' ? 'Checking…' : 'Send'}</button>
+      <button onclick={onclose} disabled={step !== 'form' || keeping}>Cancel</button>
+      <button onclick={saveAsDraft} disabled={step !== 'form' || keeping}>{keeping ? 'Saving…' : 'Save as draft'}</button>
+      <button class="primary" onclick={send} disabled={step !== 'form' || keeping || !picked.length}><I.Send size={14} /> {step === 'sending' ? 'Sending…' : step === 'checking' ? 'Checking…' : 'Send'}</button>
     </div>
   </div>
 </div>

@@ -31,7 +31,9 @@ vi.mock('./drafts', async () => {
       store.draft = { text: toJson(b), stamp: `t${++store.n}` };
       return store.draft.stamp;
     }),
-    deleteDraft: vi.fn(async () => { store.draft = null; })
+    deleteDraft: vi.fn(async () => { store.draft = null; }),
+    loadRequestDraft: vi.fn(async () => null),
+    saveRequestDraft: vi.fn(async () => {})
   };
 });
 const hosted = vi.hoisted(() => ({ isHosted: false, client: {}, user: { id: 'u1', name: 'Mei', email: 'mei@example.com' } as { id: string; name: string; email: string } | null, signedOut: false, firstName: 'Mei' }));

@@ -7,11 +7,11 @@
 // to Supabase (drafts.ts) instead of writing files, and saves itself every 30 s.
 import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type Stats } from './api';
 import { diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
-import { deleteDraft, DraftConflict, draftStamp, loadDraft, saveDraft } from './drafts';
+import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
 import { day, pilot } from './pilot.svelte';
-import { lockedItems, myRequests, type ChangeRequest, type Lock } from './requests';
+import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import * as T from './typing';
 
 const DRAFT_KEY = 'jzp-builder-draft';
@@ -90,6 +90,8 @@ class DesignState {
   savedElsewhere = $state<string | null>(null);
   /** The tester's Change Requests (hosted); their sent changes are locked in the draft. */
   requests = $state<ChangeRequest[]>([]);
+  /** A Change Request written but not sent yet (hosted), kept with the draft. */
+  requestDraft = $state<RequestDraft | null>(null);
 
   /** Draft items (merge.ts ids) a Change Request holds, so they can't be edited or undone. */
   get locks(): Record<string, Lock> {
@@ -129,6 +131,13 @@ class DesignState {
     this.requests = [r, ...this.requests.filter((x) => x.id !== r.id)];
     this.undoStack = [];
     this.redoStack = [];
+  }
+  /** Keep the Change Request being written (null: drop it), with the draft in Supabase. */
+  async keepRequestDraft(d: RequestDraft | null) {
+    const c = hosted.client, uid = hosted.user?.id;
+    if (!c || !uid) throw new Error('Sign in again to save.');
+    await saveRequestDraft(c, uid, d);
+    this.requestDraft = d;
   }
   /** Load the tester's requests again (a status may have moved on). */
   async refreshRequests() {
@@ -256,6 +265,7 @@ class DesignState {
       design: clone(mainDesign), typing: clone(mainTyping), svgs: {}
     });
     this.requests = c && uid ? await myRequests(c, uid).catch(() => []) : [];
+    this.requestDraft = c && uid ? await loadRequestDraft(c, uid) : null;
     const got = c && uid ? await loadDraft(c, uid) : null;
     if (!got) {
       this.draftBase = fresh();

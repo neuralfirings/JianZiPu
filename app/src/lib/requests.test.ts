@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { buildInputs, canWithdraw, draftItems, lockedItems, snapshot, type ChangeRequest } from './requests';
+import { buildInputs, canWithdraw, draftItems, lockedItems, snapshot, startingTicks, type ChangeRequest } from './requests';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -50,6 +50,14 @@ describe('locks', () => {
     expect(canWithdraw({ status: 'in_review', decisions: { a: 'skip' } })).toBe(true);
     expect(canWithdraw({ status: 'in_review', decisions: { a: 'keep' } })).toBe(false);
     expect(canWithdraw({ status: 'in_candidate', decisions: {} })).toBe(false);
+  });
+});
+
+describe('draft request', () => {
+  it('starts with everything ticked, or where a saved draft left off; newer changes start ticked', () => {
+    expect(startingTicks(['a', 'b'], null)).toEqual({ a: true, b: true });
+    const d = { title: 't', notes: '', credit: '', chosen: ['a'], seen: ['a', 'b', 'gone'], saved_at: '' };
+    expect(startingTicks(['a', 'b', 'new'], d)).toEqual({ a: true, b: false, new: true });
   });
 });
 

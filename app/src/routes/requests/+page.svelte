@@ -28,6 +28,15 @@
     if (r.status === 'in_review' && Object.keys(r.decisions).length) return `${kept} of ${plural(n, 'change')} kept so far`;
     return plural(n, 'change');
   }
+  async function dropDraft() {
+    asking = null;
+    try {
+      await app.keepRequestDraft(null);
+      pilot.say('Deleted the draft request. Your changes are still in your draft.');
+    } catch (e) {
+      err = (e as Error).message;
+    }
+  }
   async function takeBack(r: ChangeRequest) {
     asking = null;
     try {
@@ -51,7 +60,27 @@
   {:else}
     <p class="muted">Each request is a set of changes from your draft that you sent for the font. While it's being looked at, its changes are locked in your draft. You get an email when its status changes.</p>
     {#if err}<div class="banner danger" role="alert"><span class="ic"><I.Problem /></span><span>{err}</span></div>{/if}
-    {#if !app.requests.length}
+    {#if app.requestDraft}
+      {@const d = app.requestDraft}
+      <article class="req unsent">
+        <div class="rhead">
+          <h3>{d.title.trim() || 'Untitled Change Request'}</h3>
+          <span class="pill draft"><I.Draft size={14} />Draft · not sent</span>
+          <span class="spacer"></span>
+          {#if asking === 'draft'}
+            <span class="muted small">Delete this draft request? Your changes stay in your draft.</span>
+            <button class="sm" onclick={() => (asking = null)}>Keep it</button>
+            <button class="sm danger" onclick={dropDraft}>Delete</button>
+          {:else}
+            <button class="sm" onclick={() => (asking = 'draft')}>Delete…</button>
+          {/if}
+          <a class="btnlink" href="/review?mine&send">Continue…</a>
+        </div>
+        <p class="muted small">Saved {day(d.saved_at)} {hhmm(d.saved_at)} · {plural(d.chosen.length, 'change')} ticked{d.credit ? ` · credited as ${d.credit}` : ''}</p>
+        {#if d.notes}<p class="notes">{d.notes}</p>{/if}
+      </article>
+    {/if}
+    {#if !app.requests.length && !app.requestDraft}
       <p class="empty">None yet. On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong> when some of your changes are ready.</p>
     {/if}
     {#each app.requests as r (r.id)}
@@ -95,6 +124,8 @@
   .req { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--bg-panel); display: flex; flex-direction: column; gap: var(--space-3); }
   .req p { margin: 0; }
   .rhead { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .req.unsent { border-style: dashed; }
+  .btnlink { font-weight: 600; }
   .notes { white-space: pre-wrap; max-width: 70ch; }
   .reply { border-left: 2px solid var(--link); padding: var(--space-2) var(--space-4); background: var(--bg-sunken); }
   .reply p { white-space: pre-wrap; margin-top: var(--space-2); }

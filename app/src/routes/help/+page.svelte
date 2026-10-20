@@ -211,7 +211,8 @@
         <h2>Change Requests</h2>
         <p>When some of your changes are ready for the real font, send them as a <strong>Change Request</strong> (a CR). The font's maintainer looks at each change, keeps or skips it, and replies.</p>
         <ul>
-          <li>On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong>. Every change is ticked to start with; untick any you want to keep working on. Give it a title, say what you changed and why, and how you'd like to be credited in the release notes (leave that empty for no credit).</li>
+          <li>On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong>. Every change is ticked to start with; untick any you want to keep working on. Give it a title, say what you changed and why, and how you'd like to be credited in the release notes: your name the way it should read, such as <em>Mei Chen</em> or <em>Mei Chen (Taipei Qin Society)</em>, or nothing for no credit.</li>
+          <li><strong>Save as draft</strong> keeps the request with your draft, ticks and notes included, so you can finish it later, on this computer or another. It shows on <a href="/requests">Your Change Requests</a> as <strong>Draft · not sent</strong>, with <strong>Continue…</strong> to pick it up again.</li>
           <li>Before it goes, the Builder saves your draft, checks the chosen spellings don't clash, and builds a font with just those changes.</li>
           <li>Once sent, those changes are <strong>locked</strong> in your draft <I.Lock class="inl" aria-label="locked" />: you can look at them and try words, but not edit or undo them. Everything else stays yours to change.</li>
           <li><a href="/requests">Your Change Requests</a> shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.</li>

@@ -4,6 +4,7 @@
 // this tab loaded (its updated_at, the "stamp"), so two tabs can't overwrite each other unseen.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fromStored, toJson, type Bundle } from './bundle';
+import type { RequestDraft } from './requests';
 
 export const TABLE = 'drafts';
 
@@ -41,6 +42,21 @@ export async function saveDraft(c: SupabaseClient, _uid: string, b: Bundle, expe
 export async function deleteDraft(c: SupabaseClient, uid: string) {
   const { error } = await c.from(TABLE).delete().eq('user_id', uid);
   if (error) throw new Error(error.message);
+}
+
+/** The Change Request being written but not sent yet (supabase/005_request_drafts.sql), or null.
+ *  A project without that column yet reads as none. */
+export async function loadRequestDraft(c: SupabaseClient, uid: string): Promise<RequestDraft | null> {
+  const { data, error } = await c.from(TABLE).select('request_draft').eq('user_id', uid).maybeSingle();
+  if (error || !data) return null;
+  return ((data as { request_draft: RequestDraft | null }).request_draft) ?? null;
+}
+
+/** Keep (or with null, drop) the unsent Change Request on the tester's own draft row. */
+export async function saveRequestDraft(c: SupabaseClient, uid: string, d: RequestDraft | null) {
+  const { data, error } = await c.from(TABLE).update({ request_draft: d }).eq('user_id', uid).select('user_id');
+  if (error) throw new Error(/request_draft/.test(error.message) ? 'Saving a draft request needs supabase/005_request_drafts.sql run first.' : error.message);
+  if (!data?.length) throw new Error('Save your draft first: there is nothing stored to keep the request with yet.');
 }
 
 export type DraftRow = { uid: string; name: string; email: string; stamp: string };

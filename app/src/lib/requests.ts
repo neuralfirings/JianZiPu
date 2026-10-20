@@ -38,6 +38,16 @@ export function canWithdraw(r: Pick<ChangeRequest, 'status' | 'decisions'>): boo
 }
 export const keptIds = (r: Pick<ChangeRequest, 'item_ids' | 'decisions'>) => r.item_ids.filter((id) => r.decisions[id] === 'keep');
 
+/** A Change Request written but not sent yet (kept on the drafts row, drafts.ts). `seen` is every
+ *  change the form listed when it was saved, so a change made since starts ticked. */
+export type RequestDraft = { title: string; notes: string; credit: string; chosen: string[]; seen: string[]; saved_at: string };
+
+/** The ticks to start the Send form with: everything, or what a saved draft request chose (changes
+ *  made since it was saved start ticked; changes that are gone drop out). */
+export function startingTicks(ids: string[], d: RequestDraft | null): Record<string, boolean> {
+  return Object.fromEntries(ids.map((id) => [id, !d || d.chosen.includes(id) || !d.seen.includes(id)]));
+}
+
 export type Lock = { id: string; title: string; sent: string };
 /** The draft items a tester's requests hold: every change of an open request, and the kept
  *  changes of one in a release candidate or released. Withdrawn and declined hold nothing. */

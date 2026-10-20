@@ -155,7 +155,7 @@
     </label>
     <ReviewView bundle={current.bundle} mode="decide" name={current.title} decisions={current.decisions} ondecide={decide} />
   {:else if mine && myBundle}
-    <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} />
+    <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} send={page.url.searchParams.has('send')} />
   {:else if pilot.review}
     <div class="back"><button class="link" onclick={() => (pilot.review = null)}><I.Back size={14} /> {hosted.isHosted ? 'Cancel' : 'All drafts'}</button></div>
     <ReviewView bundle={pilot.review.bundle} mode={hosted.isHosted ? 'import' : 'owner'} name={pilot.review.source.name} onapplied={applied} />

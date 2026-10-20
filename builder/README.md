@@ -192,7 +192,7 @@ Request…: title, notes, how to credit them). Before it goes, the draft is save
 are checked and a font is built from just those changes. Sent changes are locked in the tester's
 draft until the request is withdrawn (possible until an admin keeps one of its changes) or
 declined. Table, row rules and the two RPCs: `supabase/004_change_requests.sql`; app side
-`app/src/lib/requests.ts`; emails `supabase/functions/notify/` (its README has the setup).
+`app/src/lib/requests.ts`; emails `supabase/functions/notify/` (its README has the setup). **Save as draft** in the Send form keeps it unsent in `drafts.request_draft` (`supabase/005_request_drafts.sql`), shown on Your Change Requests with Continue.
 
 Review (local, signed in as the admin) lists them: open one, Keep or Skip each change, reply, **Save
 decisions**. That writes the decisions on the request and emails its author; nothing goes into the

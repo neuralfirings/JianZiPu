@@ -21,10 +21,12 @@
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
-  let { bundle, mode, name, onapplied, onexport, decisions = {}, ondecide }: {
+  let { bundle, mode, name, onapplied, onexport, decisions = {}, ondecide, send = false }: {
     bundle: Bundle; mode: 'owner' | 'import' | 'mine' | 'sent' | 'decide'; name: string;
     onapplied?: (r: { count: number; message: string }) => void;
     onexport?: () => void;
+    /** mine: open Send Change Request straight away (Continue from Your Change Requests). */
+    send?: boolean;
     /** decide: the saved decisions to start from, and what Save decisions hands back. */
     decisions?: Record<string, 'keep' | 'skip'>;
     ondecide?: (d: Record<string, 'keep' | 'skip'>) => void;
@@ -94,6 +96,7 @@
   const lockOf = (it: Item) => (mode === 'mine' ? app.lockOf(it.id) : undefined);
   let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id)) : []);
   let sending = $state(false);
+  $effect(() => { if (send && mode === 'mine') sending = true; });
   const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.key);
   /** A new glyph that spellings or areas still use: its id while "undo all of it?" is showing. */
   let asking = $state<string | null>(null);
