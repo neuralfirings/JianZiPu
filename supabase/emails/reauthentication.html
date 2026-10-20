@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Your confirmation code</title>
+</head>
+<body style="margin:0;padding:0;background:#eeeeee;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eeeeee;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#fafafa;border:1px solid #c4c4c4;border-radius:6px;">
+        <tr>
+          <td style="padding:28px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:15px;line-height:1.4;color:#595959;">
+            JZP Font Builder
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:26px;line-height:1.25;font-weight:500;color:#2a2a2a;">
+            Your confirmation code
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 0 32px;font-family:Literata,Georgia,serif;font-size:15px;line-height:1.6;color:#2a2a2a;">
+            Enter this code in the JZP Font Builder to confirm it is you.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px 24px 32px;">
+            <div style="display:inline-block;padding:12px 20px;border:1px solid #858585;border-radius:4px;background:#ffffff;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:24px;letter-spacing:4px;color:#2a2a2a;">{{ .Token }}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 28px 32px;font-family:Literata,Georgia,serif;font-size:13px;line-height:1.6;color:#767676;border-top:1px solid #dcdcdc;">
+            This email went to {{ .Email }}. If you did not ask for a code, you can ignore it.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

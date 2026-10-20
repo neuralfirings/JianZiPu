@@ -152,7 +152,8 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and
    `assets` buckets, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
    set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
-   Review), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
+   Review), paste the email templates from `supabase/emails/` (its README says how;
+   do this before inviting anyone), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
 2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`. The "Ask for an invite" and Feedback forms post to Formspree from the app (`app/src/lib/forms.ts`), so they need no setting.
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.

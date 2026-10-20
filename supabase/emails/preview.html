@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..600&family=Literata:opsz,wght@7..72,400..600&display=swap">
+<style>
+  /* Tokens from the JZP Font Builder design system (app/src/app.css) */
+  :root {
+    --bg-app: #eeeeee; --bg-panel: #fafafa; --bg-field: #ffffff; --bg-hover: #e6e6e6;
+    --ink: #2a2a2a; --ink-muted: #595959; --ink-faint: #767676;
+    --border: #c4c4c4; --border-strong: #858585; --hairline: #dcdcdc;
+    --link: #0a5cbf; --sel-bg: #dce8fa; --accent: #a82222;
+    --status-saved: #1b6b53; --status-draft: #8a5700; --status-info: #0a5cbf;
+    --space-1: 2px; --space-2: 4px; --space-3: 6px; --space-4: 8px; --space-5: 12px; --space-6: 16px; --space-7: 24px; --space-8: 32px;
+    --radius-sm: 3px; --radius-md: 4px; --control: 30px;
+    --t-caption: 12px; --t-small: 13px; --t-body: 14px; --t-title: 22px;
+    --font-serif: "Literata", Georgia, serif;
+    --font-display: "EB Garamond", Garamond, Georgia, serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-app: #151413; --bg-panel: #211f1e; --bg-field: #181716; --bg-hover: #2b2928;
+      --ink: #ecebe8; --ink-muted: #a8a5a0; --ink-faint: #85827d;
+      --border: #3a3836; --border-strong: #7a7773; --hairline: #2e2c2b;
+      --link: #7db3f5; --sel-bg: #1f3150; --accent: #e8796d;
+      --status-saved: #5cc2a1; --status-draft: #e3a93f; --status-info: #7db3f5;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg-app: #151413; --bg-panel: #211f1e; --bg-field: #181716; --bg-hover: #2b2928;
+    --ink: #ecebe8; --ink-muted: #a8a5a0; --ink-faint: #85827d;
+    --border: #3a3836; --border-strong: #7a7773; --hairline: #2e2c2b;
+    --link: #7db3f5; --sel-bg: #1f3150; --accent: #e8796d;
+    --status-saved: #5cc2a1; --status-draft: #e3a93f; --status-info: #7db3f5;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg-app); color: var(--ink); font: var(--t-body)/1.5 var(--font-serif); }
+  h1, h2 { font-family: var(--font-display); font-weight: 500; margin: 0; }
+  h1 { font-size: var(--t-title); }
+  h2 { font-size: 17px; }
+  a { color: var(--link); }
+  code, .mono { font-family: var(--font-mono); font-size: var(--t-small); }
+
+  .app { display: grid; grid-template-columns: 240px 320px 1fr; height: 100%; }
+  .col { border-right: 1px solid var(--border); background: var(--bg-panel); overflow: auto; padding: var(--space-6); }
+  .col.preview { background: var(--bg-app); border-right: 0; display: flex; flex-direction: column; gap: var(--space-5); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-5); }
+  .row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .muted { color: var(--ink-muted); }
+  .small { font-size: var(--t-small); }
+  .caption { font-size: var(--t-caption); color: var(--ink-faint); }
+
+  button { height: var(--control); padding: 0 var(--space-5); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+           background: var(--bg-field); color: var(--ink); font: inherit; font-size: var(--t-small); cursor: pointer; white-space: nowrap; }
+  button:hover { background: var(--bg-hover); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+  button.quiet { border-color: transparent; background: transparent; }
+  button.quiet:hover { background: var(--bg-hover); }
+  button[aria-pressed="true"] { background: var(--sel-bg); border-color: var(--link); }
+
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+  .list button { width: 100%; height: auto; padding: var(--space-4) var(--space-5); text-align: left; border-color: transparent; background: transparent;
+                 display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+  .list button:hover { background: var(--bg-hover); }
+  .list button[aria-current="true"] { background: var(--sel-bg); border-color: var(--link); }
+  .list .name { font-size: var(--t-body); }
+
+  .pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid currentColor; border-radius: 999px;
+          font-size: var(--t-caption); line-height: 18px; }
+  .pill svg { width: 12px; height: 12px; }
+  .pill.saved { color: var(--status-saved); }
+  .pill.draft { color: var(--status-draft); border-style: dashed; }
+  .pill.danger { color: var(--accent); }
+  .pill.info { color: var(--status-info); }
+
+  .banner { display: flex; gap: var(--space-4); padding: var(--space-4) var(--space-5); border: 1px solid currentColor; border-radius: var(--radius-md);
+            font-size: var(--t-small); background: var(--bg-panel); }
+  .banner > div { color: var(--ink); }
+  .banner svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  .banner.draft { color: var(--status-draft); border-style: dashed; }
+  .banner.danger { color: var(--accent); }
+  .banner.info { color: var(--status-info); }
+  [hidden] { display: none !important; }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-2); }
+  .field label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
+  .field .desc { font-size: var(--t-caption); color: var(--ink-muted); }
+  input[type="text"] { height: var(--control); width: 100%; padding: 0 var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+                       background: var(--bg-field); color: var(--ink); font: var(--t-small) var(--font-mono); }
+  input.empty { border-style: dashed; border-color: var(--status-draft); }
+
+  .envelope { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-5) var(--space-6);
+              display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-5); font-size: var(--t-small); }
+  .envelope dt { color: var(--ink-muted); }
+  .envelope dd { margin: 0; }
+  .envelope .subject { font-size: var(--t-body); font-weight: 600; }
+  .frame-wrap { flex: 1; min-height: 420px; display: flex; justify-content: center; }
+  iframe { width: 100%; height: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); background: #ffffff; transition: width .15s; }
+  iframe.phone { width: 375px; }
+
+  @media (max-width: 1000px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    .col { border-right: 0; border-bottom: 1px solid var(--border); }
+    .frame-wrap { min-height: 640px; }
+    iframe.phone { width: min(375px, 100%); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="col stack" aria-label="Templates">
+    <div class="stack" style="gap: var(--space-2)">
+      <h1>Email preview</h1>
+      <p class="caption" style="margin:0">Supabase auth emails in <code>supabase/emails/</code></p>
+    </div>
+    <div id="loadError" class="banner danger" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div>The template list did not load. Serve this folder instead of opening the file directly:<br><code>python3 -m http.server 8000</code><br>then open <code>localhost:8000/preview.html</code>. You can still open a single file below.</div>
+    </div>
+    <ul class="list" id="list"></ul>
+    <div class="stack" style="gap: var(--space-3)">
+      <div class="row">
+        <button id="openFile">Open a file</button>
+        <button id="reload" class="quiet" aria-label="Reload templates from disk">Reload</button>
+      </div>
+      <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden>
+      <p class="caption" style="margin:0">Open any template HTML, for example one copied out of the Supabase dashboard. Reload picks up edits to the files here.</p>
+    </div>
+  </nav>
+
+  <section class="col stack" aria-label="Variables">
+    <div class="row" style="justify-content: space-between">
+      <h2>Variables</h2>
+      <button id="resetVars" class="quiet">Reset to samples</button>
+    </div>
+    <p class="caption" style="margin:0" id="varsIntro">The variables this template uses. Values are kept in this browser and shared across templates.</p>
+    <div id="logicNote" class="banner draft" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v4M12 18h.01"/></svg>
+      <div>This template has logic the preview does not run: <span id="logicList" class="mono"></span>. Those parts are shown as written.</div>
+    </div>
+    <div id="vars" class="stack"></div>
+  </section>
+
+  <main class="col preview" aria-label="Preview">
+    <div class="row" style="justify-content: space-between">
+      <div class="row">
+        <button id="wDesktop" aria-pressed="true">Desktop</button>
+        <button id="wPhone" aria-pressed="false">Phone</button>
+      </div>
+      <div class="row">
+        <button id="copySubject">Copy subject</button>
+        <button id="copySource">Copy template</button>
+        <span id="copied" class="pill saved" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M20 6 9 17l-5-5"/></svg>Copied
+        </span>
+      </div>
+    </div>
+    <dl class="envelope">
+      <dt>Template</dt><dd id="envTemplate">None</dd>
+      <dt>To</dt><dd id="envTo" class="mono"></dd>
+      <dt>Subject</dt><dd id="envSubject" class="subject"></dd>
+    </dl>
+    <div class="frame-wrap">
+      <iframe id="frame" title="Email preview" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// Variables Supabase passes to auth email templates (Go template syntax: {{ .Name }}).
+// Sample values are what a fresh browser shows; the viewer can change them.
+const CATALOG = {
+  ConfirmationURL: { desc: 'Link that completes the action. Supabase builds it from the project URL, the token and the redirect address.',
+                     sample: 'https://example.supabase.co/auth/v1/verify?token=abc123&type=magiclink&redirect_to=https://builder.jianzipufont.com/' },
+  Token:           { desc: 'Six-digit one-time code, for typing in instead of clicking a link.', sample: '123456' },
+  TokenHash:       { desc: 'Hashed token, for building your own confirmation link.', sample: '0b6a3f1c9e2d4b7a8c5e6f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e' },
+  SiteURL:         { desc: 'The Site URL set in Authentication → URL Configuration.', sample: 'https://builder.jianzipufont.com' },
+  Email:           { desc: "The user's current email address.", sample: 'tester@example.com' },
+  NewEmail:        { desc: 'The new address. Only set in the change email template.', sample: 'new-address@example.com' },
+  RedirectTo:      { desc: 'The redirect address the app passed when it asked for the email.', sample: 'https://builder.jianzipufont.com/' },
+  Data:            { desc: "The user's metadata. Use a key, such as .Data.name.", sample: '' },
+};
+const KEYWORDS = new Set(['if', 'else', 'end', 'range', 'with', 'define', 'template', 'block', 'break', 'continue']);
+const STORE_KEY = 'jzp-email-preview-values';
+
+const $ = (id) => document.getElementById(id);
+let templates = [];        // from templates.json
+let current = null;        // { label, subject, source, meta }
+let values = {};
+let currentVars = [];
+
+try { values = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch { values = {}; }
+function saveValues() { try { localStorage.setItem(STORE_KEY, JSON.stringify(values)); } catch {} }
+
+function sampleFor(name) {
+  if (CATALOG[name]) return CATALOG[name].sample;
+  if (name.startsWith('Data.')) return '';
+  return '';
+}
+function valueOf(name) { return name in values ? values[name] : sampleFor(name); }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Go template actions: {{ ... }} with optional trim markers {{- ... -}}
+const ACTION = /\{\{-?\s*([\s\S]*?)\s*-?\}\}/g;
+const FIELD = /(?:^|[\s(|])\.([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)/g;
+const SIMPLE = /^\.([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)$/;
+
+// Every variable a piece of template text uses, plus the actions that are logic, not a plain value.
+function analyse(text) {
+  const vars = new Set(), logic = new Set();
+  for (const m of text.matchAll(ACTION)) {
+    const body = m[1];
+    if (body.startsWith('/*')) continue; // comment
+    for (const f of body.matchAll(FIELD)) vars.add(f[1]);
+    if (!SIMPLE.test(body)) {
+      const word = body.split(/\s+/)[0];
+      logic.add(KEYWORDS.has(word) ? word : body.length > 24 ? body.slice(0, 24) + '…' : body);
+    }
+  }
+  return { vars: [...vars], logic: [...logic] };
+}
+
+// Replace plain {{ .Name }} actions with the viewer's values; leave logic as written.
+function fill(text, html) {
+  return text.replace(ACTION, (whole, body) => {
+    if (body.startsWith('/*')) return '';
+    const m = SIMPLE.exec(body);
+    if (!m) return whole;
+    const v = valueOf(m[1]);
+    return html ? escapeHtml(v) : v;
+  });
+}
+
+function sortVars(list) {
+  const order = Object.keys(CATALOG);
+  const rank = (n) => { const i = order.indexOf(n.split('.')[0]); return i < 0 ? order.length : i; };
+  return list.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
+
+function renderList() {
+  const ul = $('list');
+  ul.innerHTML = '';
+  for (const t of templates) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.setAttribute('aria-current', String(current?.meta === t));
+    b.innerHTML = `<span class="name">${escapeHtml(t.dashboard)}</span>
+      <span class="row" style="gap: var(--space-3)"><span class="caption mono">${escapeHtml(t.file)}</span>
+      ${t.sent
+        ? '<span class="pill saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M20 6 9 17l-5-5"/></svg>Sent</span>'
+        : '<span class="pill info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>Unused</span>'}</span>`;
+    b.title = t.when || '';
+    b.addEventListener('click', () => loadTemplate(t));
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+}
+
+function renderVars() {
+  const box = $('vars');
+  box.innerHTML = '';
+  if (!current) return;
+  if (!currentVars.length) {
+    box.innerHTML = '<p class="muted small" style="margin:0">This template uses no variables.</p>';
+    return;
+  }
+  for (const name of currentVars) {
+    const base = name.split('.')[0];
+    const known = base in CATALOG && (base !== 'Data' || name.includes('.'));
+    const id = 'v-' + name.replace(/\W/g, '_');
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    const desc = known ? CATALOG[base].desc : 'Supabase does not provide this variable, so the real email will show it empty.';
+    wrap.innerHTML = `<label for="${id}"><code>{{ .${escapeHtml(name)} }}</code>${known ? '' :
+      '<span class="pill danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M18 6 6 18M6 6l12 12"/></svg>Unknown</span>'}</label>
+      <input type="text" id="${id}" spellcheck="false" autocomplete="off">
+      <span class="desc">${escapeHtml(desc)}</span>`;
+    const input = wrap.querySelector('input');
+    input.value = valueOf(name);
+    input.classList.toggle('empty', !input.value);
+    input.addEventListener('input', () => {
+      values[name] = input.value;
+      input.classList.toggle('empty', !input.value);
+      saveValues();
+      renderPreview();
+    });
+    box.appendChild(wrap);
+  }
+}
+
+function renderPreview() {
+  if (!current) return;
+  $('envTemplate').textContent = current.label;
+  $('envTo').textContent = valueOf('Email') || '(empty)';
+  $('envSubject').textContent = fill(current.subject, false) || '(no subject)';
+  // Links in the email open in a new tab instead of inside the preview frame.
+  const html = fill(current.source, true);
+  const base = '<base target="_blank">';
+  $('frame').srcdoc = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => h + base) : base + html;
+}
+
+function show(label, subject, source, meta) {
+  current = { label, subject, source, meta };
+  const a = analyse(subject + '\n' + source);
+  currentVars = sortVars(a.vars);
+  $('logicNote').hidden = !a.logic.length;
+  $('logicList').textContent = a.logic.join(', ');
+  renderList();
+  renderVars();
+  renderPreview();
+  if (meta) { try { history.replaceState(null, '', '#' + meta.id); } catch {} }
+}
+
+async function loadTemplate(t) {
+  try {
+    const r = await fetch(t.file, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+    show(`${t.dashboard} (${t.file})`, t.subject || '', await r.text(), t);
+  } catch (e) {
+    show(`${t.dashboard} (${t.file})`, t.subject || '', `<p style="font-family:sans-serif;color:#a82222">Could not load ${escapeHtml(t.file)}: ${escapeHtml(e.message)}</p>`, t);
+  }
+}
+
+async function loadList() {
+  try {
+    const r = await fetch('templates.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error(String(r.status));
+    templates = (await r.json()).templates || [];
+    $('loadError').hidden = true;
+  } catch {
+    templates = [];
+    $('loadError').hidden = false;
+  }
+  renderList();
+  const wanted = templates.find((t) => '#' + t.id === location.hash) || (current?.meta && templates.find((t) => t.id === current.meta.id)) || templates[0];
+  if (wanted) await loadTemplate(wanted);
+}
+
+$('openFile').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const meta = templates.find((t) => t.file === f.name);
+  show(f.name + ' (opened file)', meta?.subject || '', await f.text(), null);
+  e.target.value = '';
+});
+$('reload').addEventListener('click', loadList);
+$('resetVars').addEventListener('click', () => {
+  for (const n of currentVars) delete values[n];
+  saveValues();
+  renderVars();
+  renderPreview();
+});
+function setWidth(phone) {
+  $('frame').classList.toggle('phone', phone);
+  $('wPhone').setAttribute('aria-pressed', String(phone));
+  $('wDesktop').setAttribute('aria-pressed', String(!phone));
+}
+$('wDesktop').addEventListener('click', () => setWidth(false));
+$('wPhone').addEventListener('click', () => setWidth(true));
+
+let copiedTimer;
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); } catch { return; }
+  $('copied').hidden = false;
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => { $('copied').hidden = true; }, 1500);
+}
+// Copies are the raw template, with {{ .Variables }} intact, ready to paste into the dashboard.
+$('copySubject').addEventListener('click', () => current && copy(current.subject));
+$('copySource').addEventListener('click', () => current && copy(current.source));
+
+loadList();
+</script>
+</body>
+</html>
