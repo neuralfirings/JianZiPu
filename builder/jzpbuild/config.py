@@ -114,7 +114,8 @@ OS2 = {
 
 # PUA assignments — must stay stable so existing documents keep rendering.
 
-# zero-ink control glyphs: name -> (codepoint, advance width)
+# zero-ink control glyphs: name -> (codepoint, default advance width). A design area that holds
+# one and has an advance sets its width instead (base.control_widths): | and : are set in the Builder.
 CONTROL_GLYPHS = {                                            # base.py
     "blank": (0x58001, 0),
     "blank_bar": (0x58002, 1000),

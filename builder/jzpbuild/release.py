@@ -180,18 +180,43 @@ def build_release_font(out: Path, source_commit: str, log: Log = print):
     log(f"building the font ({source_commit}) ...")
     r = subprocess.run([sys.executable, "-m", "jzpbuild", "-o", str(out), "--fea-out", "", "--source-commit", source_commit],
                        cwd=config.BUILDER_DIR, capture_output=True, text=True)
-    for line in (r.stdout + r.stderr).splitlines()[-6:]:
+    out = (r.stdout + r.stderr).splitlines()
+    for line in out[-3:] if r.returncode == 0 else out[-40:]:
         log("  " + line)
     if r.returncode != 0:
-        raise ReleaseError("The font did not build; see the log.")
+        raise ReleaseError("The font did not build; the log below has the build's last lines.")
+
+
+MAX_FAILURE_LINES = 150
+
+
+def test_failures(output: str) -> tuple[list[str], list[str]]:
+    """From pytest's output (-rf): the failed tests' ids, and the FAILURES section (each test's
+    assertion and captured output), so the Release screen can say what failed."""
+    lines = output.splitlines()
+    failed = [l.split(" ", 1)[1].split(" - ")[0] for l in lines if l.startswith(("FAILED ", "ERROR "))]
+    start = next((i for i, l in enumerate(lines) if re.match(r"=+ (FAILURES|ERRORS) =+", l)), None)
+    end = next((i for i, l in enumerate(lines) if re.match(r"=+ short test summary info =+", l)), len(lines))
+    details = lines[start + 1:end] if start is not None else []
+    if len(details) > MAX_FAILURE_LINES:
+        details = details[:MAX_FAILURE_LINES] + [f"… {len(details) - MAX_FAILURE_LINES} more lines: run `cd builder && python3 -m pytest tests -q` to see them all"]
+    return failed, details
 
 
 def run_tests(log: Log = print):
     log("running the builder tests ...")
-    r = subprocess.run([sys.executable, "-m", "pytest", "tests", "-q"], cwd=config.BUILDER_DIR, capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-m", "pytest", "tests", "-q", "-rf", "--tb=short"],
+                       cwd=config.BUILDER_DIR, capture_output=True, text=True)
     log("  " + ((r.stdout.strip().splitlines() or [""])[-1]))
-    if r.returncode != 0:
-        raise ReleaseError("The builder tests failed; fix them before building a candidate.")
+    if r.returncode == 0:
+        return
+    failed, details = test_failures(r.stdout + r.stderr)
+    for t in failed:
+        log(f"  FAILED {t}")
+    for line in details:
+        log("  " + line)
+    names = ", ".join(t.split("::")[-1] for t in failed) or "see the log"
+    raise ReleaseError(f"The builder tests failed ({names}); fix them before building a candidate. The log below has the details.")
 
 
 def candidate(notes: str, message: str = "", repo: Path = REPO, log: Log = print, push: bool = True,
