@@ -6,6 +6,10 @@ Serves the built app (app/build/, if present) and this folder as static
 files, plus a JSON API over the repo's input files. Local mode (default): single user,
 binds 127.0.0.1, every write goes to the real files under inputs/.
 
+Every request first passes request_problem(): locally the Host header must name this machine
+(DNS-rebinding guard), a write carrying a foreign Origin is refused, and POST/PUT bodies must be
+application/json. URL paths with `..` segments get a 404.
+
 Hosted mode (--hosted or JZP_HOSTED=1, see hosted.py): the pilot on a public host. Read-only
 (PUTs answer 403; testers' work lives in their own drafts, kept by the app in Supabase), every
 POST needs a signed-in tester (Supabase access token in `Authorization: Bearer`), builds take the
@@ -534,6 +538,44 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
 
 # ---------------------------------------------------------------- HTTP
 
+LOOPBACK = {"127.0.0.1", "localhost", "::1"}
+EXTRA_HOSTS: set[str] = set()          # main(): the --host address, when it isn't a wildcard
+
+
+def _hostname(value: str | None) -> str | None:
+    """'localhost:5713' / '[::1]:5713' / 'http://x.y:1' -> the bare, lower-case host name."""
+    if not value:
+        return None
+    try:
+        return urlparse(value if "//" in value else f"//{value}").hostname
+    except ValueError:
+        return None
+
+
+def request_problem(method: str, headers, hosted_mode: bool) -> tuple[int, str] | None:
+    """Why a request is refused before it is handled, or None. Guards the local server against
+    DNS rebinding (a site whose name points at 127.0.0.1) and cross-site requests:
+      - local mode: the Host header must name this machine (loopback, or the --host address);
+      - writes (POST/PUT/DELETE) carrying an Origin must come from the same host the request
+        names (hosted, behind the proxy) or from a loopback origin (local, incl. the Vite dev server);
+      - a POST/PUT body must be JSON, so a plain cross-site form can't send one."""
+    host = _hostname(headers.get("Host"))
+    if not hosted_mode and host not in LOOPBACK | EXTRA_HOSTS:
+        return 403, "This Builder only answers on localhost."
+    if method in ("POST", "PUT", "DELETE"):
+        origin = headers.get("Origin")
+        if origin:
+            o = _hostname(origin)
+            ok = (o == host) if hosted_mode else (o in LOOPBACK | EXTRA_HOSTS)
+            if not ok:
+                return 403, "Cross-site request refused."
+    if method in ("POST", "PUT") and int(headers.get("Content-Length") or 0) > 0:
+        ctype = (headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return 415, "Send JSON (Content-Type: application/json)."
+    return None
+
+
 def _safe_path(path: str) -> bool:
     """False for a URL path that tries to leave the folder it names: a `..` or `.` segment
     (also percent-encoded), a backslash or a NUL. Such a request gets a 404 before any
@@ -585,6 +627,14 @@ class Handler(SimpleHTTPRequestHandler):
         user = AUTH.user(token) if AUTH else None
         return user["id"] if user else None
 
+    def _refused(self, method: str) -> bool:
+        """Answer and return True when request_problem() refuses this request."""
+        why = request_problem(method, self.headers, SETTINGS.hosted)
+        if why is None:
+            return False
+        self._json({"ok": False, "error": why[1]}, why[0])
+        return True
+
     def log_message(self, fmt, *args):
         if "/api/" in (args[0] if args else ""):
             return
@@ -612,6 +662,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     # -- routes
     def do_GET(self):
+        if self._refused("GET"):
+            return
         path = urlparse(self.path).path
         if not _safe_path(path):
             return self._json({"ok": False, "error": "not found"}, 404)
@@ -657,6 +709,8 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        if self._refused("POST"):
+            return
         path = urlparse(self.path).path
         try:
             owner = self._owner()
@@ -694,6 +748,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"ok": False, "error": str(err), "traceback": traceback.format_exc()}, 500)
 
     def do_PUT(self):
+        if self._refused("PUT"):
+            return
         path = urlparse(self.path).path
         if SETTINGS.hosted:
             return self._json({"ok": False, "readonly": True,
@@ -737,6 +793,8 @@ class Handler(SimpleHTTPRequestHandler):
 
 
     def do_DELETE(self):
+        if self._refused("DELETE"):
+            return
         path = urlparse(self.path).path
         if SETTINGS.hosted:
             return self._json({"ok": False, "readonly": True,
@@ -766,6 +824,8 @@ def main(argv=None):
     if names:
         print(f"read {', '.join(sorted(names))} from {config.BUILDER_DIR / '.env'}")
     SETTINGS = hosted.Settings.from_env(hosted=True if args.hosted else None)
+    if args.host not in ("0.0.0.0", "::", ""):
+        EXTRA_HOSTS.add(args.host.lower())
     if not SETTINGS.hosted and SETTINGS.supabase_service_key:
         print("note: SUPABASE_SERVICE_KEY is only for the hosted server; this local server doesn't need it")
     if SETTINGS.hosted:

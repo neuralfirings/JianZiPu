@@ -285,3 +285,15 @@ def test_no_path_traversal(server, tmp_path, monkeypatch, path):
     body = r.read()
     assert r.status == 404 or body.startswith(b"<!doctype html><title>app")
     assert b"root:" not in body and b"localhost" not in body and b"SERVICE-SECRET" not in body
+
+
+def test_hosted_cross_site_posts_are_refused(server):
+    import http.client
+    host, port = server.removeprefix("http://").split(":")
+    body = json.dumps({"svg": SQUARE}).encode()
+    for origin, want in (("https://evil.example", 403), (f"http://{host}:{port}", 200)):
+        c = http.client.HTTPConnection(host, int(port), timeout=10)
+        c.request("POST", "/api/svg/check", body=body, headers={"Origin": origin, "Content-Type": "application/json",
+                                                                "Authorization": "Bearer tok-a"})
+        assert c.getresponse().status == want, origin
+        c.close()

@@ -193,3 +193,64 @@ def test_safe_path():
     assert webserver._safe_path("/_app/immutable/x.js")
     for p in ("/../x", "/a/../b", "/%2e%2e/x", "/a/./b", "/a\\b", "/a%00b", "/..%2fx"):
         assert not webserver._safe_path(p), p
+
+
+# ---------------------------------------------------------------- Host / Origin / Content-Type
+
+def raw(base, method, path, headers, body=b""):
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.putrequest(method, path, skip_host=True)
+    hs = {"Host": f"{host}:{port}", **headers}
+    if body:
+        hs["Content-Length"] = str(len(body))
+    for k, v in hs.items():
+        if v is not None:
+            c.putheader(k, v)
+    c.endheaders(body or None)
+    r = c.getresponse()
+    out = r.status, r.read()
+    c.close()
+    return out
+
+
+def test_foreign_host_is_refused(server):
+    """DNS rebinding: a page on evil.example whose name resolves to 127.0.0.1."""
+    status, body = raw(server, "GET", "/api/design", {"Host": "evil.example:5713"})
+    assert status == 403 and b"localhost" in body
+
+
+@pytest.mark.parametrize("host", ["localhost:5173", "127.0.0.1:5713", "[::1]:5713", "LOCALHOST"])
+def test_loopback_hosts_are_fine(server, host):
+    status, _ = raw(server, "GET", "/api/config", {"Host": host})
+    assert status == 200
+
+
+def test_cross_site_writes_are_refused(server, svg_dir):
+    body = json.dumps({"svg": SQUARE}).encode()
+    for method, path in (("PUT", "/api/svg/zz_x"), ("POST", "/api/svg/check"), ("DELETE", "/api/svg/zz_x")):
+        status, _ = raw(server, method, path, {"Origin": "https://evil.example", "Content-Type": "application/json"},
+                        body if method != "DELETE" else b"")
+        assert status == 403, method
+    assert not (svg_dir / "zz_x.svg").exists()
+
+
+def test_same_origin_and_dev_server_writes_work(server, svg_dir):
+    body = json.dumps({"svg": SQUARE}).encode()
+    status, _ = raw(server, "PUT", "/api/svg/zz_y", {"Origin": server, "Content-Type": "application/json"}, body)
+    assert status == 200
+    status, _ = raw(server, "POST", "/api/svg/check", {"Origin": "http://localhost:5173", "Host": "localhost:5173",
+                                                       "Content-Type": "application/json"}, body)
+    assert status == 200
+
+
+def test_writes_need_json(server, svg_dir):
+    """A cross-site <form> or a text/plain fetch can't send application/json without a preflight."""
+    body = json.dumps({"svg": SQUARE}).encode()
+    for ctype in ("text/plain", "application/x-www-form-urlencoded", None):
+        status, _ = raw(server, "PUT", "/api/svg/zz_z", {"Content-Type": ctype}, body)
+        assert status == 415, ctype
+    assert not (svg_dir / "zz_z.svg").exists()
+    status, _ = raw(server, "PUT", "/api/svg/zz_z", {"Content-Type": "application/json; charset=utf-8"}, body)
+    assert status == 200
