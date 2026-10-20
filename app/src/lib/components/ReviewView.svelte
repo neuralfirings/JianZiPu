@@ -14,7 +14,7 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { startSvgs } from '$lib/requests';
+  import { canWithdraw, startSvgs } from '$lib/requests';
   import { day, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
@@ -94,6 +94,15 @@
 
   /** Your changes: items a sent Change Request holds can't be undone (or sent again). */
   const lockOf = (it: Item) => (mode === 'mine' ? app.lockOf(it.id) : undefined);
+  /** Why Undo is off for a sent change (the button's tooltip). A disabled button gets no hover,
+   *  so a locked one stays enabled but marked aria-disabled and does nothing. */
+  const lockTip = (it: Item) => {
+    const l = lockOf(it);
+    if (!l) return '';
+    const r = app.requests.find((x) => x.id === l.id);
+    const how = r && canWithdraw(r) ? 'Withdraw the request to undo it.' : 'It was kept for the font, so it stays as sent.';
+    return `Locked: this change is in your Change Request "${l.title}", sent ${day(l.sent)}. ${how}`;
+  };
   let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id)) : []);
   let sending = $state(false);
   $effect(() => { if (send && mode === 'mine') sending = true; });
@@ -198,6 +207,7 @@
             {#if lockOf(it)}
               {@const l = lockOf(it)!}
               <a class="pill info" href="/requests#{l.id}"><I.Lock size={14} />Sent {day(l.sent)} · {l.title}</a>
+              <button class="sm" aria-disabled="true" data-tip={lockTip(it)}><I.Undo size={14} /> Undo this change</button>
             {:else if mode === 'mine'}
               <button class="sm" onclick={() => undoItem(it)}><I.Undo size={14} /> Undo this change</button>
             {/if}
@@ -255,7 +265,8 @@
                     <span>{r.label}</span>
                     {#if r.status === 'changed' && r.base}<span class="muted">was {gapText(r.base)}</span>{/if}
                     <span class="spacer"></span>
-                    {#if mode === 'mine' && !lockOf(it)}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
+                    {#if mode === 'mine' && lockOf(it)}<button class="sm" aria-disabled="true" data-tip={lockTip(it)}><I.Undo size={14} /> Undo</button>
+                    {:else if mode === 'mine'}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
                   </li>
                 {/each}
               </ul>
@@ -339,6 +350,7 @@
   .opdel { color: var(--status-danger); }
   .opgap { color: var(--ink-muted); }
   .btnlink { align-self: center; }
+  button[aria-disabled='true'], button[aria-disabled='true']:hover { color: var(--ink-faint); border-color: var(--border); background: transparent; cursor: not-allowed; }
   a.pill { text-decoration: none; }
   .rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--t-small); }
   .rules li { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
