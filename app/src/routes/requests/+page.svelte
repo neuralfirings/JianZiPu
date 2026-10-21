@@ -5,7 +5,7 @@
   import { onMount } from 'svelte';
   import { hosted } from '$lib/hosted.svelte';
   import { day, hhmm, pilot } from '$lib/pilot.svelte';
-  import { canWithdraw, keptIds, withdraw, type ChangeRequest } from '$lib/requests';
+  import { CLOSED, canWithdraw, keptIds, withdraw, type ChangeRequest } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import ReviewView from '$lib/components/ReviewView.svelte';
   import RequestStatus from '$lib/components/RequestStatus.svelte';
@@ -13,11 +13,15 @@
   let err = $state<string | null>(null);
   let open = $state<Record<string, boolean>>({});
   let asking = $state<string | null>(null);
+  // released, declined and withdrawn requests fold away below the ones still moving
+  let active = $derived(app.requests.filter((r) => !CLOSED.includes(r.status)));
+  let closed = $derived(app.requests.filter((r) => CLOSED.includes(r.status)));
+  let closedOpen = $state(false);
 
   onMount(() => {
     if (hosted.isHosted) app.refreshRequests().catch((e) => (err = (e as Error).message));
     const id = location.hash.slice(1);
-    if (id) open = { [id]: true };
+    if (id) { open = { [id]: true }; closedOpen = true; }
   });
 
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -83,37 +87,49 @@
     {#if !app.requests.length && !app.requestDraft}
       <p class="empty">None yet. On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong> when some of your changes are ready.</p>
     {/if}
-    {#each app.requests as r (r.id)}
-      <article class="req" id={r.id}>
-        <div class="rhead">
-          <h3>{r.title}</h3>
-          <RequestStatus status={r.status} release={r.release} />
-          <span class="spacer"></span>
-          {#if canWithdraw(r)}
-            {#if asking === r.id}
-              <span class="muted small">Withdraw it? Its changes unlock in your draft.</span>
-              <button class="sm" onclick={() => (asking = null)}>Keep it</button>
-              <button class="sm danger" onclick={() => takeBack(r)}>Withdraw</button>
-            {:else}
-              <button class="sm" onclick={() => (asking = r.id)}><I.Withdraw size={14} /> Withdraw…</button>
-            {/if}
-          {/if}
-        </div>
-        <p class="muted small">Sent {day(r.created_at)} {hhmm(r.created_at)} · {outcome(r)}{r.credit ? ` · credited as ${r.credit}` : ''}</p>
-        {#if r.notes}<p class="notes">{r.notes}</p>{/if}
-        {#if r.reply}
-          <div class="reply"><b>The maintainer replied{r.reviewed_at ? ` on ${day(r.reviewed_at)}` : ''}</b><p>{r.reply}</p></div>
-        {/if}
-        <button class="link" onclick={() => (open = { ...open, [r.id]: !open[r.id] })}>
-          {#if open[r.id]}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if} {open[r.id] ? 'Hide' : 'Show'} what was sent
-        </button>
-        {#if open[r.id] && app.design}
-          <ReviewView bundle={r.bundle} mode="sent" name={r.title} />
-        {/if}
-      </article>
-    {/each}
+    {#if !active.length && closed.length && !app.requestDraft}<p class="empty">Nothing open right now. On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong> when more changes are ready.</p>{/if}
+    {#each active as r (r.id)}{@render request(r)}{/each}
+    {#if closed.length}
+      <section class="closed">
+        <h3><button class="link fold" aria-expanded={closedOpen} onclick={() => (closedOpen = !closedOpen)}>
+          {#if closedOpen}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if}
+          Released and closed <span class="muted">{closed.length}</span>
+        </button></h3>
+        {#if closedOpen}{#each closed as r (r.id)}{@render request(r)}{/each}{/if}
+      </section>
+    {/if}
   {/if}
 </div>
+
+{#snippet request(r: ChangeRequest)}
+  <article class="req" id={r.id}>
+    <div class="rhead">
+      <h3>{r.title}</h3>
+      <RequestStatus status={r.status} release={r.release} />
+      <span class="spacer"></span>
+      {#if canWithdraw(r)}
+        {#if asking === r.id}
+          <span class="muted small">Withdraw it? Its changes unlock in your draft.</span>
+          <button class="sm" onclick={() => (asking = null)}>Keep it</button>
+          <button class="sm danger" onclick={() => takeBack(r)}>Withdraw</button>
+        {:else}
+          <button class="sm" onclick={() => (asking = r.id)}><I.Withdraw size={14} /> Withdraw…</button>
+        {/if}
+      {/if}
+    </div>
+    <p class="muted small">Sent {day(r.created_at)} {hhmm(r.created_at)} · {outcome(r)}{r.credit ? ` · credited as ${r.credit}` : ''}</p>
+    {#if r.notes}<p class="notes">{r.notes}</p>{/if}
+    {#if r.reply}
+      <div class="reply"><b>The maintainer replied{r.reviewed_at ? ` on ${day(r.reviewed_at)}` : ''}</b><p>{r.reply}</p></div>
+    {/if}
+    <button class="link" onclick={() => (open = { ...open, [r.id]: !open[r.id] })}>
+      {#if open[r.id]}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if} {open[r.id] ? 'Hide' : 'Show'} what was sent
+    </button>
+    {#if open[r.id] && app.design}
+      <ReviewView bundle={r.bundle} mode="sent" name={r.title} />
+    {/if}
+  </article>
+{/snippet}
 
 <style>
   .page { padding: var(--space-7) max(var(--space-6), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--space-5); max-width: 1020px; }
@@ -132,4 +148,7 @@
   .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; align-self: flex-start; display: inline-flex; gap: var(--space-2); align-items: center; }
   .small { font-size: var(--t-small); }
   .empty { color: var(--ink-muted); }
+  .closed { display: flex; flex-direction: column; gap: var(--space-5); }
+  .closed h3 { margin: 0; }
+  .fold { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--ink); font: inherit; }
 </style>

@@ -100,6 +100,13 @@ like every other font change.
 ## After a release
 
 When a release is published, its requests become Released and their authors
-get an email. In the online Builder, testers see "The font was updated". **Update
-my draft…** brings the new font into their draft: their released changes drop
-out of Your changes, and anything still unsent stays.
+get an email. In the online Builder:
+
+- The released changes fold away on Your changes, under **In the font now**.
+- The requests move to **Released and closed** on Your Change Requests.
+- Testers see "The font was updated". **Update my draft…** moves their draft
+  onto the new font: the released changes leave Your changes, and anything
+  still unsent stays.
+
+Released changes aren't locked. They're the font's now, and a tester can change
+them again in a new Change Request.

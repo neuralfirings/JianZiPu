@@ -226,7 +226,7 @@
           <li><a href="/requests">Your Change Requests</a> shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.</li>
           <li>Statuses: <strong>Sent</strong>, <strong>In review</strong>, <strong>In a release candidate</strong> (a test version of the next font), <strong>Released</strong>, <strong>Declined</strong>, <strong>Withdrawn</strong>. A request can be partly kept: "3 of 5 changes in v3.200".</li>
           <li><strong>Withdraw…</strong> takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.</li>
-          <li>When your changes are released, <strong>Update my draft…</strong> brings in the new font, and they drop out of Your changes.</li>
+          <li>When your changes are released, they fold away on Your changes under <strong>In the font now</strong>, and the request moves to <strong>Released and closed</strong> on Your Change Requests. <strong>Update my draft…</strong> moves your draft onto the new font, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.</li>
         </ul>
       </section>
 

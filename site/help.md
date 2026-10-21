@@ -183,7 +183,7 @@ When some of your changes are ready for the real font, send them as a **Change R
 - [Your Change Requests](https://builder.jianzipufont.com/requests) shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.
 - Statuses: **Sent**, **In review**, **In a release candidate** (a test version of the next font), **Released**, **Declined**, **Withdrawn**. A request can be partly kept: "3 of 5 changes in v3.200".
 - **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.
-- When your changes are released, **Update my draft…** brings in the new font, and they drop out of Your changes.
+- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Update my draft…** moves your draft onto the new font, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
 
 ## Reviewing Change Requests
 
