@@ -14,8 +14,8 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { canWithdraw, startSvgs } from '$lib/requests';
-  import { day, hhmm, pilot } from '$lib/pilot.svelte';
+  import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
+  import { day, fontName, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
   import SvgText from './SvgText.svelte';
@@ -56,7 +56,14 @@
   let unpicked = $derived(conflicts.filter((i) => picks[i.id] === undefined));
   let skipped = $derived(items.filter((i) => picks[i.id] === false));
   let keeping = $derived(items.filter((i) => picks[i.id] === true));
-  let shown = $derived(items.filter((i) => filter === 'all' || (filter === 'conflicts' ? i.conflict : picks[i.id] === false)));
+  /** Your changes: the ones the font has now (released, or made the same way in the font). They
+   *  fold away at the bottom until Set reference font compares the draft with the font now. */
+  let inFont = $derived(mode === 'mine' && app.mainDesign
+    ? inTheFont(items, bundle, { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : new Set<string>());
+  let done = $derived(items.filter((i) => inFont.has(i.id)));
+  let released = $derived(mode === 'mine' ? releasedItems(app.requests) : {});
+  let doneOpen = $state(false);
+  let shown = $derived(items.filter((i) => !inFont.has(i.id) && (filter === 'all' || (filter === 'conflicts' ? i.conflict : picks[i.id] === false))));
   let sections = $derived([
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
@@ -103,7 +110,7 @@
     const how = r && canWithdraw(r) ? 'Withdraw the request to undo it.' : 'It was kept for the font, so it stays as sent.';
     return `Locked: this change is in your Change Request "${l.title}", sent ${day(l.sent)}. ${how}`;
   };
-  let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id)) : []);
+  let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id) && !inFont.has(i.id)) : []);
   let sending = $state(false);
   $effect(() => { if (send && mode === 'mine') sending = true; });
   const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.key);
@@ -127,7 +134,7 @@
     const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs });
     if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
     app.applyChanges(`Undo: ${nameOf(it)}`, m);
-    pilot.say(`${nameOf(it)} is back the way your draft started.`, { undo: true });
+    pilot.say(`${nameOf(it)} is back the way your reference font has it.`, { undo: true });
   }
   function undoRule(it: DesignItem, r: RuleChange) {
     const base = it.base as Layout;
@@ -135,7 +142,7 @@
       const i = d.layouts.findIndex((l) => l.name === it.unit.name);
       if (i >= 0) d.layouts[i] = revertRule(d.layouts[i], base, r.key);
     });
-    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your draft started.`, { undo: true });
+    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your reference font has it.`, { undo: true });
   }
   /** The spacing rules a changed word type differs in. */
   const rulesOf = (it: Item) => (it.kind === 'design' && it.unit.type === 'layout' && it.status === 'changed'
@@ -163,7 +170,7 @@
       <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : mode === 'decide' ? 'The changes' : `${name}'s draft`}</h2>
       <p class="muted">
         saved {day(m.updated)} {hhmm(m.updated)}
-        {#if m.base.date}· based on the font of {day(m.base.date)}{/if}
+        {#if m.base.version || m.base.date}· reference font: {fontName(m.base)}{/if}
         {#if mode === 'owner' && app.main?.date}· your Builder is on {day(app.main.date)}{/if}
         {#if m.note}<br />“{m.note}”{/if}
       </p>
@@ -174,7 +181,7 @@
       {#if onexport}<button onclick={onexport}>Export…</button>{/if}
       {#if mode === 'mine'}
         <button class="primary" onclick={() => (sending = true)} disabled={!sendable.length}
-          title={sendable.length ? '' : items.length ? 'Every change is already in a Change Request' : 'No changes to send yet'}><I.Send size={14} /> Send Change Request…</button>
+          title={sendable.length ? '' : items.length > done.length ? 'Every change is already in a Change Request' : 'No changes to send yet'}><I.Send size={14} /> Send Change Request…</button>
       {/if}
     {:else}
       <div class="seg" role="tablist">
@@ -188,6 +195,9 @@
   </div>
   {/if}
 
+  {#if mode === 'mine' && items.length && items.length === done.length}
+    <p class="empty">Nothing new: everything in your draft is in the font now.</p>
+  {/if}
   {#if !items.length}
     <p class="empty">{mode === 'sent' ? 'Everything in this request is already in the font.' : mode === 'mine' ? 'No changes yet: your draft is the same as the font.' : 'Nothing to apply: the Builder already has every change in this draft.'}</p>
   {/if}
@@ -296,6 +306,35 @@
     {/if}
   {/each}
 
+  {#if done.length}
+    <section class="infont">
+      <h3><button class="link fold" aria-expanded={doneOpen} onclick={() => (doneOpen = !doneOpen)}>
+        {#if doneOpen}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if}
+        In the font now <span class="muted">{done.length}</span>
+      </button></h3>
+      <div class="banner saved">
+        <span class="ic"><I.Check /></span>
+        <span>{done.length === 1 ? 'This change is' : 'These changes are'} in {fontName(app.main)}. Set your reference font to {app.latestFont} and {done.length === 1 ? 'it leaves' : 'they leave'} this list.</span>
+        {#if app.fontMoved}<button class="sm" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>{/if}
+      </div>
+      {#if doneOpen}
+        <ul class="donelist">
+          {#each done as it (it.id)}
+            {@const r = released[it.id]}
+            <li>
+              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : `Glyph · ${it.key}`}</b>
+              <span class="tag {it.status}">{it.status}</span>
+              {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
+              <span class="spacer"></span>
+              {#if r}<a class="pill saved" href="/requests#{r.id}"><I.Check size={14} />Released{r.release ? ` in v${r.release}` : ''} · {r.title}</a>
+              {:else}<span class="pill saved"><I.Check size={14} />Same as the font</span>{/if}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  {/if}
+
   {#if mode === 'decide' && items.length}
     <div class="applybar">
       <span>Keeping {keeping.length} of {items.length}</span>
@@ -360,4 +399,9 @@
   .warn { color: var(--status-draft); }
   .small { font-size: var(--t-small); }
   .empty { color: var(--ink-muted); }
+  .infont { display: flex; flex-direction: column; gap: var(--space-4); }
+  .fold { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--ink); font: inherit; }
+  .donelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); }
+  .donelist li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--hairline); }
+  .donelist li:last-child { border-bottom: 0; }
 </style>

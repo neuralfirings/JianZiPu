@@ -1,19 +1,19 @@
 <script lang="ts">
   // The hosted pilot's dialogs (docs/PILOT-UX.md): welcome note, Export / Discard my draft,
-  // "saved somewhere else", and Update my draft to the font.
+  // "saved somewhere else", and Set reference font: the draft's changes, compared with the latest font.
   import * as I from '$lib/icons';
   import { goto } from '$app/navigation';
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { day, downloadZip, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
+  import { downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
   import SvgText from './SvgText.svelte';
 
   const close = () => (pilot.dialog = null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   let counts = $derived(pilot.dialog === 'discard' || pilot.dialog === 'export' ? app.draftCounts : null);
-  const baseDay = $derived(day(app.draftBase?.version.date));
-  const fontDay = $derived(day(app.main?.date));
+  const latest = $derived(fontName(app.main));    // "3.200", or "the font of 21 Oct"
+  const Latest = $derived(latest.charAt(0).toUpperCase() + latest.slice(1));
 
   function exportZip() {
     downloadZip(app.bundle());
@@ -22,7 +22,7 @@
   async function discard() {
     close();
     await app.discardDraft();
-    pilot.say(`Your draft is gone. You're starting again from the font${fontDay ? ` of ${fontDay}` : ''}.`);
+    pilot.say(`Your draft is gone. You're starting again from ${latest}.`);
   }
 
   // ---- update to the font
@@ -38,11 +38,13 @@
   let conflicts = $derived(items.filter((i) => i.conflict));
   let auto = $derived(items.filter((i) => !i.conflict));
   async function update() {
-    const label = `Update to the font${fontDay ? ` of ${fontDay}` : ''}`;
+    const label = `Set reference font to ${latest}`;
     close();
     const r = await app.updateToFont(items, keep, label);
     pilot.updateDismissed = true;
-    pilot.say(`Your draft is now based on the font${fontDay ? ` of ${fontDay}` : ''}. ${plural(r.came, 'change')} came in; you kept ${r.kept} of yours.`, { undo: true });
+    const parts = [...(r.came ? [`${plural(r.came, 'change')} from it came in`] : []), ...(r.kept ? [`you kept yours in ${plural(r.kept, 'place')} you both changed`] : [])];
+    const said = parts.join('; ');
+    pilot.say(`Your reference font is now ${latest}.${said ? ` ${said[0].toUpperCase()}${said.slice(1)}.` : ''}`, { undo: true });
   }
   const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : `glyph ${i.key}`);
 </script>
@@ -74,7 +76,7 @@
         </div>
       {:else if pilot.dialog === 'discard'}
         <h3>Discard your draft?</h3>
-        <p>This deletes your draft and starts you again from the font{fontDay ? ` of ${fontDay}` : ''}.
+        <p>This deletes your draft and starts you again from {latest}.
           {#if counts}You'd lose {plural(counts.glyphs, 'glyph')}, {plural(counts.spellings, 'spelling')} and {plural(counts.design, 'design change')}.{/if} It can't be undone.</p>
         <p class="muted small">Want to keep a copy? Export it first.</p>
         <div class="row end">
@@ -83,11 +85,12 @@
           <button class="danger" onclick={discard}>Discard my draft</button>
         </div>
       {:else if pilot.dialog === 'update'}
-        <h3>Update your draft to the font{fontDay ? ` of ${fontDay}` : ''}</h3>
+        <h3>Set your reference font to {app.latestFont}</h3>
+        <p>Your reference font is {app.referenceFont}: Your changes are what your draft does differently from it. Your changes stay yours, compared with {latest} from now on, so the ones {latest} already has leave the list.</p>
         {#if !items.length}
-          <p>Your draft already has everything the font changed. Updating only moves its starting point{fontDay ? ` to ${fontDay}` : ''}.</p>
+          <p>Your draft already has everything {latest} changed.</p>
         {:else}
-          <p>The font has {plural(items.length, 'change')}{baseDay ? ` since ${baseDay}` : ''}. {auto.length} {auto.length === 1 ? 'is' : 'are'} in things you didn't change: they come in on their own.
+          <p>{Latest} has {plural(items.length, 'change')} since {app.referenceFont}. {auto.length} {auto.length === 1 ? 'is' : 'are'} in things you didn't change: they come in on their own.
             {#if conflicts.length}{conflicts.length} {conflicts.length === 1 ? 'is' : 'are'} in things you also changed: choose which to keep.{/if}</p>
         {/if}
         {#if conflicts.length}
@@ -99,7 +102,7 @@
                   <div class="row pics">
                     <SvgText text={it.current} size={72} label="yours" />
                     <SvgText text={it.theirs} size={72} label="the font's new one" />
-                    <SvgText text={it.base} size={72} label="before{baseDay ? ` (${baseDay})` : ''}" />
+                    <SvgText text={it.base} size={72} label={`in ${app.referenceFont}`} />
                   </div>
                 {:else if it.kind === 'spelling'}
                   <table class="cells"><tbody>
@@ -124,7 +127,7 @@
         <div class="row end">
           <button onclick={() => (pilot.dialog = 'export')}>Export my draft first</button>
           <button onclick={() => { pilot.updateDismissed = true; close(); }}>Not now</button>
-          <button class="primary" onclick={update}>Update my draft</button>
+          <button class="primary" onclick={update}>Set reference font to {app.latestFont}</button>
         </div>
       {/if}
     </div>

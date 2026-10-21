@@ -135,7 +135,7 @@ your machine: webserver (local) → /review (decide) → /release (candidate bra
   sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
   tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first
   (`save_draft()` writes only over the row this tab loaded, so the check and the write are one step),
-  the font-updated banner with Update my draft (three-way: the font's changes come in, conflicts are
+  the new-release banner with Set reference font (three-way: the font's changes come in, conflicts are
   Keep mine / Take the font's), ⋯ → Export / Import a draft (.zip), Discard my draft, See my changes.
 - **Bundle** (a draft, an Export .zip, what Review opens): `manifest.json`, `design.json`,
   `components.csv`, `svg/` (added and changed glyphs only), `base/` (the versions the draft started

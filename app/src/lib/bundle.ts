@@ -13,8 +13,9 @@ export const BUNDLE_FORMAT = 1;
 export const GLYPH_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 
 export type SvgMap = Record<string, string>;
-/** The font version a draft is based on. `date`: when the font's files last changed ("the font of 18 Oct"). */
-export type BaseVersion = { commit: string | null; date?: string | null; design_hash: string; csv_hash: string };
+/** The font a draft is compared with (its reference font). `version`: the release ("3.200"; drafts
+ *  from before 3.200 have none); `date`: when the font's files last changed ("the font of 18 Oct"). */
+export type BaseVersion = { commit: string | null; version?: string | null; date?: string | null; design_hash: string; csv_hash: string };
 export type Manifest = {
   format: number;
   kind: 'jzp-draft';
