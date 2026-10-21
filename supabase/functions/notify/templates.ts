@@ -106,7 +106,7 @@ export function statusChanged(c: Context): Mail {
       paras: [`${of} from "${r.title}" are in the release candidate for JianZiPu v${r.release}, a test version of the next font. If you try it and something looks wrong, say so with Feedback in the Builder.`] },
     released: { subject: `Released in v${r.release}: ${r.title}`, heading: `Your changes are in JianZiPu v${r.release}`,
       paras: [`${of} from "${r.title}" are in JianZiPu v${r.release}, released today${r.credit ? `, credited to ${r.credit}` : ''}. Thank you.`,
-        'Next time you open the Builder, Update my draft brings the new font into your draft.'] },
+        `Next time you open the Builder, choose Set reference font to ${r.release} (latest): your draft is then compared with the new release, and these changes leave Your changes.`] },
   };
   const w = what[r.status] ?? { subject: `Updated: ${r.title}`, heading: 'Your Change Request was updated', paras: [`"${r.title}" is now ${r.status.replace('_', ' ')}.`] };
   return mail({
