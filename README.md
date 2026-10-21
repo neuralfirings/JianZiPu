@@ -44,10 +44,18 @@ a static page that types in the released font. Cloudflare Pages deploys it from
 release from the local Builder's Release screen: it builds the font into
 `site/JianZiPu.ttf`, tags it, and GitHub publishes it on the
 [releases page](https://github.com/neuralfirings/JianZiPu/releases). See
-`builder/README.md` "Releases", and `CHANGELOG.md` for what each version changed.
+[docs/maintainers/releasing.md](docs/maintainers/releasing.md), and `CHANGELOG.md` for what each
+version changed.
 
 The Builder itself runs at builder.jianzipufont.com (see `builder/README.md`
 "Hosted pilot").
+
+# Contributing
+
+Problems and ideas go in [issues](https://github.com/neuralfirings/JianZiPu/issues); font changes
+go through the online Builder as Change Requests; code takes pull requests. See
+[CONTRIBUTING.md](CONTRIBUTING.md). Reviewing, releasing and the service setup are in
+[docs/maintainers/](docs/maintainers/README.md).
 
 # Under the hood
 

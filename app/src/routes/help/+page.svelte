@@ -242,9 +242,10 @@
           <li><strong>Add kept changes</strong> brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.</li>
           <li>Check the result in Layouts and Build & test, adjust, then Save.</li>
           <li><strong>Build candidate</strong> runs the tests, builds the font, writes the version and the changelog entry, and tags <code>v3.200-rc.1</code>. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (<code>rc.2</code>).</li>
-          <li>Merge the pull request on GitHub, then <strong>Publish</strong>: main is tagged <code>v3.200</code>, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become <strong>Released</strong>.</li>
+          <li>Merge the pull request on GitHub with <strong>Create a merge commit</strong> (not squash or rebase, which would leave the candidate's tag off main), then <strong>Publish</strong>: main is tagged <code>v3.200</code>, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become <strong>Released</strong>.</li>
         </ol>
         <p>Version numbers have a three-digit minor part (3.100, 3.200, 3.201), because the font stores the version as a number. Raise the first number only when existing documents would look different or break.</p>
+        <p>The full process, with testing a candidate and what to do when a step fails, is in <code>docs/maintainers/releasing.md</code> in the repository.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->

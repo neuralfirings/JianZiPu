@@ -23,5 +23,6 @@ builder/JianZiPu.fea
 builder/src_font/*.ttf
 .env
 
-# local working notes: UX specs, wireframes, roadmap (not shared)
-docs/
+# local working notes: UX specs, wireframes, roadmap (not shared); docs/maintainers/ is tracked
+docs/*
+!docs/maintainers/

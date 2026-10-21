@@ -1,0 +1,131 @@
+# Maintainer setup
+
+The one-time setup behind the Builder, the pilot, and releases. Each part says
+where the settings live. Secrets never go in this repository.
+
+| Part | What it does | Where |
+| --- | --- | --- |
+| Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
+| Supabase | Sign-in, drafts, Change Requests, the base font, emails | supabase.com dashboard, `supabase/` |
+| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
+| Resend | Sends the Change Request emails | resend.com, `supabase/functions/notify/` |
+| GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
+| Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
+| MailerLite | The "send me the font" email on the font page | mailerlite.com |
+
+## Your computer
+
+1. Do the setup in `builder/README.md` "Setup":
+   - Python dependencies: `cd builder && pip install -e '.[test]'`;
+   - the base font, copied into `builder/src_font/TW-Kai-98.ttf` (it isn't in
+     the repo);
+   - the app build: `cd app && npm install && npm run build`. Build it again
+     after pulling app changes, or the server serves the old app.
+2. Copy `builder/.env.example` to `builder/.env` (gitignored), then fill in
+   `SUPABASE_URL` and `SUPABASE_ANON_KEY`. They're in Supabase → Project
+   Settings → API Keys. Review's admin sign-in needs them. Never put the
+   service key in this file.
+3. Git must be able to push to GitHub from this copy (your own sign-in, over
+   SSH or HTTPS). The Release screen runs git as you.
+4. Start it with `cd builder && python3 -m jzpbuild.webserver`, then open
+   http://127.0.0.1:5713/.
+
+## Supabase
+
+1. **The database.** In the SQL editor, run the files in `supabase/` in order:
+
+   | File | What it adds |
+   | --- | --- |
+   | `001_setup.sql` | profiles (with `role`), the private `assets` bucket, row rules |
+   | `002_drafts_table.sql` | the `drafts` table and `save_draft()` |
+   | `003_drop_drafts_bucket.sql` | removes the old drafts bucket's policies; only needed if the bucket ever existed |
+   | `004_change_requests.sql` | Change Requests, credit, `withdraw_change_request()` |
+   | `005_request_drafts.sql` | unsent Change Requests saved with a draft |
+
+2. **Auth**, following the comments at the top of `001_setup.sql`:
+   - Turn off sign-ups.
+   - Set the Site URL to the pilot domain.
+   - Add redirect URLs: the pilot domain, and `http://127.0.0.1:5713/**` for
+     your local Review.
+3. **Emails.** Paste the templates and subjects from `supabase/emails/` (its
+   README says how). Do this before inviting anyone.
+4. **People.** Invite each tester and yourself (Authentication → Users →
+   Invite). Make yourself admin: set `role = 'admin'` on your row in
+   `profiles`.
+5. **The base font.** Upload `TW-Kai-98.ttf` to the `assets` bucket. The online
+   Builder downloads it at start.
+
+Moving drafts from the old Storage bucket into the table is a one-off, done in
+October 2026. The steps are in `builder/README.md`, "Moving drafts from the old
+bucket".
+
+## Railway (the online Builder)
+
+1. Create a service from this repository. It builds the root `Dockerfile` and
+   deploys `main` on every merge.
+2. Set these variables:
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`;
+   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it, to read the base
+     font).
+
+   Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA` itself.
+3. Add the custom domain `builder.jianzipufont.com`.
+
+The "Ask for an invite" and Feedback forms post to Formspree straight from the
+app (`app/src/lib/forms.ts`), so they need no setting.
+
+A failed deploy, or one that looks old (a build error that was fixed weeks
+ago), means Railway is serving an old image. Redeploy from Railway's
+Deployments tab.
+
+## Change Request emails (Resend)
+
+`supabase/functions/notify/README.md` has the full steps. In short:
+
+1. Create a Resend account, add and verify the `jianzipufont.com` domain (DNS
+   records), and create an API key.
+2. Set the secrets with
+   `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`.
+3. Deploy with `supabase functions deploy notify --no-verify-jwt`.
+4. Create a Database Webhook on `change_requests` (Insert and Update) that calls
+   `notify` with the header `x-webhook-secret`.
+
+The email templates are in git (`supabase/functions/notify/templates.ts`). To
+change one, edit it, run `deno test supabase/functions/notify`, and deploy
+again.
+
+## GitHub
+
+1. **The ruleset on main.** Settings → Rules → Rulesets → New branch ruleset,
+   targeting `main`:
+   - Require a pull request before merging (0 approvals is fine).
+   - Require the status checks `scope`, `app`, `builder` and `emails`.
+   - Add Repository admin to the bypass list, so an emergency fix can still go
+     straight in.
+
+   Rulesets are free on public repositories. This makes the
+   [scope rules](releasing.md#scope-rules) hold without anyone having to
+   remember them.
+2. **The `font-files` label** (it exists already). An admin adds it to a code
+   pull request that must change font files on purpose.
+3. **Merges.** Leave "Allow merge commits" on in Settings → General → Pull
+   Requests, because release pull requests need it
+   ([releasing.md](releasing.md#6-merge-the-pull-request)).
+4. **Actions.** `release.yml` publishes releases with the workflow's own token
+   (`permissions: contents: write`). No secret is needed.
+
+## Cloudflare Pages (jianzipufont.com)
+
+- A Pages project connected to this repository, with production branch `main`,
+  no build command, and output directory `site`.
+- `site/_headers` keeps caches short: `version.json` is never cached and
+  `JianZiPu.ttf` for an hour, so people get a new release soon after it
+  deploys.
+
+## MailerLite
+
+The signup form on the font page sends an email with the download link. That
+link must be `https://jianzipufont.com/JianZiPu.ttf`, or
+`https://github.com/neuralfirings/JianZiPu/releases/latest/download/JianZiPu.ttf`.
+Both always serve the newest release, so the email never needs editing. Don't
+link to a release candidate.

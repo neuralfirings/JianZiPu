@@ -1,6 +1,6 @@
 # Font files change only through a release branch, and a release branch changes only font files
-# (jzpbuild/release.py FONT_PATHS). Make this check required in the ruleset on main (builder/README.md
-# "Releases"). For the rare code change that must also touch font files (a design.json format change
+# (jzpbuild/release.py FONT_PATHS). Make this check required in the ruleset on main
+# (docs/maintainers/setup.md "GitHub"). For the rare code change that must also touch font files (a design.json format change
 # that converts the file), an admin adds the label `font-files` to the pull request.
 name: scope
 
