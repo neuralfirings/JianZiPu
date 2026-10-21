@@ -87,7 +87,7 @@
             <tr><td><code>#</code> <code>+</code></td><td><code>#</code> starts a new word without a space; <code>+</code> adds an advance between words.</td></tr>
           </tbody>
         </table>
-        <p>The exact keys for each part are its spellings, listed and edited in <a href="/glyphs?view=typing">Glyphs → Typing</a>. The <strong>Sample set…</strong> menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).</p>
+        <p>The exact keys for each part are its spellings, listed and edited in <a href="/glyphs?view=typing">Glyphs → Table view</a>. The <strong>Sample set…</strong> menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -105,8 +105,8 @@
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
 
         <h3>Typing: spellings</h3>
-        <p>The <strong>Tiles | Typing</strong> switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:</p>
-        <figure><a href="/help/typing.jpg" target="_blank"><img src="/help/typing.jpg" alt="The Typing table for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin" width="1280" height="800" loading="lazy" /></a><figcaption>Typing, showing the Left hand area: <code>s</code> types 名, <code>d</code> types 中.</figcaption></figure>
+        <p>The <strong>Tile view | Table view</strong> switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:</p>
+        <figure><a href="/help/typing.jpg" target="_blank"><img src="/help/typing.jpg" alt="The Table view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin" width="1280" height="800" loading="lazy" /></a><figcaption>Table view, showing the Left hand area: <code>s</code> types 名, <code>d</code> types 中.</figcaption></figure>
         <table class="ref">
           <tbody>
             <tr><th>Latin Entry</th><td>What you type on an English keyboard: a one-letter shortcut (<code>k</code>) or the pinyin (<code>lun</code>). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.</td></tr>
@@ -189,7 +189,7 @@
         <ul>
           <li>Edits to the design and the spellings stay in the browser until you <strong>Save</strong> (<kbd>⌘S</kbd>). The header shows <span class="pill draft"><I.Unsaved size={14} />unsaved</span> with a count; click it to see the list or <strong>Discard all</strong>.</li>
           <li><I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
-          <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a>.</li>
+          <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Table view</a>.</li>
           <li>Unsaved work survives a reload: the Builder offers to restore it.</li>
           {#if online}
             <li>Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.</li>
@@ -264,7 +264,7 @@
             <tr><th colspan="2">Everywhere</th></tr>
             <tr><td><kbd>⌘S</kbd></td><td>Save</td></tr>
             <tr><td><kbd>⌘Z</kbd> / <kbd>⇧⌘Z</kbd></td><td>Undo / redo (not while typing in a field)</td></tr>
-            <tr><th colspan="2">Glyphs → Typing</th></tr>
+            <tr><th colspan="2">Glyphs → Table view</th></tr>
             <tr><td><kbd>Enter</kbd> / <kbd>⇧Enter</kbd></td><td>Keep the cell, move down / up</td></tr>
             <tr><td><kbd>Tab</kbd></td><td>Next cell; accepts a suggestion in an empty Latin Entry</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Put the old value back</td></tr>
@@ -327,7 +327,7 @@
 
         <h3 id="messages-saving">Saving</h3>
         <dl class="panels messages">
-          <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
+          <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → Table view</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
           <dt>“design.json changed on disk” / “components.csv changed on disk”</dt><dd>On your own computer: the file changed since you opened it (a git pull, another tab, an editor). <strong>Export mine first</strong>, then <strong>Reload from disk</strong>; or <strong>Overwrite</strong> if yours should win.</dd>
           <dt>“Not saved: …”</dt><dd>On your own computer: the server couldn't write a file; the reason follows (“Not saved: <em>name</em>.svg: …” for a glyph file). Your changes are still here. Fix the cause, then <strong>Try again</strong>. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press <strong>Try again</strong>.</dd>
           <dt>“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”</dt><dd>On your own computer: the Builder's server isn't running. Start it with that command and reload.</dd>
@@ -381,7 +381,7 @@
 
         <h3 id="messages-build">Build & test</h3>
         <dl class="panels messages">
-          <dt>“ValidationError: input validation failed”</dt><dd>The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> and build again.</dd>
+          <dt>“ValidationError: input validation failed”</dt><dd>The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in <a href="/glyphs?view=typing&f=attention">Glyphs → Table view</a> and build again.</dd>
           <dt>“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”</dt><dd>A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.</dd>
           <dt>“FileNotFoundError: … src_font/TW-Kai-98.ttf”</dt><dd>The base font is missing. On your own computer, copy <code>TW-Kai-98.ttf</code> into <code>builder/src_font/</code> (it isn't in git). Online, the server couldn't fetch it: send <strong>Feedback</strong>.</dd>
           <dt>“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in <em>n</em> seconds.”</dt><dd>Builds run one at a time, with a short pause between yours online. Wait, then <strong>Build font</strong> again.</dd>

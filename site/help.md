@@ -32,7 +32,7 @@ Every box where you type words in the Builder, and the font itself, read the sam
 | `C03\|s6,5` | Chords: `C` 撮 (also `DC`, `FC`), the left note, `\|`, the right note. `TT` 双弹 and `BL` 拨剌 work the same way. |
 | `#` `+` | `#` starts a new word without a space; `+` adds an advance between words. |
 
-The exact keys for each part are its spellings, listed and edited in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing). The **Sample set…** menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).
+The exact keys for each part are its spellings, listed and edited in [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing). The **Sample set…** menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).
 
 ## Glyphs
 
@@ -52,10 +52,10 @@ Below the tiles, the inspector shows the selected glyph: its areas, its file, bu
 
 ### Typing: spellings
 
-The **Tiles | Typing** switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:
+The **Tile view | Table view** switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:
 
-![The Typing table for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin](https://builder.jianzipufont.com/help/typing.jpg)
-*Typing, showing the Left hand area: `s` types 名, `d` types 中.*
+![The Table view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin](https://builder.jianzipufont.com/help/typing.jpg)
+*Table view, showing the Left hand area: `s` types 名, `d` types 中.*
 
 - Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.
 - Latin Entry (Alt): A second way to type it (`bl`, `fy`).
@@ -93,7 +93,7 @@ Each panel's **?** shows the same text as below.
 - **Selection**: The position and size of what is selected: points (corner, smooth or free) or whole shapes (move, scale, rotate, centre in the box). With nothing selected it shows the glyph's shape count and its estimated stroke weight.
 - **Compare**: Things to measure against while drawing: a **reference dot** (`D`) at the stroke weight to aim for, another glyph laid over this one (`G`), or the last saved outline (`L`).
 - **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to.
-- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing).
+- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing).
 - **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. Red means "not in the font" until the next build.
 - **Checks**: Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. **Check as built** runs the same conversion as the font build.
 - **Tester**: Words that use this glyph, drawn live as you edit, so you can see it in context before saving.
@@ -156,7 +156,7 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 
 - Edits to the design and the spellings stay in the browser until you **Save** (`⌘S`). The header shows **unsaved** with a count; click it to see the list or **Discard all**.
 - **Undo** **Redo** in the header (`⌘Z`, `⇧⌘Z`) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.
-- Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
+- Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
 - Unsaved work survives a reload: the Builder offers to restore it.
 - Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.
 - On your own computer, Save writes `design.json` and `components.csv` in `builder/inputs/` (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.
@@ -214,7 +214,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 - `⌘S`: Save
 - `⌘Z` / `⇧⌘Z`: Undo / redo (not while typing in a field)
 
-**Glyphs → Typing**
+**Glyphs → Table view**
 
 - `Enter` / `⇧Enter`: Keep the cell, move down / up
 - `Tab`: Next cell; accepts a suggestion in an empty Latin Entry
@@ -272,7 +272,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### Saving
 
-- **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
+- **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
 - **“design.json changed on disk” / “components.csv changed on disk”**: On your own computer: the file changed since you opened it (a git pull, another tab, an editor). **Export mine first**, then **Reload from disk**; or **Overwrite** if yours should win.
 - **“Not saved: …”**: On your own computer: the server couldn't write a file; the reason follows (“Not saved: *name*.svg: …” for a glyph file). Your changes are still here. Fix the cause, then **Try again**. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press **Try again**.
 - **“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”**: On your own computer: the Builder's server isn't running. Start it with that command and reload.
@@ -322,7 +322,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### Build & test
 
-- **“ValidationError: input validation failed”**: The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) and build again.
+- **“ValidationError: input validation failed”**: The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) and build again.
 - **“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”**: A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.
 - **“FileNotFoundError: … src_font/TW-Kai-98.ttf”**: The base font is missing. On your own computer, copy `TW-Kai-98.ttf` into `builder/src_font/` (it isn't in git). Online, the server couldn't fetch it: send **Feedback**.
 - **“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in *n* seconds.”**: Builds run one at a time, with a short pause between yours online. Wait, then **Build font** again.

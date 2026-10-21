@@ -85,7 +85,7 @@
       if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
       const { bundle, itemIds } = snapshot(app.bundle(), app.mainSvgs, picked.map((i) => i.id));
       const clash = T.issues(bundle.typing, app.known);
-      if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → Typing, or leave those spellings out.`; return; }
+      if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → Table view, or leave those spellings out.`; return; }
       const failed = await buildCheck(buildInputs(bundle, app.mainSvgs));
       if (failed) { problem = `The font didn't build with just these changes: ${failed}`; return; }
       step = 'sending';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Glyphs: every glyph, as Tiles (drawings) or Typing (a spelling table, components.csv).
+  // Glyphs: every glyph, as Tile view (drawings) or Table view (a spelling table, components.csv).
   // The sidebar groups by design.json area (a glyph in several areas is in each); the 130
   // position decimals fold inside 徽 position. The bottom panel shows what the view doesn't:
   // in Tiles it edits the spellings; in Typing the row is the editor, so it shows Try it,
@@ -166,8 +166,8 @@
   <div class="toolbar">
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
-      <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
-      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>Typing</button>
+      <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tile view</button>
+      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>Table view</button>
     </span>
     {#if view === 'typing'}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
