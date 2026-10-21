@@ -19,3 +19,20 @@ export function testerRedirect(search: URLSearchParams): string {
   if (b) q.set('build', b);
   return `/test?${q}`;
 }
+
+const EXCEPTION = /^(?:[A-Za-z_]\w*\.)*([A-Za-z_]\w*(?:Error|Exception)): ?(.*)$/;
+
+/** The message to show above a failed build's log: the traceback's last exception line (module
+ *  path dropped) with the indented issue lines under it, e.g. "ValidationError: input validation
+ *  failed (1 issue(s)):\n  - components.csv: latin spelling 'k' is claimed by…". Not the first line
+ *  that mentions an error: a traceback quotes source lines such as "raise ValidationError(". */
+export function buildFailure(log: string[]): string {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const m = log[i].match(EXCEPTION);
+    if (!m) continue;
+    const more = [];
+    for (let j = i + 1; j < log.length && more.length < 6 && /^\s+\S/.test(log[j]); j++) more.push(log[j]);
+    return [`${m[1]}: ${m[2]}`.trimEnd(), ...more].join('\n');
+  }
+  return log.find((l) => /too large/i.test(l))?.trim() || 'Build failed: see the log.';
+}

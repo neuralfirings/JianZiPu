@@ -41,6 +41,14 @@ export function areaIdProblem(d: Design, id: string): string | null {
   return null;
 }
 
+/** Why `id` can't name a new word type (layout), or null when it can. */
+export function wordTypeIdProblem(d: Design, id: string): string | null {
+  if (!id) return 'Give the word type an id.';
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(id)) return `"${id}" can't be an id: use letters, digits and _ only, starting with a letter.`;
+  if (d.layouts.some((l) => l.name === id)) return `"${id}" is already a word type.`;
+  return null;
+}
+
 /** Add an empty area to a design (in place). */
 export function addArea(d: Design, id: string, label: string, size: [number, number]) {
   d.areas[id] = { label: label.trim() || id, size: [size[0], size[1]], glyphs: [] };

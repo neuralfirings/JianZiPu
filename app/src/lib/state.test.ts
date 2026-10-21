@@ -56,6 +56,25 @@ beforeEach(() => {
   serve();
 });
 
+describe('the error banner offers the right next step', () => {
+  it('a failed Save offers Try again, and a good save clears it', async () => {
+    await app.load();
+    app.edit('x', (d) => { d.center.x = 510; });
+    api.saveDesign.mockResolvedValueOnce({ ok: false, error: 'disk full' } as never);
+    expect(await app.save()).toBe(false);
+    expect(app.error).toBe('Not saved: disk full');
+    expect(app.errorFix).toBe('save');
+    app.recheck();
+    await new Promise((r) => setTimeout(r, 350));          // the check after an edit passes…
+    expect(app.error).toBe('Not saved: disk full');        // …and leaves the save's error alone
+    api.saveDesign.mockRejectedValueOnce(new Error('Failed to fetch'));
+    expect(await app.save()).toBe(false);
+    expect(app.error).toMatch(/^Not saved: can't reach the web server/);
+    expect(await app.save()).toBe(true);
+    expect(app.error).toBeNull();
+  });
+});
+
 describe('glyph files wait for Save', () => {
   it('overlays pending writes and deletes', () => {
     expect(withPending({ a: '1', b: '2' }, { b: null, c: '3' })).toEqual({ a: '1', c: '3' });
@@ -185,13 +204,43 @@ describe('hosted draft', () => {
   it('keeps edits in the browser when the save fails, and retries', async () => {
     await app.load();
     const drafts = await import('./drafts');
-    vi.mocked(drafts.saveDraft).mockRejectedValueOnce(new Error('offline'));
+    vi.mocked(drafts.saveDraft).mockRejectedValueOnce(new Error('Failed to fetch'));
     app.edit('x', (d) => { d.center.x = 510; });
     expect(await app.save()).toBe(false);
     expect(app.offline).toBe(true);
+    expect(app.saveRefused).toBeNull();
     expect(app.dirty).toBe(true);
     expect(await app.save()).toBe(true);
     expect(app.offline).toBe(false);
+  });
+
+  it("tells a refused save from being offline", async () => {
+    await app.load();
+    const drafts = await import('./drafts');
+    vi.mocked(drafts.saveDraft).mockRejectedValueOnce(new Error('new row violates row-level security policy'));
+    app.edit('x', (d) => { d.center.x = 510; });
+    expect(await app.save()).toBe(false);
+    expect(app.offline).toBe(false);
+    expect(app.saveRefused).toBe('new row violates row-level security policy');
+    expect(app.dirty).toBe(true);
+    expect(await app.save()).toBe(true);
+    expect(app.saveRefused).toBeNull();
+  });
+
+  it("says a stored draft can't be opened, rather than that the server is away", async () => {
+    store.draft = { text: '{"manifest":', stamp: 't9' };
+    await app.load();
+    expect(app.error).toMatch(/^Your saved draft can't be opened: The stored draft is not valid JSON\. It is still stored/);
+    expect(app.errorFix).toBe('feedback');
+    store.draft = { text: JSON.stringify({ manifest: { kind: 'jzp-draft', format: 999 } }), stamp: 't9' };
+    await app.load();
+    expect(app.error).toMatch(/newer version of the Builder.*Reload the page/);
+    expect(app.errorFix).toBe('reload');
+    api.design.mockRejectedValueOnce(new Error('Failed to fetch'));
+    store.draft = null;
+    await app.load();
+    expect(app.error).toMatch(/taking a break/);
+    expect(app.errorFix).toBe('load');
   });
 
   it('notices the font moved and updates the draft in one undo step', async () => {

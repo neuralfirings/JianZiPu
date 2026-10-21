@@ -43,8 +43,8 @@ describe('help page', () => {
     for (const src of imgs) expect(existsSync(resolve(staticDir, src.slice(1))), src).toBe(true);
   });
 
-  it('jumps only to sections that exist', () => {
-    const ids = new Set(HELP_SECTIONS.map((s) => s.id));
+  it('jumps only to sections and headings that exist', () => {
+    const ids = new Set([...HELP_SECTIONS.map((s) => s.id), ...[...pageSrc.matchAll(/ id="([^"{]+)"/g)].map((m) => m[1])]);
     for (const h of hrefs.filter((x) => x.startsWith('#'))) expect(ids.has(h.slice(1)), h).toBe(true);
   });
 

@@ -56,6 +56,7 @@ import signal
 import hashlib
 import io
 import json
+import mimetypes
 import os
 import re
 import secrets
@@ -769,15 +770,22 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _serve_app(self, path: str) -> bool:
         """Serve the built SvelteKit app (SPA fallback to index.html). Never a file outside
-        app/build: the target is resolved (symlinks and all) and must stay inside it."""
+        app/build: the target is resolved (symlinks and all) and must stay inside it. A missing
+        file with a known type (/llms.txt, /x.png) is a 404, not the app, so crawlers and agents
+        aren't handed an empty page; screen paths (/glyphs/md_1.1/edit) still get the app."""
         if not APP_BUILD_DIR.exists():
             return False
         root = APP_BUILD_DIR.resolve()
         rel = unquote(path).lstrip("/") or "index.html"
         target = (root / rel).resolve()
         if not target.is_relative_to(root) or not target.is_file():
+            if mimetypes.guess_type(rel)[0]:
+                self._json({"ok": False, "error": "not found"}, 404)
+                return True
             target = root / "index.html"
         ctype = self.guess_type(str(target))
+        if ctype.startswith("text/") and "charset" not in ctype:
+            ctype += "; charset=utf-8"           # llms.txt and the like hold Chinese
         body = target.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", ctype)

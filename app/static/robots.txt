@@ -1,0 +1,5 @@
+# The Builder is an app; its pages are empty without JavaScript and need a sign-in.
+# Read its help instead: https://jianzipufont.com/help.md (index: /llms.txt).
+User-agent: *
+Disallow: /api/
+Allow: /

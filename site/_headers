@@ -13,3 +13,9 @@
   Cache-Control: public, max-age=3600
 /version.json
   Cache-Control: no-cache
+
+# The help for AI tools (written by `npm run help:export` in app/): plain UTF-8 text, it holds Chinese
+/help.md
+  Content-Type: text/markdown; charset=utf-8
+/llms.txt
+  Content-Type: text/plain; charset=utf-8

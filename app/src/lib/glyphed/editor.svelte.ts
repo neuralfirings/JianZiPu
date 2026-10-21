@@ -262,9 +262,15 @@ export class GlyphEditor {
   }
 
   // ---- trace mode
-  async startTrace(file: File) {
-    if (!this.scene) return;
-    const img = await loadImage(file);
+  /** Open an image to trace; false (with `error` set) when the browser can't read it. */
+  async startTrace(file: File): Promise<boolean> {
+    if (!this.scene) return false;
+    let img: HTMLImageElement;
+    try { img = await loadImage(file); } catch {
+      this.error = `Can't trace ${file.name}: it isn't an image this browser can read. Try a PNG or JPEG.`;
+      return false;
+    }
+    this.error = null;
     const [w, h] = this.box;
     const scale = Math.min((w - 40) / img.width, (h - 40) / img.height);
     this.trace = { file, img, opts: { ...TRACE_DEFAULTS }, svg: null, busy: false, showImage: true, scale, dx: (w - img.width * scale) / 2, dy: (h - img.height * scale) / 2, edited: false };
@@ -272,6 +278,7 @@ export class GlyphEditor {
     this.tools?.clearSelection();
     this.placeRaster();
     this.retrace();
+    return true;
   }
   private placeRaster() {
     const t = this.trace, s = this.scene; if (!t || !s) return;
@@ -402,7 +409,7 @@ export class GlyphEditor {
   exportSvg(): string { return this.scene?.exportSvg() ?? ''; }
   async check() { const r = await api.checkSvg(this.exportSvg()); this.built = r; return r; }
   /** Write the file. Returns the server's answer; a conflict leaves `conflictDisk` set for the dialog. */
-  async save(overwrite = false): Promise<{ ok: boolean; exists?: boolean; conflict?: boolean; error?: string }> {
+  async save(overwrite = false): Promise<{ ok: boolean; exists?: boolean; conflict?: boolean; error?: string; draft?: boolean; waiting?: string }> {
     const s = this.scene; if (!s) return { ok: false, error: 'no editor' };
     if (!s.paths.length) return { ok: false, error: 'the glyph is empty' };
     this.saving = true; this.error = null;
@@ -431,8 +438,9 @@ export class GlyphEditor {
     } finally { this.saving = false; }
   }
   /** Hosted: the outline goes into the tester's draft (one undo step, with joining its area when
-   *  new), and the draft saves. Offline, it waits in the browser like any other edit. */
-  private async saveToDraft(text: string): Promise<{ ok: boolean; error?: string }> {
+   *  new), and the draft saves. Offline, it waits in the browser like any other edit: `waiting`
+   *  says why the draft didn't save. */
+  private async saveToDraft(text: string): Promise<{ ok: boolean; error?: string; draft?: true; waiting?: string }> {
     const s = this.scene!;
     let design = app.design;
     if (this.isNew && this.area && design?.areas[this.area] && !design.areas[this.area].glyphs.includes(this.name)) {
@@ -449,8 +457,13 @@ export class GlyphEditor {
     this.dropDraft();
     this.applyOverlays();
     this.sync();
-    await app.save();
-    return { ok: true };
+    if (await app.save()) return { ok: true, draft: true };
+    const waiting = app.paused ? 'spelling problems must be fixed first'
+      : app.offline ? "we can't reach the server; it saves when you're back online"
+      : app.saveRefused ? 'the server turned the draft down (see the banner above)'
+      : app.savedElsewhere ? 'your draft was saved somewhere else since you opened it'
+      : 'another save was running; it saves itself within half a minute';
+    return { ok: true, draft: true, waiting };
   }
   /** Conflict: take the disk version (drops my edits) or keep mine and overwrite. */
   async loadDiskVersion() { if (this.conflictDisk != null) { const t = this.conflictDisk; this.conflictDisk = null; this.dropDraft(); await this.setSource(t); } }

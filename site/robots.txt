@@ -1,0 +1,5 @@
+# AI tools: the Builder's help as plain text is /help.md, indexed in /llms.txt.
+User-agent: *
+Allow: /
+
+Sitemap: https://jianzipufont.com/sitemap.xml

@@ -16,7 +16,7 @@
   import { SAMPLE_SETS } from '$lib/words';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
   import { segments } from '$lib/cmap';
-  import { parseView, pickBuild, type TestView } from '$lib/buildtest';
+  import { parseView, pickBuild, buildFailure, type TestView } from '$lib/buildtest';
 
   let view = $state<TestView>(parseView(page.url.searchParams.get('view')));
   let text = $state(page.url.searchParams.get('words') || (localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' ')));
@@ -116,12 +116,7 @@
     if (!name) return;
     app.edit(`Save test set "${name}"`, (d) => { d.test_sets = { ...(d.test_sets ?? {}), [name]: words }; });
   }
-  let failure = $derived.by(() => {
-    if (!status || status.ok !== false) return null;
-    const log = status.log.join('\n');
-    const m = log.match(/OverflowError.*?(?=\n|$)|.*too large.*|.*Error.*/);
-    return m ? m[0] : 'Build failed — see the log.';
-  });
+  let failure = $derived(status && status.ok === false ? buildFailure(status.log) : null);
   const buildLabel = $derived(status?.state === 'running' ? 'Building…' : app.dirty && !hosted.isHosted ? 'Save & build' : 'Build font');
 </script>
 
@@ -282,7 +277,7 @@
   .sheet.vertical { writing-mode: vertical-rl; text-orientation: upright; white-space: pre; }
   .hint { font: var(--t-label) var(--font-serif); writing-mode: horizontal-tb; }
   .miss { color: var(--status-danger); }
-  .error { color: var(--status-danger); margin: 0; padding: var(--space-4) var(--space-6) 0; }
+  .error { color: var(--status-danger); margin: 0; padding: var(--space-4) var(--space-6) 0; white-space: pre-line; }
   .built { padding: var(--space-4) var(--space-5); background: var(--bg-panel); border-radius: var(--radius-md); }
   .small { font-size: var(--t-caption); }
   .note { padding: 0 var(--space-6) var(--space-5); margin: 0; }

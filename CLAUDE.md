@@ -30,6 +30,7 @@ cd builder && python3 -m jzpbuild --classic_pos  # legacy positioning from input
 cd builder && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
 cd builder && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_typing.py tests/test_hosted.py tests/test_emails.py  # unit tests (positioning model, SVG flattening, SVG endpoints, spellings/typing preview, hosted mode, Supabase email templates)
 cd app && npm run help:shots          # retake the Help page screenshots (static/help/*.jpg) from a running Builder; BASE=http://127.0.0.1:<port> for another port
+cd app && npm run help:export         # write the public help from the help page: site/help/index.html, site/help.md, site/llms.txt, app/static/llms.txt (CI checks they're current)
 cd app && npm test                    # Vitest unit tests (rules, shapes, gaps, panels store, glyph editor scene/ops/tools, typing, cmap, draft bundle/merge, app state)
 deno test supabase/functions/notify   # the Change Request emails (events + templates)
 ```
@@ -54,7 +55,13 @@ Help text: the Builder's help lives in `app/src/lib/help.ts` (each panel's ? pop
 / `EDITOR_HELP`, and the help page's sections list) and `app/src/routes/help/+page.svelte` (the rest
 of the page, which also renders the panel entries). Before committing a feature change, check
 whether any help text describes what changed and update it in that one place; retake screenshots
-with `npm run help:shots` when a screen's look changed.
+with `npm run help:shots` when a screen's look changed. Then run `npm run help:export` and commit
+what it writes: the Builder's pages are empty without JavaScript and behind sign-in, so the public
+copies on jianzipufont.com (`/help/`, `/help.md`, `/llms.txt`) are what search engines and AI tools
+read. The export renders the page with `everyone` (both the online and own-computer wording), so
+keep `{#if online}`/`{#if local}` text readable side by side. The "Messages and errors" section
+quotes the app's messages word for word so a pasted message finds its fix: when you change a
+message's wording, change it there too.
 
 Run both test suites after any code change (`npm test` in `app/`, `python3 -m pytest tests` in
 `builder/`; `tests/test_shaping.py` additionally needs a freshly built font and compares it

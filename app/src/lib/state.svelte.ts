@@ -6,12 +6,13 @@
 // Hosted (pilot) mode: everything above is the signed-in tester's draft; Save uploads it
 // to Supabase (drafts.ts) instead of writing files, and saves itself every 30 s.
 import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type Stats } from './api';
-import { diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
+import { BundleError, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
 import { day, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
+import { isNetworkError } from './net';
 import * as T from './typing';
 
 const DRAFT_KEY = 'jzp-builder-draft';
@@ -31,6 +32,8 @@ export function withPending(saved: SvgMap, pending: PendingSvgs): SvgMap {
   return out;
 }
 
+export type ErrorFix = 'load' | 'save' | 'check' | 'undo' | 'reload' | 'feedback' | null;
+
 function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v));
 }
@@ -42,6 +45,9 @@ class DesignState {
   warnings = $state<string[]>([]);
   stats = $state<Stats | null>(null);
   error = $state<string | null>(null);
+  /** What the error banner's button does: load again, save again, check again, undo the edit
+   *  that broke the design, reload the page (a newer app), or send feedback (nothing to retry). */
+  errorFix = $state<ErrorFix>(null);
   loading = $state(true);
   saving = $state(false);
   conflict = $state<string | null>(null);
@@ -86,6 +92,8 @@ class DesignState {
   draftStamp = $state<string | null>(null);
   /** Save could not reach Supabase: the edits wait in this browser. */
   offline = $state(false);
+  /** Hosted: the last draft save got an answer that said no (a storage rule, a size limit…). */
+  saveRefused = $state<string | null>(null);
   /** Someone saved the draft elsewhere after it was loaded here: their timestamp. */
   savedElsewhere = $state<string | null>(null);
   /** The tester's Change Requests (hosted); their sent changes are locked in the draft. */
@@ -219,6 +227,7 @@ class DesignState {
       this.mainTyping = typing;
       this.savedElsewhere = null;
       this.offline = false;
+      this.saveRefused = null;
       if (hosted.isHosted) {
         this.main = await api.base();
         await this.loadDraft(d.design, typing);
@@ -229,17 +238,28 @@ class DesignState {
       }
       this.restoreBuffer();
       this.syncGlyphRows();
-      this.error = null;
+      this.fail(null);
       // the stats (rules, skipped shapes, size) came with the files; a draft or restored edits
       // are a different design, so count again
       if (JSON.stringify(this.design) !== JSON.stringify(d.design)) this.recheck();
     } catch (e) {
-      this.error = hosted.isHosted
-        ? `The Builder is taking a break: we can't reach it right now. Your saved draft is safe. (${(e as Error).message})`
-        : `Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver  (${(e as Error).message})`;
+      const msg = (e as Error).message;
+      if (e instanceof BundleError && e.newer)
+        this.fail('Your draft was saved by a newer version of the Builder than this page. Reload the page to get it.', 'reload');
+      else if (e instanceof BundleError)
+        this.fail(`Your saved draft can't be opened: ${msg} It is still stored and nothing has been changed. Send feedback so it can be recovered.`, 'feedback');
+      else if (hosted.isHosted)
+        this.fail(`The Builder is taking a break: we can't reach it right now. Your saved draft is safe. (${msg})`, 'load');
+      else this.fail(`Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver  (${msg})`, 'load');
     } finally {
       this.loading = false;
     }
+  }
+
+  /** Show (or clear, with null) the error banner, and what its button does. */
+  private fail(text: string | null, fix: ErrorFix = null) {
+    this.error = text;
+    this.errorFix = text ? fix : null;
   }
 
   /** Make (design, typing, svgs) the saved state and the current one, with no history. */
@@ -483,12 +503,12 @@ class DesignState {
         if (r.ok) {
           this.warnings = r.warnings ?? [];
           this.stats = r.stats ?? this.stats;
-          this.error = null;
+          if (this.errorFix === 'check' || this.errorFix === 'undo') this.fail(null);   // not a save's error
         } else {
-          this.error = r.error ?? 'invalid design';
+          this.fail(`The font can't be built from this design: ${r.error ?? 'invalid design'}`, 'undo');
         }
       } catch (e) {
-        this.error = (e as Error).message;
+        this.fail(`Couldn't check the design: ${(e as Error).message}`, 'check');
       }
     }, 300);
   }
@@ -508,7 +528,7 @@ class DesignState {
       // glyph files first: the design and spellings checks look for them
       for (const [n, t] of Object.entries(this.pendingSvgs)) {
         const r = t == null ? await api.deleteSvg(n) : await api.saveSvg(n, t, null, true);
-        if (!r.ok) { this.error = `${n}.svg: ${r.error ?? 'save failed'}`; return false; }
+        if (!r.ok) { this.fail(`Not saved: ${n}.svg: ${r.error ?? 'save failed'}`, 'save'); return false; }
         const { [n]: _, ...rest } = this.pendingSvgs;
         this.pendingSvgs = rest;
         const saved = { ...this.savedSvgs };
@@ -520,7 +540,7 @@ class DesignState {
         const r = await api.saveDesign(this.design, force ? '' : this.diskHash);
         if (!r.ok) {
           if (r.conflict) { this.conflictFile = 'design.json'; this.conflict = r.error ?? 'conflict'; return false; }
-          this.error = r.error ?? 'save failed';
+          this.fail(`Not saved: ${r.error ?? 'save failed'}`, 'save');
           return false;
         }
         this.diskHash = r.hash ?? this.diskHash;
@@ -533,7 +553,7 @@ class DesignState {
         if (!r.ok) {
           if (r.conflict) { this.conflictFile = 'components.csv'; this.conflict = r.error ?? 'conflict'; return false; }
           if (r.errors?.length) { this.paused = r.errors; return false; }
-          this.error = r.error ?? 'save failed';
+          this.fail(`Not saved: ${r.error ?? 'save failed'}`, 'save');
           return false;
         }
         this.csvHash = r.hash ?? this.csvHash;
@@ -544,8 +564,12 @@ class DesignState {
       this.lastSaved = new Date();
       this.conflict = null;
       this.paused = null;
+      if (this.errorFix === 'save') this.fail(null);
       this.persistDraft();
       return true;
+    } catch (e) {
+      this.fail(`Not saved: can't reach the web server (${(e as Error).message}). Your changes are kept in this browser.`, 'save');
+      return false;
     } finally {
       this.saving = false;
     }
@@ -600,13 +624,17 @@ class DesignState {
       this.changes = [];
       this.lastSaved = new Date();
       this.offline = false;
+      this.saveRefused = null;
       this.savedElsewhere = null;
       this.paused = null;
       this.persistDraft();
       return true;
     } catch (e) {
-      this.offline = true;
-      this.error = null;
+      // offline: it saves when the connection is back; refused: the storage said no, and saying
+      // "we can't reach the server" would have the tester wait for nothing
+      const net = isNetworkError(e);
+      this.offline = net;
+      this.saveRefused = net ? null : (e as Error).message || 'no reason given';
       console.warn('draft save failed', e);
       this.persistDraft();
       return false;

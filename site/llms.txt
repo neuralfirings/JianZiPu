@@ -1,0 +1,28 @@
+# JianZiPu Font
+
+> JianZiPu (减字谱) is a font for guqin tablature: you type a short code such as `s7k5` (or 名七勾五) and the font swaps each piece for a drawn part and stacks them into one 减字 character. The JZP Font Builder is the web app where the font is made: the drawn parts (glyphs), how each part is typed (spellings), and how the parts sit together (layouts).
+
+The Builder (https://builder.jianzipufont.com) runs in the browser and asks testers to sign in, so its pages can't be read without one. Its help is published here instead.
+
+## Docs
+
+- [Builder help, full text](https://jianzipufont.com/help.md): every screen, how words are typed, saving, drafts, keyboard shortcuts, and what each message means and how to fix it
+- [Builder help, with screenshots](https://jianzipufont.com/help/)
+- [The JianZiPu font](https://jianzipufont.com/): download, and the typing guide (layout, numbers and decimals, modifiers, chords, vertical text, glossary)
+
+## Help sections
+
+- [Getting started](https://jianzipufont.com/help/#start)
+- [How words are typed](https://jianzipufont.com/help/#typing)
+- [Glyphs](https://jianzipufont.com/help/#glyphs)
+- [The glyph editor](https://jianzipufont.com/help/#editor)
+- [Layouts](https://jianzipufont.com/help/#layouts)
+- [Build & test](https://jianzipufont.com/help/#build)
+- [Saving and undo](https://jianzipufont.com/help/#saving)
+- [Your draft (online)](https://jianzipufont.com/help/#draft)
+- [Change Requests](https://jianzipufont.com/help/#requests)
+- [Reviewing Change Requests](https://jianzipufont.com/help/#review)
+- [Making a release](https://jianzipufont.com/help/#release)
+- [Keyboard shortcuts](https://jianzipufont.com/help/#keys)
+- [When something looks wrong](https://jianzipufont.com/help/#trouble)
+- [Messages and errors](https://jianzipufont.com/help/#messages)
