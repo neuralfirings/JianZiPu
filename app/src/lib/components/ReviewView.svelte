@@ -15,7 +15,7 @@
   import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
-  import { day, hhmm, pilot } from '$lib/pilot.svelte';
+  import { day, fontName, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
   import SvgText from './SvgText.svelte';
@@ -57,7 +57,7 @@
   let skipped = $derived(items.filter((i) => picks[i.id] === false));
   let keeping = $derived(items.filter((i) => picks[i.id] === true));
   /** Your changes: the ones the font has now (released, or made the same way in the font). They
-   *  fold away at the bottom until Update my draft moves the draft onto the font. */
+   *  fold away at the bottom until Set reference font compares the draft with the font now. */
   let inFont = $derived(mode === 'mine' && app.mainDesign
     ? inTheFont(items, bundle, { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : new Set<string>());
   let done = $derived(items.filter((i) => inFont.has(i.id)));
@@ -134,7 +134,7 @@
     const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs });
     if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
     app.applyChanges(`Undo: ${nameOf(it)}`, m);
-    pilot.say(`${nameOf(it)} is back the way your draft started.`, { undo: true });
+    pilot.say(`${nameOf(it)} is back the way your reference font has it.`, { undo: true });
   }
   function undoRule(it: DesignItem, r: RuleChange) {
     const base = it.base as Layout;
@@ -142,7 +142,7 @@
       const i = d.layouts.findIndex((l) => l.name === it.unit.name);
       if (i >= 0) d.layouts[i] = revertRule(d.layouts[i], base, r.key);
     });
-    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your draft started.`, { undo: true });
+    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your reference font has it.`, { undo: true });
   }
   /** The spacing rules a changed word type differs in. */
   const rulesOf = (it: Item) => (it.kind === 'design' && it.unit.type === 'layout' && it.status === 'changed'
@@ -170,7 +170,7 @@
       <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : mode === 'decide' ? 'The changes' : `${name}'s draft`}</h2>
       <p class="muted">
         saved {day(m.updated)} {hhmm(m.updated)}
-        {#if m.base.date}· based on the font of {day(m.base.date)}{/if}
+        {#if m.base.version || m.base.date}· reference font: {fontName(m.base)}{/if}
         {#if mode === 'owner' && app.main?.date}· your Builder is on {day(app.main.date)}{/if}
         {#if m.note}<br />“{m.note}”{/if}
       </p>
@@ -314,8 +314,8 @@
       </button></h3>
       <div class="banner saved">
         <span class="ic"><I.Check /></span>
-        <span>{done.length === 1 ? 'This change is' : 'These changes are'} in the font{app.main?.date ? ` of ${day(app.main.date)}` : ''}. <strong>Update my draft</strong> moves your draft onto that font, and {done.length === 1 ? 'it leaves' : 'they leave'} this list.</span>
-        {#if app.fontMoved}<button class="sm" onclick={() => (pilot.dialog = 'update')}>Update my draft…</button>{/if}
+        <span>{done.length === 1 ? 'This change is' : 'These changes are'} in {fontName(app.main)}. Set your reference font to {app.latestFont} and {done.length === 1 ? 'it leaves' : 'they leave'} this list.</span>
+        {#if app.fontMoved}<button class="sm" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>{/if}
       </div>
       {#if doneOpen}
         <ul class="donelist">

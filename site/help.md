@@ -166,10 +166,10 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 
 Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own **draft**: only you see it, and nothing you do changes the real font or anyone else's work.
 
-- The **Your draft** pill in the header shows what your draft is based on and how much you've changed. **See my changes** lists them item by item.
-- On that list, **Undo this change** puts one item back the way your draft started: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
+- Your draft is compared with a **reference font**, a release such as 3.200: **Your changes** are what your draft does differently from it. The **Your draft** pill in the header shows your reference font and how much you've changed. **See my changes** lists the changes item by item.
+- On that list, **Undo this change** puts one item back the way your reference font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
 - To share your work, **More** → **Export my draft (.zip)…** and send the file. **Import a draft (.zip)…** opens one again.
-- When the font is updated, a banner offers **Update my draft…**: the font's changes come in, and where you both changed the same thing you pick **Keep mine** or **Take the font's**.
+- When a new release is out, a banner offers **Set reference font to 3.200 (latest)…** (with the new number). Your changes stay yours and are compared with the new release from then on: its changes come in, the ones it already has leave Your changes, and where you both changed the same thing you pick **Keep mine** or **Take the font's**.
 - **Feedback** in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.
 
 ## Change Requests
@@ -183,7 +183,7 @@ When some of your changes are ready for the real font, send them as a **Change R
 - [Your Change Requests](https://builder.jianzipufont.com/requests) shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.
 - Statuses: **Sent**, **In review**, **In a release candidate** (a test version of the next font), **Released**, **Declined**, **Withdrawn**. A request can be partly kept: "3 of 5 changes in v3.200".
 - **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.
-- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Update my draft…** moves your draft onto the new font, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
+- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Set reference font to 3.200 (latest)…** compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
 
 ## Reviewing Change Requests
 

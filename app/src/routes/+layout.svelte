@@ -107,13 +107,13 @@
     {#if hosted.isHosted && hosted.user}
       <span class="pill-wrap">
         <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-          <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · font updated</span>{/if}
+          <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
         </button>
         {#if pill}
           <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
             <strong>Your draft</strong>
             <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
-            <p class="muted">{#if app.draftBase?.version.date}Based on the font of {day(app.draftBase.version.date)}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
+            <p class="muted">{#if app.draftBase}Reference font: {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
             {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
             <div class="row">
               <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
@@ -183,7 +183,7 @@
             <button onclick={() => goto('/requests')}>Your Change Requests</button>
             <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
             <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
-            <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? 'Update my draft to the font…' : 'Update my draft · up to date'}</button>
+            <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `Set reference font to ${app.latestFont}…` : `Reference font: ${app.latestFont}`}</button>
             <button onclick={() => (feedback = true)}>Send feedback…</button>
             <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
             <hr />
@@ -237,10 +237,10 @@
   {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
     <div class="banner info">
       <span class="ic"><I.Info /></span>
-      <span><b>The font was updated{app.main?.date ? ` on ${day(app.main.date)}` : ''}</b>{app.draftBase?.version.date ? ` (since your draft started on ${day(app.draftBase.version.date)})` : ''}.</span>
+      <span><b>{app.main?.version ? `JianZiPu ${app.main.version} is out.` : `The font was updated${app.main?.date ? ` on ${day(app.main.date)}` : ''}.`}</b> Your reference font is {app.referenceFont}.</span>
       <span class="spacer"></span>
       <button onclick={() => (pilot.updateDismissed = true)}>Not now</button>
-      <button class="primary" onclick={() => (pilot.dialog = 'update')}>Update my draft…</button>
+      <button class="primary" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>
     </div>
   {/if}
   {#if app.draftRestored}

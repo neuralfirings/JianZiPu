@@ -73,7 +73,7 @@ export function releasedItems(reqs: ChangeRequest[]): Record<string, ChangeReque
 export const CLOSED: RequestStatus[] = ['released', 'declined', 'withdrawn'];
 
 /** Which of a draft's changes the font has now (a released Change Request, or the same change
- *  made in the font): the draft holds them only until Update my draft moves it onto the font. */
+ *  made in the font): the draft holds them only until Set reference font compares it with the font now. */
 export function inTheFont(items: Item[], draft: Bundle, font: Current): Set<string> {
   const still = new Set(diffBundle(draft, font).map((i) => i.id));
   return new Set(items.filter((i) => !still.has(i.id)).map((i) => i.id));

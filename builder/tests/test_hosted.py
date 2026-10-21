@@ -130,6 +130,7 @@ def test_config_and_base(server):
     assert base["design_hash"] == design["hash"] and base["csv_hash"] == cat["hash"]
     assert base["svg_hashes"] and all(len(h) == 16 for h in base["svg_hashes"].values())
     assert base["date"] and base["date"][:2] == "20"     # "the font of 18 Oct"
+    assert base["version"] == config.FONT_VERSION         # "Reference font: 3.200"
 
 
 def test_read_only(server):

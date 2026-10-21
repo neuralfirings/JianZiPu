@@ -153,9 +153,9 @@ After that:
   always serves the newest font.
 - The MailerLite download email links to
   `https://jianzipufont.com/JianZiPu.ttf`, which is also the newest.
-- In the hosted Builder (redeployed at the merge), testers see "The font was
-  updated" and choose **Update my draft…**, which drops their released
-  changes out of Your changes.
+- In the hosted Builder (redeployed at the merge), testers see "JianZiPu
+  3.300 is out" and choose **Set reference font to 3.300 (latest)…**, which
+  drops their released changes out of Your changes.
 
 You can delete the `release/3.300` branch on GitHub. The tags keep its history.
 
