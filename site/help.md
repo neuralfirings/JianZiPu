@@ -81,7 +81,7 @@ Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), 
 
 - Tools: Select `V`, Pen `P`, Pencil `⇧P`, Rectangle `R`, Ellipse `O`, Hand `H` (or hold Space), Zoom `Z`. **Keyboard shortcuts** on the rail lists every shortcut.
 - To edit points, use Select (`V`): click a shape to show its points, then click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
-- Combine two selected shapes with Union , Subtract , Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
+- Combine two selected shapes with Union, Subtract, Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
 - Lines drawn with the Pen or Pencil are strokes until **Outline line(s)** turns them into filled shapes. Save does this for you.
 - **SVG file…** imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.
 - **Image to trace…** turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then **Use this outline**. The image itself stays in your browser.
@@ -126,7 +126,7 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 - **Font budget**: How many positioning rules each word type makes, and an estimate of their size. The build stores each rule as its own small table, so size is far from a limit (a single lookup can hold 65,535). What to watch is **skipped**: word shapes that get no rule because a part has nothing placing it, so those words won't be laid out. The **rules · KB** pill in the header opens this panel; it shows **!** while anything is skipped.
 - **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas.
 - **Centering**: Which parts the word is centred on, and where. When a word is centred on an axis, the whole word is shifted to the target, so a start height on that axis (marked * on the canvas) doesn't move it: change the gaps between parts instead, or the target here.
-- **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses.
+- **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses. The **Chord divider** and **Vertical marker** areas also have **Width of |** (or **:**): how far the next part moves after the divider, and the divider's own width in the font; it sets the box width too.
 - **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**; click a word to put it on the canvas. **Build & test** opens the same words next to the built font.
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
@@ -167,17 +167,45 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own **draft**: only you see it, and nothing you do changes the real font or anyone else's work.
 
 - The **Your draft** pill in the header shows what your draft is based on and how much you've changed. **See my changes** lists them item by item.
+- On that list, **Undo this change** puts one item back the way your draft started: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
 - To share your work, **More** → **Export my draft (.zip)…** and send the file. **Import a draft (.zip)…** opens one again.
 - When the font is updated, a banner offers **Update my draft…**: the font's changes come in, and where you both changed the same thing you pick **Keep mine** or **Take the font's**.
 - **Feedback** in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.
 
-## Reviewing a draft
+## Change Requests
 
-On your own computer, [Review](https://builder.jianzipufont.com/review) brings a tester's draft into the font. Open a draft from the list (once signed in) or a **.zip** someone sent.
+When some of your changes are ready for the real font, send them as a **Change Request** (a CR). The font's maintainer looks at each change, keeps or skips it, and replies.
 
-- Each change is shown before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. **Keep** or **Skip** each one, or **Keep all**.
-- A **Conflict** means you changed the same thing since the draft started: pick whose version to use.
-- **Apply** turns the kept changes into one undoable step of unsaved changes. Look them over in Layouts and Build & test, Save, then commit with the message the toast offers to copy.
+- On [Your changes](https://builder.jianzipufont.com/review?mine), choose **Send Change Request…**. Every change is ticked to start with; untick any you want to keep working on. Give it a title, say what you changed and why, and how you'd like to be credited in the release notes: your name the way it should read, such as *Mei Chen* or *Mei Chen (Taipei Qin Society)*, or nothing for no credit.
+- **Save as draft** keeps the request with your draft, ticks and notes included, so you can finish it later, on this computer or another. It shows on [Your Change Requests](https://builder.jianzipufont.com/requests) as **Draft · not sent**, with **Continue…** to pick it up again.
+- Before it goes, the Builder saves your draft, checks the chosen spellings don't clash, and builds a font with just those changes.
+- Once sent, those changes are **locked** in your draft: you can look at them and try words, but not edit or undo them. Everything else stays yours to change.
+- [Your Change Requests](https://builder.jianzipufont.com/requests) shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.
+- Statuses: **Sent**, **In review**, **In a release candidate** (a test version of the next font), **Released**, **Declined**, **Withdrawn**. A request can be partly kept: "3 of 5 changes in v3.200".
+- **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.
+- When your changes are released, **Update my draft…** brings in the new font, and they drop out of Your changes.
+
+## Reviewing Change Requests
+
+On your own computer, signed in as an admin, [Review](https://builder.jianzipufont.com/review) lists the Change Requests testers sent, newest first. An email with a link to each one arrives when it's sent.
+
+- Open a request to see its title, notes and how its author wants to be credited, then each change before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. **Keep** or **Skip** each one, or **Keep all**.
+- Write a reply if you like, then **Save decisions**. Nothing goes into the font yet: the request becomes **In review** (or **Declined** if you skipped everything) and its author gets an email. Kept changes go into the next [release candidate](https://jianzipufont.com/help/#release).
+- **Current drafts** below the requests shows what each tester is working on now. Opening a draft or a **.zip** and choosing **Apply** brings changes in directly, as one undoable step of unsaved changes. A **Conflict** means you changed the same thing since the draft started: pick whose version to use.
+
+## Making a release
+
+On your own computer, [Release](https://builder.jianzipufont.com/release) (from Review, or **More** → **Make a release…**) turns kept changes into a new version of the font. It runs git for you, with your own GitHub sign-in.
+
+1. **Start a release candidate** with the next version number, such as 3.200. The Builder makes the branch `release/3.200` from main. A release branch holds only font files; Builder code goes to main on its own branch.
+2. **Add kept changes** brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.
+3. Check the result in Layouts and Build & test, adjust, then Save.
+4. **Build candidate** runs the tests, builds the font, writes the version and the changelog entry, and tags `v3.200-rc.1`. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (`rc.2`).
+5. Merge the pull request on GitHub with **Create a merge commit** (not squash or rebase, which would leave the candidate's tag off main), then **Publish**: main is tagged `v3.200`, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become **Released**.
+
+Version numbers have a three-digit minor part (3.100, 3.200, 3.201), because the font stores the version as a number. Raise the first number only when existing documents would look different or break.
+
+The full process, with testing a candidate and what to do when a step fails, is in `docs/maintainers/releasing.md` in the repository.
 
 ## Keyboard shortcuts
 
@@ -278,7 +306,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“the SVG needs a viewBox (or width and height)”**: The SVG file has no size. Export it again from the drawing program with a size or artboard.
 - **“Unable to convert to picosvg: BadElement: …”**: The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.
 - **“syntax error: line *n*, column *n*”**: The file isn't a valid SVG. Export it again from the drawing program.
-- **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).
+- **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and. only.”).
 - **“Can't trace *file*: it isn't an image this browser can read. Try a PNG or JPEG.”**: The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.
 
 ### Layouts and areas

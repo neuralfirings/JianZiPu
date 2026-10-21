@@ -203,6 +203,16 @@ def test_emit_structure(design):
     assert "@pos_word__a__other = [ g_a2 ];" in text
 
 
+def test_big_lookups_are_broken_into_subtables(monkeypatch):
+    """Over ~1,600 rules in one run, fontTools gives up ("All candidates overflowed"); a break every
+    RULES_PER_SUBTABLE rules keeps each run small, in the same order."""
+    rules = [f"  pos r{i}' lookup x;" for i in range(7)]
+    monkeypatch.setattr(emit, "RULES_PER_SUBTABLE", 3)
+    out = emit._with_breaks(rules)
+    assert out == rules[:3] + ["  subtable;"] + rules[3:6] + ["  subtable;"] + rules[6:]
+    assert emit._with_breaks(rules[:3]) == rules[:3]
+
+
 def test_emitted_fea_compiles_with_real_design():
     """The real design file compiles through feaLib (no font needed: parse only)."""
     from fontTools.feaLib.parser import Parser

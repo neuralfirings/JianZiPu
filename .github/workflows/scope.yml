@@ -1,0 +1,34 @@
+# Font files change only through a release branch, and a release branch changes only font files
+# (jzpbuild/release.py FONT_PATHS). Make this check required in the ruleset on main
+# (docs/maintainers/setup.md "GitHub"). For the rare code change that must also touch font files (a design.json format change
+# that converts the file), an admin adds the label `font-files` to the pull request.
+name: scope
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Files this branch may change
+        working-directory: builder
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          ALLOWED: ${{ contains(github.event.pull_request.labels.*.name, 'font-files') }}
+        run: |
+          if python -m jzpbuild.release scope --base "origin/$BASE_REF" --head HEAD --branch "$HEAD_REF"; then exit 0; fi
+          if [ "$ALLOWED" = "true" ]; then echo "::notice::font files changed outside a release, allowed by the font-files label"; exit 0; fi
+          exit 1

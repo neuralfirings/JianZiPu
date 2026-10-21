@@ -475,6 +475,9 @@
 {/snippet}
 <PanelWorkspace store={panels} {meta} {body} help={LAYOUTS_HELP}>
   {#if editor.layout}
+    {#if app.lockOf(`design:layout:${editor.layout.name}`)}
+      <div class="banner info locked"><span class="ic"><I.Lock /></span><span>{app.lockMessage(`design:layout:${editor.layout.name}`)} You can look and try words; changes are refused.</span></div>
+    {/if}
     <div class="toolbar row wrap">
       <label><input type="checkbox" bind:checked={editor.showBoxes} /> boxes</label>
       <label><input type="checkbox" bind:checked={editor.showGlyphs} /> glyphs</label>

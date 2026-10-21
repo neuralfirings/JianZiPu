@@ -56,7 +56,11 @@ function inline(node) {
   if (tag === 'svg') {
     // an icon: its job when it has one (More, Undo, ?), else nothing (the words around it say it)
     const label = el.getAttribute('aria-label');
-    return label ? `**${label}**` : '';
+    if (!label) return '';
+    // an icon beside the word it stands for ("<strong>locked</strong> in your draft <Lock>") adds nothing in text
+    for (let p = el.previousElementSibling; p; p = p.previousElementSibling)
+      if (p.textContent.trim().toLowerCase() === label.toLowerCase()) return '';
+    return `**${label}**`;
   }
   if (tag === 'code' || tag === 'kbd') return tick(el.textContent.trim());
   if (tag === 'strong' || tag === 'b') return `**${kids().trim()}**`;
@@ -71,7 +75,7 @@ function inline(node) {
   return kids();
 }
 
-const clean = (s) => s.replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\*\*\*\*/g, '').trim();
+const clean = (s) => s.replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\*\*\*\*/g, '').replace(/ ([:;,.])(?=\s|$)/g, '$1').trim();
 
 /** A table: a Markdown table when it has a header row, else a list of "row head: row text". */
 function table(el) {

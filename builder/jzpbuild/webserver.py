@@ -41,6 +41,10 @@ API (all JSON):
   GET  /api/build/status           {state, log, started, finished, ok, build, builds} (the caller's builds)
   GET  /api/builds/<id>/JianZiPu.ttf   that exact build (?download=1 sets Content-Disposition)
   GET  /JianZiPu.ttf               the latest build (cache-busted by the client)
+  GET  /api/release/status         local only: {git: branch, version, candidates, dirty…, job: the last step's log}
+  POST /api/release/start          local only: {version} -> branch release/<version> from origin/main
+  POST /api/release/candidate      local only: {notes, message} -> commit, build into site/, tag vX-rc.N, push
+  POST /api/release/publish        local only: {} -> after the release PR is merged, tag vX on main
 """
 
 from __future__ import annotations
@@ -66,7 +70,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from . import config, data, glyphs, hosted, typing_preview
+from . import config, data, glyphs, hosted, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -417,6 +421,55 @@ def write_build_inputs(work: Path, inputs: dict) -> list[str]:
 BUILD = BuildRunner()
 
 
+# ---------------------------------------------------------------- releases (local only)
+
+class ReleaseRunner:
+    """One release step at a time (release.py), in the background like a build, with its log for
+    the Release screen. Only ever on your own machine: it runs git with your sign-in."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.job = {"action": None, "state": "idle", "log": [], "result": None, "error": None}
+
+    def start(self, action: str, fn) -> tuple[bool, str | None]:
+        with self.lock:
+            if self.job["state"] == "running":
+                return False, f"{self.job['action']} is still running"
+            self.job = {"action": action, "state": "running", "log": [], "result": None, "error": None}
+        job = self.job
+
+        def log(line: str):
+            job["log"].append(line)
+            print(f"release {action}: {line}", flush=True)    # the server's own output too
+
+        def run():
+            try:
+                job["result"] = fn(log)
+                print(f"release {action}: done", flush=True)
+            except release.ReleaseError as e:
+                job["error"] = str(e)
+                print(f"release {action} failed: {e}", flush=True)
+            except Exception as e:  # noqa: BLE001 — the screen shows it; it's your machine
+                import traceback
+                job["error"] = f"{type(e).__name__}: {e}"
+                log(traceback.format_exc())
+            finally:
+                job["state"] = "done"
+
+        threading.Thread(target=run, daemon=True).start()
+        return True, None
+
+    def status(self) -> dict:
+        try:
+            git = release.status()
+        except release.ReleaseError as e:
+            git = {"error": str(e)}
+        return {"git": git, "job": self.job}
+
+
+RELEASE = ReleaseRunner()
+
+
 # ---------------------------------------------------------------- glyph SVG files
 
 SVG_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
@@ -761,6 +814,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            if path == "/api/release/status":
+                if SETTINGS.hosted:
+                    return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
+                return self._json(RELEASE.status())
             if path == "/api/build/status":
                 owner = self._owner()
                 if owner is None:
@@ -797,10 +854,21 @@ class Handler(SimpleHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         try:
+            if path.startswith("/api/release/") and SETTINGS.hosted:
+                return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
             owner = self._owner()
             if owner is None:
                 return self._json({"ok": False, "error": "Sign in first.", "auth": True}, 401)
             body = self._body()
+            if path in ("/api/release/start", "/api/release/candidate", "/api/release/publish"):
+                action = path.rsplit("/", 1)[1]
+                steps = {
+                    "start": lambda log: release.start(str(body.get("version", "")), log=log),
+                    "candidate": lambda log: release.candidate(str(body.get("notes", "")), str(body.get("message", "")), log=log),
+                    "publish": lambda log: release.publish(log=log),
+                }
+                started, why = RELEASE.start(action, steps[action])
+                return self._json({"ok": started, "error": why, **RELEASE.status()})
             if path == "/api/design/check":
                 try:
                     return self._json({"ok": True, **{k: v for k, v in _design_payload(body["design"], json.dumps(body["design"])).items() if k != "design"}})

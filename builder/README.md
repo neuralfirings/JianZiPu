@@ -114,14 +114,15 @@ file; **⋯ → Download as draft .zip** packs your unsaved changes the way a te
 ## Hosted pilot
 
 A few invited testers use the Builder online; each works in a private **draft**; nothing they do
-changes the repo. Spec and copy: `docs/PILOT-UX.md`.
+changes the repo. Spec and copy: `docs/PILOT-UX.md` (local notes).
 
 ```
 browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
-        │  draft.json (bundle) ◀──────────▶ Supabase Storage  drafts/<user id>/draft.json
+        │  draft (bundle JSON) ◀─────────▶ Supabase table drafts (one row per tester)
         └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
                                       in a temp dir; base font fetched from Storage assets/)
-your machine: webserver (local) → /review → Supabase (admin) or a .zip → Apply → Save → git commit
+        └─ Change Requests ──▶ Supabase table change_requests ──webhook──▶ Edge Function notify ──▶ email
+your machine: webserver (local) → /review (decide) → /release (candidate branch, tags) → GitHub
 ```
 
 - **Server** (`webserver --hosted` or `JZP_HOSTED=1`, `jzpbuild/hosted.py`): PUT and DELETE answer 403;
@@ -132,7 +133,8 @@ your machine: webserver (local) → /review → Supabase (admin) or a .zip → A
   `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once.
 - **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
   sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
-  tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first,
+  tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first
+  (`save_draft()` writes only over the row this tab loaded, so the check and the write are one step),
   the font-updated banner with Update my draft (three-way: the font's changes come in, conflicts are
   Keep mine / Take the font's), ⋯ → Export / Import a draft (.zip), Discard my draft, See my changes.
 - **Bundle** (a draft, an Export .zip, what Review opens): `manifest.json`, `design.json`,
@@ -149,18 +151,9 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 
 ### Setting it up
 
-1. **Supabase**: a project; run `supabase/001_setup.sql` in the SQL editor (profiles, private `drafts` and
-   `assets` buckets, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
-   set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
-   Review), paste the email templates from `supabase/emails/` (its README says how;
-   do this before inviting anyone), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
-2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
-   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`. The "Ask for an invite" and Feedback forms post to Formspree from the app (`app/src/lib/forms.ts`), so they need no setting.
-   Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
-3. **Your local Review**: copy `builder/.env.example` to `builder/.env` (gitignored) and
-   fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the web server reads that file at start (the shell's
-   own environment wins). Never the service key on your laptop. Open Review and sign in with your
-   admin email. Without them, Review still opens `.zip` files.
+Supabase (the SQL files in order, auth settings, email templates, invites, the base font in
+`assets`), Railway (the variables, the domain) and your local `builder/.env` are in
+[docs/maintainers/setup.md](../docs/maintainers/setup.md). To run the hosted image locally:
 
 ```bash
 cd builder && cp .env.example .env    # then edit .env
@@ -168,13 +161,56 @@ cd builder && python3 -m jzpbuild.webserver
 docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder   # the hosted image, locally
 ```
 
-### Merging a tester's draft
+### Moving drafts from the old bucket
 
-Review → the tester's row → each item shows what changed; Keep or Skip it (a conflict, where your
-Builder also changed the same thing since the draft started, needs a pick). **Apply** turns the kept items
-into one undoable step of unsaved changes, glyph files included. Look them over in Layouts and
-Build & test, **Save**, then commit with the message the toast copies ("Apply Mei Chen's draft: …"). The row
-is marked "reviewed" in this browser; a later save by the tester shows "new since you looked".
+Drafts used to be files, `drafts/<user id>/draft.json` in a Storage bucket. To move a project that
+has them: run `supabase/002_drafts_table.sql`, then copy the files into the table with the service
+key given to this one command only (Dashboard → Project Settings → API keys; don't save it in
+`.env`):
+
+```bash
+cd builder && SUPABASE_SERVICE_KEY=... python3 -m jzpbuild.migrate_drafts --dry-run   # what it would copy
+cd builder && SUPABASE_SERVICE_KEY=... python3 -m jzpbuild.migrate_drafts             # copy; never overwrites a row
+```
+
+Check the rows (Table Editor → drafts), run `supabase/003_drop_drafts_bucket.sql`, then delete the
+`drafts` bucket in Storage.
+
+### Change Requests
+
+A tester sends chosen changes from their draft as a **Change Request** (Your changes → Send Change
+Request…: title, notes, how to credit them). Before it goes, the draft is saved, the chosen spellings
+are checked and a font is built from just those changes. Sent changes are locked in the tester's
+draft until the request is withdrawn (possible until an admin keeps one of its changes) or
+declined. Table, row rules and the two RPCs: `supabase/004_change_requests.sql`; app side
+`app/src/lib/requests.ts`; emails `supabase/functions/notify/` (its README has the setup). **Save as draft** in the Send form keeps it unsent in `drafts.request_draft` (`supabase/005_request_drafts.sql`), shown on Your Change Requests with Continue.
+
+Review (local, signed in as the admin) lists them: Keep or Skip each change, reply, **Save
+decisions**; nothing goes into the font until a release candidate. The maintainer's side is in
+[docs/maintainers/reviewing.md](../docs/maintainers/reviewing.md).
+
+### Merging a tester's draft directly
+
+Review → Current drafts → the tester's row (or Open a .zip) → each item shows what changed; Keep or
+Skip it (a conflict, where your Builder also changed the same thing since the draft started, needs a
+pick). **Apply** turns the kept items into one undoable step of unsaved changes, glyph files
+included. Look them over in Layouts and Build & test, **Save**, then commit with the message the
+toast copies ("Apply Mei Chen's draft: …"). The row is marked "reviewed" in this browser; a later
+save by the tester shows "new since you looked".
+
+## Releases
+
+A release turns kept changes into a new version of the font, from the local Builder's **Release**
+screen (`jzpbuild/release.py`; the same steps on the command line: `python3 -m jzpbuild.release
+status|start|candidate|publish`): a `release/<version>` branch from main, the kept changes, a
+candidate tagged `v<version>-rc.N` (two commits: the design, then the font built from it, which
+records the design commit's hash), the pull request merged with a merge commit, then Publish tags
+`v<version>` on main. `.github/workflows/release.yml` turns each tag into a GitHub Release with
+`site/JianZiPu.ttf` attached; `scope.yml` keeps font files (`FONT_PATHS`) on release branches and
+code off them.
+
+The whole process, versions, scope rules, the ruleset on main and troubleshooting:
+[docs/maintainers/releasing.md](../docs/maintainers/releasing.md).
 
 ## Command line
 
@@ -399,7 +435,7 @@ font) are the two columns the build actually reads; two more,
   which file/function to also touch.
 - `type=unreferenced` — kept for a future feature, not currently used by
   anything (`弦`/`絃` `ch_xian`/`ch_xian_trad`: added to the font ahead of
-  a planned string-indicator feature described in `versions.md`, but never
+  a planned string-indicator feature described in `CHANGELOG.md`, but never
   wired into `components.csv`).
 
 Every other Chinese-spelled character (the vast majority — anything used in

@@ -5,7 +5,7 @@
 </script>
 
 {#if app.stats}
-  <div class="muted small">One rule per word shape and glyph bucket, all in one positioning lookup. The font tools split it automatically; the number to watch is how many rules each word type adds.</div>
+  <div class="muted small">One rule per word shape and glyph bucket, in one positioning lookup that the build breaks into blocks of 300 rules so a big design still fits. The number to watch is how many rules each word type adds.</div>
   <table><tbody>
     {#each Object.entries(perLayout) as [n, s]}<tr><td>{n}</td><td class="num">{s.shapes} shapes</td><td class="num">{s.rules} rules</td><td class="num">{(s.est_bytes / 1024).toFixed(1)} KB</td></tr>{/each}
     <tr><td><strong>total</strong></td><td></td><td class="num"><strong>{app.stats.rules}</strong></td><td class="num"><strong>{(app.stats.est_bytes / 1024).toFixed(0)} KB</strong></td></tr>

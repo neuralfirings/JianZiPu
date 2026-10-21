@@ -2,8 +2,9 @@
 // (fflate tells files from folders with instanceof Uint8Array, which jsdom's realm breaks)
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
-import { applySvgs, BundleError, diffSvgs, fromJson, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
-import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff } from './merge';
+import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
+import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph } from './merge';
+import type { Layout, Relationship } from './api';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -35,6 +36,12 @@ function draft() {
 describe('draft bundle', () => {
   it('lists added, changed and deleted glyph files, ignoring a trailing newline', () => {
     expect(diffSvgs({ a: 'x', b: 'y', c: 'z' }, { a: 'x\n', b: 'Y', d: 'w' })).toEqual({ added: ['d'], changed: ['b'], deleted: ['c'] });
+  });
+  it('reads a stored draft whether the jsonb column holds the object or the same JSON as a string', () => {
+    const b = draft();
+    expect(fromStored(JSON.parse(toJson(b)))).toEqual(fromJson(toJson(b)));
+    expect(fromStored(toJson(b))).toEqual(fromJson(toJson(b)));
+    expect(() => fromStored('"not a draft"')).toThrow(BundleError);
   });
   it('keeps only changed glyphs, plus the originals a merge needs', () => {
     const b = draft();
@@ -161,5 +168,55 @@ describe('line diff', () => {
     expect(d.filter((l) => l.op !== ' ')).toEqual([{ op: '-', text: 'c' }, { op: '+', text: 'C' }]);
     const h = hunks(d, 1);
     expect(h.map((l) => l.op)).toEqual(['…', ' ', '-', '+', ' ', '…']);
+  });
+});
+
+describe('undoing one change (Your changes)', () => {
+  // what Review's "mine" view compares the draft with: what it started from
+  const startedFrom = (b: ReturnType<typeof draft>) => {
+    const svgs: Record<string, string> = { ...baseSvgs, ...b.base.svgs };
+    for (const n of b.manifest.svgs.added) delete svgs[n];
+    return { design: b.base.design, typing: b.base.typing, svgs };
+  };
+  const now = (b: ReturnType<typeof draft>) => ({ design: b.design, typing: b.typing, svgs: { ...baseSvgs, ...b.svgs } });
+
+  it('puts one item back and leaves the rest', () => {
+    const b = draft();
+    const items = diffBundle(b, startedFrom(b));
+    const one = (id: string) => revertItems(items.filter((i) => i.id === id), now(b));
+    expect(one('design:area:hui').design.areas.hui.size).toEqual([350, 350]);
+    expect(one('design:area:hui').design.areas.char).toBeDefined();        // other changes stay
+    expect(one('design:area:char').design.areas.char).toBeUndefined();     // a new area goes
+    expect(one('glyph:md_7').svgWrites).toEqual({ md_7: baseSvgs.md_7 });  // the original outline
+    expect(one('glyph:md_new').svgDeletes).toEqual(['md_new']);            // a new glyph goes
+    expect(one('glyph:md_old').svgWrites).toEqual({ md_old: baseSvgs.md_old }); // a deleted one comes back
+    expect(one('spelling:md_7').typing.md_7.latin).toBe('7');
+    expect(one('spelling:md_new').typing.md_new).toBeUndefined();
+  });
+
+  it('says what still uses a glyph', () => {
+    const b = draft();
+    expect(usesOfGlyph('md_new', b.design, b.typing)).toEqual({ spellings: true, areas: ['char'] });
+    expect(usesOfGlyph('md_old', b.design, b.typing)).toEqual({ spellings: false, areas: [] });
+  });
+
+  const rel = (elem: string, gap: number, base: string | null = 'left', axis: 'x' | 'y' = 'y'): Relationship => ({ axis, elem, base, gap });
+  const layout = (rs: Relationship[]): Layout => ({ name: 'standard', slots: [], relationships: rs, center: {} } as unknown as Layout);
+
+  it('lists spacing rules that changed, one by one', () => {
+    const before = layout([rel('a', 10), rel('b', 20), rel('c', 30)]);
+    const after = layout([rel('a', 10), rel('b', 25), rel('d', 5)]);
+    expect(ruleChanges(before, after).map((r) => [r.key, r.status])).toEqual([['y|b|left||', 'changed'], ['y|c|left||', 'deleted'], ['y|d|left||', 'added']]);
+    expect(ruleChanges(before, after)[0].label).toBe('Vertical · b from left · gap 25');
+  });
+
+  it('undoes one rule and keeps the others', () => {
+    const before = layout([rel('a', 10), rel('b', 20), rel('c', 30)]);
+    const after = layout([rel('a', 10), rel('b', 25), rel('d', 5)]);
+    expect(revertRule(after, before, 'y|b|left||').relationships).toEqual([rel('a', 10), rel('b', 20), rel('d', 5)]);
+    expect(revertRule(after, before, 'y|d|left||').relationships).toEqual([rel('a', 10), rel('b', 25)]);
+    // a removed rule comes back where it was
+    expect(revertRule(after, before, 'y|c|left||').relationships).toEqual([rel('a', 10), rel('b', 25), rel('c', 30), rel('d', 5)]);
+    expect(revertRule(layout([rel('b', 25)]), before, 'y|a|left||').relationships).toEqual([rel('a', 10), rel('b', 25)]);
   });
 });

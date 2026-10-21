@@ -36,6 +36,11 @@ export { default as Working } from '@lucide/svelte/icons/loader-circle';
 export { default as Info } from '@lucide/svelte/icons/info';
 export { default as Draft } from '@lucide/svelte/icons/circle-dashed';
 export { default as Current } from '@lucide/svelte/icons/circle-dot';     // the one in use: font, rule row
+export { default as Lock } from '@lucide/svelte/icons/lock';               // held by a sent Change Request
+
+// Change Requests
+export { default as Send } from '@lucide/svelte/icons/send';
+export { default as Withdraw } from '@lucide/svelte/icons/undo-2';
 
 // layout rules
 export { default as Vertical } from '@lucide/svelte/icons/move-vertical';
