@@ -10,6 +10,15 @@ same text becomes the GitHub release notes.
 
 ## [Unreleased]
 
+## [3.200] - 2026-10-21
+
+### Changed
+by Nancy Liang
+- Add rules for string top/bottom for non li right hand characters
+- Fixed spacing issue with chords 
+- Change advance of chord | to 500 
+- add 8 and 9 string for 9 string guqin use case
+
 ## [3.100] - 2026-10-19
 
 The v3.1 font (tag `v3.1`), renumbered: from here on the version is 3.100.
