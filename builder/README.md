@@ -114,7 +114,7 @@ file; **⋯ → Download as draft .zip** packs your unsaved changes the way a te
 ## Hosted pilot
 
 A few invited testers use the Builder online; each works in a private **draft**; nothing they do
-changes the repo. Spec and copy: `docs/PILOT-UX.md`.
+changes the repo. Spec and copy: `docs/PILOT-UX.md` (local notes).
 
 ```
 browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
@@ -151,18 +151,9 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 
 ### Setting it up
 
-1. **Supabase**: a project; run `supabase/001_setup.sql`, then `002_drafts_table.sql`, in the SQL editor
-   (profiles, the `drafts` table, the private `assets` bucket, row rules). Then, as the comments at the top of that file say: turn off sign-ups,
-   set the Site URL and redirect URLs (the pilot domain, and `http://127.0.0.1:5713/**` for your local
-   Review), paste the email templates from `supabase/emails/` (its README says how;
-   do this before inviting anyone), invite each tester and yourself, make yourself admin, upload `TW-Kai-98.ttf` to `assets`.
-2. **Railway**: a service from this repo (it builds the root `Dockerfile`), deploying `main`. Variables:
-   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`. The "Ask for an invite" and Feedback forms post to Formspree from the app (`app/src/lib/forms.ts`), so they need no setting.
-   Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA`. Add the custom domain.
-3. **Your local Review**: copy `builder/.env.example` to `builder/.env` (gitignored) and
-   fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the web server reads that file at start (the shell's
-   own environment wins). Never the service key on your laptop. Open Review and sign in with your
-   admin email. Without them, Review still opens `.zip` files.
+Supabase (the SQL files in order, auth settings, email templates, invites, the base font in
+`assets`), Railway (the variables, the domain) and your local `builder/.env` are in
+[docs/maintainers/setup.md](../docs/maintainers/setup.md). To run the hosted image locally:
 
 ```bash
 cd builder && cp .env.example .env    # then edit .env
@@ -194,9 +185,9 @@ draft until the request is withdrawn (possible until an admin keeps one of its c
 declined. Table, row rules and the two RPCs: `supabase/004_change_requests.sql`; app side
 `app/src/lib/requests.ts`; emails `supabase/functions/notify/` (its README has the setup). **Save as draft** in the Send form keeps it unsent in `drafts.request_draft` (`supabase/005_request_drafts.sql`), shown on Your Change Requests with Continue.
 
-Review (local, signed in as the admin) lists them: open one, Keep or Skip each change, reply, **Save
-decisions**. That writes the decisions on the request and emails its author; nothing goes into the
-font until a release candidate (below).
+Review (local, signed in as the admin) lists them: Keep or Skip each change, reply, **Save
+decisions**; nothing goes into the font until a release candidate. The maintainer's side is in
+[docs/maintainers/reviewing.md](../docs/maintainers/reviewing.md).
 
 ### Merging a tester's draft directly
 
@@ -209,39 +200,17 @@ save by the tester shows "new since you looked".
 
 ## Releases
 
-A release turns kept changes into a new version of the font. The local Builder's **Release** screen
-walks through it, and runs git for you with your own GitHub sign-in (`jzpbuild/release.py`; the same
-steps on the command line: `python3 -m jzpbuild.release status|start|candidate|publish`):
+A release turns kept changes into a new version of the font, from the local Builder's **Release**
+screen (`jzpbuild/release.py`; the same steps on the command line: `python3 -m jzpbuild.release
+status|start|candidate|publish`): a `release/<version>` branch from main, the kept changes, a
+candidate tagged `v<version>-rc.N` (two commits: the design, then the font built from it, which
+records the design commit's hash), the pull request merged with a merge commit, then Publish tags
+`v<version>` on main. `.github/workflows/release.yml` turns each tag into a GitHub Release with
+`site/JianZiPu.ttf` attached; `scope.yml` keeps font files (`FONT_PATHS`) on release branches and
+code off them.
 
-1. **Start a release candidate** `3.200`: the branch `release/3.200` from `origin/main`.
-2. **Add kept changes**: every kept change of the reviewed Change Requests, oldest first, as unsaved
-   changes (where two requests change the same thing, you pick). Check in Layouts and Build & test, Save.
-3. **Build candidate**: runs the builder tests, commits `builder/inputs/`, builds the font into
-   `site/JianZiPu.ttf` (name ID 5 "Version 3.200; git-<commit>", `head.fontRevision` 3.2), writes
-   `builder/VERSION`, `site/version.json` and the `CHANGELOG.md` entry, tags `v3.200-rc.1` and pushes.
-   `.github/workflows/release.yml` publishes the tag as a GitHub pre-release with the font attached;
-   the included requests become In a release candidate and their authors get an email. Open the pull
-   request from the link. A fix means another candidate (`rc.2`).
-4. Merge the pull request, then **Publish**: tags `v3.200` on main; the workflow publishes the release
-   as the latest, Cloudflare serves the new `site/JianZiPu.ttf` (the MailerLite download email links to
-   `https://jianzipufont.com/JianZiPu.ttf`, so it always sends the newest), Railway redeploys the hosted
-   Builder from main, and the requests become Released.
-
-Versions are `MAJOR.MINOR` with a three-digit minor (`3.100`, `3.200`, `3.201`): the font stores the
-version as a number, so 3.10 would equal 3.1. Raise the major number only when existing documents would
-look different or break (PUA codepoints move, a spelling is removed or changes meaning).
-
-**What a branch may change.** A release branch carries only font files: `builder/inputs/`,
-`builder/VERSION`, `CHANGELOG.md`, `site/JianZiPu.ttf`, `site/version.json` (and
-`builder/tests/JianZiPu.ttf`); every other branch carries none of them. `release.py scope` checks
-this, in Build candidate and in `.github/workflows/scope.yml` on every pull request. The label
-`font-files` on a pull request lets an admin pass it on purpose (say, a design.json format change that
-converts the file).
-
-**The ruleset on main** (GitHub → Settings → Rules → Rulesets → New branch ruleset; target `main`):
-require a pull request before merging (0 approvals is fine), require the status checks `scope`,
-`app`, `builder` and `emails`, and add Repository admin to the bypass list so an emergency fix can
-still go straight in. Rulesets are free on public repositories.
+The whole process, versions, scope rules, the ruleset on main and troubleshooting:
+[docs/maintainers/releasing.md](../docs/maintainers/releasing.md).
 
 ## Command line
 

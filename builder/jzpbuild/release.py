@@ -1,5 +1,5 @@
-"""Font releases: a release candidate on its own branch, then the release (CHANGELOG.md "Releases"
-in builder/README.md). The local Builder's Release screen calls these through the web server; the
+"""Font releases: a release candidate on its own branch, then the release
+(docs/maintainers/releasing.md). The local Builder's Release screen calls these through the web server; the
 command line does the same:
 
     python3 -m jzpbuild.release status
