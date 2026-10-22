@@ -8,7 +8,8 @@
 # Makes: the Artifact Registry repository `jzp` (with a clean-up policy), the service accounts
 # jzp-deploy (GitHub Actions) and jzp-run (the services), Workload Identity Federation for this
 # repository only, the services jzp-builder and jzp-builder-staging (a placeholder image until the
-# first deploy) with their Supabase settings, the service keys in Secret Manager. Prints the
+# first deploy) with their Supabase settings (staging shares production's unless given its own), the
+# service keys in Secret Manager. Prints the
 # repository variables for GitHub at the end.
 set -euo pipefail
 
@@ -66,21 +67,34 @@ g iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.work
   --member="principalSet://iam.googleapis.com/projects/$NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$GITHUB_REPO" >/dev/null
 
 # service <name> <secret> <label>: asks for that service's Supabase settings, stores the service
-# key, and creates the service (placeholder image) or updates its settings
+# key, and creates the service (placeholder image) or updates its settings. Staging: Enter at the
+# first question uses production's Supabase project (its settings and its stored key).
+PROD_URL="" PROD_ANON="" PROD_SECRET=""
 service() {
-  local name=$1 secret=$2 label=$3 url anon key
+  local name=$1 secret=$2 label=$3 url anon key=""
   echo "== $name ($label)"
-  read -r -p "  SUPABASE_URL for $label (https://<project>.supabase.co): " url
-  read -r -p "  SUPABASE_ANON_KEY for $label: " anon
-  read -r -s -p "  SUPABASE_SERVICE_KEY for $label (hidden; Enter keeps the stored one): " key; echo
-  if ! exists g secrets describe "$secret"; then
-    [ -n "$key" ] || { echo "  a new secret needs the service key"; exit 1; }
-    printf %s "$key" | g secrets create "$secret" --replication-policy=automatic --data-file=- >/dev/null
-  elif [ -n "$key" ]; then
-    printf %s "$key" | g secrets versions add "$secret" --data-file=- >/dev/null
+  if [ -n "$PROD_URL" ]; then
+    read -r -p "  SUPABASE_URL for $label (Enter: production's, $PROD_URL): " url
+  else
+    read -r -p "  SUPABASE_URL for $label (https://<project>.supabase.co): " url
   fi
-  g secrets add-iam-policy-binding "$secret" --member="serviceAccount:$RUN_SA" \
-    --role=roles/secretmanager.secretAccessor >/dev/null
+  if [ -n "$PROD_URL" ] && [ -z "$url" ]; then
+    url=$PROD_URL anon=$PROD_ANON secret=$PROD_SECRET
+  else
+    read -r -p "  SUPABASE_ANON_KEY for $label: " anon
+    read -r -s -p "  SUPABASE_SERVICE_KEY for $label (hidden; Enter keeps the stored one): " key; echo
+  fi
+  if [ "$secret" != "$PROD_SECRET" ]; then           # production, or staging with a project of its own
+    if ! exists g secrets describe "$secret"; then
+      [ -n "$key" ] || { echo "  a new secret needs the service key"; exit 1; }
+      printf %s "$key" | g secrets create "$secret" --replication-policy=automatic --data-file=- >/dev/null
+    elif [ -n "$key" ]; then
+      printf %s "$key" | g secrets versions add "$secret" --data-file=- >/dev/null
+    fi
+    g secrets add-iam-policy-binding "$secret" --member="serviceAccount:$RUN_SA" \
+      --role=roles/secretmanager.secretAccessor >/dev/null
+  fi
+  [ -n "$PROD_URL" ] || { PROD_URL=$url PROD_ANON=$anon PROD_SECRET=$secret; }
   local settings=(--update-env-vars="SUPABASE_URL=$url,SUPABASE_ANON_KEY=$anon"
                   --update-secrets="SUPABASE_SERVICE_KEY=$secret:latest")
   if exists g run services describe "$name" --region="$REGION"; then

@@ -97,42 +97,43 @@ instance's memory. They stop when nobody uses them, so an idle backup costs
 almost nothing; the first visit after a quiet spell waits a few seconds while
 it starts.
 
-1. **Supabase for staging.** Previews run code that isn't merged yet, so give
-   them their own free Supabase project: do the [Supabase](#supabase) steps
-   again in it (the SQL files, auth, the base font in `assets`, invite
-   yourself), skipping the emails and Resend. A free project pauses after a
-   week without use; restore it from its dashboard. Previews can use the
-   production project instead, but then they read and write testers' real
-   drafts.
-2. **Google Cloud.** Create a project with billing turned on, install
+Previews use the production Supabase project for now, so a preview signs
+you in to your real account and reads and writes your real draft. Sign in to
+previews only as yourself, and remember a preview's code isn't merged yet: a
+bug in it can change your draft. To give previews their own project later, do
+the [Supabase](#supabase) steps in a new one and run the setup script again
+with its settings for staging.
+
+1. **Google Cloud.** Create a project with billing turned on, install
    `gcloud`, sign in (`gcloud auth login`), then run from the repository:
 
    ```bash
    PROJECT=<project id> REGION=us-central1 bash deploy/cloudrun-setup.sh
    ```
 
-   It asks for each service's `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
-   `SUPABASE_SERVICE_KEY` (Supabase → Project Settings → API Keys). The
-   service keys go into Secret Manager, never into GitHub. Run it again to
-   change a setting; Enter at the service key prompt keeps the stored one.
+   It asks for production's `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
+   `SUPABASE_SERVICE_KEY` (Supabase → Project Settings → API Keys); press
+   Enter at staging's first question to use the same project. The service
+   key goes into Secret Manager, never into GitHub. Run it again to change a
+   setting; Enter at the service key prompt keeps the stored one.
    GitHub signs in to Google with Workload Identity Federation, limited to
    this repository, so there is no Google key to keep either.
-3. **GitHub.** Settings → Secrets and variables → Actions → Variables: add the
+2. **GitHub.** Settings → Secrets and variables → Actions → Variables: add the
    four variables the script prints (`GCP_PROJECT_ID`, `GCP_REGION`,
    `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`). Until they exist the workflow does
    nothing. Then Actions → cloudrun → Run workflow, on `main`, for the first
    production deploy.
-4. **The backup address.** Give the backup a name of its own, so it is ready
+3. **The backup address.** Give the backup a name of its own, so it is ready
    before it's needed (Railway keeps `builder.jianzipufont.com`):
    - `gcloud domains verify jianzipufont.com` (once, in Google Search Console);
    - `gcloud beta run domain-mappings create --service jzp-builder --domain builder-backup.jianzipufont.com --region us-central1`;
    - in Cloudflare DNS, a CNAME `builder-backup` → `ghs.googlehosted.com`,
      **DNS only** (grey cloud). The certificate follows within the hour.
-5. **Sign-in addresses.** Supabase only sends sign-in links back to allowed
-   addresses (Authentication → URL Configuration → Redirect URLs):
-   - production project: `https://builder-backup.jianzipufont.com/**`;
-   - staging project: the preview pattern. Open the first preview, copy its
-     address and put `*` in place of `pr-<number>`, for example
+4. **Sign-in addresses.** Supabase only sends sign-in links back to allowed
+   addresses (Authentication → URL Configuration → Redirect URLs). Add:
+   - `https://builder-backup.jianzipufont.com/**`;
+   - the preview pattern: open the first preview, copy its address and put
+     `*` in place of `pr-<number>`, for example
      `https://*---jzp-builder-staging-abc123-uc.a.run.app/**`.
 
 ### When Railway is down
@@ -143,7 +144,7 @@ it starts.
 2. If the backup is behind `main` (a deploy failed), Actions → cloudrun → Run
    workflow on `main`.
 3. For a long outage, move the main name over: create the domain mapping for
-   `builder.jianzipufont.com` as in step 4, point its CNAME at
+   `builder.jianzipufont.com` as in step 3, point its CNAME at
    `ghs.googlehosted.com` (DNS only), and set the `notify` function's
    `BUILDER_URL` if the emails should link to the backup meanwhile. Move it
    back the same way.
