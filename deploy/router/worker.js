@@ -13,7 +13,7 @@ export default {
     // the server refuses a write whose Origin isn't the host it was asked on (webserver.py
     // request_problem); a request from this address is the host's own, any other stays refused
     if (headers.get('Origin') === url.origin) headers.set('Origin', upstream.origin);
-    headers.set('X-Forwarded-Host', url.host);
+    headers.delete('X-Forwarded-Host');        // nothing may build links from a host a client names
     const resp = await fetch(new URL(url.pathname + url.search, upstream), {
       method: request.method, headers, body: request.body, redirect: 'manual',
       cache: 'no-store'                        // never Cloudflare's cache: builds are per tester

@@ -24,12 +24,12 @@ test('Railway unless ACTIVE says cloudrun', async () => {
 
 test('a write from the Builder passes the server\'s Origin check; another site\'s does not', async () => {
   const post = (origin) => new Request('https://builder.jianzipufont.com/api/build', {
-    method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', Authorization: 'Bearer t' }, body: '{}'
+    method: 'POST', headers: { Origin: origin, 'X-Forwarded-Host': 'evil.example', 'Content-Type': 'application/json', Authorization: 'Bearer t' }, body: '{}'
   });
   let { sent } = await route(post('https://builder.jianzipufont.com'));
   assert.equal(sent.init.headers.get('Origin'), 'https://jzp.up.railway.app');
   assert.equal(sent.init.headers.get('Authorization'), 'Bearer t');
-  assert.equal(sent.init.headers.get('X-Forwarded-Host'), 'builder.jianzipufont.com');
+  assert.equal(sent.init.headers.get('X-Forwarded-Host'), null);   // the server must never need it
   assert.equal(sent.init.method, 'POST');
   ({ sent } = await route(post('https://evil.example')));
   assert.equal(sent.init.headers.get('Origin'), 'https://evil.example');
