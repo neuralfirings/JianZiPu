@@ -8,6 +8,7 @@ import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
 import { applyMerge, diffBundle, type Current, type Item } from './merge';
 import * as T from './typing';
+import { translateId } from './renames';
 
 export const TABLE = 'change_requests';
 
@@ -115,7 +116,11 @@ export function buildInputs(b: Bundle, fontSvgs: SvgMap): BuildInputs {
 }
 
 type Row = Omit<ChangeRequest, 'bundle'> & { bundle: unknown };
-const fromRow = (r: Row): ChangeRequest => ({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
+/** A stored request, with any glyph renamed since it was sent called by its name now (renames.ts). */
+const fromRow = (r: Row): ChangeRequest => ({
+  ...r, bundle: fromStored(r.bundle), item_ids: (r.item_ids ?? []).map((id) => translateId(id)),
+  decisions: Object.fromEntries(Object.entries(r.decisions ?? {}).map(([id, v]) => [translateId(id), v])) as ChangeRequest['decisions']
+});
 
 export async function sendRequest(c: SupabaseClient, r: { title: string; notes: string; credit: string; bundle: Bundle; itemIds: string[] }): Promise<ChangeRequest> {
   const { data, error } = await c.from(TABLE).insert({

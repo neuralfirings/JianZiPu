@@ -5,6 +5,7 @@
 // Glyph files from a merge (Review → Apply) wait in `pendingSvgs` until Save too.
 // Hosted (pilot) mode: everything above is the signed-in tester's draft; Save uploads it
 // to Supabase (drafts.ts) instead of writing files, and saves itself every 30 s.
+import { setRenames } from './renames';
 import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type Stats } from './api';
 import { BundleError, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
@@ -219,8 +220,10 @@ class DesignState {
     return hosted.isHosted ? `${DRAFT_KEY}:${hosted.user?.id ?? 'anon'}` : DRAFT_KEY;
   }
 
-  async load() {
-    this.loading = true;
+  /** Read the files (and, online, the draft) from the server. `quiet`: keep the screen up while
+   *  they load (after a rename or delete, so the screen can go on to the glyph's new name). */
+  async load(quiet = false) {
+    if (!quiet) this.loading = true;
     try {
       const [d, g, svgs] = await Promise.all([api.design(), api.glyphs(), api.svgs()]);
       this.diskHash = d.hash;
@@ -230,6 +233,7 @@ class DesignState {
       const typing = T.fromCatalog(g.glyphs);
       this.csvHash = g.hash;
       this.csvOrder = g.order;
+      setRenames(g.renamed);                 // before any draft is opened (bundle.validate)
       this.control = g.control;
       this.mainSvgs = svgs;
       this.mainDesign = d.design;

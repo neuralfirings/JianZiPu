@@ -29,6 +29,9 @@ GLYPH_RENAME_CSV = INPUTS_DIR / "glyphRename.csv"            # data.py
 EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 
 COMPONENTS_DIR = INPUTS_DIR / "svg"                    # glyphs.py, build.py — SVGs, one per component glyph
+# Each drawn glyph's character code, pinned so a rename, delete or new glyph never moves another
+# glyph's code; plus the codes of deleted glyphs and the renames (glyph_ids.py).
+GLYPH_IDS_JSON = INPUTS_DIR / "glyph_ids.json"               # glyph_ids.py, glyphs.py, webserver.py
 LAYOUTS_JSON = INPUTS_DIR / "layouts.json"             # genfea.py — classic layout/area geometry
 
 # The design file: areas (box size + member glyphs), layouts (slots,
@@ -123,8 +126,8 @@ CONTROL_GLYPHS = {                                            # base.py
     "advance": (0x58004, 1000),
     "half_advance": (0x58005, 500),
 }
-# First codepoint for the imported component glyphs; glyphs.py assigns them
-# in sorted-filename order from here.
+# First codepoint for the imported component glyphs. Each glyph's own code is pinned in
+# GLYPH_IDS_JSON; a glyph without one gets the next free code (glyph_ids.py).
 COMPONENT_GLYPHS_BASE = 58101                                 # glyphs.py
 
 # ---------------------------------------------------------------------------

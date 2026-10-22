@@ -21,7 +21,7 @@ API (all JSON):
   POST /api/design/check           {design} -> errors/warnings/stats, no write
   POST /api/resolve                {design?, layout, choice, pinned?, center?} -> positions
   POST /api/words                  {design?, words:[...]} -> per word: glyphs, layout, positions
-  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
+  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence + glyph renames
   PUT  /api/glyphs                 {rows, base_hash, design?} -> rewrite components.csv (409 if it changed
                                    on disk, 400 with `errors` if a spelling clashes or is malformed)
   POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
@@ -29,12 +29,19 @@ API (all JSON):
                                    clashes, characters the font doesn't carry yet, words that change
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
-  DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
+  DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft); its
+                                   character code is retired (glyph_ids.py)
   PUT  /api/svg/<name>             {svg, base_hash?, overwrite?} -> write inputs/svg/<name>.svg; 409 when the file
-                                   exists (no base_hash) or changed on disk since it was loaded (hash mismatch)
+                                   exists (no base_hash) or changed on disk since it was loaded (hash mismatch).
+                                   A new glyph gets its character code pinned in inputs/glyph_ids.json
+  GET  /api/glyph/<name>/uses      where a glyph is named (spellings, areas, spacing rows…) and why it can't be
+                                   renamed or deleted, if it can't (glyph_edit.py)
+  PUT  /api/glyph/<name>/rename    {to, design_hash, csv_hash} -> rename the glyph everywhere (local mode; 409 when
+                                   design.json or components.csv changed on disk, 400 with the reason it can't)
+  DELETE /api/glyph/<name>?design_hash=…&csv_hash=…   delete the glyph and everything that names it (local mode)
   GET  /api/config                 {mode: local|hosted, commit, supabase_url, supabase_anon_key}
   GET  /api/base                   the checked-in version drafts start from: {commit, version (builder/VERSION),
-                                   date, design_hash, csv_hash, svg_hashes}
+                                   date, design_hash, csv_hash, svg_hashes, renamed (glyph renames, oldest first)}
   POST /api/build                  start a build (one at a time); each build goes to its own temp dir.
                                    Optional body {design?, rows?, svgs?: {name: text}, deleted?: [name]}
                                    builds those instead of the files on disk (a tester's draft)
@@ -68,9 +75,9 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
-from . import config, data, glyphs, hosted, release, typing_preview
+from . import config, data, glyph_edit, glyph_ids, glyphs, hosted, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -495,8 +502,12 @@ def write_svg(name: str, svg_text: str, overwrite: bool, base_hash: str | None =
             raise FileExistsError(f"{path.name} already exists")
         if _hash(path.read_text(encoding="utf-8")) != base_hash:
             raise SvgConflict(f"{path.name} changed on disk since it was loaded")
+    if not existed and glyph_edit.translate(name) != name:
+        raise ValueError(f"{name} was the name of a glyph before a rename (now {glyph_edit.translate(name)}); pick another name")
     info = glyphs.flatten_svg_text(svg_text)       # validates: raises on anything the build can't use
     path.write_text(svg_text if svg_text.endswith("\n") else svg_text + "\n", encoding="utf-8")
+    if not existed:
+        glyph_ids.pin(name)
     return {"ok": True, "name": name, "file": f"inputs/svg/{path.name}", "bytes": len(svg_text.encode("utf-8")),
             "existed": existed, "hash": _hash(path.read_text(encoding="utf-8")),
             **{k: v for k, v in info.items() if k != "d"}}
@@ -537,7 +548,8 @@ def glyphs_payload() -> dict:
         catalog.append({"glyph": g, "svg": g in svgs, "areas": areas_of.get(g, []), "row": g in by_glyph,
                         **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
-            "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text)}
+            "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
+            "renamed": glyph_ids.load()["renamed"]}
 
 
 def write_glyph_rows(rows: list[dict], base_hash: str | None = None, design: dict | None = None) -> dict:
@@ -579,7 +591,8 @@ def base_payload() -> dict:
     svgs = sorted(config.COMPONENTS_DIR.glob("*.svg"))
     return {"commit": SETTINGS.commit, "version": config.FONT_VERSION, "date": hosted.font_date([config.DESIGN_JSON, config.COMPONENTS_CSV, config.COMPONENTS_DIR]),
             "design_hash": _hash(_read_design_text()), "csv_hash": _hash(_read_csv_text()),
-            "svg_hashes": {p.stem: _hash(p.read_text(encoding="utf-8")) for p in svgs}}
+            "svg_hashes": {p.stem: _hash(p.read_text(encoding="utf-8")) for p in svgs},
+            "renamed": glyph_ids.load()["renamed"]}
 
 
 
@@ -814,6 +827,9 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            m = re.match(r"^/api/glyph/([^/]+)/uses$", path)
+            if m:
+                return self._json({"ok": True, **glyph_edit.uses(unquote(m.group(1)))})
             if path == "/api/release/status":
                 if SETTINGS.hosted:
                     return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
@@ -926,6 +942,15 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_csv_text())}, 409)
                 except SpellingErrors as err:
                     return self._json({"ok": False, "error": str(err), "errors": err.errors}, 400)
+            m = re.match(r"^/api/glyph/([^/]+)/rename$", path)
+            if m:
+                try:
+                    return self._json(glyph_edit.rename(unquote(m.group(1)), str(body.get("to", "")).strip(),
+                                                        body.get("design_hash"), body.get("csv_hash")))
+                except glyph_edit.GlyphEditConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True}, 409)
+                except glyph_edit.GlyphEditError as err:
+                    return self._json({"ok": False, "error": str(err)}, 400)
             if path.startswith("/api/svg/"):
                 name = path[len("/api/svg/"):]
                 try:
@@ -951,6 +976,18 @@ class Handler(SimpleHTTPRequestHandler):
         if SETTINGS.hosted:
             return self._json({"ok": False, "readonly": True,
                                "error": "This Builder is read-only: your changes are kept in your own draft."}, 403)
+        m = re.match(r"^/api/glyph/([^/]+)$", path)
+        if m:
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                return self._json(glyph_edit.delete(unquote(m.group(1)), (q.get("design_hash") or [None])[0],
+                                                    (q.get("csv_hash") or [None])[0]))
+            except glyph_edit.GlyphEditConflict as err:
+                return self._json({"ok": False, "error": str(err), "conflict": True}, 409)
+            except glyph_edit.GlyphEditError as err:
+                return self._json({"ok": False, "error": str(err)}, 400)
+            except Exception as err:  # noqa: BLE001
+                return self._fail(err)
         if not path.startswith("/api/svg/"):
             return self._json({"ok": False, "error": f"unknown endpoint {path}"}, 404)
         try:
@@ -960,6 +997,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not p.exists():
             return self._json({"ok": False, "error": f"{p.name} does not exist"}, 404)
         p.unlink()
+        glyph_ids.retire(p.stem)
         data.cache_clear_all()
         return self._json({"ok": True, "file": f"inputs/svg/{p.name}"})
 

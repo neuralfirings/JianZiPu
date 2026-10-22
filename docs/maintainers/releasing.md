@@ -65,6 +65,22 @@ Look the result over in Layouts (the word strip) and in Build & test (build a
 font and type in it). Fix anything you like here: you are the last reviewer.
 Then **Save**, which writes `builder/inputs/`.
 
+Renaming or deleting a glyph belongs here too, last, once the kept changes are
+in (or as the only change of a release). **Rename…** and **Delete…** sit next
+to the glyph's name in Glyphs and in the editor's Glyph panel; they change every
+file that names the glyph at once and need everything else saved first.
+
+- A renamed glyph keeps its character code (`builder/inputs/glyph_ids.json`
+  pins every glyph's code), and the rename is recorded there. Drafts, Change
+  Requests and .zip files made before it are read with the new name, so testers
+  don't have to do anything.
+- A deleted glyph's code is retired and never reused. Text that holds the glyph
+  itself (not its spelling) shows a missing glyph afterwards, so a delete is a
+  reason to think about the version number (see [Versions](#versions)).
+- Names the build's own code uses (`features.py`: the hui and decimal glyphs,
+  the right-hand techniques, the typed symbols) can't be renamed or deleted
+  from the Builder.
+
 ### 4. Build the candidate
 
 The changelog entry is filled in from the requests' titles and credits ("thanks
@@ -169,7 +185,7 @@ A version is `MAJOR.MINOR`, and the minor part always has three digits: 3.100,
 | --- | --- | --- |
 | New glyphs, spellings, spacing, layout fixes | the usual release | 3.200 → 3.300 |
 | A small fix to the last release, nothing new | a wrong gap | 3.300 → 3.301 |
-| Existing documents would look different or break: PUA codepoints move, a spelling is removed or changes meaning | | 3.x → 4.000 |
+| Existing documents would look different or break: PUA codepoints move, a spelling is removed or changes meaning, a glyph is deleted | | 3.x → 4.000 |
 
 This is semantic versioning adapted to fonts. The "patch" and "minor" levels
 share the three-digit part.
@@ -292,7 +308,7 @@ and the webhook; see `supabase/functions/notify/README.md`.
 
 | What | Where |
 | --- | --- |
-| The design (sources of truth) | `builder/inputs/` (`design.json`, `components.csv`, `svg/`) |
+| The design (sources of truth) | `builder/inputs/` (`design.json`, `components.csv`, `svg/`, and `glyph_ids.json`: each glyph's character code, retired codes and renames) |
 | The version | `builder/VERSION` |
 | What each version changed | `CHANGELOG.md` |
 | The released font (built, committed by each candidate) | `site/JianZiPu.ttf`, plus `site/version.json` for the website |

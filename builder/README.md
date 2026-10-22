@@ -27,7 +27,8 @@ feature files.
 4. **The Builder app.** `cd ../app && npm install && npm run build` once (and
    after pulling app changes); the web server then serves it.
 5. **`builder/inputs/`** holds everything the build reads — what the
-   Builder edits (`design.json`, `components.csv`, `svg/`), the hand-maintained
+   Builder edits (`design.json`, `components.csv`, `svg/`, and `glyph_ids.json`,
+   each glyph's pinned character code plus retired codes and renames), the hand-maintained
    `glyphRename.csv` and `edge_cases.fea`, and `layouts.json` for the legacy
    `--classic_pos` build — and is tracked in git, so a fresh checkout already
    has it — nothing to do here. A plain build reads `builder/inputs/svg/` and `design.json`
@@ -64,7 +65,10 @@ python3 -m jzpbuild.webserver --port 9000
 | `POST /api/typing/preview` | `{design, rows, words, base_rows?, compare_words?, roundtrip?}` → GSUB from the *unsaved* spellings compiled into a copy of the last build (≈0.5 s, cached): each word's glyphs, `issues`, a round trip of every spelling, `changed` sample words vs `base_rows`, `not_built` glyphs and `missing_chars` |
 | `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
 | `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
-| `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only) |
+| `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only); its code is retired in `glyph_ids.json` |
+| `GET /api/glyph/<name>/uses` | where a glyph is named (spellings, vertical links, areas, spacing rows, `edge_cases.fea`), its code, and `locked`: why it can't be renamed or deleted (`glyph_edit.py`) |
+| `PUT /api/glyph/<name>/rename` | `{to, design_hash, csv_hash}` → rename the glyph in the SVG file name, `components.csv`, `design.json`, `edge_cases.fea` and `glyph_ids.json` at once (local mode; 409 when a file changed on disk, 400 with the reason it can't) |
+| `DELETE /api/glyph/<name>?design_hash=…&csv_hash=…` | delete the glyph and everything that names it; spacing rows that only applied to it go, its code is retired (local mode) |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
 | `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the caller's builds (`build` = latest, `builds` = newest first, last 8 kept). The body may carry a draft, `{design, rows, svgs, deleted}`, built instead of the files on disk (hosted mode) |
 | `GET /api/config` | `{mode: local|hosted, commit, supabase_url, supabase_anon_key}` (never the service key) |
@@ -339,8 +343,12 @@ every SVG in `config.COMPONENTS_DIR` (`inputs/svg/`), in sorted
 filename order, and for each: strips clip-path noise (frame cropping from exported SVGs), normalizes with
 `picosvg`, draws into a `pathops.Path` to remove overlaps and resolve the
 fill rule, converts to quadratic curves with `cu2qu`, and adds it to the
-font as a new glyph (named from the SVG's filename stem) at a PUA codepoint
-starting from `config.COMPONENT_GLYPHS_BASE`. This is also the step where a
+font as a new glyph (named from the SVG's filename stem) at its PUA codepoint:
+the one pinned for it in `inputs/glyph_ids.json` (`glyph_ids.py`), or, for a
+glyph with none yet, the next one after every pinned and retired code, from
+`config.COMPONENT_GLYPHS_BASE` up. The local Builder pins a new glyph's code
+when it saves the file, so renaming, deleting or adding a glyph never moves
+another glyph's code (`tests/test_glyph_edit.py` checks every SVG is pinned). This is also the step where a
 `components.csv` row whose `glyph_name` has no matching SVG file would
 surface — not here directly, but as a `feaLib` "glyph missing from glyph
 set" error in the next step, since the GSUB text from step 1 already
@@ -360,6 +368,7 @@ the four steps above only ever read what's already sitting there.
 | To change...                       | Edit...                                                       |
 |------------------------------------|---------------------------------------------------------------|
 | glyph shapes                       | Builder → Glyphs → Edit (draw, import or trace; writes `inputs/svg/`) |
+| a glyph's name, or the glyph itself | Builder → Glyphs → Rename… / Delete… (local; rewrites every input that names it, `glyph_edit.py`) |
 | which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
 | input keys / spellings             | Builder → Glyphs → Table view (writes `inputs/components.csv`)     |

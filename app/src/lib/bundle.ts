@@ -7,6 +7,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Design } from './api';
 import { sanitizeSvg } from './svg';
 import * as T from './typing';
+import { current, renames, translateDesign, translateSvgs, translateTyping, type Rename } from './renames';
 
 export const BUNDLE_FORMAT = 1;
 /** Same rule as the server's SVG_NAME (webserver.py). */
@@ -101,7 +102,21 @@ export function validate(x: unknown): Bundle {
   for (const n of [...m.svgs.added, ...m.svgs.changed]) {
     if (typeof b.svgs[n] !== 'string') throw new BundleError(`The draft lists ${n} but has no file for it.`);
   }
-  return { ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } };
+  return translateBundle({ ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } });
+}
+
+/** The bundle with the glyph names it has from before a rename as the glyphs are called now
+ *  (renames.ts): both sides of it, so its changes stay the same changes. */
+export function translateBundle(b: Bundle, r: Rename[] = renames()): Bundle {
+  if (!r.length) return b;
+  const names = (l: string[]) => l.map((n) => current(n, r));
+  const s = b.manifest.svgs;
+  return {
+    ...b,
+    manifest: { ...b.manifest, svgs: { added: names(s.added), changed: names(s.changed), deleted: names(s.deleted) } },
+    design: translateDesign(b.design, r), typing: translateTyping(b.typing, r), svgs: translateSvgs(b.svgs, r),
+    base: { design: translateDesign(b.base.design, r), typing: translateTyping(b.base.typing, r), svgs: translateSvgs(b.base.svgs, r) }
+  };
 }
 
 /** Glyph files from someone else are inlined in the page: keep only plain shapes (svg.ts).

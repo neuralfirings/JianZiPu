@@ -48,7 +48,7 @@ export const EDITOR_HELP: PanelHelp<EditorPanelId> = {
   topics: {
     selection: { title: 'Selection', html: 'The position and size of what is selected: points (corner, smooth or free) or whole shapes (move, scale, rotate, centre in the box). With nothing selected it shows the glyph\'s shape count and its estimated stroke weight.' },
     compare: { title: 'Compare', html: 'Things to measure against while drawing: a <strong>reference dot</strong> (<kbd>D</kbd>) at the stroke weight to aim for, another glyph laid over this one (<kbd>G</kbd>), or the last saved outline (<kbd>L</kbd>).' },
-    glyph: { title: 'Glyph', html: 'Which areas the glyph is in (and so its box size), and the file it saves to.' },
+    glyph: { title: 'Glyph', html: 'Which areas the glyph is in (and so its box size), and the file it saves to. On your own computer, <strong>Rename…</strong> and <strong>Delete…</strong> change the glyph\'s name, or remove it, everywhere at once.' },
     typing: { title: 'Typing', html: 'The glyph\'s spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can\'t share a spelling. The same fields are in <a href="/glyphs?view=typing">Glyphs → Table view</a>.' },
     tryit: { title: 'Try it', html: 'Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. Red means "not in the font" until the next build.' },
     checks: { title: 'Checks', html: 'Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. <strong>Check as built</strong> runs the same conversion as the font build.' },

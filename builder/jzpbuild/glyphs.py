@@ -7,8 +7,9 @@ i.e. the SVG's bottom edge lands at y = -20 (FontForge placed the SVG top at
 ascent 800 and then shifted by -(820 - height)). Advance width is 0 —
 components overstrike and are positioned purely by GPOS.
 
-Codepoints start at 58101 (decimal), assigned in sorted-filename order, which
-keeps every component at the same codepoint as the current font.
+Codepoints start at 58101 (decimal, U+E2F5). Each glyph's code is pinned in
+inputs/glyph_ids.json, so renaming, deleting or adding a glyph never moves
+another glyph's code; a glyph with no pin gets the next free one (glyph_ids.py).
 """
 
 import xml.etree.ElementTree as ET
@@ -20,7 +21,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.pens.cu2quPen import Cu2QuPen
 from fontTools.ttLib import TTFont
 
-from . import config
+from . import config, glyph_ids
 
 
 def _skia_path(root, flip_height: float | None):
@@ -135,7 +136,7 @@ def add_component_glyphs(font: TTFont, components_dir=None) -> None:
         raise RuntimeError(f"no SVGs found in {components_dir}")
 
     glyph_set = font.getGlyphSet()
-    code = config.COMPONENT_GLYPHS_BASE
+    codes = glyph_ids.code_map(svg.stem for svg in svgs)
     for svg in svgs:
         name = svg.stem
         if name in font["glyf"].glyphs:
@@ -144,5 +145,4 @@ def add_component_glyphs(font: TTFont, components_dir=None) -> None:
         # TrueType renderers shift outlines by (lsb - xMin), so lsb must
         # equal xMin for the outline to render at its stored coordinates
         xmin = min((x for x, y in glyph.coordinates), default=0) if glyph.numberOfContours else 0
-        add_glyph(font, name, glyph, advance=0, lsb=xmin, codepoint=code)
-        code += 1
+        add_glyph(font, name, glyph, advance=0, lsb=xmin, codepoint=codes[name])

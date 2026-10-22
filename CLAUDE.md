@@ -28,7 +28,7 @@ cd builder && python3 -m jzpbuild --classic_pos  # legacy positioning from input
 
 # Tests
 cd builder && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
-cd builder && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_typing.py tests/test_hosted.py tests/test_emails.py  # unit tests (positioning model, SVG flattening, SVG endpoints, spellings/typing preview, hosted mode, Supabase email templates)
+cd builder && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_glyph_edit.py tests/test_typing.py tests/test_hosted.py tests/test_emails.py  # unit tests (positioning model, SVG flattening, SVG endpoints, pinned codes + glyph rename/delete, spellings/typing preview, hosted mode, Supabase email templates)
 cd app && npm run help:shots          # retake the Help page screenshots (static/help/*.jpg) from a running Builder; BASE=http://127.0.0.1:<port> for another port
 cd app && npm run help:export         # write the public help from the help page: site/help/index.html, site/help.md, site/llms.txt, app/static/llms.txt (CI checks they're current)
 cd app && npm test                    # Vitest unit tests (rules, shapes, gaps, panels store, glyph editor scene/ops/tools, typing, cmap, draft bundle/merge, app state)
@@ -39,7 +39,7 @@ Default build output is `builder/JianZiPu.ttf` (gitignored, as is the
 `--fea-out` copy `builder/JianZiPu.fea`); nothing tracked is
 overwritten unless you pass `-o`. A plain build reads only from
 `builder/inputs/` (tracked: `design.json`, `components.csv`,
-`svg/`; `layouts.json` only for `--classic_pos`). The base font
+`svg/`, `glyph_ids.json`; `layouts.json` only for `--classic_pos`). The base font
 `builder/src_font/TW-Kai-98.ttf` is gitignored and must be copied in
 by hand once. Dev tool: the Builder app (`app/`, see below; its Build & test screen
 live-tests any built .ttf). `.claude/launch.json` has a `builder` entry that
@@ -95,6 +95,7 @@ builder/inputs/design.json ──(jzpbuild/positioning/)──▶ GPOS .fea   (-
 
 - `builder/inputs/design.json` — the positioning design (version 2): `areas` (box size, member glyphs, advance), `layouts` (word types: slots with alternatives/repeat, spacing `relationships` with glyph-conditional gaps, `center`). Edited by the Builder app; also importable/exportable there.
 - `builder/inputs/components.csv` — the spellings: `glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin` (glyph_name is the ID; pinyin is reference only; a vertical form stores only the `vert_variant` link on its partner plus spellings of its own). Drives ALL generated substitution rules, including `l2j_digit_liga` for Latin spellings with a digit (zhi4/xi4/fu4). Edited in the Builder's Glyphs → Table view; area membership lives in `design.json`.
+- `builder/inputs/glyph_ids.json` — each drawn glyph's pinned PUA code (`codes`), the codes of deleted glyphs (`retired`, never reused) and the renames (`renamed`, oldest first); `jzpbuild/glyph_ids.py`. The local Builder pins a new glyph on save; Rename…/Delete… (`jzpbuild/glyph_edit.py`, `PUT /api/glyph/<name>/rename`, `DELETE /api/glyph/<name>`, local only) rewrite every input that names the glyph and refuse names `features.py` spells out. Drafts, Change Requests and .zips made before a rename are translated when opened (`app/src/lib/renames.ts`, via `bundle.validate`).
 - `builder/inputs/glyphRename.csv` — optional overrides: unicode char → ch_* glyph name for Han chars that want a mnemonic name; any other referenced character still builds fine with an auto-derived uniXXXX name
 - `builder/inputs/edge_cases.fea` — the few hand-maintained disambiguation rules (today only `ch_dc_sub`)
 - `builder/inputs/layouts.json` + `builder/jzpbuild/gpos.py` — legacy classic positioning (frame geometry + declarative rule builders), only used by `--classic_pos` and `tests/parity_report.py`

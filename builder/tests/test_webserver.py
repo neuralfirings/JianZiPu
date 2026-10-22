@@ -27,6 +27,7 @@ def svg_dir(tmp_path, monkeypatch):
     d = tmp_path / "svg"
     d.mkdir()
     monkeypatch.setattr(config, "COMPONENTS_DIR", d)
+    monkeypatch.setattr(config, "GLYPH_IDS_JSON", tmp_path / "glyph_ids.json")
     return d
 
 

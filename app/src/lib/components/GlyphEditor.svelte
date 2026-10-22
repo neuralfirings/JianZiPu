@@ -302,7 +302,10 @@
       <div class="f"><span>File</span><span class="mono small">inputs/svg/{name}.svg <span class="muted">(new)</span></span></div>
       {#if areaName}<p class="muted small">Joins the area <strong>{app.areaLabel(areaName)}</strong> on the first save (a design change: save the design too).</p>{/if}
     {:else}
-      <GlyphFacts glyph={name} showName={false} showBox={false} />
+      <GlyphFacts glyph={name} showName={false} showBox={false}
+        busy={ed.dirty ? 'Save or discard your edits to the outline first.' : null}
+        onrenamed={(to) => goto(`/glyphs/${encodeURIComponent(to)}/edit${back ? `?back=${encodeURIComponent(back)}` : ''}`, { replaceState: true })}
+        ondeleted={() => goto('/glyphs', { replaceState: true })} />
     {/if}
     <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area Properties on the Layouts screen (box size)">{app.areaLabel(areaName)}</a>{/if}</span></div>
   {:else if id === 'typing'}

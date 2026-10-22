@@ -271,7 +271,7 @@
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
-        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles'} />
+        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles'} onrenamed={(to) => (selected = to)} ondeleted={() => (selected = null)} />
         <div class="row" style="margin-top: var(--space-4)">
           <a href={editUrl(sel.glyph)}><button class="primary">Edit outline</button></a>
           <a href={editUrl(sel.glyph, 'file')}><button title="Open the editor with a new SVG loaded (nothing is written until you save)">Replace…</button></a>

@@ -1,4 +1,5 @@
 // Thin client for the Python web server (python3 -m jzpbuild.webserver).
+import type { Rename } from './renames';
 export type Design = {
   version: 2;
   center: { x: number; y: number };
@@ -93,6 +94,11 @@ export type ReleaseStatus = {
 };
 
 export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null };
+/** GET /api/glyph/<name>/uses (glyph_edit.py). */
+export type GlyphUses = {
+  name: string; svg: boolean; spelling: boolean; vertical_of: string[]; areas: string[];
+  spacing_rows: number; spacing_rows_only: number; edge_cases: boolean; code: string | null; locked: string | null;
+};
 export type BaseInfo = { commit: string | null; version?: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
 /** A draft to build instead of the files on disk (hosted mode). */
 export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };
@@ -125,7 +131,16 @@ export const api = {
   resolve: (design: Design, layout: string, choice: (number | number[] | null)[], pinned: Record<string, string>, center = true) =>
     call<ResolvePayload>('POST', '/api/resolve', { design, layout, choice, pinned, center }),
   words: (design: Design, words: string[]) => call<WordPayload & { error?: string }>('POST', '/api/words', { design, words }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string }>('GET', '/api/glyphs'),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; renamed?: Rename[] }>('GET', '/api/glyphs'),
+  /** Where a glyph is named, and why it can't be renamed or deleted (`locked`), if it can't. */
+  glyphUses: (name: string) => call<GlyphUses & { ok: boolean; error?: string }>('GET', `/api/glyph/${encodeURIComponent(name)}/uses`),
+  /** Rename a glyph everywhere (local mode). 409 `conflict` when design.json or components.csv changed on disk. */
+  renameGlyph: (name: string, to: string, design_hash: string, csv_hash: string) =>
+    call<{ ok: boolean; error?: string; conflict?: boolean; name?: string }>('PUT', `/api/glyph/${encodeURIComponent(name)}/rename`, { to, design_hash, csv_hash }),
+  /** Delete a glyph and everything that names it (local mode); its character code is retired. */
+  deleteGlyph: (name: string, design_hash: string, csv_hash: string) =>
+    call<{ ok: boolean; error?: string; conflict?: boolean; spacing_rows_dropped?: number }>('DELETE',
+      `/api/glyph/${encodeURIComponent(name)}?design_hash=${encodeURIComponent(design_hash)}&csv_hash=${encodeURIComponent(csv_hash)}`),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),

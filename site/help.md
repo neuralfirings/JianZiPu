@@ -50,6 +50,15 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 
 Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
 
+### Renaming or deleting a glyph
+
+A glyph's name (such as `mod_fanyin`) is its id: the file name, its row of spellings, the areas it's in and the spacing rows that name it all use it.Online, the name can't be changed yet.On your own computer, **Rename…** and **Delete…** next to the name (in the inspector, and in the editor's Glyph panel) change every one of those at once, after showing what they will change. Save or discard other unsaved changes first: both rewrite the saved files.
+
+- A renamed glyph keeps its character code, so text that holds the glyph itself still shows it. Drafts, Change Requests and .zip files made before the rename are read with the new name when they're opened, which is why an old name can't be given to another glyph later.
+- A deleted glyph's code is retired and never given to another glyph. Spacing rows that only applied to it go; there is no undo in the Builder, but git has the files.
+- Glyphs whose names the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as `mod_chuo`) can't be renamed or deleted here.
+- Do it last in a release, once the kept changes are in, and commit the files it changes, `builder/inputs/glyph_ids.json` included (each glyph's character code, kept there so no rename, delete or new glyph ever moves another glyph's code).
+
 ### Typing: spellings
 
 The **Tile view | Table view** switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:
@@ -92,7 +101,7 @@ Each panel's **?** shows the same text as below.
 
 - **Selection**: The position and size of what is selected: points (corner, smooth or free) or whole shapes (move, scale, rotate, centre in the box). With nothing selected it shows the glyph's shape count and its estimated stroke weight.
 - **Compare**: Things to measure against while drawing: a **reference dot** (`D`) at the stroke weight to aim for, another glyph laid over this one (`G`), or the last saved outline (`L`).
-- **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to.
+- **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to. On your own computer, **Rename…** and **Delete…** change the glyph's name, or remove it, everywhere at once.
 - **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → Table view](https://builder.jianzipufont.com/glyphs?view=typing).
 - **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. Red means "not in the font" until the next build.
 - **Checks**: Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. **Check as built** runs the same conversion as the font build.
@@ -307,6 +316,12 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Unable to convert to picosvg: BadElement: …”**: The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.
 - **“syntax error: line *n*, column *n*”**: The file isn't a valid SVG. Export it again from the drawing program.
 - **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and. only.”).
+- **“*name* was the name of a glyph before a rename; drafts may still use it for that glyph.” / “*name* was the name of *other* before a rename; pick another name.”**: Old names stay with the glyph they belonged to, so drafts made before the rename still open correctly. Pick another name. Renaming a glyph back to its own old name is fine.
+- **“*name* is already a glyph.”**: Another glyph has that name. Pick another one.
+- **“The font's build code uses *name* by name (jzpbuild/features.py), so it can't be renamed or deleted here.” / “*name* is a control glyph with a fixed character code.”**: The build itself spells this name out, so changing it takes a code change in `builder/jzpbuild/features.py` (or `config.py`), not a rename in the Builder.
+- **“inputs/edge_cases.fea uses *name*; take it out of that file first.”**: A hand-written rule in `builder/inputs/edge_cases.fea` names the glyph. Edit that file, then delete the glyph.
+- **“design.json changed on disk since it was loaded” / “components.csv changed on disk since it was loaded” (renaming or deleting)**: Something else wrote the files since the Builder read them. **Load again**, then rename or delete once more.
+- **“Save or discard your unsaved changes first: this rewrites the saved files.” / “Save or discard your edits to the outline first.”**: Rename and Delete change the saved files and load them again, which would lose unsaved work. Save (or Discard), then try again.
 - **“Can't trace *file*: it isn't an image this browser can read. Try a PNG or JPEG.”**: The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.
 
 ### Layouts and areas

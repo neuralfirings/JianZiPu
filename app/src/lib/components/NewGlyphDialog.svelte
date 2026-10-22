@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { app } from '$lib/state.svelte';
   import { glyphEditor } from '$lib/glyphed/editor.svelte';
+  import { current } from '$lib/renames';
   let { onclose, initialArea = '' }: { onclose: () => void; initialArea?: string } = $props();
   let name = $state('');
   let area = $state(initialArea);
@@ -15,6 +16,7 @@
     if (!n) return 'Give the glyph a name, e.g. md_9 or lg_gou.';
     if (!NAME.test(n) || n.endsWith('.')) return 'Letters, digits, _ - and . only.';
     if (taken) return `${taken} already exists.`;
+    if (current(n) !== n) return `${n} was the name of ${current(n)} before a rename; pick another name.`;
     if (start !== 'blank' && !file) return start === 'svg' ? 'Choose an SVG file.' : 'Choose an image file.';
     return null;
   });

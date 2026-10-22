@@ -103,6 +103,16 @@
           <li>Click a tile to select it; double-click it (or press Enter, or its <strong>Edit</strong> pill) to open the <a href="#editor">glyph editor</a>.</li>
         </ul>
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
+        <h3 id="rename">Renaming or deleting a glyph</h3>
+        <p>A glyph's name (such as <code>mod_fanyin</code>) is its id: the file name, its row of spellings, the areas it's in and the spacing rows that name it all use it.{#if online} Online, the name can't be changed yet.{/if}{#if local} On your own computer, <strong>Rename…</strong> and <strong>Delete…</strong> next to the name (in the inspector, and in the editor's Glyph panel) change every one of those at once, after showing what they will change. Save or discard other unsaved changes first: both rewrite the saved files.{/if}</p>
+        {#if local}
+          <ul>
+            <li>A renamed glyph keeps its character code, so text that holds the glyph itself still shows it. Drafts, Change Requests and .zip files made before the rename are read with the new name when they're opened, which is why an old name can't be given to another glyph later.</li>
+            <li>A deleted glyph's code is retired and never given to another glyph. Spacing rows that only applied to it go; there is no undo in the Builder, but git has the files.</li>
+            <li>Glyphs whose names the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as <code>mod_chuo</code>) can't be renamed or deleted here.</li>
+            <li>Do it last in a release, once the kept changes are in, and commit the files it changes, <code>builder/inputs/glyph_ids.json</code> included (each glyph's character code, kept there so no rename, delete or new glyph ever moves another glyph's code).</li>
+          </ul>
+        {/if}
 
         <h3>Typing: spellings</h3>
         <p>The <strong>Tile view | Table view</strong> switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:</p>
@@ -364,6 +374,12 @@
           <dt>“Unable to convert to picosvg: BadElement: …”</dt><dd>The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.</dd>
           <dt>“syntax error: line <em>n</em>, column <em>n</em>”</dt><dd>The file isn't a valid SVG. Export it again from the drawing program.</dd>
           <dt>“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”</dt><dd>Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).</dd>
+          <dt>“<em>name</em> was the name of a glyph before a rename; drafts may still use it for that glyph.” / “<em>name</em> was the name of <em>other</em> before a rename; pick another name.”</dt><dd>Old names stay with the glyph they belonged to, so drafts made before the rename still open correctly. Pick another name. Renaming a glyph back to its own old name is fine.</dd>
+          <dt>“<em>name</em> is already a glyph.”</dt><dd>Another glyph has that name. Pick another one.</dd>
+          <dt>“The font's build code uses <em>name</em> by name (jzpbuild/features.py), so it can't be renamed or deleted here.” / “<em>name</em> is a control glyph with a fixed character code.”</dt><dd>The build itself spells this name out, so changing it takes a code change in <code>builder/jzpbuild/features.py</code> (or <code>config.py</code>), not a rename in the Builder.</dd>
+          <dt>“inputs/edge_cases.fea uses <em>name</em>; take it out of that file first.”</dt><dd>A hand-written rule in <code>builder/inputs/edge_cases.fea</code> names the glyph. Edit that file, then delete the glyph.</dd>
+          <dt>“design.json changed on disk since it was loaded” / “components.csv changed on disk since it was loaded” (renaming or deleting)</dt><dd>Something else wrote the files since the Builder read them. <strong>Load again</strong>, then rename or delete once more.</dd>
+          <dt>“Save or discard your unsaved changes first: this rewrites the saved files.” / “Save or discard your edits to the outline first.”</dt><dd>Rename and Delete change the saved files and load them again, which would lose unsaved work. Save (or Discard), then try again.</dd>
           <dt>“Can't trace <em>file</em>: it isn't an image this browser can read. Try a PNG or JPEG.”</dt><dd>The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.</dd>
         </dl>
 
