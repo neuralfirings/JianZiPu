@@ -126,7 +126,7 @@ export function designSummary(current: Design, file: Design): string[] {
   return designItems(current, file, current).map((i) => `${i.label}: ${i.summary.join(', ')}`);
 }
 
-/** "Update my draft to the font": the font's changes since the draft's base, as items to bring
+/** "Set reference font" to the latest: the font's changes since the draft's base, as items to bring
  *  into the draft (theirs = the font now, current = the draft). Glyphs the draft never touched
  *  already show the font's outline, so only the draft's own glyphs can conflict. With
  *  `defaultKeep`, everything the draft didn't change comes in and conflicts keep the draft's. */

@@ -10,7 +10,7 @@ import { BundleError, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, typ
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
-import { day, pilot } from './pilot.svelte';
+import { day, fontName, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import { isNetworkError } from './net';
 import * as T from './typing';
@@ -180,6 +180,15 @@ class DesignState {
   get extraGlyphs(): string[] {
     return Object.keys(this.svgs).filter((n) => !(n in this.mainSvgs));
   }
+  /** Hosted: the font the draft is compared with ("3.100", or "the font of 19 Oct" for an older
+   *  draft); Your changes are what differs from it. */
+  get referenceFont(): string {
+    return fontName(this.draftBase?.version);
+  }
+  /** The font on the server now, as a reference font to move to: "3.200 (latest)". */
+  get latestFont(): string {
+    return this.main?.version ? `${this.main.version} (latest)` : 'the latest';
+  }
   /** The font has moved since the draft started (hosted). */
   get fontMoved(): boolean {
     const b = this.draftBase, m = this.main;
@@ -281,7 +290,7 @@ class DesignState {
   private async loadDraft(mainDesign: Design, mainTyping: T.Typing) {
     const c = hosted.client, uid = hosted.user?.id;
     const fresh = (): DraftBase => ({
-      version: { commit: this.main?.commit ?? null, date: this.main?.date ?? null, design_hash: this.main?.design_hash ?? this.diskHash, csv_hash: this.main?.csv_hash ?? this.csvHash },
+      version: { commit: this.main?.commit ?? null, version: this.main?.version ?? null, date: this.main?.date ?? null, design_hash: this.main?.design_hash ?? this.diskHash, csv_hash: this.main?.csv_hash ?? this.csvHash },
       design: clone(mainDesign), typing: clone(mainTyping), svgs: {}
     });
     this.requests = c && uid ? await myRequests(c, uid).catch(() => []) : [];
@@ -379,10 +388,10 @@ class DesignState {
   }
 
   /** One undo step that replaces design, spellings and glyph files at once (Review → Apply,
-   *  Update my draft, the hosted glyph editor). Glyph files wait for Save like the rest. */
+   *  Set reference font, the hosted glyph editor). Glyph files wait for Save like the rest. */
   applyChanges(label: string, c: Partial<Changes> & { draftBase?: DraftBase }) {
     if (!this.design) return;
-    // Update my draft (draftBase) brings in the font, which may change what a request holds
+    // Set reference font (draftBase) brings in the font, which may change what a request holds
     if (!c.draftBase && this.refuses(c)) return;
     this.undoStack = [...this.undoStack.slice(-199), this.snapshot(label, !!c.draftBase)];
     this.redoStack = [];
@@ -407,7 +416,7 @@ class DesignState {
     this.recheck();
   }
 
-  /** `withBase`: the step also changes what the draft is based on (Update my draft). */
+  /** `withBase`: the step also changes the draft's reference font (Set reference font). */
   private snapshot(label: string, withBase = false): Step {
     return {
       label, json: JSON.stringify(this.design), typing: JSON.stringify(this.typing), svgs: JSON.stringify(this.pendingSvgs),
@@ -659,7 +668,7 @@ class DesignState {
     await this.load();
   }
 
-  /** The font's changes since the draft started, as items for "Update my draft" (merge.ts). */
+  /** The font's changes since the draft started, as items for "Set reference font" (merge.ts). */
   fontUpdate(): Item[] {
     if (!this.design || !this.mainDesign) return [];
     const b = this.bundle();
@@ -678,7 +687,7 @@ class DesignState {
     this.applyChanges(label, {
       ...m,
       draftBase: {
-        version: { commit: this.main.commit, date: this.main.date, design_hash: this.main.design_hash, csv_hash: this.main.csv_hash },
+        version: { commit: this.main.commit, version: this.main.version ?? null, date: this.main.date, design_hash: this.main.design_hash, csv_hash: this.main.csv_hash },
         design: this.mainDesign, typing: this.mainTyping, svgs: {}
       }
     });

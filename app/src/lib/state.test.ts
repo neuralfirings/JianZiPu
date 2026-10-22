@@ -250,9 +250,11 @@ describe('hosted draft', () => {
     const moved = design();
     moved.areas.left.size = [360, 350];
     serve(moved, { ...disk, md_7: SVG('M1 1h40v40z') });
-    api.base.mockResolvedValue({ commit: 'def', date: '2026-10-18T10:00:00Z', design_hash: 'd2', csv_hash: 'c0', svg_hashes: {} });
+    api.base.mockResolvedValue({ commit: 'def', version: '3.200', date: '2026-10-18T10:00:00Z', design_hash: 'd2', csv_hash: 'c0', svg_hashes: {} });
     await app.load();
     expect(app.fontMoved).toBe(true);
+    expect(app.referenceFont).toMatch(/^the font of /);     // a draft from before versions: its date
+    expect(app.latestFont).toBe('3.200 (latest)');
     const items = app.fontUpdate();
     expect(items.map((i) => [i.id, i.conflict])).toEqual([['glyph:md_7', true], ['design:area:left', false]]);
     const r = await app.updateToFont(items, { 'glyph:md_7': false, 'design:area:left': true }, 'Update to the font of 18 Oct');
@@ -261,8 +263,10 @@ describe('hosted draft', () => {
     expect(app.svgs.md_7).toBe(SVG('M1 1h20v20z'));
     expect(app.fontMoved).toBe(false);
     expect(app.draftBase?.version.date).toBe('2026-10-18T10:00:00Z');
+    expect(app.referenceFont).toBe('3.200');
     app.undo();
     expect(app.fontMoved).toBe(true);
+    expect(app.referenceFont).toMatch(/^the font of /);
     expect(app.design!.areas.left.size).toEqual([350, 350]);
   });
 });

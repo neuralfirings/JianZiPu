@@ -51,5 +51,8 @@ export function downloadZip(b: Bundle) {
 /** "18 Oct" */
 export const day = (iso: string | Date | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' }) : '';
+/** A font the way a tester knows it: its version ("3.200"), else its date ("the font of 19 Oct"). */
+export const fontName = (v: { version?: string | null; date?: string | null } | null | undefined) =>
+  v?.version ? v.version : v?.date ? `the font of ${day(v.date)}` : 'the font';
 export const hhmm = (iso: string | Date | null | undefined) =>
   iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';

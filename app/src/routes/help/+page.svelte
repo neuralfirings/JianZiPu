@@ -206,10 +206,10 @@
         <h2>Your draft (online)</h2>
         <p>Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own <strong>draft</strong>: only you see it, and nothing you do changes the real font or anyone else's work.</p>
         <ul>
-          <li>The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows what your draft is based on and how much you've changed. <strong>See my changes</strong> lists them item by item.</li>
-          <li>On that list, <strong>Undo this change</strong> puts one item back the way your draft started: a glyph, a glyph's spellings, an area or a word type. For a word type, <strong>Show the spacing rules</strong> lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with <I.Undo class="inl" aria-label="Undo" />. To throw everything away at once, use <I.More class="inl" aria-label="More" /> → <strong>Discard my draft…</strong>.</li>
+          <li>Your draft is compared with a <strong>reference font</strong>, a release such as 3.200: <strong>Your changes</strong> are what your draft does differently from it. The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows your reference font and how much you've changed. <strong>See my changes</strong> lists the changes item by item.</li>
+          <li>On that list, <strong>Undo this change</strong> puts one item back the way your reference font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, <strong>Show the spacing rules</strong> lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with <I.Undo class="inl" aria-label="Undo" />. To throw everything away at once, use <I.More class="inl" aria-label="More" /> → <strong>Discard my draft…</strong>.</li>
           <li>To share your work, <I.More class="inl" aria-label="More" /> → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
-          <li>When the font is updated, a banner offers <strong>Update my draft…</strong>: the font's changes come in, and where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>.</li>
+          <li>When a new release is out, a banner offers <strong>Set reference font to 3.200 (latest)…</strong> (with the new number). Your changes stay yours and are compared with the new release from then on: its changes come in, the ones it already has leave Your changes, and where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>.</li>
           <li><strong>Feedback</strong> in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.</li>
         </ul>
       </section>
@@ -226,7 +226,7 @@
           <li><a href="/requests">Your Change Requests</a> shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.</li>
           <li>Statuses: <strong>Sent</strong>, <strong>In review</strong>, <strong>In a release candidate</strong> (a test version of the next font), <strong>Released</strong>, <strong>Declined</strong>, <strong>Withdrawn</strong>. A request can be partly kept: "3 of 5 changes in v3.200".</li>
           <li><strong>Withdraw…</strong> takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.</li>
-          <li>When your changes are released, <strong>Update my draft…</strong> brings in the new font, and they drop out of Your changes.</li>
+          <li>When your changes are released, they fold away on Your changes under <strong>In the font now</strong>, and the request moves to <strong>Released and closed</strong> on Your Change Requests. <strong>Set reference font to 3.200 (latest)…</strong> compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.</li>
         </ul>
       </section>
 

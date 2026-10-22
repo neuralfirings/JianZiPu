@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { buildInputs, canWithdraw, draftItems, lockedItems, snapshot, startingTicks, type ChangeRequest } from './requests';
+import { buildInputs, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, type ChangeRequest } from './requests';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -42,6 +42,13 @@ describe('locks', () => {
     expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_candidate', decisions: { 'design:area:hui': 'keep', 'spelling:md_7': 'skip' } })]))).toEqual(['design:area:hui']);
     expect(lockedItems([req({ item_ids: ids, status: 'withdrawn' }), req({ id: 'r2', item_ids: ids, status: 'declined' })])).toEqual({});
   });
+  it('a released change is the font\'s: it stays changeable, and says which release has it', () => {
+    const ids = ['design:area:hui', 'spelling:md_7'];
+    const r = req({ item_ids: ids, status: 'released', release: '3.200', decisions: { 'design:area:hui': 'keep', 'spelling:md_7': 'skip' } });
+    expect(lockedItems([r])).toEqual({});
+    expect(Object.keys(releasedItems([r]))).toEqual(['design:area:hui']);
+    expect(releasedItems([r])['design:area:hui'].release).toBe('3.200');
+  });
   it('names the request that holds a change', () => {
     expect(lockedItems([req({ item_ids: ['spelling:md_7'] })])['spelling:md_7']).toEqual({ id: 'r1', title: 'Hui spacing', sent: '2026-10-20T10:00:00Z' });
   });
@@ -78,5 +85,17 @@ describe('snapshot', () => {
   it('builds as the font plus those changes', () => {
     const { bundle } = snapshot(draft(), font, ['glyph:md_7']);
     expect(buildInputs(bundle, font)).toMatchObject({ svgs: { md_7: SVG('M1 1h20v20z') }, deleted: [] });
+  });
+});
+
+describe('in the font', () => {
+  it('finds the draft changes the font has now, and leaves the rest', () => {
+    const b = draft();
+    const now = design();
+    now.areas.hui = structuredClone(b.design.areas.hui);
+    const fontNow = { design: now, typing: { md_7: sp('qi') }, svgs: { ...font, md_7: b.svgs.md_7 } };
+    const items = draftItems(b, font);
+    expect([...inTheFont(items, b, fontNow)].sort()).toEqual(['design:area:hui', 'glyph:md_7', 'spelling:md_7']);
+    expect(inTheFont(items, b, { design: design(), typing: { md_7: sp('7') }, svgs: font }).size).toBe(0);
   });
 });

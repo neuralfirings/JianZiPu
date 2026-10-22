@@ -7,4 +7,4 @@
   const Ic = $derived(ICON[status]);
 </script>
 
-<span class="pill {STATUS_PILL[status]}"><Ic size={14} />{STATUS_LABEL[status]}{#if release && (status === 'in_candidate' || status === 'released')} · v{release}{/if}</span>
+<span class="pill {STATUS_PILL[status]}"><Ic size={14} />{STATUS_LABEL[status]}{#if release && (status === 'in_candidate' || status === 'released')}{` · v${release}`}{/if}</span>

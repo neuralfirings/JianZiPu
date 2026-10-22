@@ -2,11 +2,11 @@
 // draft, with a title, notes and how they'd like to be credited; an admin keeps or skips each
 // change and replies; kept changes go into a release candidate, then a release. A sent change is
 // locked in the tester's draft until the request is withdrawn or declined (or, for a skipped
-// change, once the request moves on to a release candidate).
+// change, once the request moves on to a release candidate); a released change is the font's.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
-import { applyMerge, diffBundle, type Item } from './merge';
+import { applyMerge, diffBundle, type Current, type Item } from './merge';
 import * as T from './typing';
 
 export const TABLE = 'change_requests';
@@ -50,14 +50,33 @@ export function startingTicks(ids: string[], d: RequestDraft | null): Record<str
 
 export type Lock = { id: string; title: string; sent: string };
 /** The draft items a tester's requests hold: every change of an open request, and the kept
- *  changes of one in a release candidate or released. Withdrawn and declined hold nothing. */
+ *  changes of one in a release candidate. Released, withdrawn and declined hold nothing: a
+ *  released change is the font's now, and stays the tester's to change like any other part. */
 export function lockedItems(reqs: ChangeRequest[]): Record<string, Lock> {
   const out: Record<string, Lock> = {};
   for (const r of [...reqs].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-    const ids = OPEN.includes(r.status) ? r.item_ids : r.status === 'in_candidate' || r.status === 'released' ? keptIds(r) : [];
+    const ids = OPEN.includes(r.status) ? r.item_ids : r.status === 'in_candidate' ? keptIds(r) : [];
     for (const id of ids) out[id] ??= { id: r.id, title: r.title, sent: r.created_at };
   }
   return out;
+}
+
+/** The draft items a released request put in the font, with that request (the latest wins). */
+export function releasedItems(reqs: ChangeRequest[]): Record<string, ChangeRequest> {
+  const out: Record<string, ChangeRequest> = {};
+  for (const r of [...reqs].sort((a, b) => a.created_at.localeCompare(b.created_at)))
+    if (r.status === 'released') for (const id of keptIds(r)) out[id] = r;
+  return out;
+}
+
+/** Released, declined and withdrawn: nothing more happens to these. */
+export const CLOSED: RequestStatus[] = ['released', 'declined', 'withdrawn'];
+
+/** Which of a draft's changes the font has now (a released Change Request, or the same change
+ *  made in the font): the draft holds them only until Set reference font compares it with the font now. */
+export function inTheFont(items: Item[], draft: Bundle, font: Current): Set<string> {
+  const still = new Set(diffBundle(draft, font).map((i) => i.id));
+  return new Set(items.filter((i) => !still.has(i.id)).map((i) => i.id));
 }
 
 /** The outlines a draft started from (its untouched glyphs ride the font). */
