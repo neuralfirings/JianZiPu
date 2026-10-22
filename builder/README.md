@@ -119,8 +119,9 @@ changes the repo. Spec and copy: `docs/PILOT-UX.md` (local notes).
 ```
 browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
         │  draft (bundle JSON) ◀─────────▶ Supabase table drafts (one row per tester)
-        └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
-                                      in a temp dir; base font fetched from Storage assets/)
+        └─ /api/* + Bearer token ──▶ router (Cloudflare Worker, deploy/router/) ──▶ Railway, or its
+                                      Cloud Run backup: webserver --hosted (read-only; builds a draft's
+                                      font in a temp dir; base font fetched from Storage assets/)
         └─ Change Requests ──▶ Supabase table change_requests ──webhook──▶ Edge Function notify ──▶ email
 your machine: webserver (local) → /review (decide) → /release (candidate branch, tags) → GitHub
 ```

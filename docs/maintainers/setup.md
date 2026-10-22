@@ -7,8 +7,9 @@ where the settings live. Secrets never go in this repository.
 | --- | --- | --- |
 | Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
 | Supabase | Sign-in, drafts, Change Requests, the base font, emails | supabase.com dashboard, `supabase/` |
-| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
+| Railway | The online Builder | railway.com, `Dockerfile` |
 | Google Cloud Run | The backup online Builder, and a preview of each pull request | console.cloud.google.com, `.github/workflows/cloudrun.yml`, `deploy/` |
+| Cloudflare Worker | builder.jianzipufont.com: sends it to Railway or the backup | dash.cloudflare.com, `deploy/router/` |
 | Resend | Sends the Change Request emails | resend.com, `supabase/functions/notify/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
@@ -70,7 +71,9 @@ bucket".
      font).
 
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA` itself.
-3. Add the custom domain `builder.jianzipufont.com`.
+3. Settings → Networking → Generate Domain, for its own `….up.railway.app`
+   address. `builder.jianzipufont.com` belongs to [the router](#the-router),
+   which sends it here.
 
 The "Ask for an invite" and Feedback forms post to Formspree straight from the
 app (`app/src/lib/forms.ts`), so they need no setting.
@@ -123,31 +126,56 @@ with its settings for staging.
    `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`). Until they exist the workflow does
    nothing. Then Actions → cloudrun → Run workflow, on `main`, for the first
    production deploy.
-3. **The backup address.** Give the backup a name of its own, so it is ready
-   before it's needed (Railway keeps `builder.jianzipufont.com`):
-   - `gcloud domains verify jianzipufont.com` (once, in Google Search Console);
-   - `gcloud beta run domain-mappings create --service jzp-builder --domain builder-backup.jianzipufont.com --region us-central1`;
-   - in Cloudflare DNS, a CNAME `builder-backup` → `ghs.googlehosted.com`,
-     **DNS only** (grey cloud). The certificate follows within the hour.
-4. **Sign-in addresses.** Supabase only sends sign-in links back to allowed
-   addresses (Authentication → URL Configuration → Redirect URLs). Add:
-   - `https://builder-backup.jianzipufont.com/**`;
-   - the preview pattern: open the first preview, copy its address and put
-     `*` in place of `pr-<number>`, for example
-     `https://*---jzp-builder-staging-abc123-uc.a.run.app/**`.
+3. **Preview sign-in.** Supabase only sends sign-in links back to allowed
+   addresses (Authentication → URL Configuration → Redirect URLs). Open the
+   first preview, copy its address, put `*` in place of `pr-<number>` and add
+   it, for example `https://*---jzp-builder-staging-abc123-uc.a.run.app/**`.
+   The backup needs nothing here: it is served at `builder.jianzipufont.com`,
+   through [the router](#the-router).
+
+## The router
+
+`builder.jianzipufont.com` is a Cloudflare Worker (`deploy/router/worker.js`)
+that passes each request on to Railway or to the Cloud Run backup. Testers
+always use the same address, so a switch changes nothing they see: same
+sign-in, same drafts, no new certificate, and it takes effect in seconds. The
+Worker's `ACTIVE` variable picks the host: `railway` (also when it's unset) or
+`cloudrun`. Every answer carries an `X-JZP-Host` header naming the host that
+served it.
+
+1. **The hosts' addresses.** In `deploy/router/wrangler.toml`, fill in
+   `RAILWAY_ORIGIN` (the generated Railway address, [Railway](#railway-the-online-builder)
+   step 3) and `CLOUDRUN_ORIGIN` (the URL of `jzp-builder`, printed by the
+   setup script), and commit.
+2. **Deploy it.** `cd deploy/router && npx wrangler login && npx wrangler deploy`.
+   Open the `jzp-router.….workers.dev` address it prints: the Builder's sign-in
+   page should load. (Signing in there won't work, since Supabase doesn't
+   allow that address; it doesn't need to.)
+3. **Move the name, once.** At a quiet time, as it takes a minute:
+   - Cloudflare → DNS: delete the `builder` record that points at Railway;
+   - Workers & Pages → `jzp-router` → Settings → Domains & Routes → Add →
+     Custom domain `builder.jianzipufont.com`. Cloudflare makes the DNS
+     record and the certificate;
+   - Railway → Settings → Networking: remove the custom domain, which could
+     no longer renew its certificate;
+   - check: `curl -sI https://builder.jianzipufont.com | grep -i x-jzp-host`
+     says `railway`.
+
+The free Workers plan allows 100,000 requests a day, far more than the pilot
+uses. Later deploys of the Worker keep `ACTIVE` (`keep_vars` in
+`wrangler.toml`), so a deploy never switches hosts.
 
 ### When Railway is down
 
-1. Tell testers to use https://builder-backup.jianzipufont.com. Their drafts
-   are in Supabase, so everything they saved is there; work left unsaved in a
-   tab on the other address stays in that tab.
-2. If the backup is behind `main` (a deploy failed), Actions → cloudrun → Run
-   workflow on `main`.
-3. For a long outage, move the main name over: create the domain mapping for
-   `builder.jianzipufont.com` as in step 3, point its CNAME at
-   `ghs.googlehosted.com` (DNS only), and set the `notify` function's
-   `BUILDER_URL` if the emails should link to the backup meanwhile. Move it
-   back the same way.
+1. Check the backup is current: the last cloudrun run on `main` in Actions
+   succeeded. If not, Actions → cloudrun → Run workflow on `main`.
+2. Workers & Pages → `jzp-router` → Settings → Variables and Secrets: set
+   `ACTIVE` to `cloudrun` and deploy. Testers stay on the same address and
+   stay signed in. A font build running on Railway at that moment is lost;
+   they build again, and their drafts are untouched in Supabase.
+3. Check: `curl -sI https://builder.jianzipufont.com | grep -i x-jzp-host`
+   says `cloudrun`.
+4. When Railway is back, set `ACTIVE` to `railway` the same way.
 
 ## Change Request emails (Resend)
 

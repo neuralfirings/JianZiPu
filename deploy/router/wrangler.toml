@@ -1,0 +1,10 @@
+# The router at builder.jianzipufont.com (worker.js). Deploy: npx wrangler deploy (from this folder).
+name = "jzp-router"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+# ACTIVE (railway | cloudrun) is set in the dashboard only, so a deploy never switches hosts
+keep_vars = true
+
+[vars]
+RAILWAY_ORIGIN = "https://REPLACE-ME.up.railway.app"            # Railway → service → Settings → Networking
+CLOUDRUN_ORIGIN = "https://jzp-builder-REPLACE-ME.a.run.app"     # gcloud run services describe jzp-builder --format='value(status.url)'

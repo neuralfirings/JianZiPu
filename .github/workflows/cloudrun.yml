@@ -75,6 +75,7 @@ jobs:
           IMAGE: ${{ steps.image.outputs.ref }}
           PR: ${{ github.event.pull_request.number }}
         run: |
+          # shellcheck disable=SC2086  # RUN_FLAGS is a list of flags, split on purpose
           if [ -n "$PR" ]; then
             gcloud run deploy jzp-builder-staging --image "$IMAGE" --region "$REGION" --project "$PROJECT" \
               $RUN_FLAGS --update-env-vars "JZP_COMMIT=$SHA" --tag "pr-$PR" --no-traffic --quiet

@@ -1,4 +1,4 @@
-# The test suites on every push and pull request (app, builder, and the Change Request emails). The base font (TW-Kai) isn't in the repo, so the
+# The test suites on every push and pull request (app, builder, and the Change Request emails with the router). The base font (TW-Kai) isn't in the repo, so the
 # tests that build a font skip here; run them locally (see CLAUDE.md) before publishing a font.
 name: tests
 
@@ -54,3 +54,7 @@ jobs:
           deno-version: v2.x
       - run: deno test supabase/functions/notify
       - run: deno check supabase/functions/notify/index.ts
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: node --test deploy/router/worker.test.mjs   # the router at builder.jianzipufont.com
