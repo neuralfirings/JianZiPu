@@ -152,8 +152,8 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 ### Setting it up
 
 Supabase (the SQL files in order, auth settings, email templates, invites, the base font in
-`assets`), Railway (the variables, the domain) and your local `builder/.env` are in
-[docs/maintainers/setup.md](../docs/maintainers/setup.md). To run the hosted image locally:
+`assets`), Railway (the variables, the domain), the Cloud Run backup and pull request previews,
+and your local `builder/.env` are in [docs/maintainers/setup.md](../docs/maintainers/setup.md). To run the hosted image locally:
 
 ```bash
 cd builder && cp .env.example .env    # then edit .env

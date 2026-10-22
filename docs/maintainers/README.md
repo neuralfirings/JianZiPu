@@ -8,7 +8,8 @@ if you want to help rather than maintain.
 - [releasing.md](releasing.md): release candidates, publishing a release,
   versions, scope rules, troubleshooting
 - [setup.md](setup.md): one-time setup of your computer, Supabase, Railway,
-  Resend, GitHub, Cloudflare Pages and MailerLite
+  the Cloud Run backup and previews, Resend, GitHub, Cloudflare Pages and
+  MailerLite
 
 Elsewhere:
 

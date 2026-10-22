@@ -10,7 +10,8 @@ folder on request. Settings come from the environment:
   SUPABASE_ANON_KEY          the public anon key (also handed to the app)
   SUPABASE_SERVICE_KEY       server-only key, used to fetch the base font from Storage
   JZP_BASE_FONT_OBJECT       Storage object of the base font (default assets/TW-Kai-98.ttf)
-  RAILWAY_GIT_COMMIT_SHA     the deployed commit (set by Railway); else `git rev-parse HEAD`
+  JZP_COMMIT                 the deployed commit (set by the Cloud Run deploy, .github/workflows/cloudrun.yml)
+  RAILWAY_GIT_COMMIT_SHA     the same, set by Railway; with neither, `git rev-parse HEAD`
 
 Stdlib only (urllib), like the rest of the server.
 """
@@ -83,7 +84,7 @@ class Settings:
 
 
 def current_commit() -> str | None:
-    sha = os.environ.get("RAILWAY_GIT_COMMIT_SHA")
+    sha = os.environ.get("JZP_COMMIT") or os.environ.get("RAILWAY_GIT_COMMIT_SHA")
     if sha:
         return sha
     try:

@@ -1,7 +1,8 @@
-# The hosted Builder pilot (Railway): the Builder app plus the Python server in hosted,
-# read-only mode. Testers' drafts live in Supabase; the server never writes the repo files.
-# Env (Railway variables): SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY,
-# JZP_FEEDBACK_URL, optional JZP_BASE_FONT_OBJECT (default assets/TW-Kai-98.ttf). Railway sets PORT.
+# The hosted Builder pilot (Railway, and its backup on Cloud Run: .github/workflows/cloudrun.yml): the
+# Builder app plus the Python server in hosted, read-only mode. Testers' drafts live in Supabase; the
+# server never writes the repo files.
+# Env (Railway variables, Cloud Run service settings): SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY,
+# JZP_FEEDBACK_URL, optional JZP_BASE_FONT_OBJECT (default assets/TW-Kai-98.ttf). The host sets PORT.
 # Local try: docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder
 
 FROM node:26-slim AS app

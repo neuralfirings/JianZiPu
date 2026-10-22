@@ -89,6 +89,13 @@ def test_public_settings_never_carry_the_service_key():
     assert hosted.Settings().public()["mode"] == "local"
 
 
+def test_commit_from_either_host(monkeypatch):
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", "railway")
+    assert hosted.current_commit() == "railway"
+    monkeypatch.setenv("JZP_COMMIT", "cloudrun")               # Cloud Run (cloudrun.yml) sets this one
+    assert hosted.current_commit() == "cloudrun"
+
+
 def test_auth_caches_answers(hosted_mode):
     auth = webserver.AUTH
     assert auth.user("tok-a") == {"id": "user-a"}

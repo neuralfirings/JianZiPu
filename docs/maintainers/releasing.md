@@ -130,7 +130,8 @@ Merging doesn't make the GitHub release, but main now has the new files:
 
 - Cloudflare redeploys jianzipufont.com from main, so the site starts serving
   the new `site/JianZiPu.ttf` at this point.
-- Railway redeploys the hosted Builder from main.
+- Railway redeploys the hosted Builder from main, and so does its Cloud Run
+  backup.
 
 Publish right after merging. The site's "Release notes" link points at the
 `v3.300` release, which doesn't exist until you publish.
@@ -185,7 +186,8 @@ The version lives in `builder/VERSION`, and only a release changes it.
   **Save**, and build a candidate. Font files never change on main any other
   way.
 - **A Builder code fix**: an ordinary branch and pull request to main. It
-  doesn't need a release. Railway deploys it when it merges.
+  doesn't need a release. Railway (and the Cloud Run backup) deploys it when
+  it merges; the pull request has a preview before that.
 
 ## Scope rules
 

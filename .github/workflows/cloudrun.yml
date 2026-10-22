@@ -1,0 +1,112 @@
+# The online Builder on Google Cloud Run, the backup for Railway (docs/maintainers/setup.md
+# "Google Cloud Run"). The same root Dockerfile, two services:
+#   jzp-builder          production backup, deployed from main (and by hand: Run workflow)
+#   jzp-builder-staging  one preview per pull request, at its own pr-<number> URL; removed on close
+# Signs in to Google with Workload Identity Federation, so there is no key in GitHub. Does nothing
+# until the repository variables below are set (deploy/cloudrun-setup.sh prints them). The Supabase
+# settings live on each service (set once by the setup script); a deploy only changes the image.
+name: cloudrun
+
+on:
+  push:
+    branches: [main]
+    paths: [app/**, builder/**, Dockerfile, .dockerignore, .github/workflows/cloudrun.yml]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths: [app/**, builder/**, Dockerfile, .dockerignore, .github/workflows/cloudrun.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write          # the GitHub token Google trusts (Workload Identity Federation)
+
+concurrency:
+  group: cloudrun-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PROJECT: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  # the head of the pull request, not GitHub's merge commit; the app shows it as the version
+  SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  # settings every deploy enforces: one instance, because a tester's builds live in that
+  # instance's memory and temp folder; CPU kept on, because builds run between requests
+  RUN_FLAGS: >-
+    --max-instances=1 --min-instances=0 --no-cpu-throttling --cpu-boost
+    --cpu=1 --memory=2Gi --timeout=300 --execution-environment=gen2
+
+jobs:
+  deploy:
+    # not before setup, not for a closed pull request, and not for forks or Dependabot (no Google token)
+    if: >-
+      vars.GCP_PROJECT_ID != '' && github.event.action != 'closed' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'preview' || 'cloudrun' }}
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+      - name: Image name
+        id: image
+        run: |
+          repo="$REGION-docker.pkg.dev/$PROJECT/jzp/builder"
+          echo "ref=$repo:$SHA" >> "$GITHUB_OUTPUT"
+          # the `main` tag marks production's image, which the registry's clean-up policy keeps
+          { echo "tags<<EOF"; echo "$repo:$SHA"; [ "$GITHUB_EVENT_NAME" = pull_request ] || echo "$repo:main"; echo EOF; } >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.image.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Deploy
+        id: deploy
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR" ]; then
+            gcloud run deploy jzp-builder-staging --image "$IMAGE" --region "$REGION" --project "$PROJECT" \
+              $RUN_FLAGS --update-env-vars "JZP_COMMIT=$SHA" --tag "pr-$PR" --no-traffic --quiet
+            url=$(gcloud run services describe jzp-builder-staging --region "$REGION" --project "$PROJECT" --format=json \
+              | jq -r --arg tag "pr-$PR" '.status.traffic[] | select(.tag == $tag) | .url')
+          else
+            gcloud run deploy jzp-builder --image "$IMAGE" --region "$REGION" --project "$PROJECT" \
+              $RUN_FLAGS --update-env-vars "JZP_COMMIT=$SHA" --quiet
+            url=$(gcloud run services describe jzp-builder --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed \`${SHA:0:7}\` to $url" >> "$GITHUB_STEP_SUMMARY"
+
+  remove-preview:
+    if: >-
+      vars.GCP_PROJECT_ID != '' && github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Remove the pr-<number> URL
+        env:
+          TAG: pr-${{ github.event.pull_request.number }}
+        run: |
+          tags=$(gcloud run services describe jzp-builder-staging --region "$REGION" --project "$PROJECT" --format=json \
+            | jq -r '.status.traffic[].tag // empty')
+          if grep -qx "$TAG" <<< "$tags"; then
+            gcloud run services update-traffic jzp-builder-staging --region "$REGION" --project "$PROJECT" --remove-tags "$TAG" --quiet
+          else
+            echo "no $TAG URL to remove"
+          fi
