@@ -160,12 +160,13 @@
           <li>Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.</li>
           <li>Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.</li>
           <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
+          <li>On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle) until its outline thickens, then drag it. The gap the drag gives shows above your finger, and letting go is one undo step.</li>
         </ul>
         <h3>The panels</h3>
         <p>Panels can be docked left, right or below, folded and resized; <I.More class="inl" aria-label="More" /> → <strong>Reset panel layouts</strong> puts them back. Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(LAYOUTS_HELP)}
         <p>Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the <strong>Advanced</strong> checkbox in the header, so they aren't changed by accident. It's off again after a reload.</p>
-        <p>On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its <strong>Spacing</strong> just below the canvas. The <strong>Advanced</strong> edits need a computer.</p>
+        <p>On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its <strong>Spacing</strong> just below the canvas, and pressing and holding it drags it. The <strong>Advanced</strong> edits need a computer.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->

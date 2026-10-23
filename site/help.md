@@ -121,6 +121,7 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 - Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.
 - Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.
 - **boxes** and **glyphs** switch the outlines; `b` toggles boxes, `⇧1` fits the word.
+- On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle) until its outline thickens, then drag it. The gap the drag gives shows above your finger, and letting go is one undo step.
 
 ### The panels
 
@@ -130,14 +131,14 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 - **Structure**: The parts of the word type, in order. Tick a part to include it in the example word and pick which glyph it shows. **anchor** marks the first part of the chain, which carries the word's position. With **Advanced** on you can add, remove, reorder and make parts optional or repeating.
 - **Page center**: The point on the page that centring aims for, in font units. Every word type that is centred uses it.
 - **Font budget**: How many positioning rules each word type makes, and an estimate of their size. The build stores each rule as its own small table, so size is far from a limit (a single lookup can hold 65,535). What to watch is **skipped**: word shapes that get no rule because a part has nothing placing it, so those words won't be laid out. The **rules · KB** pill in the header opens this panel; it shows **!** while anything is skipped.
-- **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas.
+- **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas (on a phone, press and hold it first).
 - **Centering**: Which parts the word is centred on, and where. When a word is centred on an axis, the whole word is shifted to the target, so a start height on that axis (marked * on the canvas) doesn't move it: change the gaps between parts instead, or the target here.
 - **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses. The **Chord divider** and **Vertical marker** areas also have **Width of |** (or **:**): how far the next part moves after the divider, and the divider's own width in the font; it sets the box width too.
 - **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**; click a word to put it on the canvas. **Build & test** opens the same words next to the built font.
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
 
-On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas. The **Advanced** edits need a computer.
+On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas, and pressing and holding it drags it. The **Advanced** edits need a computer.
 
 ## Build & test
 

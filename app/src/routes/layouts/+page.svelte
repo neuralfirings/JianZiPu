@@ -19,6 +19,7 @@
   import PageCenterPanel from '$lib/components/PageCenterPanel.svelte';
   import FontBudgetPanel from '$lib/components/FontBudgetPanel.svelte';
   import PanelWorkspace from '$lib/components/PanelWorkspace.svelte';
+  import { phone } from '$lib/phone.svelte';
   import { usedIn } from '$lib/areas';
   import { panels, type Meta, type PanelId } from '$lib/panels.svelte';
   import { LAYOUTS_HELP } from '$lib/help';
@@ -271,6 +272,7 @@
     const cond = ei < 0 ? (before == null ? ' (new otherwise row)' : '') : entriesOf(rel.gap)[ei].when_base || entriesOf(rel.gap)[ei].when_elem ? ` rule ${ei + 1}` : ' otherwise';
     const who = elementLabel(l, name, areaLabel);
     const what = axis === 'y' ? (rel.base == null ? 'start height' : `gap above${bn ? ` after ${elementLabel(l, bn, areaLabel)}` : rel.base === 'prev' ? ' after previous row' : ''}`) : (rel.base == null ? 'x position' : 'horizontal gap');
+    dragShort = `${after}${ei >= 0 && cond ? ` (${cond.trim()})` : ''}`;
     return `${l.label ?? l.name}: ${what} of ${who}${cond} ${before ?? '?'} → ${after}`;
   }
   function commit(name: string, dx: number, dy: number) {
@@ -280,12 +282,16 @@
     if (app.undoStack.length) { app.undoStack[app.undoStack.length - 1].label = label; app.changes[app.changes.length - 1] = label; }
     status = label;
   }
+  // on a phone, the gap a drag gives, shown above the finger (WordCanvas readout)
+  let dragShort = '';
+  let readout = $state<string | null>(null);
   function ondrag(e: { name: string; dx: number; dy: number; phase: 'start' | 'move' | 'end' | 'cancel' }) {
     if (e.phase === 'start') status = '';
+    readout = null;
     const re = editor.ruleEdit;
     if (re) {
       const delta = re.axis === 'y' ? e.dy : e.dx;
-      if (e.phase === 'move') re.liveDelta = delta;
+      if (e.phase === 'move') { re.liveDelta = delta; readout = `${Math.round(re.value + delta)}`; }
       else if (e.phase === 'end') { re.value = Math.round(re.value + delta); re.liveDelta = 0; }
       else re.liveDelta = 0;
       return;
@@ -298,7 +304,7 @@
       if (centredStart(e.dx ? 'x' : 'y', e.name)) { editor.dragDesign = null; editor.dragLabel = CENTRED_NOTE[e.dx ? 'x' : 'y'].slice(2); return; }
       const copy: Design = JSON.parse(JSON.stringify(dragFrom.design));
       const label = applyDelta(copy, e.name, e.dx, e.dy, dragFrom.gaps[e.dx ? 'x' : 'y']);
-      if (label) { editor.dragDesign = copy; editor.dragLabel = label; } else editor.dragLabel = 'This part has no rule to change for the current glyphs';
+      if (label) { editor.dragDesign = copy; editor.dragLabel = label; readout = dragShort; } else editor.dragLabel = 'This part has no rule to change for the current glyphs';
       return;
     }
     editor.dragDesign = null; editor.dragLabel = null;
@@ -500,7 +506,7 @@
         dimmed={editing ? elements.map((e) => e.name).filter((n) => n !== editor.selected && n !== editBase) : []}
         dragOnly={editing ? editor.selected : null} lockAxis={editing ? editing.axis : null} {overlay} baseMark={editing ? editBase : null}
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
-        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} />
+        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on} {readout} />
     </div>
     {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">
@@ -508,7 +514,8 @@
     {:else if editor.dragLabel}{editor.dragLabel}
       {:else if editor.resolved?.unplaced && Object.keys(editor.resolved.unplaced).length}{@const un = Object.entries(editor.resolved.unplaced)}<span class="error"><I.Problem size={14} /> <b>Not placed:</b> {un.map(([n, m]) => `${n} has no ${[m.y ? 'vertical' : '', m.x ? 'horizontal' : ''].filter(Boolean).join(' or ')} rule in this shape`).join('; ')}. Shown at 0 with a red dashed box; select it to add a rule in Spacing.</span>{:else if editor.resolved?.error}<span class="error">{editor.resolved.error}</span>
       {:else if editing && selectedEl}Editing a rule of {elementLabel(editor.layout, selectedEl.name, areaLabel)}: drag it {editing.axis === 'y' ? 'up or down' : 'left or right'} to set the gap ({Math.round(editing.value + editing.liveDelta)}), then Confirm.
-      {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || 'drag to change its active rule · drag a ○ handle onto another part to attach it there'}
+      {:else if selectedEl}{elementLabel(editor.layout, selectedEl.name, areaLabel)}{#if elements.find((e) => e.name === selectedEl!.name)?.anchor} · <span class="anchor-word">anchor</span>: first glyph of the chain, carries the word's absolute position{/if} · {status || (phone.on ? 'press and hold to drag it, or a ○ handle onto another part to attach it there' : 'drag to change its active rule · drag a ○ handle onto another part to attach it there')}
+      {:else if phone.on}Tap a part to see its spacing. Press and hold to drag it.
       {:else}Click a part to see and edit its spacing.{/if}
     </div>
     {#each centredNotes as ax}<div class="foot">{CENTRED_NOTE[ax]}</div>{/each}
