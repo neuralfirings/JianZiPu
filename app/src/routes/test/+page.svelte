@@ -6,6 +6,7 @@
   // installed JianZiPu never stands in for it.
   import * as I from '$lib/icons';
   import { onMount } from 'svelte';
+  import { phone } from '$lib/phone.svelte';
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
   import { app } from '$lib/state.svelte';
@@ -120,8 +121,14 @@
   const buildLabel = $derived(status?.state === 'running' ? 'Building…' : app.dirty && !hosted.isHosted ? 'Save & build' : 'Build font');
 </script>
 
-<div class="page">
-  <div class="top">
+{#snippet buildLog()}
+  <details class="log" bind:open={logOpen}>
+    <summary>Build log {#if status?.state === 'running'}<span class="muted">(running…)</span>{/if}</summary>
+    {#if failure}<p class="error">{failure}</p>{/if}
+    <pre>{(status?.log ?? []).join('\n') || 'No build yet. Builds read the saved design.json and components.csv.'}</pre>
+  </details>
+{/snippet}
+{#snippet controls()}
     <div class="row wrap">
       <span class="muted">
         {#if status?.build}Built {fmtTime(status.build.time)} from saved files{:else}No build yet{/if}
@@ -200,6 +207,8 @@
       </div>
     {/if}
 
+{/snippet}
+{#snippet typeRow()}
     <div class="row wrap">
       <textarea class="type" rows={view === 'text' ? 3 : 1} bind:value={text} spellcheck="false" placeholder="Type words: s7k5  名七勾五  :fenkai  C03|s6,5"
         oncompositionstart={() => (composing = true)} oncompositionend={() => { composing = false; text = text + ''; }}></textarea>
@@ -210,7 +219,22 @@
       <button onclick={saveSet} title="Store the current words as a named set in the design file">+ Save as set</button>
       <label>Size <input type="range" min="24" max="300" bind:value={size} /> {size} px</label>
     </div>
+{/snippet}
+
+<div class="page" class:phone={phone.on}>
+  {#if phone.on}
+    <!-- a phone: the words first, the typing field docked under them; building and fonts fold away -->
+    <details class="top folded">
+      <summary>{#if status?.build}Built {fmtTime(status.build.time)}{:else}No build yet{/if}{#if font} · {font.label}{/if} · {view === 'words' ? 'Test the design' : 'Test the font file'}</summary>
+      {@render controls()}
+      {@render buildLog()}
+    </details>
+  {:else}
+  <div class="top">
+{@render controls()}
+{@render typeRow()}
   </div>
+  {/if}
 
   {#if err}<p class="error">{err}</p>{/if}
   {#if view === 'words'}
@@ -249,15 +273,22 @@
     <p class="muted small note">Each font is loaded into this page under a name of its own, so an installed JianZiPu never stands in for it. A character the file doesn't have is drawn by an installed font <span class="miss">in red</span>, so it can't pass for part of the font.</p>
   {/if}
 
-  <details class="log" bind:open={logOpen}>
-    <summary>Build log {#if status?.state === 'running'}<span class="muted">(running…)</span>{/if}</summary>
-    {#if failure}<p class="error">{failure}</p>{/if}
-    <pre>{(status?.log ?? []).join('\n') || 'No build yet. Builds read the saved design.json and components.csv.'}</pre>
-  </details>
+  {#if phone.on}<div class="dock">{@render typeRow()}</div>{/if}
+  {#if !phone.on}{@render buildLog()}{/if}
 </div>
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; }
+  /* a phone: the folded controls on top, the words scroll, the typing field docked at the bottom */
+  .phone .top.folded { padding: 0; gap: 0; }
+  .phone .top.folded > summary { padding: var(--space-4); min-height: var(--control-md); cursor: pointer; font-weight: 600; }
+  .phone .top.folded[open] { max-height: 60%; overflow: auto; padding: 0 var(--space-4) var(--space-4); gap: var(--space-4); }
+  .phone .top.folded[open] > summary { padding: var(--space-4) 0; }
+  .phone .top :global(.muted.small), .phone .top label .muted { display: none; }
+  .phone .words { padding: var(--space-4); gap: var(--space-4); }
+  .dock { flex: none; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); background: var(--bg-panel); }
+  .dock .type { min-width: 0; width: 100%; flex: 1 1 100%; }
+  .dock :global(.row) { gap: var(--space-3); }
   .top { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border); }
   .wrap { flex-wrap: wrap; gap: var(--space-5); }
   .spacer { flex: 1; }

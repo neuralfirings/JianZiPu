@@ -52,6 +52,15 @@
     void start();
     const offTips = installTooltips();
     const offPhone = installPhone();
+    // a phone's keyboard: while a field has it, the tabs and Save bar step aside, and (iOS, which
+    // doesn't shrink the page for it) the Builder shrinks to the part of the screen still visible
+    const FIELD = 'input:not([type=checkbox], [type=radio], [type=range], [type=file], [type=color]), textarea, [contenteditable]';
+    const onFocusIn = (e: FocusEvent) => { keyboard = e.target instanceof Element && e.target.matches(FIELD); };
+    const onFocusOut = () => queueMicrotask(() => { keyboard = !!document.activeElement?.matches(FIELD); });
+    document.addEventListener('focusin', onFocusIn); document.addEventListener('focusout', onFocusOut);
+    const vv = window.visualViewport;
+    const onViewport = () => { visible = vv && innerHeight - vv.height > 80 ? Math.round(vv.height) : null; };
+    vv?.addEventListener('resize', onViewport);
     const onHide = () => { if (document.visibilityState === 'hidden') app.flush(); };
     document.addEventListener('visibilitychange', onHide);
     const onUnload = (e: BeforeUnloadEvent) => { if (hosted.isHosted && app.dirty) { app.flush(); e.preventDefault(); } };
@@ -73,6 +82,8 @@
     window.addEventListener('click', onClick);
     return () => {
       offTips(); offPhone();
+      document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusout', onFocusOut);
+      vv?.removeEventListener('resize', onViewport);
       window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick);
       document.removeEventListener('visibilitychange', onHide); window.removeEventListener('beforeunload', onUnload);
     };
@@ -107,7 +118,9 @@
     ['/help', 'Help', I.Help]
   ]);
   let gate = $derived(hosted.ready && hosted.isHosted && !hosted.user);
-  let tabsShown = $derived(phone.on && !gate && hosted.ready);
+  let keyboard = $state(false);
+  let visible = $state<number | null>(null);
+  let tabsShown = $derived(phone.on && !gate && hosted.ready && !keyboard);
   let saveBar = $derived(tabsShown && (app.dirty || (hosted.isHosted && (app.offline || app.saveRefused))));
   let counts = $derived(pill && hosted.isHosted ? app.draftCounts : null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -176,7 +189,7 @@
 {/if}
 {/snippet}
 
-<div class="shell" style:--phone-bottom="{(tabsShown ? 56 : 0) + (saveBar ? 52 : 0)}px">
+<div class="shell" style:height={phone.on && visible ? `${visible}px` : null} style:--phone-bottom="{(tabsShown ? 56 : 0) + (saveBar ? 52 : 0)}px">
   {#if !phone.on}
     <header>
       <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JianZiPu Font Builder</div>

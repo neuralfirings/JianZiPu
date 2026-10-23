@@ -20,6 +20,8 @@ const SCREENS = [
   ['/glyphs?view=tiles&group=right', 'phone'],
   ['/glyphs?view=tiles&group=right&g=lg_gou', 'phone'],    // a glyph's card, with its spellings to edit
   ['/layouts', 'phone'],
+  ['/test?view=words', 'phone'],
+  ['/test?view=text', 'phone'],
   ['/layouts', 'phone', tap('[aria-label^="right"]')],      // a part tapped: its Spacing opens under the canvas
   ['signin', 'phone'],
   ['/glyphs/lg_gou/edit', 'computer'],
@@ -27,7 +29,7 @@ const SCREENS = [
   ['/review', 'computer']
 ];
 /** Screens on their way to working on a phone: checked and reported, but not yet a failure. */
-const TODO = new Set(['/glyphs?view=typing&group=left', '/test?view=words', '/test?view=text']);
+const TODO = new Set(['/glyphs?view=typing&group=left']);
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: 'light' });

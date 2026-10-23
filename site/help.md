@@ -158,6 +158,8 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 ![Build and test, Test the font file view: the same words as running text in the built font](https://builder.jianzipufont.com/help/build-font.jpg)
 ***Test the font file**: the same words as running text in the built font.*
 
+On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (**No build yet**, or when the last build was made) opens the build, font and view settings and the build log.
+
 A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type.
 
 ## Saving and undo

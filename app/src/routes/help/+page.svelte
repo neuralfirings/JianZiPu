@@ -184,6 +184,7 @@
           <dt>Test the font file</dt><dd>Running text in the font file, as a reader sees it. Switch <strong>liga</strong> (substitution) and <strong>kern</strong> (positioning) off to see the raw parts, try <strong>vertical columns</strong>, or <strong>compare with a second font</strong> side by side.</dd>
         </dl>
         <figure><a href="/help/build-font.jpg" target="_blank"><img src="/help/build-font.jpg" alt="Build and test, Test the font file view: the same words as running text in the built font" width="1280" height="800" loading="lazy" /></a><figcaption><strong>Test the font file</strong>: the same words as running text in the built font.</figcaption></figure>
+        <p>On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (<strong>No build yet</strong>, or when the last build was made) opens the build, font and view settings and the build log.</p>
         <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <I.Warn class="inl badge-warn" aria-label="warning" /> under a word means some of its parts matched no word type.</p>
       </section>
 
