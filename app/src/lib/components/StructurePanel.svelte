@@ -201,7 +201,8 @@
     {@const c = editor.choice[i]}
     <div class="line" class:sel={slotSelected(s)} class:off={!on} class:dragover={dragSlot != null && dragSlot !== i}
       ondragover={(e) => { if (dragSlot != null) e.preventDefault(); }} ondrop={() => dropSlot(i)} role="group">
-      <span class="grip" draggable={!phone.on} ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order"><I.Grip size={14} /></span>
+      <!-- reordering parts is a structural edit: on a phone it waits for a computer -->
+      {#if !phone.on}<span class="grip" draggable="true" ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order"><I.Grip size={14} /></span>{/if}
       {#if s.optional}
         <input type="checkbox" checked={on} title={on ? 'Leave this part out of the preview word' : 'Put this part back into the preview word'} onchange={() => editor.setChoice(i, on ? null : s.repeat ? [0] : 0)} />
       {:else}
