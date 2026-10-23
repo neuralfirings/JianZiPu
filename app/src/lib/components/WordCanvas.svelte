@@ -92,7 +92,7 @@
   let drag: { name: string; sx: number; sy: number; axis: 'x' | 'y' | null; scale: number } | null = null;
   let link = $state<{ name: string; edge: Edge; x: number; y: number; cx: number; cy: number; sx: number; sy: number; target: { name: string; edge: Edge } | null } | null>(null);
 
-  function toUnits(e: PointerEvent): { x: number; y: number } {
+  function toUnits(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const pt = svgEl.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
     const p = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
@@ -100,7 +100,7 @@
   }
   function down(e: PointerEvent, name: string) {
     const at = { x: e.clientX, y: e.clientY }, el = e.currentTarget as Element, id = e.pointerId;
-    if (finger(e)) return press(e, () => { if (!dragOnly) { onselect?.(name); onselectarrow?.(null); } }, () => grab(name, at, el, id, true));
+    if (finger(e)) return press(e, () => { if (!dragOnly) { onselect?.(name); onselectarrow?.(null); } }, () => grab(name, at, el, id, true), !!ondrag && (!dragOnly || dragOnly === name));
     grab(name, at, el, id, false);
   }
   function grab(name: string, at: { x: number; y: number }, el: Element, pointerId: number, lifted: boolean) {
@@ -117,12 +117,16 @@
   let hold: Hold | null = null;
   let liftedName = $state<string | null>(null);
   let fingerAt = $state<{ x: number; y: number } | null>(null);
+  /** Where a finger is holding, before the lift: a ring there fills over the hold time. */
+  let pressAt = $state<{ x: number; y: number } | null>(null);
   const finger = (e: PointerEvent) => holdToDrag && e.pointerType === 'touch';
   /** Start waiting: a tap runs `tap`, a hold runs `lift`, a swipe leaves it to scrolling. */
-  function press(e: PointerEvent, tap: () => void, lift: () => void = tap) {
+  function press(e: PointerEvent, tap: () => void, lift: () => void = tap, ring = false) {
     hold?.cancel();
-    hold = new Hold({ ontap: tap, onlift: lift });
+    const at = toUnits(e);
+    hold = new Hold({ ontap: () => { pressAt = null; tap(); }, onlift: () => { pressAt = null; fingerAt = at; lift(); } });
     hold.down(e.clientX, e.clientY);
+    pressAt = ring ? at : null;
   }
   /** On a finger, the plain-mouse action happens on a tap (so a swipe that starts here can scroll). */
   function tapOr(e: PointerEvent, act: () => void) { if (finger(e)) press(e, act); else act(); }
@@ -134,7 +138,7 @@
   });
 
   function move(e: PointerEvent) {
-    if (hold && e.pointerType === 'touch' && !hold.move(e.clientX, e.clientY)) return;
+    if (hold && e.pointerType === 'touch' && !hold.move(e.clientX, e.clientY)) { if (hold.state === 'abandoned') pressAt = null; return; }
     if ((drag || link) && finger(e)) fingerAt = toUnits(e);
     if (link) {
       if (Math.hypot(e.clientX - link.sx, e.clientY - link.sy) <= 6) return;
@@ -150,7 +154,7 @@
   }
   function up(e: PointerEvent) {
     if (hold) { const wasLifted = hold.up(); hold = null; if (!wasLifted) return; }
-    liftedName = null; fingerAt = null;
+    liftedName = null; fingerAt = null; pressAt = null;
     if (link) {
       // a click on a handle (no real drag) is not a drop
       const moved = Math.hypot(e.clientX - link.sx, e.clientY - link.sy) > 6;
@@ -167,7 +171,7 @@
     drag = null;
   }
   export function cancelDrag() {
-    hold?.cancel(); hold = null; liftedName = null; fingerAt = null;
+    hold?.cancel(); hold = null; liftedName = null; fingerAt = null; pressAt = null;
     if (link) link = null;
     if (drag) { ondrag?.({ name: drag.name, dx: 0, dy: 0, phase: 'cancel' }); drag = null; }
   }
@@ -179,7 +183,7 @@
       if (lifted) { liftedName = name; navigator.vibrate?.(10); }
       link = { name, edge, x, y, cx: x, cy: y, sx, sy, target: null };
     };
-    if (finger(e)) press(e, () => {}, () => start(true)); else start(false);
+    if (finger(e)) press(e, () => {}, () => start(true), true); else start(false);
   }
   /** Nearest compatible edge of another box within reach of the point. */
   function hitEdge(p: { x: number; y: number }, self: string, edge: Edge): { name: string; edge: Edge } | null {
@@ -296,13 +300,18 @@
       </circle>
     {/each}
   {/if}
-  {#if readout && fingerAt && liftedName}
+  {#if pressAt}
+    <!-- holding: the ring fills, then the part lifts (taps are over before it shows) -->
+    <circle cx={pressAt.x} cy={-pressAt.y} r={30 * upp} class="holdring" pathLength="100" />
+  {/if}
+  {#if fingerAt && liftedName}
     <!-- above the finger, which hides the part it drags -->
+    {@const text = (link ? null : readout) ?? (link ? 'Drop on an edge' : 'Drag to move')}
     {@const rf = fs * 1.3}
-    {@const rw = labelWidth(readout, rf) + rf}
+    {@const rw = labelWidth(text, rf) + rf}
     <g class="readout" transform="translate({fingerAt.x} {-fingerAt.y - 70 * upp})">
       <rect x={-rw / 2} y={-rf * 1.1} width={rw} height={rf * 1.5} rx={rf * 0.3} />
-      <text x="0" y="0" font-size={rf} text-anchor="middle">{readout}</text>
+      <text x="0" y="0" font-size={rf} text-anchor="middle">{text}</text>
     </g>
   {/if}
   {#if link}
@@ -315,7 +324,13 @@
   .canvas { display: block; background: var(--bg-canvas); border-radius: var(--radius-md); touch-action: none; overflow: visible; }
   /* a finger: swipes scroll (pinch stays off), no callout or text selection on a long press */
   .canvas.hold { touch-action: pan-x pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-  .el.lifted .box, .el.lifted .box.hidden { stroke: var(--ov-active); stroke-width: 4; fill: var(--ov-part-fill); }
+  /* lifted: picked up off the page, with a drag shadow and a stronger fill */
+  .el.lifted .box, .el.lifted .box.hidden { stroke: var(--ov-active); stroke-width: 4; fill: var(--sel-bg); fill-opacity: .6; }
+  .el.lifted { filter: drop-shadow(var(--shadow-drag)); }
+  .holdring { fill: none; stroke: var(--ov-active); stroke-width: 4; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0; pointer-events: none;
+    transform-box: fill-box; transform-origin: center; animation: holdring 400ms linear forwards; }
+  @media (prefers-reduced-motion: reduce) { .holdring { opacity: 1; stroke-dashoffset: 0; } }
+  @keyframes holdring { 0%, 25% { opacity: 0; stroke-dashoffset: 100; } 30% { opacity: 1; } 100% { opacity: 1; stroke-dashoffset: 0; } }
   .handle-hit { fill: transparent; stroke: none; }
   .handle.lifted { fill: var(--ov-active); }
   .readout { pointer-events: none; }

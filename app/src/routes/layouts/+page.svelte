@@ -495,7 +495,7 @@
         <button class="ghost" onclick={() => setZoom(zoom * 1.25)} disabled={zoom >= 8} aria-label="Zoom in" data-tip="Zoom in (+)"><I.Plus /></button>
         <button class="ghost" onclick={() => setZoom(1)} disabled={zoom === 1} title="Fit the word to the canvas (⇧1)">Fit</button>
       </span>
-      {#if editor.resolving}<span class="muted">Updating…</span>{/if}
+      {#if editor.resolving}<span class="muted updating">Updating…</span>{/if}
     </div>
     <div class="canvas-wrap" role="presentation" bind:this={wrapEl} bind:clientHeight={wrapH} bind:clientWidth={wrapW} onwheel={onWheel}
       onpointerdown={(e) => { if (!(e.target as Element).closest('svg') && !editing) { editor.select(null); editor.selectedArrow = null; } }}>
@@ -508,7 +508,7 @@
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
         onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on} {readout} />
     </div>
-    {#if status}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
+    {#if status && !phone.on}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">
       {#if editor.boxEdit && editor.dragDesign}{@const be = editor.boxEdit}{@const old = d.areas[be.area]?.size ?? be.size}Box of {app.areaLabel(be.area)} {old[0]} × {old[1]} → <b>{be.size[0]} × {be.size[1]}</b>, not applied: moves parts in {usedIn(d, be.area).length} word type{usedIn(d, be.area).length === 1 ? '' : 's'}. <b>Enter</b> applies · <b>Esc</b> cancels.
     {:else if editor.dragLabel}{editor.dragLabel}
@@ -537,6 +537,14 @@
   .note span { flex: 1; min-width: 0; }
   .foot { padding: 0 var(--space-5) 4px; font-size: var(--t-small); color: var(--ink-muted); }
   .status { padding: 4px var(--space-5); border-top: 1px solid var(--border); font-size: var(--t-small); color: var(--ink-muted); min-height: 26px; }
+  /* a phone: nothing under or beside the canvas changes height while a part moves, or the canvas
+     re-scales under the finger. Updating… floats over the canvas; the status line keeps two lines
+     (it also carries what the desktop's dismissible note says) */
+  @media (max-width: 759.98px) {
+    .toolbar { position: relative; }
+    .updating { position: absolute; left: var(--space-5); top: 100%; margin-top: var(--space-2); z-index: 1; padding: 0 var(--space-3); border-radius: var(--radius-sm); background: var(--bg-panel); font-size: var(--t-caption); pointer-events: none; }
+    .status { flex: none; height: calc(2 * 18px + 8px); min-height: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 18px; }
+  }
   .greyed { opacity: .45; pointer-events: none; }
   .small { font-size: var(--t-caption); }
   .wrap { flex-wrap: wrap; }
