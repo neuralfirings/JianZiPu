@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,22 +8,17 @@
   <title>JianZiPu Font (v3)</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=M+PLUS+1+Code:wght@100..700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   
   <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
   
+  <script>document.documentElement.classList.add('fonts-loading');</script>
   <style>
+    /* until the JianZiPu font is in, notation would show as its raw spellings: keep it hidden, not the whole page */
+    .fonts-loading jzp, .fonts-loading .jzp, .fonts-loading .jzp-entry { visibility: hidden; }
     @font-face {
       font-family: 'JianZiPu';
       src: url('./JianZiPu.ttf'); 
@@ -195,21 +190,47 @@
     .text-entry-examples {
       font-size: 0.8em
     }
-    .loading {
-      position:fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(5px);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      font-size: 1.2rem;
-      color: #333;
+
+    /* ---- On a phone (narrower than 760px). A computer keeps the layout above. ---- */
+    .contents, .font-version-top, .keyboard-map-link { display: none; }
+    @media (max-width: 759.98px) {
+      html { scroll-padding-top: 64px; }
+      /* the spellings people read and copy, and the one rule everyone needs */
+      text { font-size: 15px; padding: 3px 6px; line-height: 2; }
+      txs { font-size: 14px; }
+      .space-rule { display: block; margin-top: 8px; font-size: 15px; color: #333 !important; }
+      /* a result glyph moves to the next line rather than running off the edge; glyphs inside sentences sit in the line */
+      li jzp { display: inline-block; max-width: 100%; }
+      p jzp, .alert-tip jzp { font-size: 1.6em; line-height: 1.2; }
+      /* tap targets */
+      .text-entry-examples a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; margin: 4px 2px; border: 1px solid #999; border-radius: 22px; background: #fff; color: #000; text-decoration: none; font-weight: 600; }
+      .v2-link a, .font-version-top a { display: inline-block; padding: 10px 2px; }
+      .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: #555; }
+      /* the demo: a box that wraps instead of a one-line field */
+      textarea.text-entry { resize: none; line-height: 1.4; }
+      /* the sticky bar: one slim row, the contents on the left and the download button on the right */
+      /* pinned to the top from the first screen, so Contents and Download are always in reach */
+      body { padding-top: 56px; }
+      .download-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 1020; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; }
+      .download-bar .font-version { display: none; }
+      .download-bar .download { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; flex: none; margin-left: auto; border-radius: 4px; background: #fff; color: #000; font-weight: 600; text-decoration: none; }
+      .contents { display: block; flex: 1 1 auto; min-width: 0; color: #fff; }
+      .contents summary { display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
+      .contents summary::-webkit-details-marker { display: none; }
+      .contents summary::after { content: "▾"; color: #c8c8c8; }
+      .contents[open] summary::after { content: "▴"; }
+      .contents-label { color: #c8c8c8; font-size: 14px; }
+      .contents-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+      .contents nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: 4px 0; background: #fafafa; border-bottom: 1px solid #ccc; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+      .contents nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: #222; text-decoration: none; border-left: 3px solid transparent; }
+      .contents nav a.sub { padding-left: 32px; color: #444; }
+      .contents nav a[aria-current="true"] { border-left-color: #222; background: #e9e9e9; font-weight: 600; }
+      .download-name { display: none; }
+      /* the keyboard map is unreadable at this width: a link to the full picture instead */
+      .keyboard-map { display: none; }
+      .keyboard-map-link { display: inline-flex; align-items: center; min-height: 44px; }
+      /* while a demo box has the keyboard, the bar steps aside so the notation stays in view */
+      body.typing .download-bar { display: none; }
     }
 
   </style>
@@ -225,24 +246,19 @@
   <!-- End MailerLite Universal -->
 </head>
 <body>
-  <div class="loading">
-    Loading fonts...
-    <div class="spinner-border" role="status" style="margin: 20px 0">
-      <span class="visually-hidden">Loading fonts...</span>
-    </div>
-  </div>
 
-  <div style="background: #EEE">
+  <div id="top" style="background: #EEE">
     <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
       <div>
         <h1 style="float: left">JianZiPu Font (v3)</h1>
-        <small style="font-size:12px; float: right"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
+        <small class="v2-link" style="font-size:12px; float: right"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
       </div>
       <div style="clear: both"></div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
 
-      <small class="text-muted">Remember: Use the spacebar to advance between characters for proper notation spacing!</small>
+      <small class="font-version-top" id="font-version-top"></small>
+      <small class="text-muted space-rule">Remember: Use the spacebar to advance between characters for proper notation spacing!</small>
 
       <div class="alert alert-secondary jzp-example-container" style="background: #FAFAFA">
         <small>Type here to preview text</small>
@@ -259,8 +275,23 @@
     </div>
   </div>
   <div class="sticky-top download-bar" style="margin-top: 0px">
-    <a class="ml-onclick-form" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">
-      Download JianZiPu Font
+    <details class="contents">
+      <summary><span class="contents-label">Contents</span> <span class="contents-now">Introduction</span></summary>
+      <nav aria-label="Contents">
+        <a href="#top">Introduction</a>
+        <a href="#basic-layout">1. Basic Layout</a>
+        <a href="#numbers">2. Numbers and Decimals</a>
+        <a href="#modifiers">3. Basic Modifiers</a>
+        <a href="#chords">4. Chords</a>
+        <a href="#vertical">5. Vertical Texts</a>
+        <a href="#glossary">6. Glossary</a>
+        <a class="sub" href="#glossary-left">Left hand</a>
+        <a class="sub" href="#glossary-right">Right hand</a>
+        <a class="sub" href="#glossary-symbols">General symbols</a>
+      </nav>
+    </details>
+    <a class="ml-onclick-form download" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">
+      Download<span class="download-name"> JianZiPu Font</span>
     </a>
     <!-- <button class="ml-onclick-form btn btn-primary" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">Download JianZiPu Font</button> -->
     <small class="font-version" id="font-version"></small>
@@ -272,7 +303,7 @@
     
     <div class="alert alert-tip"><strong>Sibelius/MuseScore Users:</strong> In these music notation programs, the "space" advances lyrics to the next note. If you are using JianZiAPu as lyrics, this messes up with formatting. In this case use <text>+</text> after a character to give the character some width. Ex: <text>勾七+</text> or <text>k7+</text> will display correctly in these programs as <jzp>k7</jzp>, then use spacebar to advance to the next note. <text>：泛起+名九挑六</text> or <text>:fanqi+s9u6</text> will be processed as one word <jzp>:fanqi+名九挑六</jzp> in these programs and thus both these will be attached to one note.</div>
    
-    <h3>1. Basic Layout</h3>
+    <h3 id="basic-layout">1. Basic Layout</h3>
     
     <p>For left hand...</p>
     <ul>
@@ -309,7 +340,7 @@
       <strong>Note!</strong> Mixing and matching (e.g., <text>勾3</text> or <text>k三</text>) is not always supported, the text might render on Chrome but not in Word. 
     </div>
     
-    <p>Try it out below! You can type in both text boxes, and both will update. The Text textbox just shows you what you are typing.</p>
+    <p>Try it out below! Type in the box and the notation underneath follows as you type.</p>
 
     <div class="alert alert-secondary jzp-example-container">
       <small>Type here to preview text</small>
@@ -324,7 +355,7 @@
       <div class="jzp jzp-example" contenteditable></div>
     </div>
 
-    <h3>2. Numbers and Decimals</h3>
+    <h3 id="numbers">2. Numbers and Decimals</h3>
     <p>If you are using ASCII, you can note a decimal by just writing 7.5, 7.6, etc.</p>
     <p>If you are using Chinese, the font will treat the numbers different depending on if they are preceded by a left hand glyph or not. For example, if two numbers are follows a left hand, then that gets converted to decimals (s76 => s7.6), can put comma between (s7,6)</p>
     <ul>
@@ -381,7 +412,7 @@
       <div class="jzp jzp-example" contenteditable></div>
     </div>
 
-    <h3>3. Basic Modifiers</h3>
+    <h3 id="modifiers">3. Basic Modifiers</h3>
     <p>There are a lot of modifiers in the font, but there a few that is positioned in funny places around a JianZiPu character. I'll show it with a <jzp>名九勾六</jzp> character</p>
     <ul>
       <li><text><r>泛音</r>名九勾六</text> or <text><r>fy</r>s9k6</text> → <jzp><r>泛音</r>名九勾六</jzp></li>
@@ -405,7 +436,7 @@
       <div class="jzp jzp-example" contenteditable></div>
     </div>
 
-    <h3>4. Chords</h3>
+    <h3 id="chords">4. Chords</h3>
 
     <p>For the purpose of the font, a chord is anything where there's something on the left and right side, and generally takes up more space.</p>
   
@@ -450,7 +481,7 @@ Cv9,6|02 BLv9\6|02
     </div> -->
 
 
-    <h3>5. Vertical Texts</h3>
+    <h3 id="vertical">5. Vertical Texts</h3>
     <p>Vertical texts are just a string of characters, and will be rendered vertically. You start with a vertical indicator, <text>：</text>. While the characters here have ASCII equivalents, you sholud probably use Chinese characters to avoid ambiguity with homonym pinyins. Also in general, it is more robust with Chinese characters.</p>
     <ul>
       <li><text>：上七九</text> or <text>:shang79</text> → <jzp>:shang79</jzp></li>
@@ -498,19 +529,20 @@ Cv9,6|02 BLv9\6|02
     </div> -->
 
     <a name="glossary"></a>
-    <h3>6. Glossary</h3>
+    <h3 id="glossary">6. Glossary</h3>
     <div class="row">
       <div class="col-md-2"></div>
       <div class="col-md-8">
         <label>Keyboard Map (Basic Glyphs)</label>
-        <img src="./keyboard.png" width="100%"/>
+        <img class="keyboard-map" src="./keyboard.png" width="100%" loading="lazy" alt="Keyboard map: the key that types each basic glyph on a computer keyboard"/>
+        <a class="keyboard-map-link" href="./keyboard.png" target="_blank" rel="noopener">Open the keyboard map (a picture of a computer keyboard, best on a big screen)</a>
         <br /><br />
       </div>
       <div class="col-md-2"></div>
     </div>
     <div class="row">
       <div class="col">
-        <h4>1: Left Hand</h4>
+        <h4 id="glossary-left">1: Left Hand</h4>
         <label>1a: Left Hand Finger</label>
         <table class="table table-sm" >
           <thead>
@@ -826,7 +858,7 @@ Cv9,6|02 BLv9\6|02
     
       </div>
       <div class="col">
-        <h4>2: Right Hand</h4>
+        <h4 id="glossary-right">2: Right Hand</h4>
         <label>2a: Basic Right Hand</label>
         <table class="table table-sm">
           <thead>
@@ -1157,7 +1189,7 @@ Cv9,6|02 BLv9\6|02
     </div>
     <div class="row">
       <div class="col">
-        <h4>3. General Symbols (Vertical Layout Only)</h4>
+        <h4 id="glossary-symbols">3. General Symbols (Vertical Layout Only)</h4>
         <p>Preface with <text>:</text> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
         
         <u>3a: Related to Score: TBD</u><br /><br />
@@ -1325,21 +1357,10 @@ Cv9,6|02 BLv9\6|02
   </div>
   <script>
 
-    // Font loading detection and loading indicator management
+    // Font loading detection: the notation shows once the JianZiPu font is in
     document.addEventListener("DOMContentLoaded", () => {
-      const loadingElement = document.querySelector('.loading');
-      
-      // Function to hide loading indicator
       function hideLoading() {
-        if (loadingElement) {
-          loadingElement.classList.add('hidden');
-          // Remove from DOM after animation completes
-          setTimeout(() => {
-            if (loadingElement.parentNode) {
-              loadingElement.parentNode.removeChild(loadingElement);
-            }
-          }, 300);
-        }
+        document.documentElement.classList.remove('fonts-loading');
       }
       
       // Check if Font Loading API is supported
@@ -1467,11 +1488,12 @@ Cv9,6|02 BLv9\6|02
       .then((r) => (r.ok ? r.json() : null))
       .then((v) => {
         if (!v || !v.version) return;
-        const el = document.getElementById('font-version');
         const link = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text, target: '_blank', rel: 'noopener' });
-        el.append(`Version ${v.version}` + (v.date ? `, ${new Date(v.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}` : '') + ' · ');
-        if (v.notes_url) { el.append(link(v.notes_url, 'Release notes'), ' · '); }
-        el.append(link('https://github.com/neuralfirings/JianZiPu/releases', 'Older versions'));
+        for (const el of [document.getElementById('font-version'), document.getElementById('font-version-top')]) {
+          el.append(`Version ${v.version}` + (v.date ? `, ${new Date(v.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}` : '') + ' · ');
+          if (v.notes_url) { el.append(link(v.notes_url, 'Release notes'), ' · '); }
+          el.append(link('https://github.com/neuralfirings/JianZiPu/releases', 'Older versions'));
+        }
       })
       .catch(() => {});
   </script>
@@ -1502,6 +1524,43 @@ Cv9,6|02 BLv9\6|02
       }
     })();
     </script>
-    
+
+  <script>
+    // On a phone: the contents line names the section you're in; picking one closes it; the bar steps
+    // aside while you type; the demo boxes wrap; the preview under them can't be edited by accident
+    (function () {
+      const phone = window.matchMedia('(max-width: 759.98px)');
+      const menu = document.querySelector('.contents');
+      const now = document.querySelector('.contents-now');
+      const links = [...menu.querySelectorAll('nav a')];
+      links.forEach((a) => a.addEventListener('click', () => { menu.open = false; }));
+      const targets = links.map((a) => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+      function track() {
+        let cur = targets[0];
+        for (const t of targets) if (t.getBoundingClientRect().top < 90) cur = t;
+        links.forEach((a) => a.removeAttribute('aria-current'));
+        const on = links.find((a) => a.getAttribute('href') === '#' + cur.id);
+        if (on) { on.setAttribute('aria-current', 'true'); now.textContent = on.textContent; }
+      }
+      addEventListener('scroll', track, { passive: true });
+      track();
+      const field = (el) => el && el.matches && el.matches('input[type=text], textarea');
+      document.addEventListener('focusin', (e) => { if (phone.matches && field(e.target)) document.body.classList.add('typing'); });
+      document.addEventListener('focusout', () => setTimeout(() => { if (!field(document.activeElement)) document.body.classList.remove('typing'); }, 0));
+      function phoneDemos() {
+        if (!phone.matches) return;
+        document.querySelectorAll('input.text-entry').forEach((input) => {
+          const box = document.createElement('textarea');
+          for (const a of input.attributes) if (a.name !== 'type') box.setAttribute(a.name, a.value);
+          box.rows = 2;
+          box.value = input.value;
+          box.addEventListener('input', () => updateTargets(box));
+          input.replaceWith(box);
+        });
+        document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
+    })();
+  </script>
 </body>
 </html>
