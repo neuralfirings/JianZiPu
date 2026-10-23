@@ -3,6 +3,7 @@
   // Everyday: include in the preview, preview glyph (popover), select the part,
   // pick an option / row count. Advanced: drag to reorder, "edit ▸" card with
   // the structural settings, add part, recognition fold.
+  import { phone } from '$lib/phone.svelte';
   import * as I from '$lib/icons';
   import { app, parseElement } from '$lib/state.svelte';
   import { editor } from '$lib/editor.svelte';
@@ -200,7 +201,7 @@
     {@const c = editor.choice[i]}
     <div class="line" class:sel={slotSelected(s)} class:off={!on} class:dragover={dragSlot != null && dragSlot !== i}
       ondragover={(e) => { if (dragSlot != null) e.preventDefault(); }} ondrop={() => dropSlot(i)} role="group">
-      <span class="grip" draggable="true" ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order"><I.Grip size={14} /></span>
+      <span class="grip" draggable={!phone.on} ondragstart={() => (dragSlot = i)} ondragend={() => (dragSlot = null)} title="Drag to change the typing order"><I.Grip size={14} /></span>
       {#if s.optional}
         <input type="checkbox" checked={on} title={on ? 'Leave this part out of the preview word' : 'Put this part back into the preview word'} onchange={() => editor.setChoice(i, on ? null : s.repeat ? [0] : 0)} />
       {:else}

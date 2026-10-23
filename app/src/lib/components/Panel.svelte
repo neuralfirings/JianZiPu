@@ -17,6 +17,8 @@
   let folded = $derived(panels.isFolded(id));
   let dock = $derived(panels.dockOf(id));
   let menu = $state(false);
+  // on a phone the panels are sections in a fixed order: no dragging, no moving between docks
+  let phone = $derived(panels.mode === 'phone');
   let lifted = $derived(panels.dragging === id);
   let helpBtn = $state<HTMLButtonElement>();
   let helpOpen = $derived(panelHelp.open === id);
@@ -51,7 +53,7 @@
 
 <section class="pn" class:folded class:lifted data-panel={id}>
   <div class="ph" class:warn>
-    <span class="grip" title="Drag to move this panel" onpointerdown={gripDown}><I.Grip size={14} /></span>
+    {#if !phone}<span class="grip" title="Drag to move this panel" onpointerdown={gripDown}><I.Grip size={14} /></span>{/if}
     <button class="fold" title={folded ? 'Unfold' : 'Fold'} onclick={() => panels.toggle(id)} onkeydown={onkey}>
       <span class="chev">{#if folded}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}</span><span class="t" id={titleId}>{title}</span>
     </button>
@@ -68,6 +70,7 @@
         <div class="menu" onpointerdown={(e) => e.stopPropagation()}>
           {#if help}<button onclick={() => { menu = false; toggleHelp(); }}>About this panel</button><hr />{/if}
           <button onclick={() => { panels.toggle(id); menu = false; }}>{folded ? 'Unfold' : 'Fold'}</button>
+          {#if !phone}
           <hr />
           {#each DOCKS as d (d)}
             <button disabled={d === dock} onclick={() => { panels.move(id, d, panels.a.docks[d].length); menu = false; }}>{#if d === dock}<I.Check size={14} /> {:else}Move to {/if}{DOCK_LABEL[d]}</button>
@@ -75,6 +78,7 @@
           <hr />
           <button onclick={() => { panels.nudge(id, -1); menu = false; }}>Move up</button>
           <button onclick={() => { panels.nudge(id, 1); menu = false; }}>Move down</button>
+          {/if}
         </div>
       {/if}
     </span>
@@ -123,4 +127,11 @@
   .menu button:hover:not(:disabled) { background: var(--bg-hover); }
   .menu hr { border: 0; border-top: 1px solid var(--hairline); margin: 3px 0; }
   .pb { padding: var(--space-4) var(--space-5) var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  /* a phone: the header's buttons at touch size */
+  @media (max-width: 759.98px) {
+    .ph { height: 44px; }
+    .pm, .ph-help { width: var(--control-md); height: var(--control-md); }
+    .fold { height: var(--control-md); }
+    .menu button { height: var(--control-md); font-size: var(--t-label); }
+  }
 </style>

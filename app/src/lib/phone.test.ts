@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SCREENS, screenOnPhone, installPhone, phone, PHONE_MEDIA } from './phone.svelte';
+import { SCREENS, screenOnPhone, installPhone, phone, PHONE_MEDIA, screenTitle } from './phone.svelte';
 
 // every route the app has: src/routes/**/+page.svelte and +page.ts (a page that only redirects)
 const routes = [...new Set(Object.keys(import.meta.glob(['/src/routes/**/+page.svelte', '/src/routes/**/+page.ts']))
@@ -44,5 +44,14 @@ describe('installPhone', () => {
     qs.get(PHONE_MEDIA)!.fire!();
     expect(phone.on).toBe(false);
     off();
+  });
+});
+
+describe('screenTitle', () => {
+  it('names each screen for the phone top bar', () => {
+    expect(screenTitle('/layouts', new URLSearchParams())).toBe('Layouts');
+    expect(screenTitle('/review', new URLSearchParams('mine'))).toBe('Your changes');
+    expect(screenTitle('/glyphs/[name]/edit', new URLSearchParams(), { name: 'lg_gou' })).toBe('lg_gou');
+    expect(screenTitle('/nowhere', new URLSearchParams())).toBe('Font Builder');
   });
 });

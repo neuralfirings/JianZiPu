@@ -1,5 +1,6 @@
 // Dockable panels: which dock each panel sits in, its order, folded state, dock
-// sizes and hidden docks. Two arrangements (wide / narrow windows), kept in
+// sizes and hidden docks. Three arrangements (wide / narrow windows, and a phone, where the
+// panels are one column of sections under the pinned center, in a fixed order), kept in
 // localStorage; never part of the design. One store per screen: `panels` for
 // Layouts, `editorPanels` for the glyph editor.
 
@@ -19,9 +20,11 @@ export type Arrangement<Id extends string = string> = {
   size: Record<Dock, number>;             // column width (px) or strip height (px)
   hidden: Partial<Record<Dock, boolean>>; // dragged shut by the user
 };
-type Mode = 'wide' | 'narrow';
+export type Mode = 'wide' | 'narrow' | 'phone';
 export type Defaults<Id extends string> = Record<Mode, Arrangement<Id>>;
 export const WIDE_MIN = 1280;
+/** Narrower than this is a phone (lib/phone.svelte.ts, the design system's 760 px). */
+export const PHONE_MAX = 760;
 export const DOCK_MIN: Record<Dock, number> = { left: 160, right: 160, bottom: 60 };
 export const DOCK_HIDE_BELOW: Record<Dock, number> = { left: 110, right: 110, bottom: 40 };
 
@@ -36,6 +39,13 @@ const LAYOUTS_DEFAULTS: Defaults<PanelId> = {
     docks: { left: [], right: ['types', 'structure', 'pagecenter', 'budget', 'spacing', 'centering'], bottom: ['glyphs', 'tester'] },
     folded: { types: true, structure: true, pagecenter: true, budget: true, centering: true, tester: true },
     size: { left: 260, right: 380, bottom: 200 },
+    hidden: {}
+  },
+  // what a tap on a part opens comes first
+  phone: {
+    docks: { left: [], right: ['spacing', 'glyphs', 'structure', 'types', 'centering', 'pagecenter', 'budget', 'tester'], bottom: [] },
+    folded: { glyphs: true, structure: true, types: true, centering: true, pagecenter: true, budget: true, tester: true },
+    size: { left: 0, right: 0, bottom: 0 },
     hidden: {}
   }
 };
@@ -74,11 +84,15 @@ export class PanelStore<Id extends string> {
     this.loaded = true;
     try {
       const raw = localStorage.getItem(this.key);
-      if (raw) { const j = JSON.parse(raw); this.arr = { wide: sane(j.wide, this.defaults.wide, this.ids), narrow: sane(j.narrow, this.defaults.narrow, this.ids) }; }
+      if (raw) { const j = JSON.parse(raw); this.arr = { wide: sane(j.wide, this.defaults.wide, this.ids), narrow: sane(j.narrow, this.defaults.narrow, this.ids), phone: sane(j.phone, this.defaults.phone, this.ids) }; }
     } catch { /* ignore */ }
     this.syncMode();
   }
-  syncMode() { this.mode = window.innerWidth >= WIDE_MIN ? 'wide' : 'narrow'; }
+  syncMode() { this.mode = window.innerWidth >= WIDE_MIN ? 'wide' : window.innerWidth < PHONE_MAX ? 'phone' : 'narrow'; }
+  /** A panel to bring into view (on a phone, scrolled to just under the pinned center); PanelWorkspace does it. */
+  reveal = $state<Id | null>(null);
+  /** Open a panel and bring it into view. */
+  open(id: Id) { if (this.isFolded(id)) this.setFolded(id, false); this.reveal = id; }
   persist() { try { localStorage.setItem(this.key, JSON.stringify($state.snapshot(this.arr))); } catch { /* ignore */ } }
   get isDefault() { return JSON.stringify($state.snapshot(this.arr)) === JSON.stringify(this.defaults); }
   reset() { this.arr = clone(this.defaults); this.persist(); }
@@ -131,6 +145,12 @@ const EDITOR_DEFAULTS: Defaults<EditorPanelId> = {
     docks: { left: [], right: ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks'], bottom: ['tester', 'tryit'] },
     folded: { compare: true, glyph: true, typing: true, checks: true, tryit: true },
     size: { left: 260, right: 300, bottom: 180 },
+    hidden: {}
+  },
+  phone: {
+    docks: { left: [], right: ['selection', 'glyph', 'typing', 'tryit', 'checks', 'compare', 'trace', 'tester'], bottom: [] },
+    folded: { glyph: true, typing: true, tryit: true, checks: true, compare: true, trace: true, tester: true },
+    size: { left: 0, right: 0, bottom: 0 },
     hidden: {}
   }
 };

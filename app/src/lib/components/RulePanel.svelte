@@ -1,6 +1,7 @@
 <script lang="ts">
   // Spacing rules of the selected part: the chain of bases (in search order)
   // and the rule rows of the viewed base, as glyph sentences.
+  import { phone } from '$lib/phone.svelte';   // a phone: no HTML drag (iOS starts one on a long press)
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor, gapEntryIndex } from '$lib/editor.svelte';
@@ -153,7 +154,7 @@
       {#if k > 0}<span class="else">else</span>{/if}
       <button class="opt" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)}
         onpointerenter={() => (editor.hoverRel = c.index)} onpointerleave={() => { if (editor.hoverRel === c.index) editor.hoverRel = null; }}
-        draggable="true" ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
+        draggable={!phone.on} ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
         title={c.index === active ? 'In effect for the preview word' : basePresent(c.rel) ? 'Not in effect: an earlier base wins. Click to look at its rules (the preview drops the parts before it).' : 'Not in effect: this part is not in the word. Click to add it to the preview.'}
         onclick={() => viewPill(c.index)}>{#if c.index === active}<I.Current size={12} />{/if}{pillLabel(c.rel)}</button>
     {/each}
@@ -191,7 +192,7 @@
       {#each entries as e, i (i)}
         {@const other = isOtherwise(e)}
         <div class="rr" class:on={i === activeEntry} class:other
-          draggable={!other} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
+          draggable={!other && !phone.on} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
           role="button" tabindex="0" onclick={() => openEditor(i)} onkeydown={(ev) => { if (ev.key === 'Enter') openEditor(i); }}>
           <span class="hdl">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
           <span class="rn">{other ? '–' : i + 1}</span>
@@ -271,4 +272,9 @@
   .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); }
   .lnk { display: inline-flex; align-items: center; gap: 4px; border-style: dashed; }
   .warn { color: var(--status-draft); }
+  /* a phone: the small buttons at a finger's size */
+  @media (max-width: 759.98px) {
+    .tiny { height: var(--control-sm); }
+    .x { height: var(--control-sm); width: var(--control-sm); }
+  }
 </style>

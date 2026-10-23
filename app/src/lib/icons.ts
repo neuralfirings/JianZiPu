@@ -19,6 +19,12 @@ export { default as Preview } from '@lucide/svelte/icons/eye';
 export { default as Computer } from '@lucide/svelte/icons/monitor';     // a tool that needs a computer (on a phone)
 export { default as Link } from '@lucide/svelte/icons/link';
 
+// the bottom tabs on a phone (routes/+layout.svelte)
+export { default as TabGlyphs } from '@lucide/svelte/icons/shapes';
+export { default as TabLayouts } from '@lucide/svelte/icons/layout-dashboard';
+export { default as TabTry } from '@lucide/svelte/icons/type';
+export { default as TabRequests } from '@lucide/svelte/icons/inbox';
+
 // panels, menus, disclosure
 export { default as Grip } from '@lucide/svelte/icons/grip-vertical';
 export { default as Folded } from '@lucide/svelte/icons/chevron-right';

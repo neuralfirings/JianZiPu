@@ -43,6 +43,23 @@ export const SCREENS: Record<string, OnPhone | ((q: URLSearchParams) => OnPhone)
   '/release': { computer: 'Making a release' }
 };
 
+/** A screen's name in the phone's one-row top bar. */
+export const TITLES: Record<string, string | ((q: URLSearchParams, params: Record<string, string>) => string)> = {
+  '/glyphs': 'Glyphs',
+  '/glyphs/new': 'New glyph',
+  '/glyphs/[name]/edit': (_, p) => p.name ?? 'Glyph',
+  '/layouts': 'Layouts',
+  '/test': 'Build & test',
+  '/help': 'Help',
+  '/requests': 'Change Requests',
+  '/review': (q) => (q.has('mine') ? 'Your changes' : 'Review'),
+  '/release': 'Release'
+};
+export function screenTitle(routeId: string | null, q: URLSearchParams, params: Record<string, string> = {}): string {
+  const t = routeId === null ? undefined : TITLES[routeId];
+  return typeof t === 'function' ? t(q, params) : t ?? 'Font Builder';
+}
+
 /** What the screen at `routeId` (page.route.id) is on a phone; a screen not in SCREENS needs a computer. */
 export function screenOnPhone(routeId: string | null, q: URLSearchParams = new URLSearchParams()): OnPhone {
   const s = routeId === null ? undefined : SCREENS[routeId];

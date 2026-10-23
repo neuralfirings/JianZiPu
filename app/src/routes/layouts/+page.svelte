@@ -429,7 +429,8 @@
   let lastSel: string | null = null;
   $effect(() => {
     const sel = editor.selected;
-    if (sel && sel !== lastSel && panels.isFolded('spacing')) panels.setFolded('spacing', false);
+    // a tapped part's spacing opens (and, on a phone, scrolls into view under the canvas)
+    if (sel && sel !== lastSel && (panels.isFolded('spacing') || panels.mode === 'phone')) panels.open('spacing');
     lastSel = sel;
   });
   function meta(id: PanelId): Meta {

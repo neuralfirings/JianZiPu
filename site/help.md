@@ -18,7 +18,7 @@ A usual round: change a glyph or a rule, watch it in the live preview, **Save**,
 
 ### On a phone
 
-The Builder is made for a computer, but it opens on a phone too. Controls are larger there, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: **Copy link** copies the page's address to open on a computer, and **Open anyway** opens the tool on the phone until you reload the page.
+The Builder is made for a computer, but it opens on a phone too. Controls are larger there, the screens are tabs along the bottom, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: **Copy link** copies the page's address to open on a computer, and **Open anyway** opens the tool on the phone until you reload the page.
 
 ## How words are typed
 
@@ -135,6 +135,8 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
 
+On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas. The **Advanced** edits need a computer.
+
 ## Build & test
 
 [Build & test](https://builder.jianzipufont.com/test) makes the real font file and shows text in it.
@@ -162,6 +164,7 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 - **Undo** **Redo** in the header (`⌘Z`, `⇧⌘Z`) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.
 - Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
 - Unsaved work survives a reload: the Builder offers to restore it.
+- On a phone, the header is one row (the screen's name, its status, **Undo** **Redo** on Glyphs and Layouts, and **More**), the screens are tabs at the bottom, and **Save** sits in a bar above the tabs while something is unsaved.
 - Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.
 - On your own computer, Save writes `design.json` and `components.csv` in `builder/inputs/` (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.
 - On your own computer, **More** → **Export…** / **Import…** move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.
