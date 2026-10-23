@@ -180,7 +180,7 @@
         <p>Panels can be docked left, right or below, folded and resized; <I.More class="inl" aria-label="More" /> → <strong>Reset panel layouts</strong> puts them back. Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(LAYOUTS_HELP)}
         <p>Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the <strong>Advanced</strong> checkbox in the header, so they aren't changed by accident. It's off again after a reload.</p>
-        <p>On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its <strong>Spacing</strong> just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order. The <strong>Advanced</strong> edits need a computer.</p>
+        <p>On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its <strong>Spacing</strong> just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order, and press and hold a base in the <em>relative to</em> line to drag it to another place in the line. The <strong>Advanced</strong> edits need a computer.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->

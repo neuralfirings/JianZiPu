@@ -140,7 +140,7 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
 
-On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order. The **Advanced** edits need a computer.
+On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order, and press and hold a base in the *relative to* line to drag it to another place in the line. The **Advanced** edits need a computer.
 
 ## Build & test
 
