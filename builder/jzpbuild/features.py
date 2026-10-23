@@ -14,7 +14,7 @@ below is the one place that order is spelled out.
 
 import contextvars
 
-from . import config
+from . import config, glyph_ids
 from .data import (
     GlyphRow, load_components, load_char_to_glyph_name_rows, load_design,
     resolve_char_to_glyph_name,
@@ -499,9 +499,12 @@ def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[str]:
+def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True, ids: dict | None = None) -> list[str]:
     """The GSUB feature file. `rows` defaults to components.csv; the Builder's
-    preview passes unsaved rows (and validate=False: it reports clashes itself)."""
+    preview passes unsaved rows (and validate=False: it reports clashes itself).
+    The glyph names this module spells out (md_7, lg_gou, mod_chuo…) are the ones the glyphs had
+    when the code was written; renamed glyphs come out under their names now (`ids`: the
+    glyph_ids.json contents, default the file)."""
     rows = load_components() if rows is None else rows
     if validate:
         validate_or_raise(rows, load_char_to_glyph_name_rows())
@@ -536,4 +539,4 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
     out = []
     for s in sections:
         out.extend(s)
-    return out
+    return glyph_ids.translate_lines(out, ids)

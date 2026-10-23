@@ -6,19 +6,25 @@ document stores when it holds the glyph itself rather than its spelling, so it m
     {
       "codes":   {"lg_ban": "E2F5", ...},            # name -> code (hex), one per glyph
       "retired": {"E3B0": "md_old"},                 # codes of deleted glyphs, never handed out again
-      "renamed": [{"from": "mod_fy", "to": "mod_fanyin", "date": "2026-10-22"}]
+      "renamed": [{"date": "2026-10-22", "names": {"mod_fy": "mod_fanyin"}}]
     }
 
 The build (glyphs.py) gives a glyph its pinned code; a glyph with none (an SVG added outside the
 Builder, or one in a tester's draft) gets the next code after every pinned and retired one, in
-file-name order, which is what the local Builder pins when it saves the file. `renamed` is the
-record drafts and Change Requests made before a rename are translated with (the app's
-renames.ts), so an old name is never used again for a different glyph.
+file-name order, which is what the local Builder pins when it saves the file.
+
+`renamed` holds one entry per rename, oldest first; an entry renames all its names at once (a
+whole naming scheme, or a swap). Drafts and Change Requests made before a rename are translated
+with it (the app's renames.ts), and so is the feature file the build's code writes: features.py
+and gpos.py spell out glyphs by the names they had when the code was written (md_7, lg_gou), and
+translate_lines() turns those into the names the glyphs have now. So an old name is never used
+again for a different glyph.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from pathlib import Path
 
@@ -95,12 +101,15 @@ def retire(name: str, d: dict | None = None) -> dict:
     return d
 
 
-def rename(old: str, new: str, d: dict | None = None, today: str | None = None) -> dict:
-    """The glyph keeps its code under its new name, and the rename is recorded. Writes the file."""
+def rename(names: dict[str, str], d: dict | None = None, today: str | None = None) -> dict:
+    """Glyphs keep their codes under their new names (all at once, so swaps work), and the
+    renames are recorded as one entry. Writes the file."""
     d = load() if d is None else d
-    if old in d["codes"]:
-        d["codes"][new] = d["codes"].pop(old)
-    d["renamed"].append({"from": old, "to": new, "date": today or date.today().isoformat()})
+    moved = {new: d["codes"][old] for old, new in names.items() if old in d["codes"]}
+    for old in names:
+        d["codes"].pop(old, None)
+    d["codes"].update(moved)
+    d["renamed"].append({"date": today or date.today().isoformat(), "names": dict(names)})
     save(d)
     return d
 
@@ -108,4 +117,25 @@ def rename(old: str, new: str, d: dict | None = None, today: str | None = None) 
 def renamed_from(d: dict | None = None) -> set[str]:
     """Names a glyph had before a rename: never used again (drafts still say them)."""
     d = load() if d is None else d
-    return {r["from"] for r in d["renamed"]}
+    return {old for r in d["renamed"] for old in r["names"]}
+
+
+def current(name: str, d: dict | None = None) -> str:
+    """A name from before any recorded rename, as the glyph is called now."""
+    for r in (load() if d is None else d)["renamed"]:
+        name = r["names"].get(name, name)
+    return name
+
+
+TOKEN = re.compile(r"[A-Za-z0-9_.]+")
+
+
+def translate_lines(lines: list[str], d: dict | None = None) -> list[str]:
+    """Feature-file lines with every old glyph name (as the build's code writes them) changed to
+    the glyph's name now. Names that are current already pass through unchanged."""
+    d = load() if d is None else d
+    old = renamed_from(d)
+    if not old:
+        return lines
+    sub = lambda m: current(m.group(0), d) if m.group(0) in old else m.group(0)      # noqa: E731
+    return [TOKEN.sub(sub, line) for line in lines]

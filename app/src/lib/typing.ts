@@ -3,6 +3,8 @@
 // The checks mirror jzpbuild/typing_preview.py `issues()`; a clash or a malformed spelling
 // would fail the font build, so it pauses Save.
 
+import { original } from './renames';
+
 export type Spelling = {
   vert_variant: string; common: string; latin: string; latin_alt: string;
   simplified: string; traditional: string; pinyin: string;
@@ -38,13 +40,14 @@ export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '',
 export const isEmpty = (s: Spelling | undefined) => !s || FIELDS.every((f) => !s[f]);
 export const get = (t: Typing, g: string): Spelling => t[g] ?? empty();
 
-/** md_7.6, md_13.9, md_4.blank: typed by pattern, never by a row. */
-export const isDecimal = (g: string) => /^md_\d+\.(\d|blank)$/.test(g);
+/** md_7.6, md_13.9, md_4.blank: typed by pattern, never by a row. A renamed decimal still is one:
+ *  the pattern is the name the build's code gives it (renames.ts original()). */
+export const isDecimal = (g: string) => /^md_\d+\.(\d|blank)$/.test(original(g));
 
 const CN = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三'];
 /** How a position decimal is typed (no row needed). */
 export function decimalPatterns(g: string): string[] {
-  const m = /^md_(\d+)\.(\d|blank)$/.exec(g);
+  const m = /^md_(\d+)\.(\d|blank)$/.exec(original(g));
   if (!m) return [];
   const [n, d] = [+m[1], m[2]];
   if (d === 'blank') return [`${n}.`];   // no Chinese spelling reaches the blank decimal (七徽, 七点 give md_7)

@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { fromJson, makeBundle, toJson, translateBundle } from './bundle';
 import { diffBundle } from './merge';
-import { current, setRenames, translateDesign, translateId, translateTyping } from './renames';
+import { decimalGrid } from './areas';
+import { current, original, setRenames, translateDesign, translateId, translateTyping, type Rename } from './renames';
 import * as T from './typing';
 
 const design = (g = 'mod_fy'): Design => ({
@@ -17,17 +18,35 @@ const design = (g = 'mod_fy'): Design => ({
 } as unknown as Design);
 const sp = (latin: string, vert = ''): T.Spelling => ({ ...T.empty(), latin, vert_variant: vert });
 const SVG = (d: string) => `<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`;
-const RENAMED = [{ from: 'mod_fy', to: 'mod_fanyin', date: '2026-10-22' }];
+const RENAMED = [{ date: '2026-10-22', names: { mod_fy: 'mod_fanyin' } }];
 
 afterEach(() => setRenames([]));
 
 describe('glyph renames', () => {
   it('follow each other in order and leave other names alone', () => {
-    const r = [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'x', to: 'y' }];
+    const r: Rename[] = [{ names: { a: 'b' } }, { names: { b: 'c', x: 'y' } }];
     expect(current('a', r)).toBe('c');
     expect(current('b', r)).toBe('c');
     expect(current('c', r)).toBe('c');
     expect(current('q', r)).toBe('q');
+    expect(original('c', r)).toBe('a');
+    expect(original('y', r)).toBe('x');
+    expect(original('q', r)).toBe('q');
+  });
+
+  it('swap names that one rename exchanges', () => {
+    const r = [{ names: { md_ming: 'md_zhong', md_zhong: 'md_ming' } }];
+    expect(translateTyping({ md_ming: sp('s'), md_zhong: sp('d') }, r)).toEqual({ md_zhong: sp('s'), md_ming: sp('d') });
+    expect(original('md_zhong', r)).toBe('md_ming');
+  });
+
+  it('keep the position decimals working under a new naming scheme', () => {
+    setRenames([{ names: { 'md_7.6': 'hui_7.6_md', md_7: 'hui_7_md' } }]);
+    expect(T.isDecimal('hui_7.6_md')).toBe(true);
+    expect(T.isDecimal('hui_7_md')).toBe(false);
+    expect(T.decimalPatterns('hui_7.6_md')).toContain('7.6');
+    const cell = decimalGrid(['hui_7.6_md'], () => true)[6][6];
+    expect(cell).toMatchObject({ glyph: 'hui_7.6_md', label: '7.6', member: true });
   });
 
   it('reach areas, spacing conditions, spelling keys, vertical links and item ids', () => {

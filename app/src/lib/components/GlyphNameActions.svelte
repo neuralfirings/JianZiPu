@@ -78,8 +78,8 @@
       <h3>{mode === 'rename' ? `Rename ${glyph}` : `Delete ${glyph}?`}</h3>
       {#if !uses && !error}
         <p class="muted">Looking up where {glyph} is used…</p>
-      {:else if uses?.locked}
-        <div class="banner danger"><span class="ic"><I.Problem /></span><div>{uses.locked}</div></div>
+      {:else if uses?.locked[mode]}
+        <div class="banner danger"><span class="ic"><I.Problem /></span><div>{uses.locked[mode]}</div></div>
       {:else if uses}
         {#if mode === 'rename'}
           <label class="f"><span>New name</span><input type="text" class="mono" bind:value={to} style="width: 220px" /></label>
@@ -113,7 +113,7 @@
       <div class="row">
         <span class="spacer"></span>
         <button class="quiet" onclick={close} disabled={working}>Cancel</button>
-        {#if uses && !uses.locked}
+        {#if uses && !uses.locked[mode]}
           {#if mode === 'rename'}
             <button class="primary" disabled={working || !!problem || !!waitFor} onclick={go}>{working ? 'Renaming…' : 'Rename'}</button>
           {:else}

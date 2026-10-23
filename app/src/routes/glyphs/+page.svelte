@@ -14,6 +14,8 @@
   import TypingFields from '$lib/components/TypingFields.svelte';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
+  import RenameCsvDialog from '$lib/components/RenameCsvDialog.svelte';
+  import { hosted } from '$lib/hosted.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
   import { usedIn } from '$lib/areas';
   import { page } from '$app/state';
@@ -37,6 +39,13 @@
   let importing = $state<{ name: string; t: T.Typing } | null>(null);
   let importMode = $state<'replace' | 'fill'>('replace');
   let fileInput: HTMLInputElement;
+  let namesInput: HTMLInputElement;
+  let renaming = $state<{ name: string; text: string } | null>(null);
+  async function pickNames(e: Event) {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    (e.target as HTMLInputElement).value = '';
+    if (f) renaming = { name: f.name, text: await f.text() };
+  }
 
   function say(text: string, undo = false) {
     notice = { text, undo };
@@ -181,10 +190,16 @@
         <div class="menu" role="menu" tabindex="-1" onmouseleave={() => (menu = false)}>
           <button onclick={() => { menu = false; fileInput.click(); }}>Import spellings (CSV)…</button>
           <button onclick={() => { menu = false; exportCsv(); }}>Export spellings (CSV)</button>
+          {#if !hosted.isHosted}
+            <hr />
+            <a role="menuitem" href="/api/glyphs/names.csv" download="glyph-names.csv" onclick={() => (menu = false)}>Download glyph names (CSV)</a>
+            <button onclick={() => { menu = false; namesInput.click(); }}>Rename from CSV…</button>
+          {/if}
         </div>
       {/if}
     </span>
     <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
+    <input type="file" accept=".csv,text/csv" bind:this={namesInput} onchange={pickNames} hidden />
     <button class="primary" onclick={() => (newDialog = true)}>+ New glyph</button>
   </div>
 
@@ -263,6 +278,8 @@
   {#if notice}
     <div class="toast">{notice.text} {#if notice.undo}<button onclick={() => { app.undo(); notice = null; }}>Undo</button>{/if}</div>
   {/if}
+  {#if renaming}<RenameCsvDialog file={renaming.name} text={renaming.text} onclose={() => (renaming = null)}
+    ondone={(m) => { renaming = null; if (selected && m[selected]) selected = m[selected]; say(`Renamed ${Object.keys(m).length} glyph${Object.keys(m).length === 1 ? '' : 's'}. Commit the files it changed.`); }} />{/if}
   {#if addTo}<AddGlyphsDialog area={addTo} onclose={() => (addTo = null)} />{/if}
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
@@ -363,6 +380,9 @@
   .menu-wrap { position: relative; }
   .menu { position: absolute; right: 0; top: 100%; z-index: 30; margin-top: 4px; min-width: 220px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-float); padding: 4px; }
   .menu button { text-align: left; justify-content: flex-start; border: 0; background: transparent; }
+  .menu a { padding: var(--space-2) var(--space-4); color: var(--ink); text-decoration: none; border-radius: var(--radius-sm); }
+  .menu a:hover { background: var(--bg-hover); }
+  .menu hr { width: 100%; border: 0; border-top: 1px solid var(--border); margin: var(--space-2) 0; }
   .menu button:hover { background: var(--bg-hover); }
   .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; font-size: var(--t-small); display: flex; gap: var(--space-4); align-items: center; }
 

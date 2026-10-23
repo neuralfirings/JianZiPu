@@ -50,13 +50,19 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 
 Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
 
-### Renaming or deleting a glyph
+### Renaming or deleting glyphs
 
 A glyph's name (such as `mod_fanyin`) is its id: the file name, its row of spellings, the areas it's in and the spacing rows that name it all use it.Online, the name can't be changed yet.On your own computer, **Rename…** and **Delete…** next to the name (in the inspector, and in the editor's Glyph panel) change every one of those at once, after showing what they will change. Save or discard other unsaved changes first: both rewrite the saved files.
 
+To rename many glyphs, such as a new naming scheme (`md_7` → `hui_7_md`), use a spreadsheet:
+
+1. **More** → **Download glyph names (CSV)** gives every drawn glyph, one row each: `glyph_name`, an empty `new_name`, and columns that say which glyph the row is (its areas, spellings, pinyin and character code).
+2. Fill in `new_name` for the glyphs to rename; leave it empty (or the same) for the rest. Only `glyph_name` and `new_name` are read back.
+3. **More** → **Rename from CSV…** checks every row and shows them all, old → new, with what's wrong with any of them. Nothing changes until every row is fine and you press **Rename**; then they are all renamed at once, so two glyphs can swap names.
+
 - A renamed glyph keeps its character code, so text that holds the glyph itself still shows it. Drafts, Change Requests and .zip files made before the rename are read with the new name when they're opened, which is why an old name can't be given to another glyph later.
 - A deleted glyph's code is retired and never given to another glyph. Spacing rows that only applied to it go; there is no undo in the Builder, but git has the files.
-- Glyphs whose names the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as `mod_chuo`) can't be renamed or deleted here.
+- Every glyph can be renamed, even those the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as `mod_chuo`): the build writes them under their new names. Those can't be deleted, and the control glyphs (`blank`, `blank_bar`…) can't be renamed.
 - Do it last in a release, once the kept changes are in, and commit the files it changes, `builder/inputs/glyph_ids.json` included (each glyph's character code, kept there so no rename, delete or new glyph ever moves another glyph's code).
 
 ### Typing: spellings
@@ -318,7 +324,11 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and. only.”).
 - **“*name* was the name of a glyph before a rename; drafts may still use it for that glyph.” / “*name* was the name of *other* before a rename; pick another name.”**: Old names stay with the glyph they belonged to, so drafts made before the rename still open correctly. Pick another name. Renaming a glyph back to its own old name is fine.
 - **“*name* is already a glyph.”**: Another glyph has that name. Pick another one.
-- **“The font's build code uses *name* by name (jzpbuild/features.py), so it can't be renamed or deleted here.” / “*name* is a control glyph with a fixed character code.”**: The build itself spells this name out, so changing it takes a code change in `builder/jzpbuild/features.py` (or `config.py`), not a rename in the Builder.
+- **“The font's build code uses *name* (jzpbuild/features.py), so it can't be deleted.” / “*name* is a control glyph with a fixed character code.”**: The build itself needs this glyph: it can be renamed (except a control glyph), not deleted. Removing it takes a code change in `builder/jzpbuild/features.py` (or `config.py`).
+- **“*new* is the new name of *a* and *b*.”**: Rename from CSV: two rows give the same new name. Change one of them in the file and choose it again.
+- **“There is no glyph *name*.”**: Rename from CSV: a row's `glyph_name` isn't a drawn glyph (a typo, or a list from before another rename). Download the list again to start from the names as they are now.
+- **“The CSV needs the columns glyph_name and new_name (download the list to start from).”**: Rename from CSV reads only those two columns, by their header. Start from **Download glyph names (CSV)**, which has them.
+- **“*n* rows can't be renamed as written. Fix them in the file and choose it again; nothing has changed.”**: Each row with a problem is listed first, with its reason (one of the messages here). Fix those rows in the spreadsheet and choose the file again.
 - **“inputs/edge_cases.fea uses *name*; take it out of that file first.”**: A hand-written rule in `builder/inputs/edge_cases.fea` names the glyph. Edit that file, then delete the glyph.
 - **“design.json changed on disk since it was loaded” / “components.csv changed on disk since it was loaded” (renaming or deleting)**: Something else wrote the files since the Builder read them. **Load again**, then rename or delete once more.
 - **“Save or discard your unsaved changes first: this rewrites the saved files.” / “Save or discard your edits to the outline first.”**: Rename and Delete change the saved files and load them again, which would lose unsaved work. Save (or Discard), then try again.

@@ -67,7 +67,10 @@ python3 -m jzpbuild.webserver --port 9000
 | `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
 | `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only); its code is retired in `glyph_ids.json` |
 | `GET /api/glyph/<name>/uses` | where a glyph is named (spellings, vertical links, areas, spacing rows, `edge_cases.fea`), its code, and `locked`: why it can't be renamed or deleted (`glyph_edit.py`) |
-| `PUT /api/glyph/<name>/rename` | `{to, design_hash, csv_hash}` → rename the glyph in the SVG file name, `components.csv`, `design.json`, `edge_cases.fea` and `glyph_ids.json` at once (local mode; 409 when a file changed on disk, 400 with the reason it can't) |
+| `GET /api/glyphs/names.csv` | every drawn glyph as a CSV to rename from: `glyph_name`, an empty `new_name`, and `areas`, `latin`, `simplified`, `traditional`, `pinyin`, `code` to tell the rows apart (UTF-8 with a BOM) |
+| `POST /api/glyphs/rename/check` | `{names: {old: new}}` or `{csv}` → `{ok, pairs: [{from, to, problem}], problems}`, nothing written (`glyph_edit.check_renames`) |
+| `PUT /api/glyphs/rename` | `{names, design_hash, csv_hash}` → rename them all at once (swaps work) in the SVG file names, `components.csv`, `design.json`, `edge_cases.fea` and `glyph_ids.json` (local mode; 409 when a file changed on disk, 400 with what's wrong) |
+| `PUT /api/glyph/<name>/rename` | `{to, design_hash, csv_hash}` → the same for one glyph |
 | `DELETE /api/glyph/<name>?design_hash=…&csv_hash=…` | delete the glyph and everything that names it; spacing rows that only applied to it go, its code is retired (local mode) |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
 | `POST /api/build`, `GET /api/build/status` | run `python3 -m jzpbuild -o <temp dir>/JianZiPu.ttf` (one at a time) and poll its log; status lists the caller's builds (`build` = latest, `builds` = newest first, last 8 kept). The body may carry a draft, `{design, rows, svgs, deleted}`, built instead of the files on disk (hosted mode) |
@@ -348,7 +351,13 @@ the one pinned for it in `inputs/glyph_ids.json` (`glyph_ids.py`), or, for a
 glyph with none yet, the next one after every pinned and retired code, from
 `config.COMPONENT_GLYPHS_BASE` up. The local Builder pins a new glyph's code
 when it saves the file, so renaming, deleting or adding a glyph never moves
-another glyph's code (`tests/test_glyph_edit.py` checks every SVG is pinned). This is also the step where a
+another glyph's code (`tests/test_glyph_edit.py` checks every SVG is pinned).
+
+Glyph names spelled out in code (`features.py`'s hui and decimal glyphs,
+`config.RIGHT_SELECTORS`, the typed symbols; `gpos.py` for `--classic_pos`) are
+the names the glyphs had when the code was written. The generated feature text
+goes through `glyph_ids.translate_lines()`, which turns each of those into the
+glyph's name now, so a renamed glyph needs no code change. This is also the step where a
 `components.csv` row whose `glyph_name` has no matching SVG file would
 surface — not here directly, but as a `feaLib` "glyph missing from glyph
 set" error in the next step, since the GSUB text from step 1 already
@@ -368,7 +377,7 @@ the four steps above only ever read what's already sitting there.
 | To change...                       | Edit...                                                       |
 |------------------------------------|---------------------------------------------------------------|
 | glyph shapes                       | Builder → Glyphs → Edit (draw, import or trace; writes `inputs/svg/`) |
-| a glyph's name, or the glyph itself | Builder → Glyphs → Rename… / Delete… (local; rewrites every input that names it, `glyph_edit.py`) |
+| a glyph's name, or the glyph itself | Builder → Glyphs → Rename… / Delete…, or … → Rename from CSV for many (local; rewrites every input that names it, `glyph_edit.py`) |
 | which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
 | input keys / spellings             | Builder → Glyphs → Table view (writes `inputs/components.csv`)     |

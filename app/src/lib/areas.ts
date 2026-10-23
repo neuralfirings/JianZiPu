@@ -3,6 +3,7 @@
 import type { Design, Layout } from './api';
 import { layoutUsesArea } from './editor.svelte';
 import { isDecimal } from './typing';
+import { current } from './renames';
 
 export { layoutUsesArea };
 
@@ -21,7 +22,7 @@ export type DecimalCell = { glyph: string; label: string; hui: number; decimal: 
 export function decimalGrid(members: readonly string[], exists: (g: string) => boolean): DecimalCell[][] {
   const mine = new Set(members);
   return HUI.map((h) => DECIMALS.map((dd) => {
-    const glyph = `md_${h}.${dd}`;
+    const glyph = current(`md_${h}.${dd}`);              // the build's name for it, renamed or not
     return { glyph, label: dd === 'blank' ? `${h}.` : `${h}.${dd}`, hui: h, decimal: dd, member: mine.has(glyph), exists: exists(glyph) };
   }));
 }

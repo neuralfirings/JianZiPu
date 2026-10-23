@@ -97,8 +97,12 @@ export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; su
 /** GET /api/glyph/<name>/uses (glyph_edit.py). */
 export type GlyphUses = {
   name: string; svg: boolean; spelling: boolean; vertical_of: string[]; areas: string[];
-  spacing_rows: number; spacing_rows_only: number; edge_cases: boolean; code: string | null; locked: string | null;
+  spacing_rows: number; spacing_rows_only: number; edge_cases: boolean; code: string | null;
+  /** Why it can't be renamed / deleted, or null when it can. */
+  locked: { rename: string | null; delete: string | null };
 };
+/** POST /api/glyphs/rename/check: each old -> new pair with what's wrong with it, if anything. */
+export type RenameCheck = { ok: boolean; error?: string; pairs: { from: string; to: string; problem: string | null }[]; problems: string[] };
 export type BaseInfo = { commit: string | null; version?: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
 /** A draft to build instead of the files on disk (hosted mode). */
 export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };
@@ -137,6 +141,11 @@ export const api = {
   /** Rename a glyph everywhere (local mode). 409 `conflict` when design.json or components.csv changed on disk. */
   renameGlyph: (name: string, to: string, design_hash: string, csv_hash: string) =>
     call<{ ok: boolean; error?: string; conflict?: boolean; name?: string }>('PUT', `/api/glyph/${encodeURIComponent(name)}/rename`, { to, design_hash, csv_hash }),
+  /** Vet renames (a names CSV's text, or old -> new) without changing anything. */
+  checkRenames: (body: { csv: string } | { names: Record<string, string> }) => call<RenameCheck>('POST', '/api/glyphs/rename/check', body),
+  /** Rename many glyphs at once (local mode); same 409 / 400 as renameGlyph. */
+  renameMany: (names: Record<string, string>, design_hash: string, csv_hash: string) =>
+    call<{ ok: boolean; error?: string; conflict?: boolean; renamed?: Record<string, string> }>('PUT', '/api/glyphs/rename', { names, design_hash, csv_hash }),
   /** Delete a glyph and everything that names it (local mode); its character code is retired. */
   deleteGlyph: (name: string, design_hash: string, csv_hash: string) =>
     call<{ ok: boolean; error?: string; conflict?: boolean; spacing_rows_dropped?: number }>('DELETE',

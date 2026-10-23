@@ -65,10 +65,13 @@ Look the result over in Layouts (the word strip) and in Build & test (build a
 font and type in it). Fix anything you like here: you are the last reviewer.
 Then **Save**, which writes `builder/inputs/`.
 
-Renaming or deleting a glyph belongs here too, last, once the kept changes are
+Renaming or deleting glyphs belongs here too, last, once the kept changes are
 in (or as the only change of a release). **Rename…** and **Delete…** sit next
 to the glyph's name in Glyphs and in the editor's Glyph panel; they change every
-file that names the glyph at once and need everything else saved first.
+file that names the glyph at once and need everything else saved first. For
+many glyphs at once (a naming scheme), Glyphs → … → **Download glyph names
+(CSV)**, fill in `new_name` in a spreadsheet, then **Rename from CSV…**: every
+row is checked and shown before anything changes, and they are renamed together.
 
 - A renamed glyph keeps its character code (`builder/inputs/glyph_ids.json`
   pins every glyph's code), and the rename is recorded there. Drafts, Change
@@ -78,8 +81,11 @@ file that names the glyph at once and need everything else saved first.
   itself (not its spelling) shows a missing glyph afterwards, so a delete is a
   reason to think about the version number (see [Versions](#versions)).
 - Names the build's own code uses (`features.py`: the hui and decimal glyphs,
-  the right-hand techniques, the typed symbols) can't be renamed or deleted
-  from the Builder.
+  the right-hand techniques, the typed symbols) can be renamed: the code keeps
+  the original names and the build translates them through the recorded
+  renames. They can't be deleted. The control glyphs can't be renamed.
+- A rename leaves the font the same apart from the names, so it needs no
+  version jump of its own.
 
 ### 4. Build the candidate
 

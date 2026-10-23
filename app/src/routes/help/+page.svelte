@@ -103,13 +103,19 @@
           <li>Click a tile to select it; double-click it (or press Enter, or its <strong>Edit</strong> pill) to open the <a href="#editor">glyph editor</a>.</li>
         </ul>
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
-        <h3 id="rename">Renaming or deleting a glyph</h3>
+        <h3 id="rename">Renaming or deleting glyphs</h3>
         <p>A glyph's name (such as <code>mod_fanyin</code>) is its id: the file name, its row of spellings, the areas it's in and the spacing rows that name it all use it.{#if online} Online, the name can't be changed yet.{/if}{#if local} On your own computer, <strong>Rename…</strong> and <strong>Delete…</strong> next to the name (in the inspector, and in the editor's Glyph panel) change every one of those at once, after showing what they will change. Save or discard other unsaved changes first: both rewrite the saved files.{/if}</p>
         {#if local}
+          <p>To rename many glyphs, such as a new naming scheme (<code>md_7</code> → <code>hui_7_md</code>), use a spreadsheet:</p>
+          <ol>
+            <li><I.More class="inl" aria-label="More" /> → <strong>Download glyph names (CSV)</strong> gives every drawn glyph, one row each: <code>glyph_name</code>, an empty <code>new_name</code>, and columns that say which glyph the row is (its areas, spellings, pinyin and character code).</li>
+            <li>Fill in <code>new_name</code> for the glyphs to rename; leave it empty (or the same) for the rest. Only <code>glyph_name</code> and <code>new_name</code> are read back.</li>
+            <li><I.More class="inl" aria-label="More" /> → <strong>Rename from CSV…</strong> checks every row and shows them all, old → new, with what's wrong with any of them. Nothing changes until every row is fine and you press <strong>Rename</strong>; then they are all renamed at once, so two glyphs can swap names.</li>
+          </ol>
           <ul>
             <li>A renamed glyph keeps its character code, so text that holds the glyph itself still shows it. Drafts, Change Requests and .zip files made before the rename are read with the new name when they're opened, which is why an old name can't be given to another glyph later.</li>
             <li>A deleted glyph's code is retired and never given to another glyph. Spacing rows that only applied to it go; there is no undo in the Builder, but git has the files.</li>
-            <li>Glyphs whose names the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as <code>mod_chuo</code>) can't be renamed or deleted here.</li>
+            <li>Every glyph can be renamed, even those the build's own code uses (the hui and decimal glyphs, the right-hand techniques, the typed symbols such as <code>mod_chuo</code>): the build writes them under their new names. Those can't be deleted, and the control glyphs (<code>blank</code>, <code>blank_bar</code>…) can't be renamed.</li>
             <li>Do it last in a release, once the kept changes are in, and commit the files it changes, <code>builder/inputs/glyph_ids.json</code> included (each glyph's character code, kept there so no rename, delete or new glyph ever moves another glyph's code).</li>
           </ul>
         {/if}
@@ -376,7 +382,11 @@
           <dt>“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”</dt><dd>Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and . only.”).</dd>
           <dt>“<em>name</em> was the name of a glyph before a rename; drafts may still use it for that glyph.” / “<em>name</em> was the name of <em>other</em> before a rename; pick another name.”</dt><dd>Old names stay with the glyph they belonged to, so drafts made before the rename still open correctly. Pick another name. Renaming a glyph back to its own old name is fine.</dd>
           <dt>“<em>name</em> is already a glyph.”</dt><dd>Another glyph has that name. Pick another one.</dd>
-          <dt>“The font's build code uses <em>name</em> by name (jzpbuild/features.py), so it can't be renamed or deleted here.” / “<em>name</em> is a control glyph with a fixed character code.”</dt><dd>The build itself spells this name out, so changing it takes a code change in <code>builder/jzpbuild/features.py</code> (or <code>config.py</code>), not a rename in the Builder.</dd>
+          <dt>“The font's build code uses <em>name</em> (jzpbuild/features.py), so it can't be deleted.” / “<em>name</em> is a control glyph with a fixed character code.”</dt><dd>The build itself needs this glyph: it can be renamed (except a control glyph), not deleted. Removing it takes a code change in <code>builder/jzpbuild/features.py</code> (or <code>config.py</code>).</dd>
+          <dt>“<em>new</em> is the new name of <em>a</em> and <em>b</em>.”</dt><dd>Rename from CSV: two rows give the same new name. Change one of them in the file and choose it again.</dd>
+          <dt>“There is no glyph <em>name</em>.”</dt><dd>Rename from CSV: a row's <code>glyph_name</code> isn't a drawn glyph (a typo, or a list from before another rename). Download the list again to start from the names as they are now.</dd>
+          <dt>“The CSV needs the columns glyph_name and new_name (download the list to start from).”</dt><dd>Rename from CSV reads only those two columns, by their header. Start from <strong>Download glyph names (CSV)</strong>, which has them.</dd>
+          <dt>“<em>n</em> rows can't be renamed as written. Fix them in the file and choose it again; nothing has changed.”</dt><dd>Each row with a problem is listed first, with its reason (one of the messages here). Fix those rows in the spreadsheet and choose the file again.</dd>
           <dt>“inputs/edge_cases.fea uses <em>name</em>; take it out of that file first.”</dt><dd>A hand-written rule in <code>builder/inputs/edge_cases.fea</code> names the glyph. Edit that file, then delete the glyph.</dd>
           <dt>“design.json changed on disk since it was loaded” / “components.csv changed on disk since it was loaded” (renaming or deleting)</dt><dd>Something else wrote the files since the Builder read them. <strong>Load again</strong>, then rename or delete once more.</dd>
           <dt>“Save or discard your unsaved changes first: this rewrites the saved files.” / “Save or discard your edits to the outline first.”</dt><dd>Rename and Delete change the saved files and load them again, which would lose unsaved work. Save (or Discard), then try again.</dd>

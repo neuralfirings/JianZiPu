@@ -35,9 +35,13 @@ API (all JSON):
                                    exists (no base_hash) or changed on disk since it was loaded (hash mismatch).
                                    A new glyph gets its character code pinned in inputs/glyph_ids.json
   GET  /api/glyph/<name>/uses      where a glyph is named (spellings, areas, spacing rows…) and why it can't be
-                                   renamed or deleted, if it can't (glyph_edit.py)
-  PUT  /api/glyph/<name>/rename    {to, design_hash, csv_hash} -> rename the glyph everywhere (local mode; 409 when
-                                   design.json or components.csv changed on disk, 400 with the reason it can't)
+                                   renamed or deleted, if it can't: locked.rename / locked.delete (glyph_edit.py)
+  GET  /api/glyphs/names.csv       every drawn glyph as a CSV to rename from: glyph_name, new_name (empty), and
+                                   columns saying which glyph it is (areas, spellings, code)
+  POST /api/glyphs/rename/check    {names: {old: new}} or {csv} -> {ok, pairs: [{from, to, problem}], problems}
+  PUT  /api/glyphs/rename          {names: {old: new}, design_hash, csv_hash} -> rename them all at once (local mode;
+                                   409 when design.json or components.csv changed on disk, 400 with what's wrong)
+  PUT  /api/glyph/<name>/rename    {to, design_hash, csv_hash} -> the same for one glyph
   DELETE /api/glyph/<name>?design_hash=…&csv_hash=…   delete the glyph and everything that names it (local mode)
   GET  /api/config                 {mode: local|hosted, commit, supabase_url, supabase_anon_key}
   GET  /api/base                   the checked-in version drafts start from: {commit, version (builder/VERSION),
@@ -717,6 +721,16 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _download(self, text: str, filename: str, ctype: str = "text/csv; charset=utf-8"):
+        body = text.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _font(self, path: Path, attachment: bool = False):
         body = path.read_bytes()
         self.send_response(200)
@@ -827,6 +841,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            if path == "/api/glyphs/names.csv":
+                return self._download(glyph_edit.names_csv(), "glyph-names.csv")
             m = re.match(r"^/api/glyph/([^/]+)/uses$", path)
             if m:
                 return self._json({"ok": True, **glyph_edit.uses(unquote(m.group(1)))})
@@ -904,6 +920,12 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json({"ok": True, **glyphs.flatten_svg_text(body["svg"])})
                 except Exception as err:  # noqa: BLE001 — anything the build would choke on
                     return self._json({"ok": False, "error": str(err)})
+            if path == "/api/glyphs/rename/check":
+                try:
+                    names = glyph_edit.renames_from_csv(body["csv"]) if "csv" in body else dict(body.get("names") or {})
+                except glyph_edit.GlyphEditError as err:
+                    return self._json({"ok": False, "error": str(err), "pairs": [], "problems": [str(err)]})
+                return self._json(glyph_edit.check_renames(names))
             if path == "/api/build":
                 inputs = {k: body[k] for k in ("design", "rows", "svgs", "deleted") if body.get(k) is not None}
                 started, why = BUILD.start(owner, inputs or None)
@@ -942,6 +964,13 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_csv_text())}, 409)
                 except SpellingErrors as err:
                     return self._json({"ok": False, "error": str(err), "errors": err.errors}, 400)
+            if path == "/api/glyphs/rename":
+                try:
+                    return self._json(glyph_edit.rename_many(dict(body.get("names") or {}), body.get("design_hash"), body.get("csv_hash")))
+                except glyph_edit.GlyphEditConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True}, 409)
+                except glyph_edit.GlyphEditError as err:
+                    return self._json({"ok": False, "error": str(err)}, 400)
             m = re.match(r"^/api/glyph/([^/]+)/rename$", path)
             if m:
                 try:

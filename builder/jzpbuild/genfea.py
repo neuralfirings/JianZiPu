@@ -2,7 +2,7 @@
 
 import json
 
-from . import config
+from . import config, glyph_ids
 from .features import gen_gsub
 from .gpos import gen_gpos
 
@@ -19,7 +19,7 @@ def generate(classic_pos: bool = False) -> str:
     lines = gen_gsub()
     lines.append("")
     if classic_pos:
-        lines += gen_gpos(load_layouts())
+        lines += glyph_ids.translate_lines(gen_gpos(load_layouts()))
     else:
         from .data import load_design
         from .positioning.emit import gen_gpos as gen_cursive_gpos
