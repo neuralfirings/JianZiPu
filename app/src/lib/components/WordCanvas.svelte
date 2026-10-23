@@ -4,7 +4,7 @@
   // rule arrows (active / ghost, selectable), and edge handles on the
   // selected box that can be dragged onto another box's edge to link them.
   // holdToDrag (Layouts on a phone): a finger swipes to scroll, taps to select, and presses and
-  // holds to lift a part or a handle before dragging it (lib/hold.ts); `readout` rides above it.
+  // holds to lift a part or a handle before dragging it (lib/hold.ts).
   import { parseSvg } from '$lib/svg';
   import { app } from '$lib/state.svelte';
   import { onMount } from 'svelte';
@@ -23,7 +23,7 @@
     page = [0, 1000], pageHeight = [-500, 1100], center = null, emBox = null, selected = null, hoverable = false,
     arrows = [], hotBar = null, labels = false, fit = true, maxHeight = 0, handles = false, selectedArrow = null,
     dimmed = [], dragOnly = null, lockAxis = null, overlay = {}, baseMark = null, marked = [], ghosts = [],
-    holdToDrag = false, readout = null,
+    holdToDrag = false,
     onselect, ondrag, onlink, onselectarrow
   }: {
     elements: El[]; width?: number; height?: number; showBoxes?: boolean; showGlyphs?: boolean; showPage?: boolean;
@@ -41,8 +41,6 @@
     ghosts?: { x: number; y: number; size: [number, number] }[];
     /** A finger presses and holds to drag; swipes scroll the page (Layouts on a phone). */
     holdToDrag?: boolean;
-    /** Shown above the finger while it drags, e.g. the gap the drag gives ("62 (rule 3)"). */
-    readout?: string | null;
     onselect?: (name: string | null) => void;
     ondrag?: (e: { name: string; dx: number; dy: number; phase: 'start' | 'move' | 'end' | 'cancel' }) => void;
     onlink?: (e: { name: string; edge: Edge; target: string; targetEdge: Edge }) => void;
@@ -116,7 +114,6 @@
   // ---- a finger (holdToDrag): tap, or press and hold, before anything moves
   let hold: Hold | null = null;
   let liftedName = $state<string | null>(null);
-  let fingerAt = $state<{ x: number; y: number } | null>(null);
   /** Where a finger is holding, before the lift: a ring there fills over the hold time. */
   let pressAt = $state<{ x: number; y: number } | null>(null);
   const finger = (e: PointerEvent) => holdToDrag && e.pointerType === 'touch';
@@ -124,7 +121,7 @@
   function press(e: PointerEvent, tap: () => void, lift: () => void = tap, ring = false) {
     hold?.cancel();
     const at = toUnits(e);
-    hold = new Hold({ ontap: () => { pressAt = null; tap(); }, onlift: () => { pressAt = null; fingerAt = at; lift(); } });
+    hold = new Hold({ ontap: () => { pressAt = null; tap(); }, onlift: () => { pressAt = null; lift(); } });
     hold.down(e.clientX, e.clientY);
     pressAt = ring ? at : null;
   }
@@ -139,7 +136,6 @@
 
   function move(e: PointerEvent) {
     if (hold && e.pointerType === 'touch' && !hold.move(e.clientX, e.clientY)) { if (hold.state === 'abandoned') pressAt = null; return; }
-    if ((drag || link) && finger(e)) fingerAt = toUnits(e);
     if (link) {
       if (Math.hypot(e.clientX - link.sx, e.clientY - link.sy) <= 6) return;
       const p = toUnits(e); link = { ...link, cx: p.x, cy: p.y, target: hitEdge(p, link.name, link.edge) }; return;
@@ -154,7 +150,7 @@
   }
   function up(e: PointerEvent) {
     if (hold) { const wasLifted = hold.up(); hold = null; if (!wasLifted) return; }
-    liftedName = null; fingerAt = null; pressAt = null;
+    liftedName = null; pressAt = null;
     if (link) {
       // a click on a handle (no real drag) is not a drop
       const moved = Math.hypot(e.clientX - link.sx, e.clientY - link.sy) > 6;
@@ -171,7 +167,7 @@
     drag = null;
   }
   export function cancelDrag() {
-    hold?.cancel(); hold = null; liftedName = null; fingerAt = null; pressAt = null;
+    hold?.cancel(); hold = null; liftedName = null; pressAt = null;
     if (link) link = null;
     if (drag) { ondrag?.({ name: drag.name, dx: 0, dy: 0, phase: 'cancel' }); drag = null; }
   }
@@ -304,16 +300,6 @@
     <!-- holding: the ring fills, then the part lifts (taps are over before it shows) -->
     <circle cx={pressAt.x} cy={-pressAt.y} r={30 * upp} class="holdring" pathLength="100" />
   {/if}
-  {#if fingerAt && liftedName}
-    <!-- above the finger, which hides the part it drags -->
-    {@const text = (link ? null : readout) ?? (link ? 'Drop on an edge' : 'Drag to move')}
-    {@const rf = fs * 1.3}
-    {@const rw = labelWidth(text, rf) + rf}
-    <g class="readout" transform="translate({fingerAt.x} {-fingerAt.y - 70 * upp})">
-      <rect x={-rw / 2} y={-rf * 1.1} width={rw} height={rf * 1.5} rx={rf * 0.3} />
-      <text x="0" y="0" font-size={rf} text-anchor="middle">{text}</text>
-    </g>
-  {/if}
   {#if link}
     <line x1={link.x} y1={-link.y} x2={link.cx} y2={-link.cy} class="linkline" />
     <text x={link.cx + 12} y={-link.cy - 8} font-size={fs} class="albl">{link.target ? `${link.edge} edge → ${link.target.name}'s ${link.target.edge}` : `${link.edge} edge → drop on another part's edge`}</text>
@@ -333,9 +319,6 @@
   @keyframes holdring { 0%, 25% { opacity: 0; stroke-dashoffset: 100; } 30% { opacity: 1; } 100% { opacity: 1; stroke-dashoffset: 0; } }
   .handle-hit { fill: transparent; stroke: none; }
   .handle.lifted { fill: var(--ov-active); }
-  .readout { pointer-events: none; }
-  .readout rect { fill: var(--bg-bar); }
-  .readout text { fill: var(--on-bar); font-family: var(--font-mono); }
   .page { fill: none; stroke: var(--ov-guide); stroke-dasharray: 12 12; stroke-width: 2; }
   .baseline { stroke: var(--ov-guide); stroke-width: 2; }
   .embox { fill: none; stroke: var(--ov-guide); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
