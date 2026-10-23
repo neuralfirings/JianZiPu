@@ -21,19 +21,15 @@
     flat?: boolean; showAreas?: boolean; onnotice?: (text: string, undo?: boolean) => void;
   } = $props();
 
-  const COLS: T.SpellField[] = ['latin', 'latin_alt', 'common', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
+  const COLS = T.FIELDS;   // the phone's TypingCards show the same fields
   const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
   let openDecimals = $state(false);
   let table: HTMLTableElement;
 
   let editable = $derived(sections.filter((s) => !s.decimals).flatMap((s) => s.glyphs));
   let partnerOf = $derived(T.partners(app.typing));
-  let errGlyphs = $derived(new Set(app.typingErrors.flatMap((e) => (e.kind === 'clash' ? e.glyphs : [e.glyph]))));
-  const status = (g: string) => errGlyphs.has(g) ? 'err' : typingCheck.warningsFor(g).length ? 'warn' : '';
-  const issueText = (g: string) => [
-    ...app.typingErrors.filter((e) => (e.kind === 'clash' ? e.glyphs.includes(g) : e.glyph === g)).map((e) => e.message),
-    ...typingCheck.warningsFor(g)
-  ].join(' · ');
+  const status = (g: string) => typingCheck.statusOf(g);
+  const issueText = (g: string) => typingCheck.issuesFor(g).join(' · ');
 
   function move(g: string, f: T.SpellField, dir: 1 | -1) {
     const i = editable.indexOf(g) + dir;

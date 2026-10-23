@@ -76,6 +76,8 @@ The **Tiles | Typing** switch turns the screen into a table of every glyph's spe
 - Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a **clash** holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.
 - The **Typing** filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.
 
+On a phone, Typing is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.
+
 ## The glyph editor
 
 Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), brings up the editor: a drawing canvas with the glyph's box, a tool rail on the left and panels around it.

@@ -19,6 +19,7 @@ const SCREENS = [
   ['/help', 'phone'],
   ['/glyphs?view=tiles&group=right', 'phone'],
   ['/glyphs?view=tiles&group=right&g=lg_gou', 'phone'],    // a glyph's card, with its spellings to edit
+  ['/glyphs?view=typing&group=left', 'phone'],             // Typing as cards
   ['/layouts', 'phone'],
   ['/test?view=words', 'phone'],
   ['/test?view=text', 'phone'],
@@ -29,7 +30,7 @@ const SCREENS = [
   ['/review', 'computer']
 ];
 /** Screens on their way to working on a phone: checked and reported, but not yet a failure. */
-const TODO = new Set(['/glyphs?view=typing&group=left']);
+const TODO = new Set([]);
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: 'light' });

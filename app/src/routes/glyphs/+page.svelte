@@ -12,6 +12,7 @@
   import Glyph from '$lib/components/Glyph.svelte';
   import NewGlyphDialog from '$lib/components/NewGlyphDialog.svelte';
   import TypingTable, { type Section } from '$lib/components/TypingTable.svelte';
+  import TypingCards from '$lib/components/TypingCards.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
@@ -172,7 +173,7 @@
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
       <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>Typing</button>
     </span>
-    {#if view === 'typing'}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
+    {#if view === 'typing' && !phone.on}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
     {#if phone.on}
       <div class="picks">
@@ -275,6 +276,8 @@
             <button class="tile fold" onclick={() => (group = 'decimals')}><span>{foldedDecimals} position decimals</span><span class="muted small">typed by pattern <I.Folded size={12} /></span></button>
           {/if}
         </div>
+      {:else if phone.on}
+        <TypingCards {sections} {selected} onselect={(g) => (selected = g)} />
       {:else}
         <TypingTable {sections} {selected} onselect={(g) => (selected = g)} flat={searching} {showAreas} onnotice={say} />
       {/if}
@@ -290,10 +293,10 @@
   {#if sel}
     <section class="inspector" class:typing={view === 'typing'} class:card={phone.on}>
       {#if phone.on}<div class="cardbar"><button class="quiet" onclick={() => (selected = null)}><I.Back /> All glyphs</button><span class="id">{sel.glyph}</span></div>{/if}
-      <div class="big"><Glyph name={sel.glyph} size={view === 'typing' ? 84 : 120} /></div>
+      <div class="big"><Glyph name={sel.glyph} size={view === 'typing' && !phone.on ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
-        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles'} />
+        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles' || phone.on} />
         {#if phone.on}
         <div class="row" style="margin-top: var(--space-4)">
           <a href={editUrl(sel.glyph)}><button><I.Computer /> Edit outline</button></a><span class="muted small">needs a computer</span>
@@ -307,7 +310,7 @@
         </div>
         {/if}
       </div>
-      {#if view === 'tiles'}
+      {#if view === 'tiles' || phone.on}
         <div class="col">
           <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
           <TypingFields glyph={sel.glyph} />

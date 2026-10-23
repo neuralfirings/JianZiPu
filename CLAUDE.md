@@ -31,6 +31,7 @@ cd builder && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tes
 cd builder && python3 -m pytest tests/test_positioning.py tests/test_glyphs.py tests/test_webserver.py tests/test_typing.py tests/test_hosted.py tests/test_emails.py  # unit tests (positioning model, SVG flattening, SVG endpoints, spellings/typing preview, hosted mode, Supabase email templates)
 cd app && npm run help:shots          # retake the Help page screenshots (static/help/*.jpg) from a running Builder; BASE=http://127.0.0.1:<port> for another port
 cd app && npm run help:export         # write the public help from the help page: site/help/index.html, site/help.md, site/llms.txt, app/static/llms.txt (CI checks they're current)
+cd app && npm run phone:check         # every phone screen at 390 px with touch, against a running Builder (BASE=…; CI runs it)
 cd app && npm test                    # Vitest unit tests (rules, shapes, gaps, panels store, glyph editor scene/ops/tools, typing, cmap, draft bundle/merge, app state)
 deno test supabase/functions/notify   # the Change Request emails (events + templates)
 ```
@@ -135,6 +136,14 @@ toasts, dialogs, drags); sentence case, no emoji, no exclamation marks.
   (×, ▾, ⋯, ✓…); `{@html}` help strings can't hold components, so name the button in words there.
 - Icon-only buttons say what they do with `data-tip="…"` (instant tooltip, `lib/tooltip.ts`; add
   `data-tip-side="right"` beside a left rail) plus an `aria-label`, not `title`, which shows only after a delay.
+- Phones: desktop is the Builder; everything phone-only sits below one breakpoint, `@media (max-width: 759.98px)`
+  in CSS and `phone.on` (`lib/phone.svelte.ts`) in code. Phone behaviour lives in the shared pieces (the
+  top bar and bottom tabs in `routes/+layout.svelte`, `PanelWorkspace`'s phone arrangement,
+  `NeedsComputer`), not per-screen media queries. Every route says what it is on a phone in `SCREENS`
+  there (a new route needs a computer until it's added; `phone.test.ts` checks), phone edits go through
+  the same state functions as desktop, and a phone screen goes into `scripts/phone-check.mjs`. On a
+  phone the controls are a size up (`--control-touch` 44 px for the large ones) and a finger drags on a
+  canvas only after a press and hold (`lib/hold.ts`). Help screenshots stay desktop-only.
 - Canvas: part boxes 1px `--ov-part`, anchor `--ov-anchor`, active part 2px `--ov-active` with
   `--ov-handle` handles, area/rule base `--ov-area`, measurements `--ov-measure`, guides dashed
   `--ov-guide`; Review's Before / After use `--ov-before` (dashed) / `--ov-after` (`SvgText` `tone`).
