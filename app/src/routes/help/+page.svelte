@@ -443,7 +443,7 @@
   dl.messages dd { margin-bottom: var(--space-4); }
   h3[id] { scroll-margin-top: var(--space-5); }
   dt:target, dt:target + dd { background: var(--sel-bg); }
-  @media (max-width: 760px) {
+  @media (max-width: 759.98px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
     .toc { position: static; flex-direction: row; flex-wrap: wrap; }
     .toc-title { width: 100%; }

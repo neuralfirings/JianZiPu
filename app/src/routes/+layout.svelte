@@ -6,6 +6,7 @@
   import { setLucideProps } from '@lucide/svelte/context';
   import * as I from '$lib/icons';
   import { installTooltips } from '$lib/tooltip';
+  import { installPhone } from '$lib/phone.svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
@@ -49,6 +50,7 @@
   onMount(() => {
     void start();
     const offTips = installTooltips();
+    const offPhone = installPhone();
     const onHide = () => { if (document.visibilityState === 'hidden') app.flush(); };
     document.addEventListener('visibilitychange', onHide);
     const onUnload = (e: BeforeUnloadEvent) => { if (hosted.isHosted && app.dirty) { app.flush(); e.preventDefault(); } };
@@ -69,7 +71,7 @@
     const onClick = () => { menu = false; person = false; pill = false; };
     window.addEventListener('click', onClick);
     return () => {
-      offTips();
+      offTips(); offPhone();
       window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick);
       document.removeEventListener('visibilitychange', onHide); window.removeEventListener('beforeunload', onUnload);
     };
@@ -374,7 +376,7 @@
   @media (max-width: 1100px) {
     nav { order: 10; flex: 1 0 100%; padding: var(--space-3) 0; }
   }
-  @media (max-width: 760px) {
+  @media (max-width: 759.98px) {
     header { gap: var(--space-2); padding-left: var(--space-4); padding-right: var(--space-4); }
     .brand { font-size: 0; gap: 0; margin-right: var(--space-2); }
     nav a, header button { height: var(--control-lg); }

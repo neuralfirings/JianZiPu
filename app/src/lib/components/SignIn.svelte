@@ -87,6 +87,6 @@
   form { display: flex; flex-direction: column; gap: var(--space-4); }
   input { height: var(--control-md); padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
   .foot { font-size: var(--t-small); }
-  .linkish { height: auto; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
+  .linkish { height: auto; min-height: 24px; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
   .row { flex-wrap: wrap; }
 </style>

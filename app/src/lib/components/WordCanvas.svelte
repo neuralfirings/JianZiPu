@@ -187,7 +187,7 @@
       {@const ov = overlay[e.name]}
       <g class="el" class:selected={selected === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
          class:dim={dimmed.includes(e.name)} class:marked={marked.includes(e.name)} class:base={baseMark === e.name} class:rulebase={ruleBases.has(e.name)} class:rulebasedim={ruleBases.get(e.name) === false} class:locked={!!dragOnly && dragOnly !== e.name}
-         onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1">
+         onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1" aria-label={e.glyph ? `${e.name}: ${e.glyph}` : e.name}>
         {#if ov && ov.length}
           {#each ov as og, oi (og)}
             {@const pg = parseSvg(app.svgs[og])}

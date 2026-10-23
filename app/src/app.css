@@ -28,7 +28,7 @@
   --space-1: 2px; --space-2: 4px; --space-3: 6px; --space-4: 8px; --space-5: 12px;
   --space-6: 16px; --space-7: 24px; --space-8: 32px; --space-9: 48px;
   --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px; --radius-pill: 999px;
-  --control-sm: 24px; --control-md: 28px; --control-lg: 36px;
+  --control-sm: 24px; --control-md: 28px; --control-lg: 36px; --control-touch: 44px;
   --dock-min: 240px; --dock-default: 320px;
   --z-dock: 10; --z-popover: 20; --z-modal: 30; --z-toast: 40;
 
@@ -160,5 +160,12 @@ kbd { font: var(--t-caption) var(--font-mono); border: 1px solid var(--border); 
 
 /* Tag: a quiet word on a row (optional, behind, by glyph); .anchor is the seal-red anchor tag */
 .tag { display: inline-flex; align-items: center; height: 18px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--t-caption); font-weight: 600; letter-spacing: .02em; color: var(--ink-muted); white-space: nowrap; }
+
+/* On a phone (below the 760 px breakpoint, lib/phone.svelte.ts): every control a size up, the large
+   ones at touch size (44 px); fields at 16 px, or iOS zooms the page into the one being typed in */
+@media (max-width: 759.98px) {
+  :root { --control-sm: 28px; --control-md: 36px; --control-lg: var(--control-touch); }
+  input:not([type=checkbox], [type=radio], [type=range], [type=file], [type=color]), select, textarea { font-size: 16px; }
+}
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
