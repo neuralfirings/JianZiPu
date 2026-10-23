@@ -123,6 +123,27 @@
       l.relationships[viewed!].gap = normalizeGap(e);
     });
   }
+  // a finger (on a phone, where HTML drag is off): the grip drags its row up or down, a line shows where it lands
+  let rulesEl = $state<HTMLElement>();
+  let fingerRow = $state<{ from: number; to: number } | null>(null);
+  function gripDown(e: PointerEvent, i: number) {
+    if (!phone.on || e.pointerType === 'mouse') return;
+    e.preventDefault(); e.stopPropagation();
+    const rows = [...rulesEl!.querySelectorAll<HTMLElement>('.rr[data-i]:not(.other)')];
+    fingerRow = { from: i, to: i };
+    const move = (ev: PointerEvent) => {
+      let to = rows.length;
+      for (const [k, r] of rows.entries()) { const b = r.getBoundingClientRect(); if (ev.clientY < b.top + b.height / 2) { to = k; break; } }
+      fingerRow = { from: i, to };
+    };
+    const done = (drop: boolean) => () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel);
+      const r = fingerRow; fingerRow = null;
+      if (drop && r && r.to !== r.from && r.to !== r.from + 1) { dragRow = r.from; dropRow(r.to); }
+    };
+    const onUp = done(true), onCancel = done(false);
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancel);
+  }
   function addOtherwise() {
     if (viewed == null) return;
     edit(`${label}: add otherwise`, (l) => { const e = entriesOf(l.relationships[viewed!].gap).map((x) => ({ ...x })); e.push({ value: e.at(-1)?.value ?? 0 }); l.relationships[viewed!].gap = normalizeGap(e); });
@@ -187,14 +208,16 @@
       <div class="info">Viewing <b>{pillLabel(rel)}</b>: not in effect for the current word. <button class="tiny" onclick={() => viewPill(viewed!)}>show the word it applies to</button></div>
     {/if}
 
-    <div class="rules">
+    <div class="rules" bind:this={rulesEl}>
       <div class="rhead"><span></span><span></span><span>when {showElem ? label : ''}{showElem && showBase ? ' · ' : ''}{showBase ? pillLabel(rel) : ''}{!showElem && !showBase ? 'always' : ' is'}</span><span></span><span>gap</span></div>
       {#each entries as e, i (i)}
         {@const other = isOtherwise(e)}
-        <div class="rr" class:on={i === activeEntry} class:other
+        {@const last = !other && (i === entries.length - 1 || isOtherwise(entries[i + 1]))}
+        <div class="rr" class:on={i === activeEntry} class:other data-i={i}
+          class:lifting={fingerRow?.from === i} class:land={fingerRow != null && fingerRow.to === i && !other} class:land-after={fingerRow != null && last && fingerRow.to === i + 1}
           draggable={!other && !phone.on} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
           role="button" tabindex="0" onclick={() => openEditor(i)} onkeydown={(ev) => { if (ev.key === 'Enter') openEditor(i); }}>
-          <span class="hdl">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
+          <span class="hdl" onpointerdown={(ev) => { if (!other) gripDown(ev, i); }} onclick={(ev) => { if (phone.on) ev.stopPropagation(); }} aria-hidden="true">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
           <span class="rn">{other ? '–' : i + 1}</span>
           <span class="chips">
             {#if other}
@@ -272,9 +295,17 @@
   .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); }
   .lnk { display: inline-flex; align-items: center; gap: 4px; border-style: dashed; }
   .warn { color: var(--status-draft); }
-  /* a phone: the small buttons at a finger's size */
+  /* a phone: the small buttons at a finger's size; the grip drags its row (no text selection on a long press) */
   @media (max-width: 759.98px) {
     .tiny { height: var(--control-sm); }
     .x { height: var(--control-sm); width: var(--control-sm); }
+    .rhead, .rr { grid-template-columns: 28px 20px 1fr 34px 62px var(--control-sm); }
+    .hdl { align-self: stretch; align-items: center; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .rn, .chips, .arrow { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .rr { position: relative; }
+    .rr.lifting { border-color: var(--link); box-shadow: var(--shadow-drag); opacity: .85; }
+    .rr.land::before, .rr.land-after::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--link); }
+    .rr.land::before { top: -5px; }
+    .rr.land-after::after { bottom: -5px; }
   }
 </style>
