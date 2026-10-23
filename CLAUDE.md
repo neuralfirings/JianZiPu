@@ -114,7 +114,9 @@ builder/inputs/design.json ──(jzpbuild/positioning/)──▶ GPOS .fea   (-
 The Builder follows the JZP Font Builder design system:
 https://claude.ai/artifact/SNGE3ACTZxtP2PLRatJnv8 (read it with the Artifact tool, `project/README.md`
 first, then `tokens.json`, `states.md`, `canvas-and-overlays.md`, `layout-and-density.md` and the
-component READMEs). In short: grey paper (`--bg-app`, `--bg-panel`), near-black ink, one seal-red
+component READMEs). `app/static/help/design.html` (served at `/help/design.html`) is a static snapshot
+of it for people without access to the artifact; after changing the design system, refresh it with
+`app/scripts/design-export.py` (its header says how) and commit it. In short: grey paper (`--bg-app`, `--bg-panel`), near-black ink, one seal-red
 `--accent` (anchor, highlighted component, destructive actions only); link blue (`--link`) for links,
 focus and selection (`--sel-bg` + `--sel-border`); every status is colour + icon + word (`.pill.saved`
 ✓, `.pill.draft` ● dashed, `.pill.danger` ×, `.pill.info` ◐); EB Garamond for titles and panel titles,

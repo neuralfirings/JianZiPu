@@ -4,6 +4,8 @@
 
 The JZP Font Builder is where the JianZiPu font is made: the drawings of its parts, how each part is typed, and how the parts sit together in a 减字 character. This page walks through each screen in the order you'd usually use them.
 
+Changing the Builder itself? The [design guide](https://builder.jianzipufont.com/help/design.html) says how it looks and behaves, on a computer and on a phone.
+
 ## Getting started
 
 A JianZiPu character is built from parts, much as an English word is built from letters. You type a short code such as `s7k5`, and the font swaps each piece for a drawn part (名, 七, 勾, 五) and stacks them into one character. The Builder has a screen for each of those steps:

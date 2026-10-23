@@ -60,6 +60,7 @@
     <article>
       <h1>How to use the Builder</h1>
       <p class="lede">The JZP Font Builder is where the JianZiPu font is made: the drawings of its parts, how each part is typed, and how the parts sit together in a 减字 character. This page walks through each screen in the order you'd usually use them.</p>
+      <p class="muted">Changing the Builder itself? The <a href="/help/design.html">design guide</a> says how it looks and behaves, on a computer and on a phone.</p>
 
       <!-- ─────────────────────────────────────────────── -->
       <section id="start">
