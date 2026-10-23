@@ -210,7 +210,7 @@
 {/snippet}
 {#snippet typeRow()}
     <div class="row wrap">
-      <textarea class="type" rows={view === 'text' ? 3 : 1} bind:value={text} spellcheck="false" placeholder="Type words: s7k5  名七勾五  :fenkai  C03|s6,5"
+      <textarea class="type" rows={view === 'text' || phone.on ? 3 : 1} bind:value={text} spellcheck="false" placeholder="Type words: s7k5  名七勾五  :fenkai  C03|s6,5"
         oncompositionstart={() => (composing = true)} oncompositionend={() => { composing = false; text = text + ''; }}></textarea>
       <select onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) text = sets[v].join(' '); (e.target as HTMLSelectElement).value = ''; }}>
         <option value="">Sample set…</option>
@@ -287,7 +287,7 @@
   .phone .top :global(.muted.small), .phone .top label .muted { display: none; }
   .phone .words { padding: var(--space-4); gap: var(--space-4); }
   .dock { flex: none; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); background: var(--bg-panel); }
-  .dock .type { min-width: 0; width: 100%; flex: 1 1 100%; }
+  .dock .type { min-width: 0; width: 100%; flex: 1 1 100%; resize: none; line-height: 22px; padding: var(--space-3) var(--space-4); }
   .dock :global(.row) { gap: var(--space-3); }
   .top { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border); }
   .wrap { flex-wrap: wrap; gap: var(--space-5); }
