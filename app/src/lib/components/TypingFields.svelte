@@ -43,4 +43,5 @@
   .small { font-size: var(--t-caption); }
   .mono { font-family: var(--font-mono); }
   .lnk { align-self: flex-start; height: 22px; padding: 0 8px; border-style: dashed; background: transparent; font-size: var(--t-caption); }
+  @media (max-width: 759.98px) { .lnk { min-height: var(--control-sm); } }
 </style>

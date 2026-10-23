@@ -104,6 +104,7 @@
           <li>With an area picked, <strong>+ Add glyphs</strong> puts existing drawings into it. One glyph can be in several areas.</li>
           <li>Click a tile to select it; double-click it (or press Enter, or its <strong>Edit</strong> pill) to open the <a href="#editor">glyph editor</a>.</li>
         </ul>
+        <p>On a phone, two menus above the tiles pick the area and a spelling filter, and tapping a tile opens the glyph's card over the tiles: its areas, its spellings to edit, and Try it. <strong>All glyphs</strong> goes back. Drawing needs a computer, and so do <strong>+ New glyph</strong>, the reference weight and the CSV import and export.</p>
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
 
         <h3>Typing: spellings</h3>

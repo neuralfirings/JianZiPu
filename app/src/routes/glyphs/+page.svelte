@@ -3,7 +3,8 @@
   // The sidebar groups by design.json area (a glyph in several areas is in each); the 130
   // position decimals fold inside 徽 position. The bottom panel shows what the view doesn't:
   // in Tiles it edits the spellings; in Typing the row is the editor, so it shows Try it,
-  // What changes and Issues. View, group, filter and selection live in the URL.
+  // What changes and Issues. View, group, filter and selection live in the URL. On a phone the
+  // sidebar is two selects and the selected glyph's card covers the tiles until closed.
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
@@ -19,6 +20,7 @@
   import { page } from '$app/state';
   import { goto, replaceState } from '$app/navigation';
   import { DEFAULT_WEIGHT } from '$lib/glyphed/editor.svelte';
+  import { phone } from '$lib/phone.svelte';
 
   type View = 'tiles' | 'typing';
   type Filter = '' | 'attention' | 'clashes' | 'nospell' | 'pairs' | 'unsaved';
@@ -163,6 +165,7 @@
 <datalist id="jzp-glyph-names">{#each all.filter((g) => !T.isDecimal(g)) as g}<option value={g}></option>{/each}</datalist>
 
 <div class="page">
+  <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
   <div class="toolbar">
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
@@ -171,6 +174,22 @@
     </span>
     {#if view === 'typing'}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
+    {#if phone.on}
+      <div class="picks">
+        <select aria-label="Area" bind:value={group}>
+          <option value="all">All glyphs ({all.length})</option>
+          {#each areaNames as a}
+            <option value={a}>{app.areaLabel(a)} ({d.areas[a].glyphs.length})</option>
+            {#if d.areas[a].glyphs.some(T.isDecimal)}<option value="decimals">· position decimals ({decimals.length})</option>{/if}
+          {/each}
+          <option value="unassigned">Unassigned ({unassigned.length})</option>
+        </select>
+        <select aria-label="Typing filter" bind:value={filter}>
+          <option value="">Any spelling</option>
+          {#each FILTERS as [f, label]}<option value={f}>{label} ({filterCounts[f]})</option>{/each}
+        </select>
+      </div>
+    {:else}
     <span class="spacer"></span>
     <label class="weight" title="The stroke thickness every glyph should sit around, in units (= font units). The editor's compare dot and new lines use it. Match the body of main strokes, not the tapers.">
       Reference weight <input type="number" min="1" max="200" value={app.design?.glyph_weight ?? DEFAULT_WEIGHT} onchange={(e) => setWeight(+(e.target as HTMLInputElement).value)} /> <span class="muted">units</span>
@@ -184,8 +203,8 @@
         </div>
       {/if}
     </span>
-    <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
     <button class="primary" onclick={() => (newDialog = true)}>+ New glyph</button>
+    {/if}
   </div>
 
   {#if app.typingErrors.length}
@@ -198,6 +217,7 @@
   {#if typingCheck.error}<div class="banner warn"><span class="ic"><I.Warn /></span> Spelling check: {typingCheck.error}</div>{/if}
 
   <div class="body">
+    {#if !phone.on}
     <aside class="groups">
       <button class:on={group === 'all'} onclick={() => (group = 'all')}><span>All</span><span class="muted">{all.length}</span></button>
       <div class="gh">Areas</div>
@@ -216,6 +236,7 @@
           onclick={() => (filter = filter === f ? '' : f)}><span>{label}</span><span class="muted">{filterCounts[f]}</span></button>
       {/each}
     </aside>
+    {/if}
 
     <section class="grid-wrap">
       {#if d.areas[group]}
@@ -267,17 +288,24 @@
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
   {#if sel}
-    <section class="inspector" class:typing={view === 'typing'}>
+    <section class="inspector" class:typing={view === 'typing'} class:card={phone.on}>
+      {#if phone.on}<div class="cardbar"><button class="quiet" onclick={() => (selected = null)}><I.Back /> All glyphs</button><span class="id">{sel.glyph}</span></div>{/if}
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
         <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles'} />
+        {#if phone.on}
+        <div class="row" style="margin-top: var(--space-4)">
+          <a href={editUrl(sel.glyph)}><button><I.Computer /> Edit outline</button></a><span class="muted small">needs a computer</span>
+        </div>
+        {:else}
         <div class="row" style="margin-top: var(--space-4)">
           <a href={editUrl(sel.glyph)}><button class="primary">Edit outline</button></a>
           <a href={editUrl(sel.glyph, 'file')}><button title="Open the editor with a new SVG loaded (nothing is written until you save)">Replace…</button></a>
           <a href={editUrl(sel.glyph, 'image')}><button title="Open the editor in trace mode">Trace…</button></a>
           {#if sel.svg && view === 'tiles'}<a href="/inputs/svg/{sel.glyph}.svg" download><button>Download SVG</button></a>{/if}
         </div>
+        {/if}
       </div>
       {#if view === 'tiles'}
         <div class="col">
@@ -366,5 +394,23 @@
   .menu button:hover { background: var(--bg-hover); }
   .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; font-size: var(--t-small); display: flex; gap: var(--space-4); align-items: center; }
 
+  /* a phone: search, Tiles | Typing and the two selects wrap; the tiles fill the width; the card covers them */
+  .picks { display: flex; gap: var(--space-3); flex: 1 1 100%; min-width: 0; }
+  .picks select { flex: 1 1 0; min-width: 0; }
+  @media (max-width: 759.98px) {
+    .toolbar { flex-wrap: wrap; gap: var(--space-3); padding: var(--space-4); }
+    .toolbar input[type=text] { width: auto !important; flex: 1 1 160px; min-width: 0; }
+    .seg button { height: var(--control-md); }
+    .grid-wrap { padding: var(--space-4); }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-3); }
+    .tile { width: auto; padding-bottom: var(--space-4); }
+    .tile .edit { display: none !important; }
+    .tile .sub { max-width: 100%; }
+    .inspector.card { position: absolute; inset: 0; z-index: 5; max-height: none; flex-direction: column; flex-wrap: nowrap; gap: var(--space-5); padding: 0 var(--space-4) var(--space-6); border-top: 0; }
+    .card .cardbar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: var(--space-4); width: calc(100% + 2 * var(--space-4)); margin: 0 calc(-1 * var(--space-4)); padding: var(--space-2) var(--space-4); background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+    .card .cardbar .quiet { padding-left: var(--space-2); }
+    .card .big { align-self: center; }
+    .card .col { flex: none; width: 100%; }
+  }
   .modal { padding: var(--space-7); max-width: 560px; display: flex; flex-direction: column; gap: var(--space-4); }
 </style>

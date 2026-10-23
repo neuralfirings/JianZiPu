@@ -52,6 +52,8 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 - With an area picked, **+ Add glyphs** puts existing drawings into it. One glyph can be in several areas.
 - Click a tile to select it; double-click it (or press Enter, or its **Edit** pill) to open the [glyph editor](https://jianzipufont.com/help/#editor).
 
+On a phone, two menus above the tiles pick the area and a spelling filter, and tapping a tile opens the glyph's card over the tiles: its areas, its spellings to edit, and Try it. **All glyphs** goes back. Drawing needs a computer, and so do **+ New glyph**, the reference weight and the CSV import and export.
+
 Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
 
 ### Typing: spellings
