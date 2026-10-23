@@ -179,6 +179,8 @@ const strip = (root) => {
 };
 const nav = doc.querySelector('nav.toc');
 strip(nav);
+const contents = doc.querySelector('details.otp');   // the phone's contents line (shown below 760 px)
+strip(contents);
 strip(article);
 
 const page = `<!DOCTYPE html>
@@ -225,7 +227,13 @@ const page = `<!DOCTYPE html>
     .pill.danger { color: var(--accent); border-color: currentColor; } .pill.draft, .chip.dashed { border-style: dashed; }
     .banner { display: flex; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
     .miss { color: var(--accent); }
-    @media (max-width: 760px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px 16px 64px; } .toc { position: static; } dl { grid-template-columns: minmax(0, 1fr); } }
+    .otp { display: none; }
+    @media (max-width: 760px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px 16px 64px; } .toc { display: none; } dl { grid-template-columns: minmax(0, 1fr); }
+      .otp { display: block; border-bottom: 1px solid var(--border); background: var(--panel); }
+      .otp summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; font: 600 17px "EB Garamond", serif; cursor: pointer; list-style: none; }
+      .otp summary::-webkit-details-marker { display: none; } .otp-chev { margin-left: auto; }
+      .otp nav { display: flex; flex-direction: column; padding: 4px 0 8px; }
+      .otp nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: var(--ink); text-decoration: none; } }
   </style>
 </head>
 <body>
@@ -234,6 +242,7 @@ const page = `<!DOCTYPE html>
     <a href="${BUILDER}/">Open the Builder</a>
     <a href="/help.md">This page as plain text (Markdown)</a>
   </header>
+  ${contents.outerHTML}
   <div class="layout">
     ${nav.outerHTML}
     ${article.outerHTML}

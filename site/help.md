@@ -4,6 +4,8 @@
 
 The JZP Font Builder is where the JianZiPu font is made: the drawings of its parts, how each part is typed, and how the parts sit together in a 减字 character. This page walks through each screen in the order you'd usually use them.
 
+Changing the Builder itself? The [design guide](https://builder.jianzipufont.com/help/design.html) says how it looks and behaves, on a computer and on a phone.
+
 ## Getting started
 
 A JianZiPu character is built from parts, much as an English word is built from letters. You type a short code such as `s7k5`, and the font swaps each piece for a drawn part (名, 七, 勾, 五) and stacks them into one character. The Builder has a screen for each of those steps:
@@ -15,6 +17,10 @@ A JianZiPu character is built from parts, much as an English word is built from 
 A usual round: change a glyph or a rule, watch it in the live preview, **Save**, then **Build font** and check the result in real text.
 
 > The Builder runs in two ways. **Online**, for invited testers, everything you do goes into [your own draft](https://jianzipufont.com/help/#draft); the real font doesn't change until your draft is reviewed. **On your own computer** (the **Local files** chip in the header), Save writes the files in `builder/inputs/`, which you then commit.
+
+### On a phone
+
+The Builder is made for a computer, but it opens on a phone too. Controls are larger there, the screens are tabs along the bottom, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: **Copy link** copies the page's address to open on a computer, and **Open anyway** opens the tool on the phone until you reload the page.
 
 ## How words are typed
 
@@ -48,6 +54,8 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 - With an area picked, **+ Add glyphs** puts existing drawings into it. One glyph can be in several areas.
 - Click a tile to select it; double-click it (or press Enter, or its **Edit** pill) to open the [glyph editor](https://jianzipufont.com/help/#editor).
 
+On a phone, two menus above the tiles pick the area and a spelling filter, and tapping a tile opens the glyph's card over the tiles: its areas, its spellings to edit, and Try it. **All glyphs** goes back. Drawing needs a computer, and so do **+ New glyph**, the reference weight and the CSV import and export.
+
 Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
 
 ### Typing: spellings
@@ -69,6 +77,8 @@ The **Tiles | Typing** switch turns the screen into a table of every glyph's spe
 - **More** → **Import spellings (CSV)…** and **Export spellings (CSV)** move the whole table in and out. An import only changes the screen until you Save.
 - Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a **clash** holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.
 - The **Typing** filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.
+
+On a phone, Typing is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.
 
 ## The glyph editor
 
@@ -115,6 +125,7 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 - Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.
 - Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.
 - **boxes** and **glyphs** switch the outlines; `b` toggles boxes, `⇧1` fits the word.
+- On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.
 
 ### The panels
 
@@ -124,12 +135,14 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 - **Structure**: The parts of the word type, in order. Tick a part to include it in the example word and pick which glyph it shows. **anchor** marks the first part of the chain, which carries the word's position. With **Advanced** on you can add, remove, reorder and make parts optional or repeating.
 - **Page center**: The point on the page that centring aims for, in font units. Every word type that is centred uses it.
 - **Font budget**: How many positioning rules each word type makes, and an estimate of their size. The build stores each rule as its own small table, so size is far from a limit (a single lookup can hold 65,535). What to watch is **skipped**: word shapes that get no rule because a part has nothing placing it, so those words won't be laid out. The **rules · KB** pill in the header opens this panel; it shows **!** while anything is skipped.
-- **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas.
+- **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas (on a phone, press and hold it first).
 - **Centering**: Which parts the word is centred on, and where. When a word is centred on an axis, the whole word is shifted to the target, so a start height on that axis (marked * on the canvas) doesn't move it: change the gaps between parts instead, or the target here.
 - **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses. The **Chord divider** and **Vertical marker** areas also have **Width of |** (or **:**): how far the next part moves after the divider, and the divider's own width in the font; it sets the box width too.
 - **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**; click a word to put it on the canvas. **Build & test** opens the same words next to the built font.
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
+
+On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its **Spacing** just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order, and press and hold a base in the *relative to* line to drag it to another place in the line. Reordering the parts in **Structure** and the **Advanced** edits need a computer.
 
 ## Build & test
 
@@ -150,6 +163,8 @@ Structural edits (adding, removing or reordering parts, new word types, recognit
 ![Build and test, Test the font file view: the same words as running text in the built font](https://builder.jianzipufont.com/help/build-font.jpg)
 ***Test the font file**: the same words as running text in the built font.*
 
+On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (**No build yet**, or when the last build was made) opens the build, font and view settings and the build log.
+
 A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type.
 
 ## Saving and undo
@@ -158,6 +173,7 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 - **Undo** **Redo** in the header (`⌘Z`, `⇧⌘Z`) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.
 - Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
 - Unsaved work survives a reload: the Builder offers to restore it.
+- On a phone, the header is one row (the screen's name, its status, **Undo** **Redo** on Glyphs and Layouts, and **More**), the screens are tabs at the bottom, and **Save** sits in a bar above the tabs while something is unsaved.
 - Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.
 - On your own computer, Save writes `design.json` and `components.csv` in `builder/inputs/` (glyph files are saved from the editor). If a file changed on disk since you opened it, you choose: reload it, overwrite it, or export yours first. Then commit the files with git.
 - On your own computer, **More** → **Export…** / **Import…** move the design (word types, areas, sample sets) as one JSON file; an import becomes unsaved changes you can look over first.
@@ -338,6 +354,10 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Pick *n* conflicts first”**: Apply waits until every **Conflict** has a side picked.
 - **“This isn't a Builder design file (needs version 2, layouts[] and areas{}).”**: **Import…** takes a design.json exported by the Builder.
 - **“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”**: **Feedback** or **Ask for an invite** didn't go. Check your connection (an ad blocker can stop it too) and send again.
+
+### On a phone
+
+- **“*The glyph editor* needs a computer. It's made for a mouse and a big screen. Open this page on a computer, or open it here anyway.”**: The same note stands in for Review, making a release, and importing and exporting the design. Press **Copy link** and open the link on a computer, or **Open anyway** to use the tool on the phone until you reload the page.
 
 ---
 

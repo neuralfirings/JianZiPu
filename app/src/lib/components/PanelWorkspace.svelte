@@ -2,7 +2,9 @@
   // A screen built from dockable panels around a center: left and right columns,
   // a bottom strip under the center, drag a panel's grip to another dock, drag a
   // splitter to resize (shut to hide; a rail brings the dock back). Used by Layouts
-  // and the glyph editor, each with its own store (src/lib/panels.svelte.ts).
+  // and the glyph editor, each with its own store (src/lib/panels.svelte.ts). On a phone
+  // (store.mode 'phone') it is one column instead: the center pinned on top, every panel a
+  // section under it in the phone arrangement's order, nothing to drag or resize.
   import * as I from '$lib/icons';
   import { onMount, type Snippet } from 'svelte';
   import { DOCK_LABEL, DOCK_MIN, type AnyPanels, type Dock, type Meta } from '$lib/panels.svelte';
@@ -79,6 +81,22 @@
     const side = (dock: 'left' | 'right') => (visible(dock) ? (dock === 'left' ? `${w('left')} 6px` : `6px ${w('right')}`) : shown(dock).length || store.dragging ? '24px' : '');
     return `${side('left')} minmax(min(${centerMin}px, 100%), 1fr) ${side('right')}`.trim();
   });
+  // on a phone: the column scrolls; a revealed panel (store.open) lands just under the pinned center
+  let col = $state<HTMLElement>();
+  let centerEl = $state<HTMLElement>();
+  $effect(() => {
+    const id = store.reveal;
+    if (!id) return;
+    store.reveal = null;
+    if (store.mode !== 'phone' || !col) return;
+    requestAnimationFrame(() => {
+      const el = col!.querySelector<HTMLElement>(`[data-panel="${id}"]`);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top - col!.getBoundingClientRect().top + col!.scrollTop - (centerEl?.offsetHeight ?? 0) - 8;
+      col!.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  });
+  const phoneIds = () => [...store.a.docks.left, ...store.a.docks.right, ...store.a.docks.bottom].filter((id) => !meta(id).hidden);
   const dockNames = (dock: Dock) => shown(dock).map((id) => meta(id).title).join(' · ');
 </script>
 
@@ -98,6 +116,14 @@
   {/if}
 {/snippet}
 
+{#if store.mode === 'phone'}
+<div class="phone" bind:this={col}>
+  <section class="center pinned" bind:this={centerEl}>{@render children()}</section>
+  <div class="stack">
+    {#each phoneIds() as id (id)}<div class="slot" data-panel-slot={id}>{@render panel(id)}</div>{/each}
+  </div>
+</div>
+{:else}
 <div class="ws" class:dragging={!!store.dragging} style="grid-template-columns: {cols}">
   {@render sideDock('left')}
   <section class="center">
@@ -113,6 +139,7 @@
   </section>
   {@render sideDock('right')}
 </div>
+{/if}
 {#if store.dragging}
   <div class="ghost" style="left: {store.pointer.x + 12}px; top: {store.pointer.y - 12}px"><I.Grip size={14} /> {meta(store.dragging).title}</div>
 {/if}
@@ -134,4 +161,7 @@
   .rail.hrail { width: auto; height: 24px; flex: none; align-items: center; border-right: 0; border-top: 1px solid var(--border); }
   .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 3px 8px; border: 1px solid var(--link); border-radius: var(--radius-md); background: var(--bg-panel); color: var(--ink); font-family: var(--font-display); font-size: var(--t-small); font-weight: 600; box-shadow: var(--shadow-drag); }
   :global(.ws.dragging [data-dock]) { min-height: 48px; }
+  .phone { height: 100%; overflow: auto; overscroll-behavior: contain; }
+  .pinned { position: sticky; top: 0; z-index: 2; height: min(52dvh, 460px); background: var(--bg-app); border-bottom: 1px solid var(--border); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
 </style>

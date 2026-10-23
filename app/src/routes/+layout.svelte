@@ -6,6 +6,8 @@
   import { setLucideProps } from '@lucide/svelte/context';
   import * as I from '$lib/icons';
   import { installTooltips } from '$lib/tooltip';
+  import { installPhone, openedAnyway, phone, screenOnPhone, screenTitle } from '$lib/phone.svelte';
+  import NeedsComputer from '$lib/components/NeedsComputer.svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
@@ -49,6 +51,16 @@
   onMount(() => {
     void start();
     const offTips = installTooltips();
+    const offPhone = installPhone();
+    // a phone's keyboard: while a field has it, the tabs and Save bar step aside, and (iOS, which
+    // doesn't shrink the page for it) the Builder shrinks to the part of the screen still visible
+    const FIELD = 'input:not([type=checkbox], [type=radio], [type=range], [type=file], [type=color]), textarea, [contenteditable]';
+    const onFocusIn = (e: FocusEvent) => { keyboard = e.target instanceof Element && e.target.matches(FIELD); };
+    const onFocusOut = () => queueMicrotask(() => { keyboard = !!document.activeElement?.matches(FIELD); });
+    document.addEventListener('focusin', onFocusIn); document.addEventListener('focusout', onFocusOut);
+    const vv = window.visualViewport;
+    const onViewport = () => { visible = vv && innerHeight - vv.height > 80 ? Math.round(vv.height) : null; };
+    vv?.addEventListener('resize', onViewport);
     const onHide = () => { if (document.visibilityState === 'hidden') app.flush(); };
     document.addEventListener('visibilitychange', onHide);
     const onUnload = (e: BeforeUnloadEvent) => { if (hosted.isHosted && app.dirty) { app.flush(); e.preventDefault(); } };
@@ -69,7 +81,9 @@
     const onClick = () => { menu = false; person = false; pill = false; };
     window.addEventListener('click', onClick);
     return () => {
-      offTips();
+      offTips(); offPhone();
+      document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusout', onFocusOut);
+      vv?.removeEventListener('resize', onViewport);
       window.removeEventListener('keydown', onKey); window.removeEventListener('click', onClick);
       document.removeEventListener('visibilitychange', onHide); window.removeEventListener('beforeunload', onUnload);
     };
@@ -87,7 +101,27 @@
   async function copyMessage(text: string) {
     try { await navigator.clipboard.writeText(text); pilot.say('Commit message copied.'); } catch { prompt('Commit message:', text); }
   }
+  // on a phone, a screen that needs a computer says so in place of the tool, until opened anyway
+  let needs = $derived.by(() => {
+    if (!phone.on) return null;
+    const s = screenOnPhone(page.route.id, page.url.searchParams);
+    return s === 'phone' || openedAnyway[page.route.id ?? ''] ? null : s;
+  });
+  // a phone's top bar: the screen's name, undo and redo where you edit; Save in a bar of its own
+  let title = $derived(screenTitle(page.route.id, page.url.searchParams, page.params as Record<string, string>));
+  let undoHere = $derived(page.url.pathname === '/layouts' || page.url.pathname === '/glyphs');
+  let tabs = $derived<[string, string, typeof I.Help][]>([
+    ['/glyphs', 'Glyphs', I.TabGlyphs],
+    ['/layouts', 'Layouts', I.TabLayouts],
+    ['/test', 'Try', I.TabTry],
+    ...(hosted.isHosted ? [['/requests', 'Requests', I.TabRequests] as [string, string, typeof I.Help]] : []),
+    ['/help', 'Help', I.Help]
+  ]);
   let gate = $derived(hosted.ready && hosted.isHosted && !hosted.user);
+  let keyboard = $state(false);
+  let visible = $state<number | null>(null);
+  let tabsShown = $derived(phone.on && !gate && hosted.ready && !keyboard);
+  let saveBar = $derived(tabsShown && (app.dirty || (hosted.isHosted && (app.offline || app.saveRefused))));
   let counts = $derived(pill && hosted.isHosted ? app.draftCounts : null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
@@ -101,122 +135,170 @@
   });
 </script>
 
-<div class="shell">
-  <header>
-    <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JianZiPu Font Builder</div>
-    {#if hosted.isHosted && hosted.user}
-      <span class="pill-wrap">
-        <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-          <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
-        </button>
-        {#if pill}
-          <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
-            <strong>Your draft</strong>
-            <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
-            <p class="muted">{#if app.draftBase}Reference font: {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
-            {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
-            <div class="row">
-              <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
-              <button class="sm" onclick={() => { pill = false; goto('/requests'); }}>Change Requests{app.requests.length ? ` · ${app.requests.length}` : ''}</button>
-              <button class="sm" onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
+{#snippet statusPill(short: boolean)}
+<span class="status" role="status">
+  {#if hosted.isHosted && (app.offline || app.saveRefused)}
+    <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Alert size={14} />{app.offline && !short ? 'Not saved · offline' : 'Not saved'}</button>
+  {:else if hosted.isHosted && app.saving}
+    <span class="pill info"><I.Working size={14} />Saving…</span>
+  {:else if app.dirty}
+    <button class="pill draft" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Unsaved size={14} />{inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
+  {:else if hosted.isHosted && app.lastSaved}
+    <span class="pill saved"><I.Check size={14} />{short ? 'Saved' : `Saved to your draft · ${hhmm(app.lastSaved)}`}</span>
+  {:else if app.lastSaved}
+    <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : short ? 'Saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
+  {:else if !app.loading}
+    <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
+  {/if}
+</span>
+{/snippet}
+{#snippet saveButton()}
+{#if hosted.isHosted}
+  <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving || hosted.signedOut} title="Save to your draft (⌘S). It also saves itself every 30 seconds.">
+    {app.saving ? 'Saving…' : app.offline || app.saveRefused ? 'Try again' : 'Save'}
+  </button>
+{:else}
+  <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json, components.csv and merged glyph files (the glyph has its own Save, ⌘S)' : 'Write design.json, components.csv and merged glyph files (⌘S)'}>
+    {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
+  </button>
+{/if}
+{/snippet}
+{#snippet moreItems()}
+{#if hosted.isHosted}
+  <button onclick={() => goto('/review?mine')}>See my changes and send them…</button>
+  <button onclick={() => goto('/requests')}>Your Change Requests</button>
+  <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
+  <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
+  <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `Set reference font to ${app.latestFont}…` : `Reference font: ${app.latestFont}`}</button>
+  <button onclick={() => (feedback = true)}>Send feedback…</button>
+  <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
+  <hr />
+  <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault}>Reset panel layouts</button>
+  <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
+  <button class="danger-item" onclick={() => (pilot.dialog = 'discard')}>Discard my draft…</button>
+{:else}
+  <button onclick={() => (dialog = 'import')}>Import…</button>
+  <button onclick={() => (dialog = 'export')}>Export…</button>
+  <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
+  <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
+  <button onclick={() => goto('/release')}>Make a release…</button>
+  <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
+  <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
+  <hr />
+  <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault} title="Put the panels of Layouts and the glyph editor back where they started">Reset panel layouts</button>
+{/if}
+{/snippet}
+
+<div class="shell" style:height={phone.on && visible ? `${visible}px` : null} style:--phone-bottom="{(tabsShown ? 56 : 0) + (saveBar ? 52 : 0)}px">
+  {#if !phone.on}
+    <header>
+      <div class="brand"><img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />JianZiPu Font Builder</div>
+      {#if hosted.isHosted && hosted.user}
+        <span class="pill-wrap">
+          <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
+            <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
+          </button>
+          {#if pill}
+            <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
+              <strong>Your draft</strong>
+              <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
+              <p class="muted">{#if app.draftBase}Reference font: {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
+              {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
+              <div class="row">
+                <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
+                <button class="sm" onclick={() => { pill = false; goto('/requests'); }}>Change Requests{app.requests.length ? ` · ${app.requests.length}` : ''}</button>
+                <button class="sm" onclick={() => { pill = false; pilot.dialog = 'export'; }}>Export…</button>
+              </div>
             </div>
-          </div>
-        {/if}
-      </span>
-    {:else if hosted.ready && !hosted.isHosted}
-      <span class="chip dashed local" title="Save writes design.json, components.csv and glyph files in this repo.">Local files</span>
-    {/if}
-    {#if !gate && hosted.ready}
-    <nav>
-      {#each nav as [href, label]}
-        <a {href} aria-current={page.url.pathname === href || page.url.pathname.startsWith(href + '/') ? 'page' : undefined}>{label}</a>
-      {/each}
-    </nav>
-    <div class="spacer"></div>
-    {#if page.url.pathname.startsWith('/layouts')}
-      <label class="adv" title="Structural edits: add, remove, reorder parts; new / delete word types; recognition rules"><input type="checkbox" bind:checked={editor.advanced} /> Advanced</label>
-    {/if}
-    {#if budget}
-      <a class="pill {budget.level === 'warn' ? 'draft' : 'saved'} budget" href="/layouts?budget=1" title={budget.skipped ? `GPOS rules generated from this design; ${budget.skipped} skipped` : 'GPOS rules generated from this design'}>
-        {#if budget.level === 'warn'}<I.Warn size={14} />{:else}<I.Check size={14} />{/if}{budget.rules} rules · {budget.kb.toFixed(0)} KB
-      </a>
-    {/if}
-    {#if !inGlyphEditor}
-      <button class="quiet" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
-        data-tip={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label} (⌘Z)` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
-      <button class="quiet" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
-        data-tip={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label} (⇧⌘Z)` : 'Nothing to redo'} aria-label="Redo"><I.Redo /></button>
-    {/if}
-    <span class="status" role="status">
-      {#if hosted.isHosted && (app.offline || app.saveRefused)}
-        <button class="pill danger" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Alert size={14} />{app.offline ? 'Not saved · offline' : 'Not saved'}</button>
-      {:else if hosted.isHosted && app.saving}
-        <span class="pill info"><I.Working size={14} />Saving…</span>
-      {:else if app.dirty}
-        <button class="pill draft" onclick={(e) => { e.stopPropagation(); showChanges = !showChanges; }}><I.Unsaved size={14} />{inGlyphEditor ? 'Design: ' : ''}{app.changes.length} unsaved</button>
-      {:else if hosted.isHosted && app.lastSaved}
-        <span class="pill saved"><I.Check size={14} />Saved to your draft · {hhmm(app.lastSaved)}</span>
-      {:else if app.lastSaved}
-        <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : `Saved ${app.lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
-      {:else if !app.loading}
-        <span class="pill saved"><I.Check size={14} />{inGlyphEditor ? 'Design: saved' : 'Saved'}</span>
-      {/if}
-    </span>
-    {#if hosted.isHosted}
-      <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving || hosted.signedOut} title="Save to your draft (⌘S). It also saves itself every 30 seconds.">
-        {app.saving ? 'Saving…' : app.offline || app.saveRefused ? 'Try again' : 'Save'}
-      </button>
-    {:else}
-      <button class="primary" onclick={() => app.save()} disabled={!app.dirty || app.saving} title={inGlyphEditor ? 'Write design.json, components.csv and merged glyph files (the glyph has its own Save, ⌘S)' : 'Write design.json, components.csv and merged glyph files (⌘S)'}>
-        {app.saving ? 'Saving…' : inGlyphEditor ? 'Save design' : 'Save'}
-      </button>
-    {/if}
-    {#if hosted.isHosted}
-      <button class="fb" onclick={() => (feedback = true)}>Feedback</button>
-    {/if}
-    <span class="menu-wrap">
-      <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More" data-tip="More: import, export, reset panels"><I.More /></button>
-      {#if menu}
-        <div class="menu float" role="menu">
-          {#if hosted.isHosted}
-            <button onclick={() => goto('/review?mine')}>See my changes and send them…</button>
-            <button onclick={() => goto('/requests')}>Your Change Requests</button>
-            <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
-            <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
-            <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `Set reference font to ${app.latestFont}…` : `Reference font: ${app.latestFont}`}</button>
-            <button onclick={() => (feedback = true)}>Send feedback…</button>
-            <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
-            <hr />
-            <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault}>Reset panel layouts</button>
-            <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
-            <button class="danger-item" onclick={() => (pilot.dialog = 'discard')}>Discard my draft…</button>
-          {:else}
-            <button onclick={() => (dialog = 'import')}>Import…</button>
-            <button onclick={() => (dialog = 'export')}>Export…</button>
-            <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
-            <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
-            <button onclick={() => goto('/release')}>Make a release…</button>
-            <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
-            <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
-            <hr />
-            <button onclick={() => { panels.reset(); editorPanels.reset(); }} disabled={panels.isDefault && editorPanels.isDefault} title="Put the panels of Layouts and the glyph editor back where they started">Reset panel layouts</button>
           {/if}
-        </div>
+        </span>
+      {:else if hosted.ready && !hosted.isHosted}
+        <span class="chip dashed local" title="Save writes design.json, components.csv and glyph files in this repo.">Local files</span>
       {/if}
-    </span>
-    {#if hosted.isHosted && hosted.user}
+      {#if !gate && hosted.ready}
+      <nav>
+        {#each nav as [href, label]}
+          <a {href} aria-current={page.url.pathname === href || page.url.pathname.startsWith(href + '/') ? 'page' : undefined}>{label}</a>
+        {/each}
+      </nav>
+      <div class="spacer"></div>
+      {#if page.url.pathname.startsWith('/layouts')}
+        <label class="adv" title="Structural edits: add, remove, reorder parts; new / delete word types; recognition rules"><input type="checkbox" bind:checked={editor.advanced} /> Advanced</label>
+      {/if}
+      {#if budget}
+        <a class="pill {budget.level === 'warn' ? 'draft' : 'saved'} budget" href="/layouts?budget=1" title={budget.skipped ? `GPOS rules generated from this design; ${budget.skipped} skipped` : 'GPOS rules generated from this design'}>
+          {#if budget.level === 'warn'}<I.Warn size={14} />{:else}<I.Check size={14} />{/if}{budget.rules} rules · {budget.kb.toFixed(0)} KB
+        </a>
+      {/if}
+      {#if !inGlyphEditor}
+        <button class="quiet" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
+          data-tip={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label} (⌘Z)` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
+        <button class="quiet" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
+          data-tip={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label} (⇧⌘Z)` : 'Nothing to redo'} aria-label="Redo"><I.Redo /></button>
+      {/if}
+      {@render statusPill(false)}
+      {@render saveButton()}
+      {#if hosted.isHosted}
+        <button class="fb" onclick={() => (feedback = true)}>Feedback</button>
+      {/if}
       <span class="menu-wrap">
-        <button class="who" onclick={(e) => { e.stopPropagation(); person = !person; }} aria-label="Account" title={hosted.user.email}>{(hosted.firstName || '?').slice(0, 1).toUpperCase()}</button>
-        {#if person}
+        <button class="quiet" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More" data-tip="More: import, export, reset panels"><I.More /></button>
+        {#if menu}
           <div class="menu float" role="menu">
-            <span class="muted signed">Signed in as {hosted.user.email}</span>
-            <button onclick={async () => { app.flush(); await hosted.signOut(); }}>Sign out</button>
+            {@render moreItems()}
           </div>
         {/if}
       </span>
-    {/if}
-    {/if}
-  </header>
+      {#if hosted.isHosted && hosted.user}
+        <span class="menu-wrap">
+          <button class="who" onclick={(e) => { e.stopPropagation(); person = !person; }} aria-label="Account" title={hosted.user.email}>{(hosted.firstName || '?').slice(0, 1).toUpperCase()}</button>
+          {#if person}
+            <div class="menu float" role="menu">
+              <span class="muted signed">Signed in as {hosted.user.email}</span>
+              <button onclick={async () => { app.flush(); await hosted.signOut(); }}>Sign out</button>
+            </div>
+          {/if}
+        </span>
+      {/if}
+      {/if}
+    </header>
+  {:else}
+    <!-- a phone: one row (seal, screen, status, undo where you edit, More); the screens are tabs at the bottom -->
+    <header class="ph">
+      <img class="seal" src="/android-chrome-192x192.png" alt="" width="26" height="26" />
+      <span class="title">{title}</span>
+      {#if !gate && hosted.ready}
+        {#if !saveBar}{@render statusPill(true)}{/if}
+        <span class="spacer"></span>
+        {#if undoHere}
+          <button class="quiet ic" onclick={() => app.undo()} disabled={app.undoStack.length === 0}
+            data-tip={app.undoStack.length ? `Undo: ${app.undoStack.at(-1)?.label}` : 'Nothing to undo'} aria-label="Undo"><I.Undo /></button>
+          <button class="quiet ic" onclick={() => app.redo()} disabled={app.redoStack.length === 0}
+            data-tip={app.redoStack.length ? `Redo: ${app.redoStack.at(-1)?.label}` : 'Nothing to redo'} aria-label="Redo"><I.Redo /></button>
+        {/if}
+        <span class="menu-wrap">
+          <button class="quiet ic" onclick={(e) => { e.stopPropagation(); menu = !menu; }} aria-label="More" data-tip="More"><I.More /></button>
+          {#if menu}
+            <div class="menu float" role="menu">
+              {#if hosted.isHosted && hosted.user}
+                <span class="muted signed"><I.Draft size={14} /> Your draft: only you see it. The font itself doesn't change.</span>
+              {:else if !hosted.isHosted}
+                <span class="muted signed">Local files: Save writes design.json, components.csv and glyph files in this repo.</span>
+              {/if}
+              {#if budget}<a class="item" href="/layouts?budget=1">{#if budget.level === 'warn'}<I.Warn size={14} />{:else}<I.Check size={14} />{/if}Font budget: {budget.rules} rules · {budget.kb.toFixed(0)} KB</a>{/if}
+              <hr />
+              {@render moreItems()}
+              {#if hosted.isHosted && hosted.user}
+                <hr />
+                <span class="muted signed">Signed in as {hosted.user.email}</span>
+                <button onclick={async () => { app.flush(); await hosted.signOut(); }}>Sign out</button>
+              {/if}
+            </div>
+          {/if}
+        </span>
+      {/if}
+    </header>
+  {/if}
 
   {#if showChanges && app.dirty}
     <div class="changes">
@@ -304,9 +386,24 @@
     {:else if app.loading || !hosted.ready}
       <p class="muted" style="padding: var(--space-8)">{hosted.isHosted ? 'Loading your draft…' : 'Loading design…'}</p>
     {:else if app.design}
-      {@render children()}
+      {#if needs}
+        <NeedsComputer tool={needs.computer} key={page.route.id ?? ''} glyph={page.route.id === '/glyphs/[name]/edit' ? page.params.name : null} />
+      {:else}
+        {@render children()}
+      {/if}
     {/if}
   </main>
+
+  {#if saveBar}
+    <div class="savebar">{@render statusPill(true)}<span class="spacer"></span>{@render saveButton()}</div>
+  {/if}
+  {#if tabsShown}
+    <nav class="tabs" aria-label="Screens">
+      {#each tabs as [href, label, Icon]}
+        <a {href} aria-current={page.url.pathname === href || page.url.pathname.startsWith(href + '/') ? 'page' : undefined}><Icon size={20} /><span>{label}</span></a>
+      {/each}
+    </nav>
+  {/if}
 
   {#if dialog}
     <ImportExport mode={dialog} onclose={() => (dialog = null)} />
@@ -374,9 +471,18 @@
   @media (max-width: 1100px) {
     nav { order: 10; flex: 1 0 100%; padding: var(--space-3) 0; }
   }
-  @media (max-width: 760px) {
-    header { gap: var(--space-2); padding-left: var(--space-4); padding-right: var(--space-4); }
-    .brand { font-size: 0; gap: 0; margin-right: var(--space-2); }
-    nav a, header button { height: var(--control-lg); }
+  /* a phone: one row on top, Save in a bar while something is unsaved, the screens as tabs at the bottom */
+  header.ph { flex-wrap: nowrap; gap: var(--space-3); padding: var(--space-2) var(--space-4); padding-top: max(var(--space-2), env(safe-area-inset-top, 0px)); }
+  .ph .title { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 var(--t-heading)/1.2 var(--font-display); }
+  .ph .ic { width: var(--control-touch); padding: 0; }
+  .ph .menu { width: min(320px, calc(100vw - 2 * var(--space-4))); max-height: calc(100dvh - 140px); overflow: auto; }
+  .ph .menu .signed { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); line-height: 16px; }
+  .menu .item { display: flex; align-items: center; gap: var(--space-3); min-height: var(--control-md); padding: 0 var(--space-5); color: var(--ink); text-decoration: none; }
+  .savebar { display: flex; align-items: center; gap: var(--space-4); flex: none; padding: var(--space-2) var(--space-4); min-height: 52px; border-top: 1px solid var(--border); background: var(--bg-panel); }
+  .tabs { display: flex; flex: none; border-top: 1px solid var(--border); background: var(--bg-panel); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .tabs a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); min-height: 56px; color: var(--ink-muted); font-size: var(--t-caption); font-weight: 600; text-decoration: none; }
+  .tabs a[aria-current="page"] { color: var(--ink); background: var(--sel-bg); border-top: 2px solid var(--sel-border); margin-top: -1px; }
+  @media (max-width: 759.98px) {
+    .toast { bottom: calc(var(--phone-bottom) + var(--space-4) + env(safe-area-inset-bottom, 0px)); }
   }
 </style>

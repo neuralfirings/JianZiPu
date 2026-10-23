@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { installTooltips, placeTip } from './tooltip';
 
 const box = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, right: left + width, bottom: top + height });
@@ -37,5 +37,26 @@ describe('installTooltips', () => {
     expect(tip.hidden).toBe(true);
     off();
     expect(document.querySelector('.tip')).toBeNull();
+  });
+  it('on touch, a tap shows the tip for a moment instead of hover', () => {
+    vi.useFakeTimers();
+    document.body.innerHTML = '<button id="a" data-tip="Undo"><svg></svg></button>';
+    const off = installTooltips();
+    const tip = document.querySelector<HTMLElement>('.tip')!;
+    const a = document.getElementById('a')!;
+    const finger = (type: string) => Object.assign(new Event(type, { bubbles: true }), { pointerType: 'touch' });
+    a.dispatchEvent(finger('pointerover'));
+    expect(tip.hidden).toBe(true);                    // no hover on a phone
+    a.dispatchEvent(finger('pointerdown'));
+    a.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(tip.hidden).toBe(true);                    // the focus a tap brings doesn't show it either
+    a.dispatchEvent(finger('pointerup'));
+    a.dispatchEvent(finger('pointerout'));
+    expect(tip.hidden).toBe(false);
+    expect(tip.textContent).toBe('Undo');
+    vi.advanceTimersByTime(3000);
+    expect(tip.hidden).toBe(true);
+    off();
+    vi.useRealTimers();
   });
 });

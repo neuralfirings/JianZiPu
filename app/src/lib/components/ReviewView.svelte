@@ -9,6 +9,7 @@
   //            request (nothing is applied; kept changes go into a release candidate later)
   // Apply and each Undo make one undo step of unsaved changes (glyph files included); nothing is
   // written until Save.
+  import { phone } from '$lib/phone.svelte';
   import * as I from '$lib/icons';
   import type { Bundle } from '$lib/bundle';
   import type { Layout } from '$lib/api';
@@ -179,7 +180,7 @@
     {#if readOnly}
       {#if mode === 'mine'}<a class="btnlink" href="/requests">Your Change Requests</a>{/if}
       {#if onexport}<button onclick={onexport}>Export…</button>{/if}
-      {#if mode === 'mine'}
+      {#if mode === 'mine' && !phone.on}
         <button class="primary" onclick={() => (sending = true)} disabled={!sendable.length}
           title={sendable.length ? '' : items.length > done.length ? 'Every change is already in a Change Request' : 'No changes to send yet'}><I.Send size={14} /> Send Change Request…</button>
       {/if}
@@ -341,6 +342,14 @@
       <span class="muted small">Decisions are saved on the request; nothing goes into the font yet. Kept changes go into the next release candidate.</span>
       <span class="spacer"></span>
       <button class="primary" onclick={() => ondecide?.(Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'])))}>Save decisions</button>
+    </div>
+  {:else if mode === 'mine' && phone.on && items.length}
+    <!-- a phone: Send stays in reach at the bottom while the list scrolls -->
+    {@const sent = items.filter((i) => app.lockOf(i.id)).length}
+    <div class="applybar">
+      <span>{sendable.length} ready to send{#if sent} · {sent} sent{/if}</span>
+      <span class="spacer"></span>
+      <button class="primary" onclick={() => (sending = true)} disabled={!sendable.length}><I.Send size={14} /> Send Change Request…</button>
     </div>
   {:else if !readOnly && items.length}
     <div class="applybar">

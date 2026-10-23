@@ -37,4 +37,5 @@
   .k { display: inline-block; width: 70px; color: var(--ink-muted); }
   .x { height: 16px; padding: 0 4px; border: 0; background: transparent; }
   select { height: 26px; }
+  @media (max-width: 759.98px) { .x { width: var(--control-sm); height: var(--control-sm); } }
 </style>

@@ -93,5 +93,18 @@ describe('glyph editor panels', () => {
     const all = [...editorPanels.a.docks.left, ...editorPanels.a.docks.right, ...editorPanels.a.docks.bottom].sort();
     expect(all).toEqual(['checks', 'compare', 'glyph', 'selection', 'tester', 'trace', 'tryit', 'typing']);
   });
+  it('a phone has its own arrangement: one column, Spacing first and open; open() unfolds and asks to reveal', () => {
+    panels.mode = 'phone';
+    expect(panels.a.docks.right[0]).toBe('spacing');
+    expect(panels.a.docks.left).toEqual([]);
+    expect(panels.isFolded('spacing')).toBe(false);
+    expect(panels.isFolded('glyphs')).toBe(true);
+    panels.open('glyphs');
+    expect(panels.isFolded('glyphs')).toBe(false);
+    expect(panels.reveal).toBe('glyphs');
+    panels.mode = 'wide';
+    expect(panels.isFolded('glyphs')).toBe(false);   // the wide arrangement keeps its own folds
+    expect(panels.dockOf('glyphs')).toBe('bottom');
+  });
 });
 

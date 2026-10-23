@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import * as I from '$lib/icons';
   import { hosted } from '$lib/hosted.svelte';
+  import { PHONE_MEDIA } from '$lib/phone.svelte';
   import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor, type PanelHelp } from '$lib/help';
 
   // everyone: the copy for the public help (scripts/help-export.mjs), with both the online and the
@@ -13,14 +14,18 @@
   let local = $derived(everyone || !hosted.isHosted);
   let scroller: HTMLElement;
   let current = $state(HELP_SECTIONS[0].id);
+  // a phone: the contents are one sticky line naming the section you're in; it opens the list
+  let contentsOpen = $state(false);
+  let currentTitle = $derived(HELP_SECTIONS.find((s) => s.id === current)?.title ?? '');
 
   onMount(() => {
+    const narrow = window.matchMedia?.(PHONE_MEDIA).matches ?? false;
     const seen = new Map<string, boolean>();
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) seen.set(e.target.id, e.isIntersecting);
       const first = HELP_SECTIONS.find((s) => seen.get(s.id));
       if (first) current = first.id;
-    }, { root: scroller, rootMargin: '0px 0px -70% 0px' });
+    }, { root: scroller, rootMargin: `${narrow ? '-60px' : '0px'} 0px -70% 0px` });   // a phone: below the contents line
     for (const s of HELP_SECTIONS) { const el = document.getElementById(s.id); if (el) io.observe(el); }
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
     return () => io.disconnect();
@@ -36,6 +41,14 @@
 {/snippet}
 
 <div class="page" bind:this={scroller}>
+  <details class="otp" bind:open={contentsOpen}>
+    <summary><span class="otp-label">Contents</span>{#if !everyone}<span class="otp-now">{currentTitle}</span>{/if}<span class="otp-chev"><I.Dropdown /></span></summary>
+    <nav aria-label="Contents">
+      {#each HELP_SECTIONS as s}
+        <a href="#{s.id}" aria-current={current === s.id ? 'true' : undefined} onclick={() => (contentsOpen = false)}>{s.title}</a>
+      {/each}
+    </nav>
+  </details>
   <div class="layout">
     <nav class="toc" aria-label="Contents">
       <p class="toc-title">Contents</p>
@@ -47,6 +60,7 @@
     <article>
       <h1>How to use the Builder</h1>
       <p class="lede">The JZP Font Builder is where the JianZiPu font is made: the drawings of its parts, how each part is typed, and how the parts sit together in a 减字 character. This page walks through each screen in the order you'd usually use them.</p>
+      <p class="muted">Changing the Builder itself? The <a href="/help/design.html">design guide</a> says how it looks and behaves, on a computer and on a phone.</p>
 
       <!-- ─────────────────────────────────────────────── -->
       <section id="start">
@@ -67,6 +81,8 @@
             You're using the Builder on your own computer (the <span class="chip dashed">Local files</span> chip in the header). Save writes the files in <code>builder/inputs/</code>, which you then commit.
           {/if}
         </div></div>
+        <h3 id="phone">On a phone</h3>
+        <p>The Builder is made for a computer, but it opens on a phone too. Controls are larger there, the screens are tabs along the bottom, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: <strong>Copy link</strong> copies the page's address to open on a computer, and <strong>Open anyway</strong> opens the tool on the phone until you reload the page.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -102,6 +118,7 @@
           <li>With an area picked, <strong>+ Add glyphs</strong> puts existing drawings into it. One glyph can be in several areas.</li>
           <li>Click a tile to select it; double-click it (or press Enter, or its <strong>Edit</strong> pill) to open the <a href="#editor">glyph editor</a>.</li>
         </ul>
+        <p>On a phone, two menus above the tiles pick the area and a spelling filter, and tapping a tile opens the glyph's card over the tiles: its areas, its spellings to edit, and Try it. <strong>All glyphs</strong> goes back. Drawing needs a computer, and so do <strong>+ New glyph</strong>, the reference weight and the CSV import and export.</p>
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
 
         <h3>Typing: spellings</h3>
@@ -124,6 +141,7 @@
           <li>Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a <span class="pill danger"><I.Problem size={14} />clash</span> holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.</li>
           <li>The <strong>Typing</strong> filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.</li>
         </ul>
+        <p>On a phone, Typing is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -157,11 +175,13 @@
           <li>Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.</li>
           <li>Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.</li>
           <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
+          <li>On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.</li>
         </ul>
         <h3>The panels</h3>
         <p>Panels can be docked left, right or below, folded and resized; <I.More class="inl" aria-label="More" /> → <strong>Reset panel layouts</strong> puts them back. Each panel's <I.Help class="inl" aria-label="?" /> shows the same text as below.</p>
         {@render panelList(LAYOUTS_HELP)}
         <p>Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the <strong>Advanced</strong> checkbox in the header, so they aren't changed by accident. It's off again after a reload.</p>
+        <p>On a phone, the canvas stays at the top and the panels are sections under it, in a fixed order: tapping a part opens its <strong>Spacing</strong> just below the canvas, and pressing and holding it drags it. In Spacing, drag a rule row by its grip to change the order, and press and hold a base in the <em>relative to</em> line to drag it to another place in the line. Reordering the parts in <strong>Structure</strong> and the <strong>Advanced</strong> edits need a computer.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -180,6 +200,7 @@
           <dt>Test the font file</dt><dd>Running text in the font file, as a reader sees it. Switch <strong>liga</strong> (substitution) and <strong>kern</strong> (positioning) off to see the raw parts, try <strong>vertical columns</strong>, or <strong>compare with a second font</strong> side by side.</dd>
         </dl>
         <figure><a href="/help/build-font.jpg" target="_blank"><img src="/help/build-font.jpg" alt="Build and test, Test the font file view: the same words as running text in the built font" width="1280" height="800" loading="lazy" /></a><figcaption><strong>Test the font file</strong>: the same words as running text in the built font.</figcaption></figure>
+        <p>On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (<strong>No build yet</strong>, or when the last build was made) opens the build, font and view settings and the build log.</p>
         <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <I.Warn class="inl badge-warn" aria-label="warning" /> under a word means some of its parts matched no word type.</p>
       </section>
 
@@ -191,6 +212,7 @@
           <li><I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
           <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a>.</li>
           <li>Unsaved work survives a reload: the Builder offers to restore it.</li>
+          <li>On a phone, the header is one row (the screen's name, its status, <I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> on Glyphs and Layouts, and <I.More class="inl" aria-label="More" />), the screens are tabs at the bottom, and <strong>Save</strong> sits in a bar above the tabs while something is unsaved.</li>
           {#if online}
             <li>Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.</li>
           {/if}
@@ -399,6 +421,11 @@
           <dt>“This isn't a Builder design file (needs version 2, layouts[] and areas&#123;&#125;).”</dt><dd><strong>Import…</strong> takes a design.json exported by the Builder.</dd>
           <dt>“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”</dt><dd><strong>Feedback</strong> or <strong>Ask for an invite</strong> didn't go. Check your connection (an ad blocker can stop it too) and send again.</dd>
         </dl>
+
+        <h3 id="messages-phone">On a phone</h3>
+        <dl class="panels messages">
+          <dt>“<em>The glyph editor</em> needs a computer. It's made for a mouse and a big screen. Open this page on a computer, or open it here anyway.”</dt><dd>The same note stands in for Review, making a release, and importing and exporting the design. Press <strong>Copy link</strong> and open the link on a computer, or <strong>Open anyway</strong> to use the tool on the phone until you reload the page.</dd>
+        </dl>
       </section>
     </article>
   </div>
@@ -443,11 +470,22 @@
   dl.messages dd { margin-bottom: var(--space-4); }
   h3[id] { scroll-margin-top: var(--space-5); }
   dt:target, dt:target + dd { background: var(--sel-bg); }
-  @media (max-width: 760px) {
+  .otp { display: none; }
+  @media (max-width: 759.98px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
-    .toc { position: static; flex-direction: row; flex-wrap: wrap; }
-    .toc-title { width: 100%; }
-    .toc a { border-left: 0; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .toc { display: none; }
+    /* "On this page": one sticky line with the current section; the list drops down over the text */
+    .otp { display: block; position: sticky; top: 0; z-index: 3; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+    .otp summary { display: flex; align-items: center; gap: var(--space-4); min-height: var(--control-touch); padding: 0 var(--space-5); cursor: pointer; list-style: none; }
+    .otp summary::-webkit-details-marker { display: none; }
+    .otp-label { color: var(--ink-muted); }
+    .otp-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 var(--t-panel)/1.2 var(--font-display); }
+    .otp-chev { display: inline-flex; margin-left: auto; color: var(--ink-muted); transition: transform 120ms ease-out; }
+    .otp[open] .otp-chev { transform: rotate(180deg); }
+    .otp nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 65dvh; overflow: auto; display: flex; flex-direction: column; padding: var(--space-2) 0; background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-float); }
+    .otp nav a { display: flex; align-items: center; min-height: var(--control-touch); padding: 0 var(--space-5); border-left: 3px solid transparent; color: var(--ink); text-decoration: none; }
+    .otp nav a[aria-current="true"] { border-left-color: var(--sel-border); background: var(--sel-bg); font-weight: 600; }
+    section[id], h3[id], dt[id] { scroll-margin-top: calc(var(--control-touch) + var(--space-4)); }
     dl { grid-template-columns: 1fr; gap: var(--space-1); }
     dd { margin-bottom: var(--space-3); }
     table.ref td:first-child { white-space: normal; }

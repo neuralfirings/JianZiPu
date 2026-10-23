@@ -61,6 +61,15 @@ class TypingCheck {
     if (this.notBuilt.includes(g)) out.push(`${g} isn't in the last build yet. Build to preview it.`);
     return out;
   }
+  /** Everything wrong with one glyph's spellings, errors (Save waits) first. */
+  issuesFor(g: string): string[] {
+    return [...app.typingErrors.filter((e) => (e.kind === 'clash' ? e.glyphs.includes(g) : e.glyph === g)).map((e) => e.message), ...this.warningsFor(g)];
+  }
+  /** 'err' when Save waits on this glyph, 'warn' when it only has warnings. */
+  statusOf(g: string): 'err' | 'warn' | '' {
+    if (app.typingErrors.some((e) => (e.kind === 'clash' ? e.glyphs.includes(g) : e.glyph === g))) return 'err';
+    return this.warningsFor(g).length ? 'warn' : '';
+  }
 }
 
 export const typingCheck = new TypingCheck();

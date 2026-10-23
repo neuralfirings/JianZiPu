@@ -1,6 +1,7 @@
 <script lang="ts">
   // Spacing rules of the selected part: the chain of bases (in search order)
   // and the rule rows of the viewed base, as glyph sentences.
+  import { phone } from '$lib/phone.svelte';   // a phone: no HTML drag (iOS starts one on a long press)
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { editor, gapEntryIndex } from '$lib/editor.svelte';
@@ -8,6 +9,7 @@
   import { chainFor, entriesOf, isOtherwise, normalizeGap, uncovered } from '$lib/rules';
   import type { Layout, Relationship } from '$lib/api';
   import Glyph from './Glyph.svelte';
+  import { Hold } from '$lib/hold';
 
   let layout = $derived(editor.layout!);
   let el = $derived(editor.elements.find((e) => e.name === editor.selected)!);
@@ -99,6 +101,55 @@
     edit(`${label}: reorder bases`, (l) => { const [r] = l.relationships.splice(from, 1); l.relationships.splice(to > from ? to - 1 : to, 0, r); });
     editor.viewedRel = to > from ? to - 1 : to;
   }
+  // a finger (on a phone): press and hold a base to lift it, then drag it along the chain; a bar shows where it lands
+  let chainEl = $state<HTMLElement>();
+  let pressingPill = $state<number | null>(null);
+  let fingerPill = $state<{ from: number; to: number } | null>(null);   // positions in the chain
+  let skipClick = false;
+  function pillDown(e: PointerEvent, from: number) {
+    if (!phone.on || e.pointerType === 'mouse') return;
+    const btn = e.currentTarget as HTMLElement, id = e.pointerId;
+    const pills = () => [...chainEl!.querySelectorAll<HTMLElement>('button.opt[data-pos]')];
+    // the position the finger points at: before the first pill it is left of (row by row), else the end
+    const landAt = (x: number, y: number) => {
+      for (const p of pills()) {
+        const b = p.getBoundingClientRect();
+        if (y < b.top || (y <= b.bottom && x < b.left + b.width / 2)) return +p.dataset.pos!;
+      }
+      return chain.length;
+    };
+    const hold = new Hold({
+      ontap: () => { pressingPill = null; },
+      onlift: () => { pressingPill = null; fingerPill = { from, to: from }; navigator.vibrate?.(10); try { btn.setPointerCapture(id); } catch { /* the finger already left */ } }
+    });
+    hold.down(e.clientX, e.clientY);
+    pressingPill = from;
+    const move = (ev: PointerEvent) => {
+      if (!hold.move(ev.clientX, ev.clientY)) { if (hold.state === 'abandoned') pressingPill = null; return; }
+      fingerPill = { from, to: landAt(ev.clientX, ev.clientY) };
+    };
+    const done = (drop: boolean) => () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel);
+      const lifted = drop ? hold.up() : hold.cancel();
+      const r = fingerPill; fingerPill = null; pressingPill = null;
+      if (!lifted) return;
+      skipClick = true; setTimeout(() => (skipClick = false), 400);   // the lift's own click doesn't open the base
+      if (drop && r && r.to !== r.from && r.to !== r.from + 1) {
+        dragPill = chain[r.from].index;
+        dropPill(r.to < chain.length ? chain[r.to].index : chain[chain.length - 1].index + 1);
+      }
+    };
+    const onUp = done(true), onCancel = done(false);
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancel);
+  }
+  // once a base is lifted the panel must not scroll under the finger
+  $effect(() => {
+    const el = chainEl;
+    if (!el) return;
+    const stop = (e: TouchEvent) => { if (fingerPill) e.preventDefault(); };
+    el.addEventListener('touchmove', stop, { passive: false });
+    return () => el.removeEventListener('touchmove', stop);
+  });
   function removeViewed() {
     if (viewed == null || !rel) return;
     edit(`${label}: remove "relative to ${pillLabel(rel)}"`, (l) => { l.relationships.splice(viewed!, 1); });
@@ -121,6 +172,27 @@
       const [x] = e.splice(from, 1); e.splice(to > from ? to - 1 : to, 0, x);
       l.relationships[viewed!].gap = normalizeGap(e);
     });
+  }
+  // a finger (on a phone, where HTML drag is off): the grip drags its row up or down, a line shows where it lands
+  let rulesEl = $state<HTMLElement>();
+  let fingerRow = $state<{ from: number; to: number } | null>(null);
+  function gripDown(e: PointerEvent, i: number) {
+    if (!phone.on || e.pointerType === 'mouse') return;
+    e.preventDefault(); e.stopPropagation();
+    const rows = [...rulesEl!.querySelectorAll<HTMLElement>('.rr[data-i]:not(.other)')];
+    fingerRow = { from: i, to: i };
+    const move = (ev: PointerEvent) => {
+      let to = rows.length;
+      for (const [k, r] of rows.entries()) { const b = r.getBoundingClientRect(); if (ev.clientY < b.top + b.height / 2) { to = k; break; } }
+      fingerRow = { from: i, to };
+    };
+    const done = (drop: boolean) => () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel);
+      const r = fingerRow; fingerRow = null;
+      if (drop && r && r.to !== r.from && r.to !== r.from + 1) { dragRow = r.from; dropRow(r.to); }
+    };
+    const onUp = done(true), onCancel = done(false);
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancel);
   }
   function addOtherwise() {
     if (viewed == null) return;
@@ -147,15 +219,17 @@
     </label>
   </div>
 
-  <div class="chain">
+  <div class="chain" bind:this={chainEl}>
     <span class="muted">{axis === 'y' ? 'gap above, relative to' : 'position, relative to'}</span>
     {#each chain as c, k (c.index)}
       {#if k > 0}<span class="else">else</span>{/if}
-      <button class="opt" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)}
+      <button class="opt" class:active={c.index === active} class:view={c.index === viewed} class:absent={!basePresent(c.rel)} data-pos={k}
+        class:pressing={pressingPill === k} class:lifting={fingerPill?.from === k} class:land={fingerPill != null && fingerPill.to === k} class:land-after={fingerPill != null && k === chain.length - 1 && fingerPill.to === chain.length}
+        onpointerdown={(e) => pillDown(e, k)}
         onpointerenter={() => (editor.hoverRel = c.index)} onpointerleave={() => { if (editor.hoverRel === c.index) editor.hoverRel = null; }}
-        draggable="true" ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
+        draggable={!phone.on} ondragstart={() => (dragPill = c.index)} ondragover={(e) => e.preventDefault()} ondrop={() => dropPill(c.index)}
         title={c.index === active ? 'In effect for the preview word' : basePresent(c.rel) ? 'Not in effect: an earlier base wins. Click to look at its rules (the preview drops the parts before it).' : 'Not in effect: this part is not in the word. Click to add it to the preview.'}
-        onclick={() => viewPill(c.index)}>{#if c.index === active}<I.Current size={12} />{/if}{pillLabel(c.rel)}</button>
+        onclick={() => { if (!skipClick) viewPill(c.index); }}>{#if c.index === active}<I.Current size={12} />{/if}{pillLabel(c.rel)}</button>
     {/each}
     <span class="addwrap">
       <button class="opt add" onclick={() => (addOpen = !addOpen)} aria-label="Add a base"><I.Plus size={14} /><I.Dropdown size={12} /></button>
@@ -186,14 +260,16 @@
       <div class="info">Viewing <b>{pillLabel(rel)}</b>: not in effect for the current word. <button class="tiny" onclick={() => viewPill(viewed!)}>show the word it applies to</button></div>
     {/if}
 
-    <div class="rules">
+    <div class="rules" bind:this={rulesEl}>
       <div class="rhead"><span></span><span></span><span>when {showElem ? label : ''}{showElem && showBase ? ' · ' : ''}{showBase ? pillLabel(rel) : ''}{!showElem && !showBase ? 'always' : ' is'}</span><span></span><span>gap</span></div>
       {#each entries as e, i (i)}
         {@const other = isOtherwise(e)}
-        <div class="rr" class:on={i === activeEntry} class:other
-          draggable={!other} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
+        {@const last = !other && (i === entries.length - 1 || isOtherwise(entries[i + 1]))}
+        <div class="rr" class:on={i === activeEntry} class:other data-i={i}
+          class:lifting={fingerRow?.from === i} class:land={fingerRow != null && fingerRow.to === i && !other} class:land-after={fingerRow != null && last && fingerRow.to === i + 1}
+          draggable={!other && !phone.on} ondragstart={() => (dragRow = i)} ondragover={(ev) => { if (!other || dragRow != null) ev.preventDefault(); }} ondrop={() => dropRow(other ? i : i)}
           role="button" tabindex="0" onclick={() => openEditor(i)} onkeydown={(ev) => { if (ev.key === 'Enter') openEditor(i); }}>
-          <span class="hdl">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
+          <span class="hdl" onpointerdown={(ev) => { if (!other) gripDown(ev, i); }} onclick={(ev) => { if (phone.on) ev.stopPropagation(); }} aria-hidden="true">{#if other}<I.Otherwise size={14} />{:else}<I.Grip size={14} />{/if}</span>
           <span class="rn">{other ? '–' : i + 1}</span>
           <span class="chips">
             {#if other}
@@ -271,4 +347,25 @@
   .x { height: 18px; width: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-muted); }
   .lnk { display: inline-flex; align-items: center; gap: 4px; border-style: dashed; }
   .warn { color: var(--status-draft); }
+  /* a phone: the small buttons at a finger's size; the grip drags its row (no text selection on a long press) */
+  @media (max-width: 759.98px) {
+    .tiny { height: var(--control-sm); }
+    .x { height: var(--control-sm); width: var(--control-sm); }
+    .rhead, .rr { grid-template-columns: 28px 20px 1fr 34px 62px var(--control-sm); }
+    .hdl { align-self: stretch; align-items: center; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .rn, .chips, .arrow { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .rr { position: relative; }
+    .opt { position: relative; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .opt.pressing { outline: 0 solid var(--link); outline-offset: 2px; animation: pillhold 400ms linear forwards; }
+    .opt.lifting { border-color: var(--link); box-shadow: var(--shadow-drag); opacity: .85; }
+    .opt.land::before, .opt.land-after::after { content: ''; position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: var(--link); }
+    .opt.land::before { left: calc(-1 * var(--space-3)); }
+    .opt.land-after::after { right: calc(-1 * var(--space-3)); }
+    .rr.lifting { border-color: var(--link); box-shadow: var(--shadow-drag); opacity: .85; }
+    .rr.land::before, .rr.land-after::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--link); }
+    .rr.land::before { top: -5px; }
+    .rr.land-after::after { bottom: -5px; }
+  }
+  @keyframes pillhold { 0%, 25% { outline-width: 0; } 100% { outline-width: 3px; } }
+  @media (prefers-reduced-motion: reduce) { .opt.pressing { outline-width: 3px; } }
 </style>

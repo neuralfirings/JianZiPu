@@ -3,8 +3,12 @@
   // click to select, drag to move (reported in font units, axis-locked),
   // rule arrows (active / ghost, selectable), and edge handles on the
   // selected box that can be dragged onto another box's edge to link them.
+  // holdToDrag (Layouts on a phone): a finger swipes to scroll, taps to select, and presses and
+  // holds to lift a part or a handle before dragging it (lib/hold.ts).
   import { parseSvg } from '$lib/svg';
   import { app } from '$lib/state.svelte';
+  import { onMount } from 'svelte';
+  import { Hold } from '$lib/hold';
   import { canvasBox, labelWidth, placeLabels, edgeBar, barLength, barsCoincide, type BoxEdge } from '$lib/shape';
 
   type El = { name: string; area: string; glyph?: string | null; x: number | null; y: number | null; size: [number, number]; error?: boolean; anchor?: boolean; missing?: ('x' | 'y')[]; problem?: string };
@@ -19,6 +23,7 @@
     page = [0, 1000], pageHeight = [-500, 1100], center = null, emBox = null, selected = null, hoverable = false,
     arrows = [], hotBar = null, labels = false, fit = true, maxHeight = 0, handles = false, selectedArrow = null,
     dimmed = [], dragOnly = null, lockAxis = null, overlay = {}, baseMark = null, marked = [], ghosts = [],
+    holdToDrag = false,
     onselect, ondrag, onlink, onselectarrow
   }: {
     elements: El[]; width?: number; height?: number; showBoxes?: boolean; showGlyphs?: boolean; showPage?: boolean;
@@ -34,6 +39,8 @@
     marked?: string[];
     /** Boxes drawn dashed: where the parts were before a pending edit. */
     ghosts?: { x: number; y: number; size: [number, number] }[];
+    /** A finger presses and holds to drag; swipes scroll the page (Layouts on a phone). */
+    holdToDrag?: boolean;
     onselect?: (name: string | null) => void;
     ondrag?: (e: { name: string; dx: number; dy: number; phase: 'start' | 'move' | 'end' | 'cancel' }) => void;
     onlink?: (e: { name: string; edge: Edge; target: string; targetEdge: Edge }) => void;
@@ -83,21 +90,52 @@
   let drag: { name: string; sx: number; sy: number; axis: 'x' | 'y' | null; scale: number } | null = null;
   let link = $state<{ name: string; edge: Edge; x: number; y: number; cx: number; cy: number; sx: number; sy: number; target: { name: string; edge: Edge } | null } | null>(null);
 
-  function toUnits(e: PointerEvent): { x: number; y: number } {
+  function toUnits(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const pt = svgEl.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
     const p = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
     return { x: p.x, y: -p.y };
   }
   function down(e: PointerEvent, name: string) {
+    const at = { x: e.clientX, y: e.clientY }, el = e.currentTarget as Element, id = e.pointerId;
+    if (finger(e)) return press(e, () => { if (!dragOnly) { onselect?.(name); onselectarrow?.(null); } }, () => grab(name, at, el, id, true), !!ondrag && (!dragOnly || dragOnly === name));
+    grab(name, at, el, id, false);
+  }
+  function grab(name: string, at: { x: number; y: number }, el: Element, pointerId: number, lifted: boolean) {
     if (dragOnly) { if (name !== dragOnly) return; } else { onselect?.(name); onselectarrow?.(null); }
     if (!ondrag) return;
     const r = svgEl.getBoundingClientRect();
-    drag = { name, sx: e.clientX, sy: e.clientY, axis: null, scale: box.w / r.width };
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    drag = { name, sx: at.x, sy: at.y, axis: null, scale: box.w / r.width };
+    try { el.setPointerCapture(pointerId); } catch { /* the finger already left */ }
+    if (lifted) { liftedName = name; navigator.vibrate?.(10); }
     ondrag({ name, dx: 0, dy: 0, phase: 'start' });
   }
+
+  // ---- a finger (holdToDrag): tap, or press and hold, before anything moves
+  let hold: Hold | null = null;
+  let liftedName = $state<string | null>(null);
+  /** Where a finger is holding, before the lift: a ring there fills over the hold time. */
+  let pressAt = $state<{ x: number; y: number } | null>(null);
+  const finger = (e: PointerEvent) => holdToDrag && e.pointerType === 'touch';
+  /** Start waiting: a tap runs `tap`, a hold runs `lift`, a swipe leaves it to scrolling. */
+  function press(e: PointerEvent, tap: () => void, lift: () => void = tap, ring = false) {
+    hold?.cancel();
+    const at = toUnits(e);
+    hold = new Hold({ ontap: () => { pressAt = null; tap(); }, onlift: () => { pressAt = null; lift(); } });
+    hold.down(e.clientX, e.clientY);
+    pressAt = ring ? at : null;
+  }
+  /** On a finger, the plain-mouse action happens on a tap (so a swipe that starts here can scroll). */
+  function tapOr(e: PointerEvent, act: () => void) { if (finger(e)) press(e, act); else act(); }
+  // once a part is lifted the page must not scroll under the finger; touch-action can't change mid-gesture
+  onMount(() => {
+    const stop = (e: TouchEvent) => { if (hold?.lifted || liftedName) e.preventDefault(); };
+    svgEl.addEventListener('touchmove', stop, { passive: false });
+    return () => svgEl.removeEventListener('touchmove', stop);
+  });
+
   function move(e: PointerEvent) {
+    if (hold && e.pointerType === 'touch' && !hold.move(e.clientX, e.clientY)) { if (hold.state === 'abandoned') pressAt = null; return; }
     if (link) {
       if (Math.hypot(e.clientX - link.sx, e.clientY - link.sy) <= 6) return;
       const p = toUnits(e); link = { ...link, cx: p.x, cy: p.y, target: hitEdge(p, link.name, link.edge) }; return;
@@ -111,6 +149,8 @@
     ondrag?.({ name: drag.name, dx: Math.round(dx), dy: Math.round(dy), phase: 'move' });
   }
   function up(e: PointerEvent) {
+    if (hold) { const wasLifted = hold.up(); hold = null; if (!wasLifted) return; }
+    liftedName = null; pressAt = null;
     if (link) {
       // a click on a handle (no real drag) is not a drop
       const moved = Math.hypot(e.clientX - link.sx, e.clientY - link.sy) > 6;
@@ -127,13 +167,19 @@
     drag = null;
   }
   export function cancelDrag() {
+    hold?.cancel(); hold = null; liftedName = null; pressAt = null;
     if (link) link = null;
     if (drag) { ondrag?.({ name: drag.name, dx: 0, dy: 0, phase: 'cancel' }); drag = null; }
   }
   function handleDown(e: PointerEvent, name: string, edge: Edge, x: number, y: number) {
     e.stopPropagation();
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    link = { name, edge, x, y, cx: x, cy: y, sx: e.clientX, sy: e.clientY, target: null };
+    const el = e.currentTarget as Element, id = e.pointerId, sx = e.clientX, sy = e.clientY;
+    const start = (lifted: boolean) => {
+      try { el.setPointerCapture(id); } catch { /* the finger already left */ }
+      if (lifted) { liftedName = name; navigator.vibrate?.(10); }
+      link = { name, edge, x, y, cx: x, cy: y, sx, sy, target: null };
+    };
+    if (finger(e)) press(e, () => {}, () => start(true), true); else start(false);
   }
   /** Nearest compatible edge of another box within reach of the point. */
   function hitEdge(p: { x: number; y: number }, self: string, edge: Edge): { name: string; edge: Edge } | null {
@@ -155,9 +201,9 @@
 </script>
 
 
-<svg bind:this={svgEl} width={w} height={h} viewBox="{box.x} {box.y} {box.w} {box.h}" class="canvas" class:interactive={!!onselect} class:linking={!!link}
-  onpointermove={move} onpointerup={up} onpointercancel={cancelDrag}
-  onpointerdown={() => { onselect?.(null); onselectarrow?.(null); }} role="img"><!-- parts, arrows and handles stop their pointerdown, so anything reaching here (page, guides, empty space) deselects -->
+<svg bind:this={svgEl} width={w} height={h} viewBox="{box.x} {box.y} {box.w} {box.h}" class="canvas" class:interactive={!!onselect} class:linking={!!link} class:hold={holdToDrag}
+  onpointermove={move} onpointerup={up} onpointercancel={cancelDrag} oncontextmenu={(e) => { if (holdToDrag) e.preventDefault(); }}
+  onpointerdown={(e) => tapOr(e, () => { onselect?.(null); onselectarrow?.(null); })} role="img"><!-- parts, arrows and handles stop their pointerdown, so anything reaching here (page, guides, empty space) deselects -->
   {#if showPage}
     <rect x={page[0]} y={-pageHeight[1]} width={page[1] - page[0]} height={pageHeight[1] - pageHeight[0]} class="page" />
     <line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />
@@ -185,9 +231,9 @@
       {@const g = e.glyph ? parseSvg(app.svgs[e.glyph]) : null}
       {@const tgt = link?.target?.name === e.name ? link.target.edge : null}
       {@const ov = overlay[e.name]}
-      <g class="el" class:selected={selected === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
+      <g class="el" class:selected={selected === e.name} class:lifted={liftedName === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
          class:dim={dimmed.includes(e.name)} class:marked={marked.includes(e.name)} class:base={baseMark === e.name} class:rulebase={ruleBases.has(e.name)} class:rulebasedim={ruleBases.get(e.name) === false} class:locked={!!dragOnly && dragOnly !== e.name}
-         onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1">
+         onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1" aria-label={e.glyph ? `${e.name}: ${e.glyph}` : e.name}>
         {#if ov && ov.length}
           {#each ov as og, oi (og)}
             {@const pg = parseSvg(app.svgs[og])}
@@ -220,7 +266,7 @@
     {@const la = labelAt[ai]}
     {@const on = a.id != null && a.id === selectedArrow}
     <g class="arrow" class:ghost={a.ghost} class:on role="button" tabindex="-1"
-       onpointerdown={(ev) => { ev.stopPropagation(); if (a.id) onselectarrow?.(a.id); }}>
+       onpointerdown={(ev) => { ev.stopPropagation(); tapOr(ev, () => { if (a.id) onselectarrow?.(a.id); }); }}>
       <title>{a.title ?? a.label}</title>
       {#if 'y1' in a}
         <line x1={a.x} x2={a.x} y1={-a.y1} y2={-a.y2} class="hit" />
@@ -241,11 +287,18 @@
     {@const cx = sel.x + sel.size[0] / 2}
     {@const cy = sel.y + sel.size[1] / 2}
     {#each [['top', cx, sel.y + sel.size[1]], ['bottom', cx, sel.y], ['left', sel.x, cy], ['right', sel.x + sel.size[0], cy]] as [edge, hx, hy]}
-      <circle cx={hx} cy={-(hy as number)} r={hr} class="handle" role="button" tabindex="-1"
+      <!-- a finger needs a bigger target than the drawn handle: a clear ring of 24 px around it -->
+      {#if holdToDrag}<circle cx={hx} cy={-(hy as number)} r={Math.max(hr, 12 * upp)} class="handle-hit" role="button" tabindex="-1" aria-label="{edge} edge handle"
+        onpointerdown={(ev) => handleDown(ev, sel!.name, edge as Edge, hx as number, hy as number)} />{/if}
+      <circle cx={hx} cy={-(hy as number)} r={hr} class="handle" class:lifted={liftedName === sel.name && !!link && link.edge === edge} role="button" tabindex="-1"
         onpointerdown={(ev) => handleDown(ev, sel!.name, edge as Edge, hx as number, hy as number)}>
         <title>Drag this {edge} edge onto another part's edge to attach it there</title>
       </circle>
     {/each}
+  {/if}
+  {#if pressAt}
+    <!-- holding: the ring fills, then the part lifts (taps are over before it shows) -->
+    <circle cx={pressAt.x} cy={-pressAt.y} r={30 * upp} class="holdring" pathLength="100" />
   {/if}
   {#if link}
     <line x1={link.x} y1={-link.y} x2={link.cx} y2={-link.cy} class="linkline" />
@@ -255,6 +308,17 @@
 
 <style>
   .canvas { display: block; background: var(--bg-canvas); border-radius: var(--radius-md); touch-action: none; overflow: visible; }
+  /* a finger: swipes scroll (pinch stays off), no callout or text selection on a long press */
+  .canvas.hold { touch-action: pan-x pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  /* lifted: picked up off the page, with a drag shadow and a stronger fill */
+  .el.lifted .box, .el.lifted .box.hidden { stroke: var(--ov-active); stroke-width: 4; fill: var(--sel-bg); fill-opacity: .6; }
+  .el.lifted { filter: drop-shadow(var(--shadow-drag)); }
+  .holdring { fill: none; stroke: var(--ov-active); stroke-width: 4; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0; pointer-events: none;
+    transform-box: fill-box; transform-origin: center; animation: holdring 400ms linear forwards; }
+  @media (prefers-reduced-motion: reduce) { .holdring { opacity: 1; stroke-dashoffset: 0; } }
+  @keyframes holdring { 0%, 25% { opacity: 0; stroke-dashoffset: 100; } 30% { opacity: 1; } 100% { opacity: 1; stroke-dashoffset: 0; } }
+  .handle-hit { fill: transparent; stroke: none; }
+  .handle.lifted { fill: var(--ov-active); }
   .page { fill: none; stroke: var(--ov-guide); stroke-dasharray: 12 12; stroke-width: 2; }
   .baseline { stroke: var(--ov-guide); stroke-width: 2; }
   .embox { fill: none; stroke: var(--ov-guide); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }

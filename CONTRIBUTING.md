@@ -31,7 +31,9 @@ requests.
 
 1. Branch from `main`.
 2. Make your change. `README.md` and `builder/README.md` explain how to
-   set up and run everything.
+   set up and run everything. A change to how the Builder looks or behaves
+   follows its design guide (`/help/design.html` in the Builder, from
+   `app/static/help/design.html`), on a computer and on a phone.
 3. Run both test suites: `cd app && npm test` and
    `cd builder && python3 -m pytest tests`.
 4. Open a pull request against `main`.

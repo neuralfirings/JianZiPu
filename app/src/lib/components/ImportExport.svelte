@@ -3,6 +3,8 @@
   import { app } from '$lib/state.svelte';
   import type { Design } from '$lib/api';
   import { designSummary } from '$lib/merge';
+  import { openedAnyway, phone } from '$lib/phone.svelte';
+  import NeedsComputer from './NeedsComputer.svelte';
   let { mode, onclose }: { mode: 'import' | 'export'; onclose: () => void } = $props();
 
   function download() {
@@ -56,7 +58,9 @@
 
 <div class="modal-bg" role="presentation" onclick={onclose}>
   <div class="modal" role="dialog" onclick={(e) => e.stopPropagation()}>
-    {#if mode === 'export'}
+    {#if phone.on && !openedAnyway['import-export']}
+      <NeedsComputer tool="Importing and exporting the design" key="import-export" {onclose} />
+    {:else if mode === 'export'}
       <h3>Export</h3>
       <p>One file with everything the Builder edits, readable by the font build as <code>inputs/design.json</code>:</p>
       <ul>
