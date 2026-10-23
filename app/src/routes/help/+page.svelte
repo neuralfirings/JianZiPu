@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import * as I from '$lib/icons';
   import { hosted } from '$lib/hosted.svelte';
+  import { PHONE_MEDIA } from '$lib/phone.svelte';
   import { HELP_SECTIONS, LAYOUTS_HELP, EDITOR_HELP, helpAnchor, type PanelHelp } from '$lib/help';
 
   // everyone: the copy for the public help (scripts/help-export.mjs), with both the online and the
@@ -13,14 +14,18 @@
   let local = $derived(everyone || !hosted.isHosted);
   let scroller: HTMLElement;
   let current = $state(HELP_SECTIONS[0].id);
+  // a phone: the contents are one sticky line naming the section you're in; it opens the list
+  let contentsOpen = $state(false);
+  let currentTitle = $derived(HELP_SECTIONS.find((s) => s.id === current)?.title ?? '');
 
   onMount(() => {
+    const narrow = window.matchMedia?.(PHONE_MEDIA).matches ?? false;
     const seen = new Map<string, boolean>();
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) seen.set(e.target.id, e.isIntersecting);
       const first = HELP_SECTIONS.find((s) => seen.get(s.id));
       if (first) current = first.id;
-    }, { root: scroller, rootMargin: '0px 0px -70% 0px' });
+    }, { root: scroller, rootMargin: `${narrow ? '-60px' : '0px'} 0px -70% 0px` });   // a phone: below the contents line
     for (const s of HELP_SECTIONS) { const el = document.getElementById(s.id); if (el) io.observe(el); }
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
     return () => io.disconnect();
@@ -36,6 +41,14 @@
 {/snippet}
 
 <div class="page" bind:this={scroller}>
+  <details class="otp" bind:open={contentsOpen}>
+    <summary><span class="otp-label">Contents</span>{#if !everyone}<span class="otp-now">{currentTitle}</span>{/if}<span class="otp-chev"><I.Dropdown /></span></summary>
+    <nav aria-label="Contents">
+      {#each HELP_SECTIONS as s}
+        <a href="#{s.id}" aria-current={current === s.id ? 'true' : undefined} onclick={() => (contentsOpen = false)}>{s.title}</a>
+      {/each}
+    </nav>
+  </details>
   <div class="layout">
     <nav class="toc" aria-label="Contents">
       <p class="toc-title">Contents</p>
@@ -456,11 +469,22 @@
   dl.messages dd { margin-bottom: var(--space-4); }
   h3[id] { scroll-margin-top: var(--space-5); }
   dt:target, dt:target + dd { background: var(--sel-bg); }
+  .otp { display: none; }
   @media (max-width: 759.98px) {
     .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) var(--space-5) var(--space-8); }
-    .toc { position: static; flex-direction: row; flex-wrap: wrap; }
-    .toc-title { width: 100%; }
-    .toc a { border-left: 0; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .toc { display: none; }
+    /* "On this page": one sticky line with the current section; the list drops down over the text */
+    .otp { display: block; position: sticky; top: 0; z-index: 3; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+    .otp summary { display: flex; align-items: center; gap: var(--space-4); min-height: var(--control-touch); padding: 0 var(--space-5); cursor: pointer; list-style: none; }
+    .otp summary::-webkit-details-marker { display: none; }
+    .otp-label { color: var(--ink-muted); }
+    .otp-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 var(--t-panel)/1.2 var(--font-display); }
+    .otp-chev { display: inline-flex; margin-left: auto; color: var(--ink-muted); transition: transform 120ms ease-out; }
+    .otp[open] .otp-chev { transform: rotate(180deg); }
+    .otp nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 65dvh; overflow: auto; display: flex; flex-direction: column; padding: var(--space-2) 0; background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-float); }
+    .otp nav a { display: flex; align-items: center; min-height: var(--control-touch); padding: 0 var(--space-5); border-left: 3px solid transparent; color: var(--ink); text-decoration: none; }
+    .otp nav a[aria-current="true"] { border-left-color: var(--sel-border); background: var(--sel-bg); font-weight: 600; }
+    section[id], h3[id], dt[id] { scroll-margin-top: calc(var(--control-touch) + var(--space-4)); }
     dl { grid-template-columns: 1fr; gap: var(--space-1); }
     dd { margin-bottom: var(--space-3); }
     table.ref td:first-child { white-space: normal; }
