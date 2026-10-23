@@ -18,8 +18,7 @@ const SCREENS = [
   ['/review', 'computer']
 ];
 /** Screens on their way to working on a phone: checked and reported, but not yet a failure. */
-const TODO = new Set(['/glyphs?view=tiles&group=right&g=lg_gou', '/glyphs?view=typing&group=left', '/layouts', '/test?view=words', '/test?view=text',
-  '/glyphs/lg_gou/edit', '/release', '/review']);
+const TODO = new Set(['/glyphs?view=tiles&group=right&g=lg_gou', '/glyphs?view=typing&group=left', '/layouts', '/test?view=words', '/test?view=text']);
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: 'light' });

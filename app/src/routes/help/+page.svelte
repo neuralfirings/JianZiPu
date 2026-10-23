@@ -67,6 +67,8 @@
             You're using the Builder on your own computer (the <span class="chip dashed">Local files</span> chip in the header). Save writes the files in <code>builder/inputs/</code>, which you then commit.
           {/if}
         </div></div>
+        <h3 id="phone">On a phone</h3>
+        <p>The Builder is made for a computer, but it opens on a phone too. Controls are larger there, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: <strong>Copy link</strong> copies the page's address to open on a computer, and <strong>Open anyway</strong> opens the tool on the phone until you reload the page.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -398,6 +400,11 @@
           <dt>“Pick <em>n</em> conflicts first”</dt><dd>Apply waits until every <span class="pill danger"><I.Problem size={14} />Conflict</span> has a side picked.</dd>
           <dt>“This isn't a Builder design file (needs version 2, layouts[] and areas&#123;&#125;).”</dt><dd><strong>Import…</strong> takes a design.json exported by the Builder.</dd>
           <dt>“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”</dt><dd><strong>Feedback</strong> or <strong>Ask for an invite</strong> didn't go. Check your connection (an ad blocker can stop it too) and send again.</dd>
+        </dl>
+
+        <h3 id="messages-phone">On a phone</h3>
+        <dl class="panels messages">
+          <dt>“<em>The glyph editor</em> needs a computer. It's made for a mouse and a big screen. Open this page on a computer, or open it here anyway.”</dt><dd>The same note stands in for Review, making a release, and importing and exporting the design. Press <strong>Copy link</strong> and open the link on a computer, or <strong>Open anyway</strong> to use the tool on the phone until you reload the page.</dd>
         </dl>
       </section>
     </article>

@@ -49,3 +49,6 @@ export function screenOnPhone(routeId: string | null, q: URLSearchParams = new U
   if (!s) return { computer: 'This screen' };
   return typeof s === 'function' ? s(q) : s;
 }
+
+/** Tools opened anyway on a phone, for this visit only (gone when the page reloads). */
+export const openedAnyway = $state<Record<string, boolean>>({});

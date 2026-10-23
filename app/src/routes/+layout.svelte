@@ -6,7 +6,8 @@
   import { setLucideProps } from '@lucide/svelte/context';
   import * as I from '$lib/icons';
   import { installTooltips } from '$lib/tooltip';
-  import { installPhone } from '$lib/phone.svelte';
+  import { installPhone, openedAnyway, phone, screenOnPhone } from '$lib/phone.svelte';
+  import NeedsComputer from '$lib/components/NeedsComputer.svelte';
   import { page } from '$app/state';
   import { app } from '$lib/state.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
@@ -89,6 +90,12 @@
   async function copyMessage(text: string) {
     try { await navigator.clipboard.writeText(text); pilot.say('Commit message copied.'); } catch { prompt('Commit message:', text); }
   }
+  // on a phone, a screen that needs a computer says so in place of the tool, until opened anyway
+  let needs = $derived.by(() => {
+    if (!phone.on) return null;
+    const s = screenOnPhone(page.route.id, page.url.searchParams);
+    return s === 'phone' || openedAnyway[page.route.id ?? ''] ? null : s;
+  });
   let gate = $derived(hosted.ready && hosted.isHosted && !hosted.user);
   let counts = $derived(pill && hosted.isHosted ? app.draftCounts : null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -306,7 +313,11 @@
     {:else if app.loading || !hosted.ready}
       <p class="muted" style="padding: var(--space-8)">{hosted.isHosted ? 'Loading your draft…' : 'Loading design…'}</p>
     {:else if app.design}
-      {@render children()}
+      {#if needs}
+        <NeedsComputer tool={needs.computer} key={page.route.id ?? ''} glyph={page.route.id === '/glyphs/[name]/edit' ? page.params.name : null} />
+      {:else}
+        {@render children()}
+      {/if}
     {/if}
   </main>
 

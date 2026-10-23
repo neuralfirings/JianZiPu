@@ -16,6 +16,8 @@ export { default as Opens } from '@lucide/svelte/icons/arrow-up-right';   // a l
 export { default as Plus } from '@lucide/svelte/icons/plus';
 export { default as Minus } from '@lucide/svelte/icons/minus';
 export { default as Preview } from '@lucide/svelte/icons/eye';
+export { default as Computer } from '@lucide/svelte/icons/monitor';     // a tool that needs a computer (on a phone)
+export { default as Link } from '@lucide/svelte/icons/link';
 
 // panels, menus, disclosure
 export { default as Grip } from '@lucide/svelte/icons/grip-vertical';

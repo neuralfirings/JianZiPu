@@ -16,6 +16,10 @@ A usual round: change a glyph or a rule, watch it in the live preview, **Save**,
 
 > The Builder runs in two ways. **Online**, for invited testers, everything you do goes into [your own draft](https://jianzipufont.com/help/#draft); the real font doesn't change until your draft is reviewed. **On your own computer** (the **Local files** chip in the header), Save writes the files in `builder/inputs/`, which you then commit.
 
+### On a phone
+
+The Builder is made for a computer, but it opens on a phone too. Controls are larger there, and tapping a button that shows only an icon also shows its name for a moment. Drawing glyphs, Review (apart from your own changes), making a release and importing or exporting the design need a mouse and a big screen, so on a phone they say so first: **Copy link** copies the page's address to open on a computer, and **Open anyway** opens the tool on the phone until you reload the page.
+
 ## How words are typed
 
 Every box where you type words in the Builder, and the font itself, read the same codes. A word is its parts in order, with no spaces; a space starts the next word.
@@ -338,6 +342,10 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Pick *n* conflicts first”**: Apply waits until every **Conflict** has a side picked.
 - **“This isn't a Builder design file (needs version 2, layouts[] and areas{}).”**: **Import…** takes a design.json exported by the Builder.
 - **“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”**: **Feedback** or **Ask for an invite** didn't go. Check your connection (an ad blocker can stop it too) and send again.
+
+### On a phone
+
+- **“*The glyph editor* needs a computer. It's made for a mouse and a big screen. Open this page on a computer, or open it here anyway.”**: The same note stands in for Review, making a release, and importing and exporting the design. Press **Copy link** and open the link on a computer, or **Open anyway** to use the tool on the phone until you reload the page.
 
 ---
 
