@@ -2,7 +2,9 @@
   "about": [
     "How each table of the glossary on site/index.html is laid out. The rows come from",
     "builder/inputs/components.csv: a glyph gets a row in every section its `glossary` column names",
-    "(the Builder's Glyphs > Typing view, column Glossary). Then `cd builder && python3 -m jzpbuild.glossary`",
+    "(the Builder's Glyphs > Typing view, column Glossary), by its title (\"1c: Left Hand Techniques\"), two separated",
+    "by \"; \". Each title starts with its id; the id is the key and the check keeps the titles the same in both files.",
+    "Then `cd builder && python3 -m jzpbuild.glossary`",
     "rewrites the tables between the <!-- glossary <id> --> markers; headings and text around them stay as written.",
     "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the example as [ASCII, 中文]; {} is the glyph's",
     "spelling, marked red; <r>…</r> marks more. `examples` overrides it for one glyph.",
@@ -36,7 +38,7 @@
       "usage": ["{}k5", "{}勾五"]
     },
     "1d-v": {
-      "title": "1d: Special Cases, vertical",
+      "title": "1d-v: Special Cases, vertical",
       "kind": "vertical",
       "rows": [["md_dai", "md_qi"], ["md_dui", "md_qi"], ["md_zhua", "md_qi"], ["md_pie", "md_qi"]]
     },
@@ -90,7 +92,7 @@
       "rows": [["md_da", "md_xi"], ["md_shao", "md_xi"]]
     },
     "3x": {
-      "title": "Placeholder for Future/Unknown Characters",
+      "title": "3x: Placeholder for Future/Unknown Characters",
       "kind": "vertical"
     }
   }

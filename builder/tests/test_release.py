@@ -77,15 +77,15 @@ PAGE = "<h3>6. Glossary</h3>\n<!-- glossary 2a -->\n<!-- /glossary 2a -->\n<p>ha
 
 
 def test_a_candidate_regenerates_the_glossary_and_scope_allows_only_that(repo):
-    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a\n")
+    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand\n")
     (repo / "site" / "glossary.json").write_text(json.dumps(
-        {"sections": {"2a": {"title": "2a", "kind": "usage", "usage": ["0{}5", "散{}五"]}}}))
+        {"sections": {"2a": {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"]}}}))
     (repo / "site" / "index.html").write_text(PAGE)
     sh(repo, "add", "-A")
     sh(repo, "commit", "-m", "glossary")
     sh(repo, "push", "origin", "main")
     release.start("3.200", repo=repo, log=lambda _: None)
-    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a\nlg_tiao,,,u,,挑,,tiāo,2a\n")
+    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand\nlg_tiao,,,u,,挑,,tiāo,2a: Basic Right Hand\n")
     candidate(repo)
     page = (repo / "site" / "index.html").read_text()
     assert "<td>挑</td>" in page and "<p>hand-written</p>" in page

@@ -215,8 +215,13 @@ The glossary on the font page ("6. Glossary") is made from `components.csv`,
 so its spellings are the font's:
 
 - A glyph's **Glossary** column (Glyphs → Typing) names the section(s) where
-  it has a row of its own: `1a`, `2c`, or `1d 3c` for two. Leave it empty for
-  a glyph that only appears inside a word, such as 带 in :带起.
+  it has a row of its own, by title: `1c: Left Hand Techniques`, or two
+  separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui
+  Number`). The cell offers the titles to pick from. Leave it empty for a
+  glyph that only appears inside a word, such as 带 in :带起.
+- The id before the colon is what the generator goes by, and the titles must
+  match `site/glossary.json` (the test says which glyph doesn't). Renaming a
+  section means changing its title in both places.
 - `site/glossary.json` says how each section's table looks: the example word
   for each row (`0{}5` / `散{}五`, where `{}` is the glyph), the order of the
   rows, and words like :带起. Editing it is an ordinary site change on main.

@@ -1,89 +1,89 @@
 glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary
-md_ming,,,s,,名,,míng,1a
-md_zhong,,,d,,中,,zhōng,1a
-md_shi,,,f,,食,,shí,1a
-md_da,,,v,,大,,dà,1a
-md_gui,,,x,,跪,,guì,1a
-md_san,md_san2,0,,,散,,sàn,1d 3c
-md_1,,1,,,一,,yī,3c
-md_2,,2,,,二,,èr,3c
-md_3,,3,,,三,,sān,3c
-md_4,,4,,,四,,sì,3c
-md_5,,5,,,五,,wǔ,3c
-md_6,,6,,,六,,liù,3c
-md_7,,7,,,七,,qī,3c
-md_8,,8,,,八,,bā,3c
-md_9,,9,,,九,,jiǔ,3c
-md_10,,10,,,十,,shí,3c
-md_11,,11,,,十一,,shí yī,3c
-md_12,,12,,,十二,,shí èr,3c
-md_13,,13,,,十三,,shí sān,3c
-md_wai,,13+,wai,,外,,wài,3c
-md_jiu,md_jiu2,,jiu,,就,,jiù,1d 3c
-lg_tiao,,,u,,挑,,tiāo,2a
-lg_gou,,,k,,勾,,gōu,2a
-lg_pi,,,n,,劈,,pī,2a
-lg_qiaqi,,,c,,掐起,,qiā qǐ,1c
-lg_tuo,,,h,,托,,tuō,2a
-lg_da,,,l,,打,,dǎ,2a
-lg_ti,,,i,,剔,,tī,2a
-lg_zhai,,,o,,摘,,zhāi,2a
-lg_mo,,,j,,抹,,mǒ,2a
-lg_yan,md_yan,,V,,掩,,yǎn,1c
-lg_lun,md_lun,,lun,,轮,輪,lún,2c
-lg_banlun,md_banlun,,banlun,bl,半轮,半輪,bàn lún,2c
-lg_motiao,,,ju,,抹挑,,mǒ tiāo,2a
-lg_gouti,,,ki,,勾剔,,gōu tī,2a
-lg_dazhai,,,lo,,打摘,,dǎ zhāi,2a
-lg_li,,,U,,历,歴,lì,2a
-xl_cuo,,,C,,撮,,cuō,2b
-xl_dacuo,,,DC,,大撮,,dà cuō,2b
-xl_fancuo,,,FC,,反撮,,fǎn cuō,2b
-xl_tt,,,TT,,双弹,雙彈,shuāng dàn,2b
-xl_ttt,,,TTT,,三弹,三彈,sān dàn,2b
-xl_bo,,,B,,拨,撥,bō,2b
-xl_la,,,L,,剌,剌,là,2b
-xl_bola,,,BL,,拨剌,撥剌,bō là,2b
-mod_chuo,,/,,,绰,綽,chuò,1b
-mod_zhu,,\,,,注,註,zhù,1b
-mod_ji,,>,,,急,,jí,1b
-mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn,1c
-md_ban,,,ban,,半,,bàn,3c
+md_ming,,,s,,名,,míng,1a: Left Hand Finger
+md_zhong,,,d,,中,,zhōng,1a: Left Hand Finger
+md_shi,,,f,,食,,shí,1a: Left Hand Finger
+md_da,,,v,,大,,dà,1a: Left Hand Finger
+md_gui,,,x,,跪,,guì,1a: Left Hand Finger
+md_san,md_san2,0,,,散,,sàn,1d: Special Cases; 3c: Related to String & Hui Number
+md_1,,1,,,一,,yī,3c: Related to String & Hui Number
+md_2,,2,,,二,,èr,3c: Related to String & Hui Number
+md_3,,3,,,三,,sān,3c: Related to String & Hui Number
+md_4,,4,,,四,,sì,3c: Related to String & Hui Number
+md_5,,5,,,五,,wǔ,3c: Related to String & Hui Number
+md_6,,6,,,六,,liù,3c: Related to String & Hui Number
+md_7,,7,,,七,,qī,3c: Related to String & Hui Number
+md_8,,8,,,八,,bā,3c: Related to String & Hui Number
+md_9,,9,,,九,,jiǔ,3c: Related to String & Hui Number
+md_10,,10,,,十,,shí,3c: Related to String & Hui Number
+md_11,,11,,,十一,,shí yī,3c: Related to String & Hui Number
+md_12,,12,,,十二,,shí èr,3c: Related to String & Hui Number
+md_13,,13,,,十三,,shí sān,3c: Related to String & Hui Number
+md_wai,,13+,wai,,外,,wài,3c: Related to String & Hui Number
+md_jiu,md_jiu2,,jiu,,就,,jiù,1d: Special Cases; 3c: Related to String & Hui Number
+lg_tiao,,,u,,挑,,tiāo,2a: Basic Right Hand
+lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand
+lg_pi,,,n,,劈,,pī,2a: Basic Right Hand
+lg_qiaqi,,,c,,掐起,,qiā qǐ,1c: Left Hand Techniques
+lg_tuo,,,h,,托,,tuō,2a: Basic Right Hand
+lg_da,,,l,,打,,dǎ,2a: Basic Right Hand
+lg_ti,,,i,,剔,,tī,2a: Basic Right Hand
+lg_zhai,,,o,,摘,,zhāi,2a: Basic Right Hand
+lg_mo,,,j,,抹,,mǒ,2a: Basic Right Hand
+lg_yan,md_yan,,V,,掩,,yǎn,1c: Left Hand Techniques
+lg_lun,md_lun,,lun,,轮,輪,lún,2c: Other Right Hand Strum Techniques
+lg_banlun,md_banlun,,banlun,bl,半轮,半輪,bàn lún,2c: Other Right Hand Strum Techniques
+lg_motiao,,,ju,,抹挑,,mǒ tiāo,2a: Basic Right Hand
+lg_gouti,,,ki,,勾剔,,gōu tī,2a: Basic Right Hand
+lg_dazhai,,,lo,,打摘,,dǎ zhāi,2a: Basic Right Hand
+lg_li,,,U,,历,歴,lì,2a: Basic Right Hand
+xl_cuo,,,C,,撮,,cuō,2b: Chords
+xl_dacuo,,,DC,,大撮,,dà cuō,2b: Chords
+xl_fancuo,,,FC,,反撮,,fǎn cuō,2b: Chords
+xl_tt,,,TT,,双弹,雙彈,shuāng dàn,2b: Chords
+xl_ttt,,,TTT,,三弹,三彈,sān dàn,2b: Chords
+xl_bo,,,B,,拨,撥,bō,2b: Chords
+xl_la,,,L,,剌,剌,là,2b: Chords
+xl_bola,,,BL,,拨剌,撥剌,bō là,2b: Chords
+mod_chuo,,/,,,绰,綽,chuò,1b: Speed mods & mods related to 韵 production
+mod_zhu,,\,,,注,註,zhù,1b: Speed mods & mods related to 韵 production
+mod_ji,,>,,,急,,jí,1b: Speed mods & mods related to 韵 production
+mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn,1c: Left Hand Techniques
+md_ban,,,ban,,半,,bàn,3c: Related to String & Hui Number
 md_san2,,,san,,,,,
-md_placeholder,,*,,,,,,3x
-md_shang,,,shang,,上,,shàng,3c
-md_xia,,,xia,,下,,xià,3c
-md_tui,,,tui,,退,,tuì,1e
-md_ru,,,ru,,如,,rú,3b
-md_jin,,,jin,,进,進,jìn,1e
-md_fenkai,,,fenkai,,分开,分開,fēnkāi,1e
+md_placeholder,,*,,,,,,3x: Placeholder for Future/Unknown Characters
+md_shang,,,shang,,上,,shàng,3c: Related to String & Hui Number
+md_xia,,,xia,,下,,xià,3c: Related to String & Hui Number
+md_tui,,,tui,,退,,tuì,1e: Left Hand Vibratos and Slides
+md_ru,,,ru,,如,,rú,3b: Related to Notes
+md_jin,,,jin,,进,進,jìn,1e: Left Hand Vibratos and Slides
+md_fenkai,,,fenkai,,分开,分開,fēnkāi,1e: Left Hand Vibratos and Slides
 md_shao,,,shao,,少,,shǎo,
 md_xi,,,xi,,息,,xī,
-md_fan,,,fan,,泛,,fàn,3b
-md_qi,,,qi,,起,,qǐ,3b
-md_zhi,,,zhi,,止,,zhì,3b
+md_fan,,,fan,,泛,,fàn,3b: Related to Notes
+md_qi,,,qi,,起,,qǐ,3b: Related to Notes
+md_zhi,,,zhi,,止,,zhì,3b: Related to Notes
 md_dai,,,dai,,带,帶,dài,
 md_dui,,,dui,,对,對,duì,
 md_zhua,,,zhua,,抓,,zhuā,
 md_pie,,,pie,,撇,,piē,
-md_yin,,,yin,,吟,,yín,1e
+md_yin,,,yin,,吟,,yín,1e: Left Hand Vibratos and Slides
 md_ding,,,ding,,定,,dìng,
 md_xi4,,,xi4,,细,細,xì,
 md_chang,,,zhang,,长,長,zhǎng,
 md_xiao,,,xiao,,小,,xiǎo,
-md_fu,,,fu4,,復,,fù,1e
-md_yinghe,,,yinghe,,应合,應合,yīng hé,1e
-md_nao,,,nao,,猱,,náo,1e
-md_zhuang,,,zhuang,,撞,,zhuàng,1e
+md_fu,,,fu4,,復,,fù,1e: Left Hand Vibratos and Slides
+md_yinghe,,,yinghe,,应合,應合,yīng hé,1e: Left Hand Vibratos and Slides
+md_nao,,,nao,,猱,,náo,1e: Left Hand Vibratos and Slides
+md_zhuang,,,zhuang,,撞,,zhuàng,1e: Left Hand Vibratos and Slides
 md_suo,,,suo,,璅,,suǒ,
 md_duan,,,duan,,短,,duǎn,
 md_bai,,,bei,,背,,bèi,
-md_gun,,,gun,,滚,滾,gǔn,2c
-md_fu2,,,fu,,沸,,fèi,2c
-md_zhi4,,,zhi4,,至,,zhì,3c
-md_banfu,,,banfu,bf,半扶,,bàn fú,2c
-md_quanfu,,,quanfu,qf,全扶,,quán fú,2c
-md_diejuan,,,diejuan,dj,叠蠲,疊蠲,dié juān,2c
-md_dayuan,,,dayuan,,打圆,打圓,dǎ yuán,2c
-md_yuanlou,,,yanlou,yl,圆搂,圓摟,yuán lǒu,2c
-md_tang,,,tang,,淌,,,1e
+md_gun,,,gun,,滚,滾,gǔn,2c: Other Right Hand Strum Techniques
+md_fu2,,,fu,,沸,,fèi,2c: Other Right Hand Strum Techniques
+md_zhi4,,,zhi4,,至,,zhì,3c: Related to String & Hui Number
+md_banfu,,,banfu,bf,半扶,,bàn fú,2c: Other Right Hand Strum Techniques
+md_quanfu,,,quanfu,qf,全扶,,quán fú,2c: Other Right Hand Strum Techniques
+md_diejuan,,,diejuan,dj,叠蠲,疊蠲,dié juān,2c: Other Right Hand Strum Techniques
+md_dayuan,,,dayuan,,打圆,打圓,dǎ yuán,2c: Other Right Hand Strum Techniques
+md_yuanlou,,,yanlou,yl,圆搂,圓摟,yuán lǒu,2c: Other Right Hand Strum Techniques
+md_tang,,,tang,,淌,,,1e: Left Hand Vibratos and Slides

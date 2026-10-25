@@ -71,7 +71,7 @@ The **Tiles | Typing** switch turns the screen into a table of every glyph's spe
 - 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.
 - Vertical form: The glyph the font swaps in after a colon (the centred version).
 - PinYin: For search and labels only; never typed.
-- Glossary: Where the glyph has a row in the glossary on jianzipufont.com: a section such as `1a` or `2c`, or two separated by a space (`1d 3c`). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed.
+- Glossary: Where the glyph has a row in the glossary on jianzipufont.com, by the section's title: pick one from the list, such as `1c: Left Hand Techniques`, or two separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui Number`). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed.
 
 - Enter keeps a cell and moves down (⇧Enter moves up), Tab moves right, Esc puts the old value back.
 - Paste a range copied from a spreadsheet to fill down and across in one step.
@@ -304,7 +304,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“alone it marks a position; it can't type a glyph”**: 点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “*x*” alone marks a position; it can't type a glyph.
 - **“Chinese characters only”**: The 简体 and 繁體 columns take only Chinese characters.
 - **“*name* doesn't exist” / “Vertical form *name* doesn't exist.”**: The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.
-- **“no glossary section *9z* on the font page (…)”**: A warning: the Glossary column names a section the font page doesn't have. Save still works, but the next release can't put the glyph in the glossary; use one of the sections listed.
+- **“no glossary section “*9z: …*” on the font page: pick a title from the list”**: A warning: the Glossary column names a section the font page doesn't have, or spells its title differently. Save still works, but the next release can't put the glyph in the glossary; pick the title from the list the cell offers.
 - **“joins *a* + *b*: typing *ab* gives this glyph instead of …”**: A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.
 - **Typing “*x*” gives *a + b*, not *glyph*.**: Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.
 - **“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”**: The spelling or glyph is newer than the last build. **Build font** in [Build & test](https://builder.jianzipufont.com/test).

@@ -6,7 +6,8 @@
 export type Spelling = {
   vert_variant: string; common: string; latin: string; latin_alt: string;
   simplified: string; traditional: string; pinyin: string;
-  /** The section(s) of the glossary on the font page with a row for this glyph ("1a", "1d 3c"). Not typed. */
+  /** The glossary section(s) on the font page with a row for this glyph, by title
+   *  ("1c: Left Hand Techniques"; two separated by "; "). Not typed. */
   glossary: string;
 };
 export type SpellField = keyof Spelling;
@@ -29,7 +30,7 @@ export const HELP: Record<SpellField, string> = {
   traditional: 'The traditional form, only if it differs from 简体.',
   vert_variant: 'In vertical notation (after a colon) the font swaps this glyph for its centred version.',
   pinyin: 'Pinyin with tones, for search and labels. Not typed.',
-  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph (1a, 2c), separated by spaces. Empty: no row of its own. Not typed.'
+  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph, by title (1c: Left Hand Techniques); two separated by “; ”. Empty: no row of its own. Not typed.'
 };
 export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin', 'glossary'] as const;
 
@@ -140,14 +141,14 @@ export function issues(t: Typing, known?: Set<string>): Issue[] {
 
 export type CellNote = { level: 'free' | 'error' | 'shared' | 'joins' | 'warn'; text: string };
 /** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level).
- *  `sections`: the glossary's section ids, when the server knows them. */
+ *  `sections`: the glossary's section titles, when the server knows them. */
 export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string,
   sections?: string[]): CellNote | null {
   const v = value.trim();
   if (!v || f === 'pinyin') return null;
   if (f === 'glossary') {
-    const unknown = sections?.length ? v.split(/\s+/).filter((id) => !sections.includes(id)) : [];
-    return unknown.length ? { level: 'warn', text: `no glossary section ${unknown.join(', ')} on the font page (${sections!.join(', ')})` } : null;
+    const unknown = sections?.length ? v.split(';').map((x) => x.trim()).filter((x) => x && !sections.includes(x)) : [];
+    return unknown.length ? { level: 'warn', text: `no glossary section “${unknown.join('”, “')}” on the font page: pick a title from the list` } : null;
   }
   const p = formatProblem(f, v, known);
   if (p) return { level: 'error', text: p };

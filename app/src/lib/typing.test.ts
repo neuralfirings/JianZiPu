@@ -56,8 +56,11 @@ describe('cellNote', () => {
     expect(cellNote(t, 'lg_tuo', 'latin', '4k')?.level).toBe('error');
     expect(cellNote(t, 'lg_tuo', 'latin', '')).toBeNull();
     expect(cellNote(t, 'lg_tuo', 'pinyin', 'tuō')).toBeNull();
-    expect(cellNote(t, 'lg_tuo', 'glossary', '2a', undefined, undefined, ['1a', '2a'])).toBeNull();
-    expect(cellNote(t, 'lg_tuo', 'glossary', '2a 9z', undefined, undefined, ['1a', '2a'])?.level).toBe('warn');
+    const titles = ['1a: Left Hand Finger', '2a: Basic Right Hand'];
+    expect(cellNote(t, 'lg_tuo', 'glossary', '2a: Basic Right Hand', undefined, undefined, titles)).toBeNull();
+    expect(cellNote(t, 'lg_tuo', 'glossary', '1a: Left Hand Finger; 2a: Basic Right Hand', undefined, undefined, titles)).toBeNull();
+    expect(cellNote(t, 'lg_tuo', 'glossary', '2a: Basic Right Hand; 9z: Nowhere', undefined, undefined, titles)?.level).toBe('warn');
+    expect(cellNote(t, 'lg_tuo', 'glossary', '2a', undefined, undefined, titles)?.level).toBe('warn');   // the id alone isn't the title
     expect(cellNote(t, 'lg_tuo', 'glossary', '9z')).toBeNull();     // no sections known: nothing to say
   });
 });
@@ -118,9 +121,10 @@ describe('records and CSV', () => {
     expect(t.md_ming).toMatchObject({ latin: 's', simplified: '名', pinyin: 'míng', glossary: '' });
   });
   it('keeps the Glossary column, which no glyph inherits and nothing clashes on', () => {
-    const t = base(); t.lg_gou.glossary = '2a'; t.lg_tuo.glossary = '2a'; t.md_san.glossary = '1d 3c';
+    const t = base(); t.lg_gou.glossary = '2a: Basic Right Hand'; t.lg_tuo.glossary = '2a: Basic Right Hand';
+    t.md_san.glossary = '1d: Special Cases; 3c: Related to String & Hui Number';
     expect(issues(t)).toEqual([]);
-    expect(fromCsv(toCsv(t)).md_san.glossary).toBe('1d 3c');
+    expect(fromCsv(toCsv(t)).md_san.glossary).toBe('1d: Special Cases; 3c: Related to String & Hui Number');
     expect(shown(t, 'md_san2', 'glossary')).toEqual({ value: '', inherited: null });
     expect(changedGlyphs(base(), t)).toEqual(['lg_gou', 'lg_tuo', 'md_san']);
   });

@@ -132,7 +132,7 @@
             <tr><th>简体 / 繁體</th><td>The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.</td></tr>
             <tr><th>Vertical form</th><td>The glyph the font swaps in after a colon (the centred version).</td></tr>
             <tr><th>PinYin</th><td>For search and labels only; never typed.</td></tr>
-            <tr><th>Glossary</th><td>Where the glyph has a row in the glossary on jianzipufont.com: a section such as <code>1a</code> or <code>2c</code>, or two separated by a space (<code>1d 3c</code>). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed.</td></tr>
+            <tr><th>Glossary</th><td>Where the glyph has a row in the glossary on jianzipufont.com, by the section's title: pick one from the list, such as <code>1c: Left Hand Techniques</code>, or two separated by a semicolon (<code>1d: Special Cases; 3c: Related to String &amp; Hui Number</code>). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed.</td></tr>
           </tbody>
         </table>
         <ul>
@@ -366,7 +366,7 @@
           <dt>“alone it marks a position; it can't type a glyph”</dt><dd>点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “<em>x</em>” alone marks a position; it can't type a glyph.</dd>
           <dt>“Chinese characters only”</dt><dd>The 简体 and 繁體 columns take only Chinese characters.</dd>
           <dt>“<em>name</em> doesn't exist” / “Vertical form <em>name</em> doesn't exist.”</dt><dd>The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.</dd>
-          <dt>“no glossary section <em>9z</em> on the font page (…)”</dt><dd>A warning: the Glossary column names a section the font page doesn't have. Save still works, but the next release can't put the glyph in the glossary; use one of the sections listed.</dd>
+          <dt>“no glossary section “<em>9z: …</em>” on the font page: pick a title from the list”</dt><dd>A warning: the Glossary column names a section the font page doesn't have, or spells its title differently. Save still works, but the next release can't put the glyph in the glossary; pick the title from the list the cell offers.</dd>
           <dt>“joins <em>a</em> + <em>b</em>: typing <em>ab</em> gives this glyph instead of …”</dt><dd>A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.</dd>
           <dt>Typing “<em>x</em>” gives <em>a + b</em>, not <em>glyph</em>.</dt><dd>Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.</dd>
           <dt>“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”</dt><dd>The spelling or glyph is newer than the last build. <strong>Build font</strong> in <a href="/test">Build & test</a>.</dd>

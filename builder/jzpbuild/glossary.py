@@ -1,8 +1,8 @@
 """The glossary on the public font page (site/index.html, "6. Glossary"), generated from
 components.csv so its spellings can't drift from the font's.
 
-A glyph's `glossary` column in components.csv names the section(s) where it gets a row of its own
-("1a", "1d 3c"); site/glossary.json says how each section's table is laid out (an example word per
+A glyph's `glossary` column in components.csv names the section(s) where it gets a row of its own,
+by title ("1c: Left Hand Techniques", two separated by "; "; the id before the colon is the key); site/glossary.json says how each section's table is laid out (an example word per
 row, or a vertical table, and the order of its rows, words like :带起 included). This module
 rewrites each table between `<!-- glossary <id> -->` and `<!-- /glossary <id> -->` in the page;
 the headings and text around the tables stay as written.
@@ -59,8 +59,17 @@ def load_sections(path: Path | None = None) -> dict[str, dict]:
     return json.loads((path or config.GLOSSARY_SECTIONS).read_text(encoding="utf-8"))["sections"]
 
 
+SEP = ";"   # between two sections in the glossary column (titles have spaces)
+
+
+def section_items(rec: dict) -> list[tuple[str, str]]:
+    """The glossary column as (id, what it says): "1c: Left Hand Techniques" -> ("1c", that title)."""
+    items = [x.strip() for x in rec.get("glossary", "").split(SEP)]
+    return [(x.split(":", 1)[0].strip(), x) for x in items if x]
+
+
 def section_ids(rec: dict) -> list[str]:
-    return rec.get("glossary", "").split()
+    return [sid for sid, _ in section_items(rec)]
 
 
 def spellings(rec: dict) -> list[str]:
@@ -193,11 +202,17 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
                 shown.add(g)
                 if sec["kind"] == "vertical" and isinstance(e, str) and _partner(rows, g):
                     shown.add(rows[g]["vert_variant"])
+    for sid, sec in sections.items():
+        if not sec.get("title", "").startswith(sid + ": "):
+            problems.append(f"site/glossary.json: section {sid}'s title should start with \"{sid}: \".")
     for g, r in rows.items():
-        for sid in section_ids(r):
+        for sid, said in section_items(r):
             if sid not in sections:
-                problems.append(f"{g}: glossary section {sid} isn't in site/glossary.json "
-                                f"(sections: {', '.join(sections)}).")
+                problems.append(f"{g}: glossary section {said!r} isn't in site/glossary.json "
+                                f"(sections: {', '.join(s['title'] for s in sections.values())}).")
+            elif said != sections[sid].get("title"):
+                problems.append(f"{g}: the glossary column says {said!r}; site/glossary.json calls {sid} "
+                                f"{sections[sid].get('title')!r}. Use the same title in both.")
         if has_spelling(r) and g not in shown:
             problems.append(f"{g} ({r['simplified'] or spellings(r)[0]}) has spellings but no row in the glossary: "
                             f"give it a glossary section in components.csv, or put it in a word in site/glossary.json.")

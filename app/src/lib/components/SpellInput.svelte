@@ -25,7 +25,7 @@
   let placeholder = $derived(inherited ? T.shown(app.typing, glyph, field).value : suggestion);
   let draft = $state<string | null>(null);
   let focused = $state(false);
-  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g), app.glossarySections.map((s) => s.id)) : null);
+  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g), app.glossarySections.map((s) => s.title)) : null);
   let bad = $derived(app.typingErrors.some((e) => (e.kind === 'clash' ? e.fields.some((f) => f.glyph === glyph && f.field === field) : e.glyph === glyph && e.field === field)));
   let changed = $derived(T.get(app.savedTyping, glyph)[field] !== own);
   let zh = $derived(field === 'simplified' || field === 'traditional');
