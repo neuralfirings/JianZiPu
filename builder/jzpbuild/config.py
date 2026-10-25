@@ -51,6 +51,14 @@ OUTPUT_FONT = BUILDER_DIR / "JianZiPu.ttf"                      # build.py
 FEA_OUT_DEFAULT = BUILDER_DIR / "JianZiPu.fea"                  # build.py
 
 # ---------------------------------------------------------------------------
+# the public font page (jianzipufont.com) — used by: glossary.py, release.py
+
+SITE_DIR = BUILDER_DIR.parent / "site"
+SITE_INDEX = SITE_DIR / "index.html"                   # its glossary tables are generated (glossary.py)
+SITE_FONT = SITE_DIR / "JianZiPu.ttf"                  # the released font, written by a release candidate
+GLOSSARY_SECTIONS = SITE_DIR / "glossary.json"         # how each glossary section's table is laid out
+
+# ---------------------------------------------------------------------------
 # font metrics / identity — used by: base.py, glyphs.py
 
 UPEM = 1000                                                   # glyphs.py, base.py

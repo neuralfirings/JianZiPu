@@ -25,7 +25,7 @@
   let placeholder = $derived(inherited ? T.shown(app.typing, glyph, field).value : suggestion);
   let draft = $state<string | null>(null);
   let focused = $state(false);
-  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g)) : null);
+  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g), app.glossarySections.map((s) => s.id)) : null);
   let bad = $derived(app.typingErrors.some((e) => (e.kind === 'clash' ? e.fields.some((f) => f.glyph === glyph && f.field === field) : e.glyph === glyph && e.field === field)));
   let changed = $derived(T.get(app.savedTyping, glyph)[field] !== own);
   let zh = $derived(field === 'simplified' || field === 'traditional');
@@ -56,14 +56,14 @@
   {:else}
     <input bind:this={input} type="text" value={own} {placeholder} class:zh class:bad class:changed class:inh={!!inherited && !own}
       readonly={locked} data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined}
-      list={field === 'vert_variant' ? 'jzp-glyph-names' : undefined}
+      list={field === 'vert_variant' ? 'jzp-glyph-names' : field === 'glossary' ? 'jzp-glossary-sections' : undefined}
       title={inherited && !own ? `${T.LABEL[field]} of ${inherited}, its partner: typed after a colon` : T.HELP[field]}
       onfocus={() => { focused = true; draft = own; }}
       onblur={() => { focused = false; if (!locked) commit(); }}
       oninput={(e) => (draft = (e.target as HTMLInputElement).value)}
       {onkeydown} {onpaste} spellcheck="false" autocomplete="off" />
     {#if note && (note.level !== 'free' || (draft !== own && draft))}
-      <span class="note {note?.level}" role="status">{#if note?.level === 'error'}<I.Problem size={12} /> {:else if note?.level === 'shared'}<I.Pair size={12} /> {:else if note?.level === 'free'}<I.Check size={12} /> {/if}{note?.text}{#if note?.level === 'error'}<span class="muted"> · Enter keeps it; Save waits until it's fixed</span>{/if}</span>
+      <span class="note {note?.level}" role="status">{#if note?.level === 'error'}<I.Problem size={12} /> {:else if note?.level === 'shared'}<I.Pair size={12} /> {:else if note?.level === 'free'}<I.Check size={12} /> {:else if note?.level === 'warn'}<I.Warn size={12} /> {/if}{note?.text}{#if note?.level === 'error'}<span class="muted"> · Enter keeps it; Save waits until it's fixed</span>{/if}</span>
     {/if}
   {/if}
 </span>
@@ -83,4 +83,6 @@
   .note.error { border-color: var(--status-danger); color: var(--status-danger); }
   .note.shared { color: var(--link); }
   .note.free { color: var(--status-saved); }
+  .note.warn { border-color: var(--status-draft); }
+  .note.warn :global(svg) { color: var(--status-draft); }
 </style>

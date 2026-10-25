@@ -164,6 +164,7 @@
 </script>
 
 <datalist id="jzp-glyph-names">{#each all.filter((g) => !T.isDecimal(g)) as g}<option value={g}></option>{/each}</datalist>
+<datalist id="jzp-glossary-sections">{#each app.glossarySections as s}<option value={s.id}>{s.title}</option>{/each}</datalist>
 
 <div class="page">
   <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />

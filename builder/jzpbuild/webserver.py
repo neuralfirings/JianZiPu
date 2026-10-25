@@ -70,7 +70,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from . import config, data, glyphs, hosted, release, typing_preview
+from . import config, data, glossary, glyphs, hosted, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -537,7 +537,17 @@ def glyphs_payload() -> dict:
         catalog.append({"glyph": g, "svg": g in svgs, "areas": areas_of.get(g, []), "row": g in by_glyph,
                         **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
-            "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text)}
+            "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
+            "glossary_sections": glossary_sections()}
+
+
+def glossary_sections() -> list[dict]:
+    """The font page's glossary sections, for the Typing view's Glossary column; none where the
+    server has no site/ folder (the hosted image)."""
+    try:
+        return [{"id": k, "title": v.get("title", k)} for k, v in glossary.load_sections().items()]
+    except (OSError, ValueError, KeyError):
+        return []
 
 
 def write_glyph_rows(rows: list[dict], base_hash: str | None = None, design: dict | None = None) -> dict:

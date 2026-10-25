@@ -1,89 +1,89 @@
-glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin
-md_ming,,,s,,名,,míng
-md_zhong,,,d,,中,,zhōng
-md_shi,,,f,,食,,shí
-md_da,,,v,,大,,dà
-md_gui,,,x,,跪,,guì
-md_san,md_san2,0,,,散,,sàn
-md_1,,1,,,一,,yī
-md_2,,2,,,二,,èr
-md_3,,3,,,三,,sān
-md_4,,4,,,四,,sì
-md_5,,5,,,五,,wǔ
-md_6,,6,,,六,,liù
-md_7,,7,,,七,,qī
-md_8,,8,,,八,,bā
-md_9,,9,,,九,,jiǔ
-md_10,,10,,,十,,shí
-md_11,,11,,,十一,,shí yī
-md_12,,12,,,十二,,shí èr
-md_13,,13,,,十三,,shí sān
-md_wai,,13+,wai,,外,,wài
-md_jiu,md_jiu2,,jiu,,就,,jiù
-lg_tiao,,,u,,挑,,tiāo
-lg_gou,,,k,,勾,,gōu
-lg_pi,,,n,,劈,,pī
-lg_qiaqi,,,c,,掐起,,qiā qǐ
-lg_tuo,,,h,,托,,tuō
-lg_da,,,l,,打,,dǎ
-lg_ti,,,i,,剔,,tī
-lg_zhai,,,o,,摘,,zhāi
-lg_mo,,,j,,抹,,mǒ
-lg_yan,md_yan,,V,,掩,,yǎn
-lg_lun,md_lun,,lun,,轮,輪,lún
-lg_banlun,md_banlun,,banlun,bl,半轮,半輪,bàn lún
-lg_motiao,,,ju,,抹挑,,mǒ tiāo
-lg_gouti,,,ki,,勾剔,,gōu tī
-lg_dazhai,,,lo,,打摘,,dǎ zhāi
-lg_li,,,U,,历,歴,lì
-xl_cuo,,,C,,撮,,cuō
-xl_dacuo,,,DC,,大撮,,dà cuō
-xl_fancuo,,,FC,,反撮,,fǎn cuō
-xl_tt,,,TT,,双弹,雙彈,shuāng dàn
-xl_ttt,,,TTT,,三弹,三彈,sān dàn
-xl_bo,,,B,,拨,撥,bō
-xl_la,,,L,,剌,剌,là
-xl_bola,,,BL,,拨剌,撥剌,bō là
-mod_chuo,,/,,,绰,綽,chuò
-mod_zhu,,\,,,注,註,zhù
-mod_ji,,>,,,急,,jí
-mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn
-md_ban,,,ban,,半,,bàn
-md_san2,,,san,,,,
-md_placeholder,,*,,,,,
-md_shang,,,shang,,上,,shàng
-md_xia,,,xia,,下,,xià
-md_tui,,,tui,,退,,tuì
-md_ru,,,ru,,如,,rú
-md_jin,,,jin,,进,進,jìn
-md_fenkai,,,fenkai,,分开,分開,fēnkāi
-md_shao,,,shao,,少,,shǎo
-md_xi,,,xi,,息,,xī
-md_fan,,,fan,,泛,,fàn
-md_qi,,,qi,,起,,qǐ
-md_zhi,,,zhi,,止,,zhì
-md_dai,,,dai,,带,帶,dài
-md_dui,,,dui,,对,對,duì
-md_zhua,,,zhua,,抓,,zhuā
-md_pie,,,pie,,撇,,piē
-md_yin,,,yin,,吟,,yín
-md_ding,,,ding,,定,,dìng
-md_xi4,,,xi4,,细,細,xì
-md_chang,,,zhang,,长,長,zhǎng
-md_xiao,,,xiao,,小,,xiǎo
-md_fu,,,fu4,,復,,fù
-md_yinghe,,,yinghe,,应合,應合,yīng hé
-md_nao,,,nao,,猱,,náo
-md_zhuang,,,zhuang,,撞,,zhuàng
-md_suo,,,suo,,璅,,suǒ
-md_duan,,,duan,,短,,duǎn
-md_bai,,,bei,,背,,bèi
-md_gun,,,gun,,滚,滾,gǔn
-md_fu2,,,fu,,沸,,fèi
-md_zhi4,,,zhi4,,至,,zhì
-md_banfu,,,banfu,bf,半扶,,bàn fú
-md_quanfu,,,quanfu,qf,全扶,,quán fú
-md_diejuan,,,diejuan,dj,叠蠲,疊蠲,dié juān
-md_dayuan,,,dayuan,,打圆,打圓,dǎ yuán
-md_yuanlou,,,yanlou,yl,圆搂,圓摟,yuán lǒu
-md_tang,,,tang,,淌,,
+glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary
+md_ming,,,s,,名,,míng,1a
+md_zhong,,,d,,中,,zhōng,1a
+md_shi,,,f,,食,,shí,1a
+md_da,,,v,,大,,dà,1a
+md_gui,,,x,,跪,,guì,1a
+md_san,md_san2,0,,,散,,sàn,1d 3c
+md_1,,1,,,一,,yī,3c
+md_2,,2,,,二,,èr,3c
+md_3,,3,,,三,,sān,3c
+md_4,,4,,,四,,sì,3c
+md_5,,5,,,五,,wǔ,3c
+md_6,,6,,,六,,liù,3c
+md_7,,7,,,七,,qī,3c
+md_8,,8,,,八,,bā,3c
+md_9,,9,,,九,,jiǔ,3c
+md_10,,10,,,十,,shí,3c
+md_11,,11,,,十一,,shí yī,3c
+md_12,,12,,,十二,,shí èr,3c
+md_13,,13,,,十三,,shí sān,3c
+md_wai,,13+,wai,,外,,wài,3c
+md_jiu,md_jiu2,,jiu,,就,,jiù,1d 3c
+lg_tiao,,,u,,挑,,tiāo,2a
+lg_gou,,,k,,勾,,gōu,2a
+lg_pi,,,n,,劈,,pī,2a
+lg_qiaqi,,,c,,掐起,,qiā qǐ,1c
+lg_tuo,,,h,,托,,tuō,2a
+lg_da,,,l,,打,,dǎ,2a
+lg_ti,,,i,,剔,,tī,2a
+lg_zhai,,,o,,摘,,zhāi,2a
+lg_mo,,,j,,抹,,mǒ,2a
+lg_yan,md_yan,,V,,掩,,yǎn,1c
+lg_lun,md_lun,,lun,,轮,輪,lún,2c
+lg_banlun,md_banlun,,banlun,bl,半轮,半輪,bàn lún,2c
+lg_motiao,,,ju,,抹挑,,mǒ tiāo,2a
+lg_gouti,,,ki,,勾剔,,gōu tī,2a
+lg_dazhai,,,lo,,打摘,,dǎ zhāi,2a
+lg_li,,,U,,历,歴,lì,2a
+xl_cuo,,,C,,撮,,cuō,2b
+xl_dacuo,,,DC,,大撮,,dà cuō,2b
+xl_fancuo,,,FC,,反撮,,fǎn cuō,2b
+xl_tt,,,TT,,双弹,雙彈,shuāng dàn,2b
+xl_ttt,,,TTT,,三弹,三彈,sān dàn,2b
+xl_bo,,,B,,拨,撥,bō,2b
+xl_la,,,L,,剌,剌,là,2b
+xl_bola,,,BL,,拨剌,撥剌,bō là,2b
+mod_chuo,,/,,,绰,綽,chuò,1b
+mod_zhu,,\,,,注,註,zhù,1b
+mod_ji,,>,,,急,,jí,1b
+mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn,1c
+md_ban,,,ban,,半,,bàn,3c
+md_san2,,,san,,,,,
+md_placeholder,,*,,,,,,3x
+md_shang,,,shang,,上,,shàng,3c
+md_xia,,,xia,,下,,xià,3c
+md_tui,,,tui,,退,,tuì,1e
+md_ru,,,ru,,如,,rú,3b
+md_jin,,,jin,,进,進,jìn,1e
+md_fenkai,,,fenkai,,分开,分開,fēnkāi,1e
+md_shao,,,shao,,少,,shǎo,
+md_xi,,,xi,,息,,xī,
+md_fan,,,fan,,泛,,fàn,3b
+md_qi,,,qi,,起,,qǐ,3b
+md_zhi,,,zhi,,止,,zhì,3b
+md_dai,,,dai,,带,帶,dài,
+md_dui,,,dui,,对,對,duì,
+md_zhua,,,zhua,,抓,,zhuā,
+md_pie,,,pie,,撇,,piē,
+md_yin,,,yin,,吟,,yín,1e
+md_ding,,,ding,,定,,dìng,
+md_xi4,,,xi4,,细,細,xì,
+md_chang,,,zhang,,长,長,zhǎng,
+md_xiao,,,xiao,,小,,xiǎo,
+md_fu,,,fu4,,復,,fù,1e
+md_yinghe,,,yinghe,,应合,應合,yīng hé,1e
+md_nao,,,nao,,猱,,náo,1e
+md_zhuang,,,zhuang,,撞,,zhuàng,1e
+md_suo,,,suo,,璅,,suǒ,
+md_duan,,,duan,,短,,duǎn,
+md_bai,,,bei,,背,,bèi,
+md_gun,,,gun,,滚,滾,gǔn,2c
+md_fu2,,,fu,,沸,,fèi,2c
+md_zhi4,,,zhi4,,至,,zhì,3c
+md_banfu,,,banfu,bf,半扶,,bàn fú,2c
+md_quanfu,,,quanfu,qf,全扶,,quán fú,2c
+md_diejuan,,,diejuan,dj,叠蠲,疊蠲,dié juān,2c
+md_dayuan,,,dayuan,,打圆,打圓,dǎ yuán,2c
+md_yuanlou,,,yanlou,yl,圆搂,圓摟,yuán lǒu,2c
+md_tang,,,tang,,淌,,,1e

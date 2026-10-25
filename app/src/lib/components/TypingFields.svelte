@@ -6,7 +6,7 @@
   import * as T from '$lib/typing';
   import SpellInput from './SpellInput.svelte';
   let { glyph }: { glyph: string } = $props();
-  const FIELDS: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'common'];
+  const FIELDS: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'common'];
   let partner = $derived(T.partners(app.typing)[glyph]);
   let hasAny = $derived(!T.isEmpty(app.typing[glyph]));
   function clear() {

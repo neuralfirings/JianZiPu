@@ -34,6 +34,9 @@ PREFIX = "release/"
 FONT_PATHS = ("builder/inputs/", "builder/VERSION", "CHANGELOG.md", "site/JianZiPu.ttf", "site/version.json")
 # also allowed on a release branch (the classic-positioning golden, if a release refreshes it)
 RELEASE_EXTRA = ("builder/tests/JianZiPu.ttf",)
+# the font page, whose glossary tables a release regenerates from components.csv (glossary.py):
+# allowed on a release branch when nothing else in it changed
+GLOSSARY_PAGE = "site/index.html"
 VERSION_RE = re.compile(r"\d+\.\d{3}")
 
 
@@ -55,12 +58,25 @@ def _under(path: str, prefixes: tuple[str, ...]) -> bool:
     return any(path == p or (p.endswith("/") and path.startswith(p)) for p in prefixes)
 
 
-def scope(files: list[str], branch: str) -> list[str]:
+def scope(files: list[str], branch: str, glossary_only: bool = False) -> list[str]:
     """The files a branch may not change: anything but font files on a release branch, and any
-    font file on every other branch."""
+    font file on every other branch. `glossary_only`: the font page changed only in its generated
+    glossary tables, which a release may do."""
     if branch.startswith(PREFIX):
-        return [f for f in files if not _under(f, FONT_PATHS + RELEASE_EXTRA)]
+        return [f for f in files if not _under(f, FONT_PATHS + RELEASE_EXTRA)
+                and not (f == GLOSSARY_PAGE and glossary_only)]
     return [f for f in files if _under(f, FONT_PATHS)]
+
+
+def glossary_only(base: str, head: str | None, repo: Path = REPO) -> bool:
+    """site/index.html at `head` (a commit; None: the working tree) differs from the merge base with
+    `base` only in its generated glossary tables."""
+    from . import glossary
+    mb = git("merge-base", base, head or "HEAD", repo=repo)
+    old = git("show", f"{mb}:{GLOSSARY_PAGE}", repo=repo, check=False)
+    new = git("show", f"{head}:{GLOSSARY_PAGE}", repo=repo, check=False) if head else \
+        (repo / GLOSSARY_PAGE).read_text(encoding="utf-8") if (repo / GLOSSARY_PAGE).exists() else ""
+    return glossary.strip_generated(old) == glossary.strip_generated(new)
 
 
 def parse_version(v: str) -> tuple[int, int]:
@@ -142,11 +158,24 @@ def start(version: str, repo: Path = REPO, log: Log = print) -> dict:
 
 def _check_scope(repo: Path, branch: str):
     committed = git("diff", "--name-only", "origin/main...HEAD", repo=repo).splitlines()
-    bad = scope(sorted(set(committed + dirty_files(repo))), branch)
+    files = sorted(set(committed + dirty_files(repo)))
+    bad = scope(files, branch, GLOSSARY_PAGE in files and glossary_only("origin/main", None, repo))
     if bad:
         raise ReleaseError("A release branch carries only font files, and these aren't: "
                            + ", ".join(bad[:8]) + (" …" if len(bad) > 8 else "")
                            + ". Builder code goes to main on its own branch.")
+
+
+def regenerate_glossary(repo: Path = REPO) -> bool:
+    """Rewrite the font page's glossary tables from components.csv; True when they changed."""
+    from . import glossary
+    page, sections = repo / GLOSSARY_PAGE, repo / "site" / "glossary.json"
+    if not (page.exists() and sections.exists()):
+        return False
+    try:
+        return glossary.write(page, repo / "builder" / "inputs" / "components.csv", sections)
+    except glossary.GlossaryError as e:
+        raise ReleaseError(f"The glossary on the font page can't be made from components.csv: {e}") from e
 
 
 def changelog_with(text: str, version: str, notes: str, date: str) -> str:
@@ -230,8 +259,10 @@ def candidate(notes: str, message: str = "", repo: Path = REPO, log: Log = print
     version = branch[len(PREFIX):]
     parse_version(version)
     _check_scope(repo, branch)
+    if regenerate_glossary(repo):
+        log("updated the glossary on the font page from components.csv")
     tests(log)
-    git("add", "--", "builder/inputs", repo=repo)
+    git("add", "--", "builder/inputs", *([GLOSSARY_PAGE] if (repo / GLOSSARY_PAGE).exists() else []), repo=repo)
     if git("diff", "--cached", "--name-only", repo=repo):
         git("commit", "-m", message.strip() or f"{version}: design changes for the release", repo=repo)
         log("committed the design")
@@ -351,7 +382,7 @@ def main(argv=None) -> int:
             sys.stdout.write(tag_notes(args.tag))
         elif args.cmd == "scope":
             files = git("diff", "--name-only", f"{args.base}...{args.head}").splitlines()
-            bad = scope(files, args.branch)
+            bad = scope(files, args.branch, GLOSSARY_PAGE in files and glossary_only(args.base, args.head))
             kind = "a release branch may change only font files" if args.branch.startswith(PREFIX) else \
                 "font files change only through a release branch (release/<version>)"
             for f in bad:

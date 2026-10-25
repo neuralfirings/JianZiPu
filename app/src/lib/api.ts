@@ -125,7 +125,7 @@ export const api = {
   resolve: (design: Design, layout: string, choice: (number | number[] | null)[], pinned: Record<string, string>, center = true) =>
     call<ResolvePayload>('POST', '/api/resolve', { design, layout, choice, pinned, center }),
   words: (design: Design, words: string[]) => call<WordPayload & { error?: string }>('POST', '/api/words', { design, words }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string }>('GET', '/api/glyphs'),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string }[] }>('GET', '/api/glyphs'),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),

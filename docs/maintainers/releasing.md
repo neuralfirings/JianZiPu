@@ -75,16 +75,19 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
 **Build candidate** then does this:
 
 1. Checks the branch carries only font files.
-2. Runs the builder tests (`cd builder && python3 -m pytest tests`). If they
+2. Rewrites the glossary tables on the font page (`site/index.html`) from
+   `components.csv` (`python3 -m jzpbuild.glossary`), so a new or changed
+   spelling shows there. See [The glossary](#the-glossary).
+3. Runs the builder tests (`cd builder && python3 -m pytest tests`). If they
    fail, it stops and the log shows which test failed and why; see
    [Troubleshooting](#troubleshooting).
-3. Commits `builder/inputs/` as "3.300: changes from N Change Requests".
-4. Writes `builder/VERSION` and builds the font into `site/JianZiPu.ttf`, with
+4. Commits `builder/inputs/` and the page as "3.300: changes from N Change Requests".
+5. Writes `builder/VERSION` and builds the font into `site/JianZiPu.ttf`, with
    name ID 5 "Version 3.300; git-<that commit>" and `head.fontRevision` 3.3.
-5. Writes `site/version.json` and the `CHANGELOG.md` entry, then commits them
+6. Writes `site/version.json` and the `CHANGELOG.md` entry, then commits them
    as "v3.300-rc.1: JianZiPu 3.300, release candidate 1".
-6. Tags `v3.300-rc.1`, and pushes the branch and the tag.
-7. Marks the requests as In a release candidate, which emails their authors.
+7. Tags `v3.300-rc.1`, and pushes the branch and the tag.
+8. Marks the requests as In a release candidate, which emails their authors.
 
 So every candidate is **two commits**: the design, then the built font. The
 font records the hash of the design commit it was built from, and that hash
@@ -192,7 +195,8 @@ The version lives in `builder/VERSION`, and only a release changes it.
 `jzpbuild/release.py` `FONT_PATHS` is the one list of font files:
 
 - A `release/*` branch may change only those files (plus the shaping golden
-  `builder/tests/JianZiPu.ttf`).
+  `builder/tests/JianZiPu.ttf`, and `site/index.html` when only its generated
+  glossary tables changed).
 - Every other branch may change none of them.
 
 **Build candidate** checks this, and so does `.github/workflows/scope.yml` on
@@ -204,6 +208,26 @@ the label **`font-files`** to the pull request, and the check lets it through.
 
 The ruleset on main (see [setup.md](setup.md)) makes `scope` a required check,
 so the rule holds without anyone having to remember it.
+
+## The glossary
+
+The glossary on the font page ("6. Glossary") is made from `components.csv`,
+so its spellings are the font's:
+
+- A glyph's **Glossary** column (Glyphs → Typing) names the section(s) where
+  it has a row of its own: `1a`, `2c`, or `1d 3c` for two. Leave it empty for
+  a glyph that only appears inside a word, such as 带 in :带起.
+- `site/glossary.json` says how each section's table looks: the example word
+  for each row (`0{}5` / `散{}五`, where `{}` is the glyph), the order of the
+  rows, and words like :带起. Editing it is an ordinary site change on main.
+- `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
+  `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
+  around them stay as written.
+
+`builder/tests/test_glossary.py` fails when the page's tables are out of date,
+when a glyph with a spelling has no row, or when an example anywhere on the
+page (the lessons too) doesn't type what it shows. A new glyph in a release
+needs a Glossary section before the candidate's tests pass.
 
 ## Doing it from the command line
 
@@ -296,6 +320,7 @@ and the webhook; see `supabase/functions/notify/README.md`.
 | The version | `builder/VERSION` |
 | What each version changed | `CHANGELOG.md` |
 | The released font (built, committed by each candidate) | `site/JianZiPu.ttf`, plus `site/version.json` for the website |
+| The glossary on the font page | rows from `components.csv` (Glossary column), layout in `site/glossary.json`, written by `builder/jzpbuild/glossary.py` |
 | Downloads of every version | [GitHub Releases](https://github.com/neuralfirings/JianZiPu/releases) |
 | The release steps | `builder/jzpbuild/release.py`, the screen `app/src/routes/release/` |
 | The tag workflow and the scope check | `.github/workflows/release.yml`, `.github/workflows/scope.yml` |
