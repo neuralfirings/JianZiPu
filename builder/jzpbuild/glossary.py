@@ -27,7 +27,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import config
-from .typing_preview import clean_record
+
+# components.csv's columns (typing_preview.ROW_FIELDS); not imported from there, so the release
+# scope check can read the page with the standard library alone
+FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin", "glossary")
 
 BLOCK_RE = re.compile(r"(<!-- glossary (\S+)[^>]*-->)(.*?)(<!-- /glossary \2 -->)", re.S)
 INDENT = " " * 8
@@ -48,7 +51,7 @@ class Row:
 
 def load_rows(path: Path | None = None) -> dict[str, dict]:
     with open(path or config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
-        recs = [clean_record(r) for r in csv.DictReader(f)]
+        recs = [{k: str(r.get(k) or "").strip() for k in FIELDS} for r in csv.DictReader(f)]
     return {r["glyph_name"]: r for r in recs if r["glyph_name"]}
 
 

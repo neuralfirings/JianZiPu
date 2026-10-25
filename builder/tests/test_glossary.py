@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from jzpbuild import config, glossary  # noqa: E402
 from jzpbuild.glossary import GlossaryError  # noqa: E402
 
-FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin", "glossary")
+FIELDS = glossary.FIELDS
 
 
 def rows(*recs: str) -> dict[str, dict]:
@@ -49,6 +49,20 @@ def test_every_example_on_the_page_types_what_it_shows():
 
 
 # ---------------------------------------------------------------- the generator
+
+def test_the_columns_match_the_builders():
+    from jzpbuild import typing_preview
+    assert glossary.FIELDS == typing_preview.ROW_FIELDS
+
+
+def test_the_scope_check_needs_only_the_standard_library():
+    # .github/workflows/scope.yml runs release.py (and so glossary.py) with nothing installed
+    import subprocess
+    code = ("import sys; sys.modules['fontTools'] = None; sys.modules['uharfbuzz'] = None; "
+            "from jzpbuild import release, glossary; print('ok')")
+    r = subprocess.run([sys.executable, "-c", code], cwd=config.BUILDER_DIR, capture_output=True, text=True)
+    assert r.stdout.strip() == "ok", r.stderr
+
 
 def test_usage_rows_fill_the_template_with_the_glyphs_spellings():
     r = rows("lg_gou,,,k,,勾,,gōu,2a", "lg_li,,,U,,历,,lì,2a")

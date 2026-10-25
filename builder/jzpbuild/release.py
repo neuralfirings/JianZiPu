@@ -159,7 +159,7 @@ def start(version: str, repo: Path = REPO, log: Log = print) -> dict:
 def _check_scope(repo: Path, branch: str):
     committed = git("diff", "--name-only", "origin/main...HEAD", repo=repo).splitlines()
     files = sorted(set(committed + dirty_files(repo)))
-    bad = scope(files, branch, GLOSSARY_PAGE in files and glossary_only("origin/main", None, repo))
+    bad = scope(files, branch, branch.startswith(PREFIX) and GLOSSARY_PAGE in files and glossary_only("origin/main", None, repo))
     if bad:
         raise ReleaseError("A release branch carries only font files, and these aren't: "
                            + ", ".join(bad[:8]) + (" …" if len(bad) > 8 else "")
@@ -382,7 +382,8 @@ def main(argv=None) -> int:
             sys.stdout.write(tag_notes(args.tag))
         elif args.cmd == "scope":
             files = git("diff", "--name-only", f"{args.base}...{args.head}").splitlines()
-            bad = scope(files, args.branch, GLOSSARY_PAGE in files and glossary_only(args.base, args.head))
+            bad = scope(files, args.branch, args.branch.startswith(PREFIX) and GLOSSARY_PAGE in files
+                        and glossary_only(args.base, args.head))
             kind = "a release branch may change only font files" if args.branch.startswith(PREFIX) else \
                 "font files change only through a release branch (release/<version>)"
             for f in bad:
