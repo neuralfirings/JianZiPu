@@ -34,7 +34,7 @@ Every box where you type words in the Builder, and the font itself, read the sam
 | `s7.6k5` | A dot makes a position decimal (七徽六分). `13+` is 徽外. |
 | `s7>\k5` | Modifiers: `>` 急, `/` 绰, `\` 注. |
 | `fys9k5` | `fy` (or `fanyin`) adds 泛音. |
-| `:fenkai` `:shang79` | A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon. |
+| `:fenkai` `:shang79` | A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon. New in 3.300: a word with a part only a vertical word can hold (上, 下, 分开…) gets its colon without one: `shang79` is `:shang79`. Type the colon for a word that would otherwise be read as a standard note: `:lun3`, `:v8`. |
 | `C03\|s6,5` | Chords: `C` 撮 (also `DC`, `FC`), the left note, `\|`, the right note. `TT` 双弹 and `BL` 拨剌 work the same way. |
 | `#` `+` | `#` starts a new word without a space; `+` adds an advance between words. |
 

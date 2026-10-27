@@ -139,6 +139,7 @@ class Preview:
     glyphs: set
     not_built: list = field(default_factory=list)     # glyphs the last build doesn't have
     missing_chars: dict = field(default_factory=dict)  # glyph -> [values whose characters aren't in the font]
+    vertical_only: set = field(default_factory=set)    # glyphs that get their colon untyped (shang = :shang)
     seconds: float = 0.0
 
 
@@ -189,6 +190,7 @@ class PreviewFonts:
             [[r.glyph_name, r.vert_variant, r.common, r.latin, r.latin_alt, r.simplified, r.traditional,
               sorted(r.areas)] for r in rows],
             {n: a.get("glyphs", []) for n, a in design.get("areas", {}).items()},
+            [l.get("slots") for l in design.get("layouts", [])],     # which glyphs are vertical-only
         ], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
         with self.lock:
             if key in self.cache:
@@ -201,6 +203,7 @@ class PreviewFonts:
             token = features._DESIGN_OVERRIDE.set(schema.parse_design(sdesign))
             try:
                 fea = "\n".join(features.gen_gsub(srows, validate=False)) + "\n"
+                vertical_only = set(features.vertical_only_glyphs())
             finally:
                 features._DESIGN_OVERRIDE.reset(token)
             if "GSUB" in font:
@@ -209,7 +212,8 @@ class PreviewFonts:
             buf = io.BytesIO()
             font.save(buf)
             p = Preview(hb_font=hb.Font(hb.Face(buf.getvalue())), glyphs=font_glyphs,
-                        not_built=not_built, missing_chars=missing, seconds=round(time.time() - t0, 3))
+                        not_built=not_built, missing_chars=missing,
+                        vertical_only=vertical_only, seconds=round(time.time() - t0, 3))
             self.cache[key] = p
             while len(self.cache) > self.KEEP:
                 self.cache.popitem(last=False)
@@ -241,8 +245,9 @@ def shape(p: Preview, words: list[str]) -> list[dict]:
 
 
 def roundtrip(p: Preview, rows: list[GlyphRow]) -> list[dict]:
-    """Each spelling typed alone must give its own glyph; a vertical form must come
-    out after a colon from its partner's first spelling. Returns the failures."""
+    """Each spelling typed alone must give its own glyph (after the colon the font adds
+    for a glyph only a vertical word can place); a vertical form must come out after a
+    colon from its partner's first spelling. Returns the failures."""
     checks = []
     for r in rows:
         if r.glyph_name not in p.glyphs:
@@ -250,7 +255,8 @@ def roundtrip(p: Preview, rows: list[GlyphRow]) -> list[dict]:
         for f in SPELLING_FIELDS:
             v = getattr(r, f)
             if v and v not in p.missing_chars.get(r.glyph_name, []):
-                checks.append((r.glyph_name, f, v, [r.glyph_name]))
+                colon = ["blank_colon"] if r.glyph_name in p.vertical_only else []
+                checks.append((r.glyph_name, f, v, colon + [r.glyph_name]))
         if r.vert_variant and r.vert_variant in p.glyphs:
             first = next((getattr(r, f) for f in SPELLING_FIELDS if getattr(r, f)
                           and getattr(r, f) not in p.missing_chars.get(r.glyph_name, [])), None)

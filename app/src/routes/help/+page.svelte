@@ -98,7 +98,7 @@
             <tr><td><code>s7.6k5</code></td><td>A dot makes a position decimal (七徽六分). <code>13+</code> is 徽外.</td></tr>
             <tr><td><code>s7&gt;\k5</code></td><td>Modifiers: <code>&gt;</code> 急, <code>/</code> 绰, <code>\</code> 注.</td></tr>
             <tr><td><code>fys9k5</code></td><td><code>fy</code> (or <code>fanyin</code>) adds 泛音.</td></tr>
-            <tr><td><code>:fenkai</code> <code>:shang79</code></td><td>A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon.</td></tr>
+            <tr><td><code>:fenkai</code> <code>:shang79</code></td><td>A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon. New in 3.300: a word with a part only a vertical word can hold (上, 下, 分开…) gets its colon without one: <code>shang79</code> is <code>:shang79</code>. Type the colon for a word that would otherwise be read as a standard note: <code>:lun3</code>, <code>:v8</code>.</td></tr>
             <tr><td><code>C03|s6,5</code></td><td>Chords: <code>C</code> 撮 (also <code>DC</code>, <code>FC</code>), the left note, <code>|</code>, the right note. <code>TT</code> 双弹 and <code>BL</code> 拨剌 work the same way.</td></tr>
             <tr><td><code>#</code> <code>+</code></td><td><code>#</code> starts a new word without a space; <code>+</code> adds an advance between words.</td></tr>
           </tbody>
