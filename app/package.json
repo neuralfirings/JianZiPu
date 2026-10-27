@@ -32,7 +32,7 @@
   "dependencies": {
     "@fontsource-variable/eb-garamond": "^5.3.0",
     "@fontsource-variable/literata": "^5.3.0",
-    "@lucide/svelte": "^1.59.0",
+    "@lucide/svelte": "^1.61.0",
     "@supabase/supabase-js": "^2.45.4",
     "esm-potrace-wasm": "^0.5.1",
     "fflate": "^0.8.2",
