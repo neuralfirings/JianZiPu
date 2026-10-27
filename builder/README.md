@@ -403,6 +403,12 @@ Columns:
   `:`), the target glyph name (e.g. `lg_lun` → `md_lun`). Empty for glyphs
   with no vert-mode variant. Drives the `@area_to_md_for_vert_from/_to`
   substitution pair.
+- *(automatic colon)* A glyph that only the word types opening with the
+  colon can place (`@area_vert_only`: in `char`, in no area another word
+  type uses; `vertical_only_glyphs()` in `features.py`) makes its word a
+  vertical one without the `:` being typed: `auto_colon` inserts
+  `blank_colon` before the word's first glyph, after the typed colon is
+  read and before the vert-mode swap, so `lun3shang` also gets `md_lun`.
 - `common`, `latin`, `latin_alt` — the ASCII/latin spellings that trigger
   this glyph (`common` is the "primary" one shown in docs/tooltips; `latin`
   and `latin_alt` are alternate spellings that map to the same glyph, e.g.
@@ -612,7 +618,9 @@ underlying mechanism explains what "conflict" means here:
    …) in the inspector or the Typing table; Save writes `components.csv`.
 3. **Save**, then Build & test → **Build font**. Type `:<key>` in the test
    box: the live preview shows it as a row of a vertical word before the
-   build finishes; the built font afterwards.
+   build finishes; the built font afterwards. A glyph that is only in
+   `char` (no other word type can place it) also works without the colon:
+   the font adds it (`shang34` = `:shang34`, `auto_colon` in `features.py`).
 
 If the character should also work as a hui number or a left-hand glyph,
 add it to those areas too; one glyph can be in several.

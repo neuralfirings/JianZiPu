@@ -89,6 +89,31 @@ def all_component_glyphs(rows: list[GlyphRow]) -> list[str]:
     return sorted(names)
 
 
+def vertical_only_glyphs() -> list[str]:
+    """Glyphs only a vertical word can place: in an area a layout opening with the colon
+    uses, and in no area any other layout uses (上, 下, 退…). A word holding one gets its
+    `:` without it being typed (gen_auto_colon), since no other word type could lay it out."""
+    design = _design()
+    colon_areas = {n for n, a in design.areas.items() if "blank_colon" in a.glyphs}
+
+    def areas(slots) -> set[str]:
+        return {e.area for s in slots for alt in s.alternatives for e in alt}
+
+    vertical: list[str] = []
+    other: set[str] = set()
+    for layout in design.layouts:
+        first = layout.slots[0] if layout.slots else None
+        opens_with_colon = bool(colon_areas) and first is not None and not first.optional \
+            and areas([first]) <= colon_areas
+        for name in sorted(areas(layout.slots), key=list(design.areas).index):
+            glyphs = design.areas[name].glyphs
+            if opens_with_colon:
+                vertical += [g for g in glyphs if g not in vertical]
+            else:
+                other.update(glyphs)
+    return [g for g in vertical if g not in other and g != "blank_colon"]
+
+
 # ---------------------------------------------------------------------------
 # class definitions
 
@@ -128,6 +153,16 @@ def gen_classes(rows: list[GlyphRow]) -> list[str]:
         "",
         f"  @area_wild = [ {' '.join(all_component_glyphs(rows))} ];",
         "",
+    ]
+    vertical_only = vertical_only_glyphs()
+    if vertical_only:
+        lines += [
+            "  # glyphs only a vertical word can place, and what a word without a typed colon holds",
+            f"  @area_vert_only = [ {' '.join(vertical_only)} ];",
+            f"  @auto_colon_word = [ {' '.join(word_start_glyphs(rows))} ];",
+            "",
+        ]
+    lines += [
         "  # right-hand technique selectors (one layout family each)",
     ]
     for key, members in config.RIGHT_SELECTORS.items():
@@ -428,6 +463,46 @@ def gen_hui_and_commas(rows: list[GlyphRow]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# automatic colon: shang34 = :shang34
+
+
+def word_start_glyphs(rows: list[GlyphRow]) -> list[str]:
+    """What can start a word without a typed `:` (@area_wild minus the colon itself)."""
+    return [g for g in all_component_glyphs(rows) if g != "blank_colon"]
+
+
+def gen_auto_colon_insert(rows: list[GlyphRow]) -> list[str]:
+    """X -> blank_colon X, for the first glyph of a word that needs its colon."""
+    if not vertical_only_glyphs():
+        return []
+    lines = ["lookup auto_colon_insert {"]
+    lines += [f"  sub {g} by blank_colon {g};" for g in word_start_glyphs(rows)]
+    lines.append("} auto_colon_insert;")
+    return lines
+
+
+def gen_auto_colon() -> list[str]:
+    """A word holding a glyph only a vertical word can place gets its `:` in front.
+
+    Runs after the inline `sub colon by blank_colon`, so a typed colon counts as part of
+    the word (and as a word start: `:shang` keeps one colon), and before the vert-mode
+    conversions, so `lun3shang` also gets md_lun. The look-ahead stops at a space, a `+`
+    or a typed colon, none of which is in @auto_colon_word."""
+    if not vertical_only_glyphs():
+        return []
+    word = "@auto_colon_word"
+    lines = ["", "  # a word only a vertical layout can place gets its colon: shang34 = :shang34",
+             "  lookup auto_colon {",
+             f"    ignore sub @area_wild {word}';"]
+    for n in range(6, -1, -1):
+        between = "".join(f" {word}" for _ in range(n))
+        lines.append(f"    sub {word}' lookup auto_colon_insert{between} @area_vert_only;")
+    lines.append("    sub @area_vert_only' lookup auto_colon_insert;")
+    lines.append("  } auto_colon;")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # feature block
 
 
@@ -483,6 +558,10 @@ def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
         "  lookup char_deci_liga_part1;",
         "  lookup char_deci_liga_part2;",
         "",
+    ]
+    lines += gen_auto_colon()
+    lines += [
+        "",
         "  # vert mode: convert to centered variants when following colon",
     ]
     for n in range(6, -1, -1):
@@ -531,6 +610,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_c2j_single(rows, c2g, "traditional", "c2j_trad_single"), [""],
         gen_char_deci_liga_parts(),
         gen_hui_and_commas(rows), [""],
+        gen_auto_colon_insert(rows), [""],
         gen_liga_feature(digit_lookup=bool(digit_entries(rows))),
     ]
     out = []

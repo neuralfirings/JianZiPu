@@ -35,7 +35,7 @@ CORPUS = [
     "Cv9,6|03", "C88|99", "DCs7,5|02", "TT3", "BL5",
     # vertical words
     ":shang79", ":fenkai", ":banlun", ":大息", ":jiu",
-    ":shang", ":xia", ":zhi4",
+    ":shang", ":xia", ":zhi4", "shang34", "lun3shang",
     # Chinese input
     "名七半急勾五", "名七五", "大九挑五", "中十点二抹一",
     "散挑三", "跪十一剔二", "食外勾一", "名九，半轮六",
@@ -59,6 +59,11 @@ FEATURES = {"liga": True, "kern": True}
 # space appended to both sides (which sidesteps the old bug) and separately
 # assert the new font shapes the bare input the same as the padded one.
 OLD_FONT_EOT_QUIRK = {"13", "0.5", ":xia"}
+
+# Words holding a glyph only a vertical word can place get their colon from the font
+# (features.gen_auto_colon); the old font left them unplaced. They must shape like the
+# old font shapes them with the colon typed.
+AUTO_COLON = {"shang34", "lun3shang", "sanu1", "diejuan", "quanfu3", "banfu2", "*"}
 
 
 def shape(font_path: str, text: str):
@@ -86,6 +91,9 @@ def compare_fonts(old_path: str, new_path: str) -> int:
                 failures += 1
                 print(f"DIFF for {text!r}: new font pads inconsistently")
                 continue
+        elif text in AUTO_COLON:
+            old = shape(old_path, ":" + text)
+            new = shape(new_path, text)
         else:
             old = shape(old_path, text)
             new = shape(new_path, text)
