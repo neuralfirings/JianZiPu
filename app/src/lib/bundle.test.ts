@@ -103,6 +103,18 @@ describe('three-way merge', () => {
     expect(keep['design:area:hui']).toBe(false);
     expect(keep['design:area:char']).toBe(true);
   });
+  it('keeps the glossary column under a draft saved before it existed', () => {
+    const old = 'glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n';
+    const b = makeBundle({
+      design: design(), typing: T.fromCsv(old + 'md_7,,7,qi,,,,qī\n'), svgs: baseSvgs,
+      baseDesign: design(), baseTyping: T.fromCsv(old + 'md_7,,7,,,,,qī\n'), baseSvgs, base,
+      author: { id: 'u1', name: 'Mei Lin' }, now: new Date('2026-10-18T10:00:00Z')
+    });
+    const cur = { ...current(), typing: { md_7: { ...T.empty(), common: '7', pinyin: 'qī', glossary: '3c: Numbers' } } as T.Typing };
+    const items = diffBundle(b, cur);
+    expect(items.map((i) => i.kind === 'spelling' && i.fields.map((f) => f.field))).toEqual([['latin']]);
+    expect(applyMerge(items, defaultKeep(items), cur).typing.md_7).toMatchObject({ latin: 'qi', glossary: '3c: Numbers' });
+  });
   it('applies only the kept items', () => {
     const cur = current();
     const items = diffBundle(draft(), cur);

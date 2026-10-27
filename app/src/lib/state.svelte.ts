@@ -71,6 +71,8 @@ class DesignState {
   glyphs = $state<GlyphRow[]>([]);
   /** Built-in glyphs typed by symbols (blank, blank_colon…): never need a spelling. */
   control = $state<string[]>([]);
+  /** The glossary's sections on the font page (site/glossary.json); empty where the server has no site/ (hosted). */
+  glossarySections = $state<{ id: string; title: string }[]>([]);
   /** Every glyph outline as the app shows it: saved files plus `pendingSvgs`. */
   svgs = $state<Record<string, string>>({});
   /** The saved outlines (local: the files; hosted: the font plus the saved draft). */
@@ -231,6 +233,7 @@ class DesignState {
       this.csvHash = g.hash;
       this.csvOrder = g.order;
       this.control = g.control;
+      this.glossarySections = g.glossary_sections ?? [];
       this.mainSvgs = svgs;
       this.mainDesign = d.design;
       this.mainTyping = typing;
