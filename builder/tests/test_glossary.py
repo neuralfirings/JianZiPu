@@ -83,12 +83,8 @@ def test_rows_show_every_spelling_and_an_id():
     assert "<txs><r>fanyin</r>s9u6</txs>" in out and "<txs><r>fy</r>s9u6</txs>" in out
     assert "<td><span class=\"nw\">绰</span>, <span class=\"nw\">綽</span></td>" in out and "<txs><r>綽</r>名九挑六</txs>" in out
     assert "<span class=\"nw\">:bl</span>" in out and "<span class=\"nw\">:半輪</span>" in out
-    assert '<tr id="1c.1">' in out and '<a href="#1c.2">1c.2</a>' in out and '<tr id="2c.1">' in out
-    # a section's vertical table (1d-v) goes on counting its rows
-    r2 = rows("md_san,,0,,,散,,sàn,1d", "md_dai,,,dai,,带,,dài,", "md_qi,,,qi,,起,,qǐ,")
-    out2 = glossary.render(page("1d", "1d-v"), r2, {"1d": {"kind": "usage", "usage": ["{}k5", "{}勾五"]},
-                                                    "1d-v": {"kind": "vertical", "rows": [["md_dai", "md_qi"]]}})
-    assert '<tr id="1d.1">' in out2 and '<tr id="1d.2">' in out2 and "1d-v." not in out2
+    # one count down the whole page: 1c has rows 1 and 2, so 2c starts at 3
+    assert '<tr id="1">' in out and '<a href="#2">2</a>' in out and '<tr id="3">' in out and 'id="4"' not in out
     ex = [e for w, e in glossary.examples(out, r, sec)]          # every spelling gets typed
     assert ["泛音名九挑六", "fanyins9u6", "fys9u6"] in ex and ["绰名九挑六", "綽名九挑六", "/s9u6"] in ex
 

@@ -196,14 +196,13 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
-    """The section's table; its rows are numbered `start`, `start` + 1… after the section's id."""
+    """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page)."""
     cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
-    lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="10%">ID</th>']
-    lines += [f'      <th width="22%">{h}</th>' for h in ("ASCII", "中文", "拼音")] + [f'      <th width="24%">{last}</th>']
+    lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
+    lines += [f'      <th width="23%">{h}</th>' for h in ("ASCII", "中文", "拼音")] + [f'      <th width="25%">{last}</th>']
     lines += ["    </tr>", "  </thead>"]
-    base = sid.split("-")[0]          # 1d-v (1d's vertical table) goes on counting 1d's rows
     for n, r in enumerate(section_rows(sid, sec, rows), start):
-        rid = f"{base}.{n}"           # by position: a row added above renumbers the ones below it
+        rid = str(n)                  # by position: a row added above renumbers the ones below it
         lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
                   f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
     lines.append("</table>")
@@ -242,16 +241,16 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
     rows = load_rows() if rows is None else rows
     sections = load_sections() if sections is None else sections
     seen = set()
-    count: dict[str, int] = {}        # rows numbered so far, per section id before the "-"
+    count = 0                         # rows numbered so far, in page order
 
     def sub(m: re.Match) -> str:
         sid = m.group(2)
         if sid not in sections:
             raise GlossaryError(f"site/index.html has a glossary marker for {sid}, which site/glossary.json doesn't define.")
         seen.add(sid)
-        base = sid.split("-")[0]
-        html = table_html(sid, sections[sid], rows, count.get(base, 0) + 1)
-        count[base] = count.get(base, 0) + len(section_rows(sid, sections[sid], rows))
+        nonlocal count
+        html = table_html(sid, sections[sid], rows, count + 1)
+        count += len(section_rows(sid, sections[sid], rows))
         return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
 
     out = BLOCK_RE.sub(sub, page)
