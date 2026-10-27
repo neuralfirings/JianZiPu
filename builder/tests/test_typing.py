@@ -114,6 +114,90 @@ def test_no_digit_lookup_without_digit_spellings():
     assert "l2j_digit_liga" not in "\n".join(features.gen_liga_feature(digit_lookup=False))
 
 
+def test_vertical_only_glyphs_are_the_ones_no_other_word_type_places():
+    vert = features.vertical_only_glyphs()
+    assert {"md_shang", "md_xia", "md_xi4", "md_san2", "md_lun"} <= set(vert)
+    # in the char area too, but also a hui, finger, string or right-hand glyph
+    assert not {"md_3", "md_13", "md_ming", "md_san", "lg_lun", "blank_colon"} & set(vert)
+
+
+def test_the_auto_colon_runs_after_the_typed_colon_and_before_the_vertical_forms():
+    text = "\n".join(features.gen_gsub())
+    assert "@area_vert_only = [ " in text and "lookup auto_colon_insert {" in text
+    feature = text[text.index("feature liga {"):]
+    assert feature.index("sub colon by blank_colon;") < feature.index("lookup auto_colon {") \
+        < feature.index("@area_to_md_for_vert_from'")
+
+
+TOY_DESIGN = {
+    "version": 2,
+    "areas": {
+        "colon": {"size": [1000, 1000], "glyphs": ["blank_colon"], "advance": 1000},
+        "left": {"size": [350, 350], "glyphs": ["md_ming"]},
+        "hui": {"size": [350, 350], "glyphs": ["md_3"]},
+        "right": {"size": [660, 660], "glyphs": ["lg_lun"]},
+        "char": {"size": [350, 350], "glyphs": ["md_3", "md_ming", "md_shang"]},
+    },
+    "layouts": [
+        {"name": "standard", "slots": [{"name": n, "optional": True, "alternatives": [[n]]}
+                                       for n in ("left", "hui", "right")]},
+        {"name": "vertical", "slots": [{"name": "colon", "alternatives": [["colon"]]},
+                                       {"name": "row", "repeat": [1, 4], "alternatives": [["char"], ["left", "hui"]]}]},
+    ],
+}
+
+
+def test_a_word_only_a_vertical_layout_places_gets_its_colon():
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    import uharfbuzz as hb
+    from jzpbuild.positioning import schema
+
+    keys = {"S": "md_shang", "3": "md_3", "M": "md_ming", "L": "lg_lun", ":": "colon", " ": "space"}
+    rows = [row("md_shang", areas={"char"}), row("md_3", areas={"hui", "char"}),
+            row("md_ming", areas={"left", "char"}), row("lg_lun", areas={"right"})]
+    token = features._DESIGN_OVERRIDE.set(schema.parse_design(TOY_DESIGN))
+    try:
+        assert features.vertical_only_glyphs() == ["md_shang"]
+        fea = "\n".join([
+            f"@area_wild = [ {' '.join(features.all_component_glyphs(rows))} ];",
+            f"@area_vert_only = [ {' '.join(features.vertical_only_glyphs())} ];",
+            f"@auto_colon_word = [ {' '.join(features.word_start_glyphs(rows))} ];",
+            *features.gen_auto_colon_insert(rows),
+            "feature liga {", "  sub colon by blank_colon;", *features.gen_auto_colon(), "} liga;",
+        ])
+    finally:
+        features._DESIGN_OVERRIDE.reset(token)
+
+    glyphs = [".notdef", "blank", "blank_bar", "blank_colon", *keys.values()]
+    fb = FontBuilder(1000, isTTF=True)
+    fb.setupGlyphOrder(glyphs)
+    fb.setupCharacterMap({ord(k): g for k, g in keys.items()})
+    fb.setupGlyf({g: TTGlyphPen(None).glyph() for g in glyphs})
+    fb.setupHorizontalMetrics({g: (1000, 0) for g in glyphs})
+    fb.setupHorizontalHeader()
+    fb.setupPost()
+    addOpenTypeFeaturesFromString(fb.font, fea)
+    out = io.BytesIO()
+    fb.save(out)
+    font = hb.Font(hb.Face(out.getvalue()))
+
+    def typed(text):
+        buf = hb.Buffer()
+        buf.add_str(text)
+        buf.guess_segment_properties()
+        hb.shape(font, buf, {"liga": True})
+        return " ".join(font.glyph_to_string(i.codepoint) for i in buf.glyph_infos)
+
+    assert typed("S33") == typed(":S33") == "blank_colon md_shang md_3 md_3"
+    assert typed("M3S") == "blank_colon md_ming md_3 md_shang"             # found further on in the word
+    assert typed("L3 S") == "lg_lun md_3 space blank_colon md_shang"        # one word at a time
+    assert typed("M3") == "md_ming md_3"                                    # a standard word stays one
+    assert typed("M3:S") == "md_ming md_3 blank_colon md_shang"             # a typed colon ends the look
+    assert typed("S:M3") == "blank_colon md_shang blank_colon md_ming md_3"
+
+
 # ---------------------------------------------------------------- CSV write
 
 @pytest.fixture
@@ -192,9 +276,11 @@ def test_every_shipped_spelling_round_trips(built_font):
 
 
 @pytest.mark.parametrize("word,glyphs", [
-    ("xi4", ["md_xi4"]), ("fu4", ["md_fu"]), ("zhi4", ["md_zhi4"]),
-    ("s7xi4", ["md_ming", "md_7", "md_xi4"]), (":lun", ["blank_colon", "md_lun"]),
-    ("lun", ["lg_lun"]), ("san", ["md_san2"]), ("就", ["md_jiu"]),
+    ("xi4", ["blank_colon", "md_xi4"]), ("fu4", ["blank_colon", "md_fu"]), ("zhi4", ["blank_colon", "md_zhi4"]),
+    ("s7xi4", ["blank_colon", "md_ming", "md_7", "md_xi4"]), (":lun", ["blank_colon", "md_lun"]),
+    ("lun", ["lg_lun"]), ("san", ["blank_colon", "md_san2"]), ("就", ["md_jiu"]),
+    ("shang34", ["blank_colon", "md_shang", "md_3", "md_4"]), (":shang34", ["blank_colon", "md_shang", "md_3", "md_4"]),
+    ("lun3shang", ["blank_colon", "md_lun", "md_3", "md_shang"]), ("lun3", ["lg_lun", "md_3"]),
 ])
 def test_built_font_types_these(built_font, word, glyphs):
     rows = tp.rows_from(csv_records(), DESIGN)

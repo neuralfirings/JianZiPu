@@ -10,6 +10,9 @@ same text becomes the GitHub release notes.
 
 ## [Unreleased]
 
+### Added
+- A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
+
 ## [3.200] - 2026-10-21
 
 ### Changed
