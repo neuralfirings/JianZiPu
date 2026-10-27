@@ -34,7 +34,7 @@ API (all JSON):
                                    exists (no base_hash) or changed on disk since it was loaded (hash mismatch)
   GET  /api/config                 {mode: local|hosted, commit, supabase_url, supabase_anon_key}
   GET  /api/base                   the checked-in version drafts start from: {commit, version (builder/VERSION),
-                                   date, design_hash, csv_hash, svg_hashes}
+                                   date, design_hash, csv_hash, svg_hashes, unreleased (CHANGELOG.md's queued lines)}
   POST /api/build                  start a build (one at a time); each build goes to its own temp dir.
                                    Optional body {design?, rows?, svgs?: {name: text}, deleted?: [name]}
                                    builds those instead of the files on disk (a tester's draft)
@@ -577,7 +577,9 @@ def rows_to_csv(rows: list[dict], order_from: str) -> str:
 def base_payload() -> dict:
     """The checked-in version a draft starts from, as hashes (same hash as GET /api/design etc.)."""
     svgs = sorted(config.COMPONENTS_DIR.glob("*.svg"))
+    changelog = config.CHANGELOG.read_text(encoding="utf-8") if config.CHANGELOG.exists() else ""
     return {"commit": SETTINGS.commit, "version": config.FONT_VERSION, "date": hosted.font_date([config.DESIGN_JSON, config.COMPONENTS_CSV, config.COMPONENTS_DIR]),
+            "unreleased": release.changelog_section(changelog, "Unreleased"),   # what builds have that the release doesn't
             "design_hash": _hash(_read_design_text()), "csv_hash": _hash(_read_csv_text()),
             "svg_hashes": {p.stem: _hash(p.read_text(encoding="utf-8")) for p in svgs}}
 

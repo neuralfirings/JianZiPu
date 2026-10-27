@@ -87,13 +87,17 @@ export type BuildStatus = {
 
 /** Where the release stands (local server only, jzpbuild/release.py), and the last step's log. */
 export type ReleaseStatus = {
-  git: { branch: string; release: string | null; version: string | null; dirty: string[]; tags: string[]; candidates: string[]; repo: string | null; error?: string };
+  git: { branch: string; release: string | null; version: string | null; dirty: string[]; tags: string[]; candidates: string[]; repo: string | null; error?: string;
+    /** CHANGELOG.md: the lines queued under Unreleased, and this release's entry from its last candidate */
+    unreleased?: string; previous_notes?: string };
   job: { action: 'start' | 'candidate' | 'publish' | null; state: 'idle' | 'running' | 'done'; log: string[]; error: string | null;
     result: { branch?: string; tag?: string; version?: string; pr_url?: string; release_url?: string } | null };
 };
 
 export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; supabase_url: string | null; supabase_anon_key: string | null };
-export type BaseInfo = { commit: string | null; version?: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string> };
+export type BaseInfo = { commit: string | null; version?: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string>;
+  /** CHANGELOG.md's "## [Unreleased]" lines: what builds have that the released font doesn't */
+  unreleased?: string };
 /** A draft to build instead of the files on disk (hosted mode). */
 export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };
 
