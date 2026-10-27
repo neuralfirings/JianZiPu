@@ -44,7 +44,7 @@ A release branch holds **only font files**:
 
 - `builder/inputs/`
 - `builder/VERSION`
-- `CHANGELOG.md`
+- `CHANGELOG.md` (open to code branches too, for the Unreleased lines)
 - `site/JianZiPu.ttf`
 - `site/version.json`
 - `builder/tests/JianZiPu.ttf`
@@ -67,8 +67,11 @@ Then **Save**, which writes `builder/inputs/`.
 
 ### 4. Build the candidate
 
-The changelog entry is filled in from the requests' titles and credits ("thanks
-to Mei Chen"). Edit it before you build. It becomes the `CHANGELOG.md` section
+The changelog entry is filled in from the lines code changes queued under
+`## [Unreleased]` in `CHANGELOG.md` (see [A fix that doesn't come from a Change
+Request](#a-fix-that-doesnt-come-from-a-change-request)), then the requests'
+titles and credits ("thanks to Mei Chen"). A second candidate starts from the
+first one's entry. Edit it before you build. It becomes the `CHANGELOG.md` section
 and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
 `### Changed`, `### Fixed`, `### Removed`.
 
@@ -81,7 +84,8 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
 3. Commits `builder/inputs/` as "3.300: changes from N Change Requests".
 4. Writes `builder/VERSION` and builds the font into `site/JianZiPu.ttf`, with
    name ID 5 "Version 3.300; git-<that commit>" and `head.fontRevision` 3.3.
-5. Writes `site/version.json` and the `CHANGELOG.md` entry, then commits them
+5. Writes `site/version.json` and the `CHANGELOG.md` entry (and empties
+   `## [Unreleased]`: its lines are in the entry now), then commits them
    as "v3.300-rc.1: JianZiPu 3.300, release candidate 1".
 6. Tags `v3.300-rc.1`, and pushes the branch and the tag.
 7. Marks the requests as In a release candidate, which emails their authors.
@@ -186,14 +190,24 @@ The version lives in `builder/VERSION`, and only a release changes it.
   way.
 - **A Builder code fix**: an ordinary branch and pull request to main. It
   doesn't need a release. Railway deploys it when it merges.
+- **A code change that changes the font the Builder builds** (a new
+  substitution rule, say): an ordinary pull request to main that also adds a
+  line under `## [Unreleased]` in `CHANGELOG.md`. Every build from then on has
+  it: Build & test lists the queued lines ("Builds include changes that aren't
+  in the released font 3.200 yet"), and a font built outside a release says
+  "dev build, not a release" in its version. It goes out with the next
+  release, whose changelog entry starts from those lines.
 
 ## Scope rules
 
 `jzpbuild/release.py` `FONT_PATHS` is the one list of font files:
 
 - A `release/*` branch may change only those files (plus the shaping golden
-  `builder/tests/JianZiPu.ttf`).
+  `builder/tests/JianZiPu.ttf`, and `CHANGELOG.md`).
 - Every other branch may change none of them.
+- `CHANGELOG.md` (`SHARED_PATHS`) is open to both: a release writes its
+  section, and a code change that alters the built font queues a line under
+  `## [Unreleased]`.
 
 **Build candidate** checks this, and so does `.github/workflows/scope.yml` on
 every pull request.
@@ -267,6 +281,12 @@ git tag -a v3.300 origin/main -m "JianZiPu 3.300" && git push origin v3.300
 
 Then mark the requests Released in Supabase. If it prints differences, build a
 new candidate.
+
+**The release pull request conflicts in `CHANGELOG.md`.** A code change queued
+a line under Unreleased on main after the candidate emptied it. On the release
+branch, run `git merge origin/main`, keep both the new version's section and
+the new line under Unreleased (it goes out with the next release), commit and
+push. Build a new candidate only if you want that change in this release.
 
 **"Font files changed on main after …".** Something reached main outside the
 release, through the `font-files` label or an admin bypass. On the release

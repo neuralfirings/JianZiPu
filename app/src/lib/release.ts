@@ -26,11 +26,39 @@ export function missing(r: ChangeRequest, fontSvgs: SvgMap, cur: Current): Item[
   return diffBundle(bundle, cur);
 }
 
-/** The changelog entry (Keep a Changelog) for the requests in a release, with their credit. */
-export function releaseNotes(reqs: ChangeRequest[]): string {
-  if (!reqs.length) return '### Changed\n\n- ';
+/** A changelog entry's lines by their `### ` heading, in order ('' for lines before any heading). */
+function sections(md: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  let head = '';
+  for (const line of md.split('\n')) {
+    const m = /^###\s+(.*)$/.exec(line);
+    if (m) { head = m[1].trim(); if (!out.has(head)) out.set(head, []); continue; }
+    if (!line.trim()) continue;
+    if (!out.has(head)) out.set(head, []);
+    out.get(head)!.push(line);
+  }
+  return out;
+}
+
+/** The changelog entry (Keep a Changelog) for a release: what this release's last candidate wrote
+ *  (`previous`, on a second candidate), the lines code changes queued under Unreleased
+ *  (`queued`), and the requests in it with their credit, each line once. */
+export function releaseNotes(reqs: ChangeRequest[], queued = '', previous = ''): string {
   const lines = reqs.map((r) => `- ${r.title.trim()}${r.credit.trim() ? ` (thanks to ${r.credit.trim()})` : ''}`);
-  return `### Changed\n\n${lines.join('\n')}\n`;
+  if (!queued.trim() && !previous.trim()) return lines.length ? `### Changed\n\n${lines.join('\n')}\n` : '### Changed\n\n- ';
+  const all = sections(previous);
+  const add = (head: string, line: string) => {
+    if ([...all.values()].some((ls) => ls.includes(line))) return;
+    all.set(head, [...(all.get(head) ?? []), line]);
+  };
+  for (const [head, ls] of sections(queued)) ls.forEach((l) => add(head, l));
+  lines.forEach((l) => add('Changed', l));
+  return [...all].filter(([, ls]) => ls.length).map(([head, ls]) => (head ? `### ${head}\n\n` : '') + ls.join('\n')).join('\n\n') + '\n';
+}
+
+/** The queued changes under "## [Unreleased]" as plain lines, for Build & test. */
+export function unreleasedLines(text: string | null | undefined): string[] {
+  return (text ?? '').split('\n').filter((l) => /^\s*[-*]\s+/.test(l)).map((l) => l.replace(/^\s*[-*]\s+/, '').trim());
 }
 
 /** The commit message for the design changes a candidate takes. */
