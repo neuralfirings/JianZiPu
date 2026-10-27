@@ -22,7 +22,7 @@
   } = $props();
 
   const COLS = T.FIELDS;   // the phone's TypingCards show the same fields
-  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
+  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary'];
   let openDecimals = $state(false);
   let table: HTMLTableElement;
 

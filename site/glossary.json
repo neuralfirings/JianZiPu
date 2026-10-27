@@ -1,0 +1,99 @@
+{
+  "about": [
+    "How each table of the glossary on site/index.html is laid out. The rows come from",
+    "builder/inputs/components.csv: a glyph gets a row in every section its `glossary` column names",
+    "(the Builder's Glyphs > Typing view, column Glossary), by its title (\"1c: Left Hand Techniques\"), two separated",
+    "by \"; \". Each title starts with its id; the id is the key and the check keeps the titles the same in both files.",
+    "Then `cd builder && python3 -m jzpbuild.glossary`",
+    "rewrites the tables between the <!-- glossary <id> --> markers; headings and text around them stay as written.",
+    "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the example as [ASCII, 中文]; {} is the glyph's",
+    "spelling, marked red; <r>…</r> marks more. `examples` overrides it for one glyph.",
+    "kind 'vertical': each spelling after a colon, typed on its own. `rows` sets the order: a glyph name, or a",
+    "list of glyph names for a word written together (:带起). Glyphs of the section that `rows` leaves out follow",
+    "in components.csv order. Consecutive numbers (md_1 to md_13) share one row."
+  ],
+  "sections": {
+    "1a": {
+      "title": "1a: Left Hand Finger",
+      "kind": "usage",
+      "usage": ["{}9k3", "{}九勾三"],
+      "examples": {"md_gui": ["{}5.4k3", "{}五四勾三"]}
+    },
+    "1b": {
+      "title": "1b: Speed mods & mods related to 韵 production",
+      "kind": "usage",
+      "usage": ["s9{}k3", "名九{}勾三"],
+      "rows": ["mod_chuo", "mod_ji", "mod_zhu"]
+    },
+    "1c": {
+      "title": "1c: Left Hand Techniques",
+      "kind": "usage",
+      "usage": ["s9{}6", "名九{}六"],
+      "examples": {"lg_qiaqi": ["s8{}", "名八{}"], "mod_fanyin": ["{}s9u6", "{}名九挑六"]},
+      "rows": ["lg_yan", "lg_qiaqi", "mod_fanyin"]
+    },
+    "1d": {
+      "title": "1d: Special Cases",
+      "kind": "usage",
+      "usage": ["{}k5", "{}勾五"]
+    },
+    "1d-v": {
+      "title": "1d-v: Special Cases, vertical",
+      "kind": "vertical",
+      "rows": [["md_dai", "md_qi"], ["md_dui", "md_qi"], ["md_zhua", "md_qi"], ["md_pie", "md_qi"]]
+    },
+    "1e": {
+      "title": "1e: Left Hand Vibratos and Slides",
+      "kind": "vertical",
+      "rows": ["md_tui", "md_jin", "md_fu", "md_zhuang", "md_yin", "md_nao",
+               ["md_chang", "md_yin"], ["md_xi4", "md_yin"], ["md_ding", "md_yin"], ["md_xiao", "md_yin"],
+               "md_fenkai", "md_yinghe"]
+    },
+    "2a": {
+      "title": "2a: Basic Right Hand",
+      "kind": "usage",
+      "usage": ["0{}5", "散{}五"],
+      "examples": {"lg_li": ["0{}65", "散{}六五"]},
+      "rows": ["lg_pi", "lg_tuo", "lg_mo", "lg_tiao", "lg_gou", "lg_ti", "lg_da", "lg_zhai",
+               "lg_motiao", "lg_gouti", "lg_dazhai", "lg_li"]
+    },
+    "2b": {
+      "title": "2b: Chords",
+      "kind": "usage",
+      "usage": ["{}d7,7<r>|</r>06", "{}中七，七<r>｜</r>散六"],
+      "examples": {
+        "xl_cuo": ["{}d8,7<r>|</r>05", "{}中八，七<r>｜</r>散五"],
+        "xl_dacuo": ["{}d8,7<r>|</r>02", "{}中八，七<r>｜</r>散二"],
+        "xl_fancuo": ["{}d8,7<r>|</r>02", "{}中八，七<r>｜</r>散二"]
+      },
+      "rows": ["xl_cuo", "xl_dacuo", "xl_fancuo", "xl_bo", "xl_la", "xl_bola", "xl_tt", "xl_ttt"]
+    },
+    "2c": {
+      "title": "2c: Other Right Hand Strum Techniques",
+      "kind": "vertical",
+      "rows": ["lg_lun", "lg_banlun", "md_dayuan", "md_gun", "md_fu2",
+               ["md_bai", "md_suo"], ["md_duan", "md_suo"], ["md_chang", "md_suo"],
+               "md_diejuan", "md_yuanlou"]
+    },
+    "3b": {
+      "title": "3b: Related to Notes",
+      "kind": "vertical",
+      "rows": ["md_fan", "md_zhi", "md_qi", ["md_fan", "md_qi"], ["md_fan", "md_zhi"], "md_ru"]
+    },
+    "3c": {
+      "title": "3c: Related to String & Hui Number",
+      "kind": "vertical",
+      "rows": ["md_1", "md_2", "md_3", "md_4", "md_5", "md_6", "md_7", "md_8", "md_9", "md_10", "md_11", "md_12", "md_13",
+               "md_wai", "md_san", "md_ban", "md_jiu", "md_shang", "md_xia", "md_zhi4"]
+    },
+    "3e": {
+      "title": "3e: related to expression",
+      "kind": "vertical",
+      "rows": [["md_da", "md_xi"], ["md_shao", "md_xi"]]
+    },
+    "3x": {
+      "title": "3x: Placeholder for Future/Unknown Characters",
+      "kind": "vertical"
+    }
+  }
+}

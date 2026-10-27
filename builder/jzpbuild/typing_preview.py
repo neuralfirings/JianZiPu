@@ -35,7 +35,7 @@ from .data import GlyphRow, resolve_char_to_glyph_name
 from .positioning import schema
 
 ROW_FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt",
-              "simplified", "traditional", "pinyin")
+              "simplified", "traditional", "pinyin", "glossary")   # pinyin, glossary: not typed (glossary.py)
 SPELLING_FIELDS = ("latin", "latin_alt", "simplified", "traditional")
 LATIN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
 HAN_RE = re.compile(r"^[㐀-鿿豈-﫿\U00020000-\U0002ffff]+$")
