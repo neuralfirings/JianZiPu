@@ -53,6 +53,12 @@
       margin: 2px;
       border-radius: 5px; */
     }
+    /* the glossary's row IDs (1, 2, 3… down the page), generated with the tables: a link to the row */
+    td.gid, th.gid { white-space: nowrap; }
+    .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
+    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: #777; }
+    tr:target { background-color: #fff6d6; }
+    html { scroll-padding-top: 96px; }   /* a linked row or heading lands below the sticky download bar */
     jzp {
       font-size: 2.5rem;
       font-family: 'JianZiPu', 'Arial', sans-serif;
@@ -194,7 +200,7 @@
     /* ---- On a phone (narrower than 760px). A computer keeps the layout above. ---- */
     .contents, .font-version-top, .keyboard-map-link { display: none; }
     @media (max-width: 759.98px) {
-      html { scroll-padding-top: 64px; }
+      html { scroll-padding-top: 72px; }
       /* the spellings people read and copy, and the one rule everyone needs */
       text { font-size: 15px; padding: 3px 6px; line-height: 2; }
       txs { font-size: 14px; }
@@ -547,13 +553,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="1">
+            <td class="gid"><a href="#1">1</a></td>
             <td>s</td>
             <td>名</td>
             <td>míng</td>
@@ -563,7 +571,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>s</r>9k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="2">
+            <td class="gid"><a href="#2">2</a></td>
             <td>d</td>
             <td>中</td>
             <td>zhōng</td>
@@ -573,7 +582,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>d</r>9k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="3">
+            <td class="gid"><a href="#3">3</a></td>
             <td>f</td>
             <td>食</td>
             <td>shí</td>
@@ -583,7 +593,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>f</r>9k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="4">
+            <td class="gid"><a href="#4">4</a></td>
             <td>v</td>
             <td>大</td>
             <td>dà</td>
@@ -593,7 +604,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>v</r>9k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="5">
+            <td class="gid"><a href="#5">5</a></td>
             <td>x</td>
             <td>跪</td>
             <td>guì</td>
@@ -611,23 +623,27 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="6">
+            <td class="gid"><a href="#6">6</a></td>
             <td>/</td>
-            <td>绰</td>
+            <td><span class="nw">绰</span>, <span class="nw">綽</span></td>
             <td>chuò</td>
             <td>
               <jzp>s9<r>/</r>k3</jzp>
               <txs>名九<r>绰</r>勾三</txs>
+              <txs>名九<r>綽</r>勾三</txs>
               <txs>s9<r>/</r>k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="7">
+            <td class="gid"><a href="#7">7</a></td>
             <td>&gt;</td>
             <td>急</td>
             <td>jí</td>
@@ -637,13 +653,15 @@ Cv9,6|02 BLv9\6|02
               <txs>s9<r>&gt;</r>k3</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="8">
+            <td class="gid"><a href="#8">8</a></td>
             <td>\</td>
-            <td>注</td>
+            <td><span class="nw">注</span>, <span class="nw">註</span></td>
             <td>zhù</td>
             <td>
               <jzp>s9<r>\</r>k3</jzp>
               <txs>名九<r>注</r>勾三</txs>
+              <txs>名九<r>註</r>勾三</txs>
               <txs>s9<r>\</r>k3</txs>
             </td>
           </tr>
@@ -655,13 +673,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="9">
+            <td class="gid"><a href="#9">9</a></td>
             <td>V</td>
             <td>掩</td>
             <td>yǎn</td>
@@ -671,7 +691,8 @@ Cv9,6|02 BLv9\6|02
               <txs>s9<r>V</r>6</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="10">
+            <td class="gid"><a href="#10">10</a></td>
             <td>c</td>
             <td>掐起</td>
             <td>qiā qǐ</td>
@@ -681,14 +702,16 @@ Cv9,6|02 BLv9\6|02
               <txs>s8<r>c</r></txs>
             </td>
           </tr>
-          <tr>
-            <td>fanyin, fy</td>
+          <tr id="11">
+            <td class="gid"><a href="#11">11</a></td>
+            <td><span class="nw">fanyin</span>, <span class="nw">fy</span></td>
             <td>泛音</td>
             <td>fànyīn</td>
             <td>
               <jzp><r>fanyin</r>s9u6</jzp>
               <txs><r>泛音</r>名九挑六</txs>
               <txs><r>fanyin</r>s9u6</txs>
+              <txs><r>fy</r>s9u6</txs>
             </td>
           </tr>
         </table>
@@ -699,13 +722,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="12">
+            <td class="gid"><a href="#12">12</a></td>
             <td>0</td>
             <td>散</td>
             <td>sàn</td>
@@ -715,7 +740,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>0</r>k5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="13">
+            <td class="gid"><a href="#13">13</a></td>
             <td>jiu</td>
             <td>就</td>
             <td>jiù</td>
@@ -736,31 +762,36 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="14">
+            <td class="gid"><a href="#14">14</a></td>
             <td>:daiqi</td>
             <td>:带起</td>
             <td>dài qǐ</td>
             <td><jzp>:带起</jzp></td>
           </tr>
-          <tr>
+          <tr id="15">
+            <td class="gid"><a href="#15">15</a></td>
             <td>:duiqi</td>
             <td>:对起</td>
             <td>duì qǐ</td>
             <td><jzp>:对起</jzp></td>
           </tr>
-          <tr>
+          <tr id="16">
+            <td class="gid"><a href="#16">16</a></td>
             <td>:zhuaqi</td>
             <td>:抓起</td>
             <td>zhuā qǐ</td>
             <td><jzp>:抓起</jzp></td>
           </tr>
-          <tr>
+          <tr id="17">
+            <td class="gid"><a href="#17">17</a></td>
             <td>:pieqi</td>
             <td>:撇起</td>
             <td>piē qǐ</td>
@@ -778,85 +809,99 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="18">
+            <td class="gid"><a href="#18">18</a></td>
             <td>:tui</td>
             <td>:退</td>
             <td>tuì</td>
             <td><jzp>:退</jzp></td>
           </tr>
-          <tr>
+          <tr id="19">
+            <td class="gid"><a href="#19">19</a></td>
             <td>:jin</td>
-            <td>:进</td>
+            <td><span class="nw">:进</span>, <span class="nw">:進</span></td>
             <td>jìn</td>
             <td><jzp>:进</jzp></td>
           </tr>
-          <tr>
+          <tr id="20">
+            <td class="gid"><a href="#20">20</a></td>
             <td>:fu4</td>
             <td>:復</td>
             <td>fù</td>
             <td><jzp>:復</jzp></td>
           </tr>
-          <tr>
+          <tr id="21">
+            <td class="gid"><a href="#21">21</a></td>
             <td>:zhuang</td>
             <td>:撞</td>
             <td>zhuàng</td>
             <td><jzp>:撞</jzp></td>
           </tr>
-          <tr>
+          <tr id="22">
+            <td class="gid"><a href="#22">22</a></td>
             <td>:yin</td>
             <td>:吟</td>
             <td>yín</td>
             <td><jzp>:吟</jzp></td>
           </tr>
-          <tr>
+          <tr id="23">
+            <td class="gid"><a href="#23">23</a></td>
             <td>:nao</td>
             <td>:猱</td>
             <td>náo</td>
             <td><jzp>:猱</jzp></td>
           </tr>
-          <tr>
+          <tr id="24">
+            <td class="gid"><a href="#24">24</a></td>
             <td>:zhangyin</td>
             <td>:长吟</td>
             <td>zhǎng yín</td>
             <td><jzp>:长吟</jzp></td>
           </tr>
-          <tr>
+          <tr id="25">
+            <td class="gid"><a href="#25">25</a></td>
             <td>:xi4yin</td>
             <td>:细吟</td>
             <td>xì yín</td>
             <td><jzp>:细吟</jzp></td>
           </tr>
-          <tr>
+          <tr id="26">
+            <td class="gid"><a href="#26">26</a></td>
             <td>:dingyin</td>
             <td>:定吟</td>
             <td>dìng yín</td>
             <td><jzp>:定吟</jzp></td>
           </tr>
-          <tr>
+          <tr id="27">
+            <td class="gid"><a href="#27">27</a></td>
             <td>:xiaoyin</td>
             <td>:小吟</td>
             <td>xiǎo yín</td>
             <td><jzp>:小吟</jzp></td>
           </tr>
-          <tr>
+          <tr id="28">
+            <td class="gid"><a href="#28">28</a></td>
             <td>:fenkai</td>
-            <td>:分开</td>
+            <td><span class="nw">:分开</span>, <span class="nw">:分開</span></td>
             <td>fēnkāi</td>
             <td><jzp>:分开</jzp></td>
           </tr>
-          <tr>
+          <tr id="29">
+            <td class="gid"><a href="#29">29</a></td>
             <td>:yinghe</td>
-            <td>:应合</td>
+            <td><span class="nw">:应合</span>, <span class="nw">:應合</span></td>
             <td>yīng hé</td>
             <td><jzp>:应合</jzp></td>
           </tr>
-          <tr>
+          <tr id="30">
+            <td class="gid"><a href="#30">30</a></td>
             <td>:tang</td>
             <td>:淌</td>
             <td></td>
@@ -873,13 +918,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="31">
+            <td class="gid"><a href="#31">31</a></td>
             <td>n</td>
             <td>劈</td>
             <td>pī</td>
@@ -889,7 +936,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>n</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="32">
+            <td class="gid"><a href="#32">32</a></td>
             <td>h</td>
             <td>托</td>
             <td>tuō</td>
@@ -899,7 +947,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>h</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="33">
+            <td class="gid"><a href="#33">33</a></td>
             <td>j</td>
             <td>抹</td>
             <td>mǒ</td>
@@ -909,7 +958,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>j</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="34">
+            <td class="gid"><a href="#34">34</a></td>
             <td>u</td>
             <td>挑</td>
             <td>tiāo</td>
@@ -919,7 +969,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>u</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="35">
+            <td class="gid"><a href="#35">35</a></td>
             <td>k</td>
             <td>勾</td>
             <td>gōu</td>
@@ -929,7 +980,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>k</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="36">
+            <td class="gid"><a href="#36">36</a></td>
             <td>i</td>
             <td>剔</td>
             <td>tī</td>
@@ -939,7 +991,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>i</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="37">
+            <td class="gid"><a href="#37">37</a></td>
             <td>l</td>
             <td>打</td>
             <td>dǎ</td>
@@ -949,7 +1002,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>l</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="38">
+            <td class="gid"><a href="#38">38</a></td>
             <td>o</td>
             <td>摘</td>
             <td>zhāi</td>
@@ -959,7 +1013,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>o</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="39">
+            <td class="gid"><a href="#39">39</a></td>
             <td>ju</td>
             <td>抹挑</td>
             <td>mǒ tiāo</td>
@@ -969,7 +1024,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>ju</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="40">
+            <td class="gid"><a href="#40">40</a></td>
             <td>ki</td>
             <td>勾剔</td>
             <td>gōu tī</td>
@@ -979,7 +1035,8 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>ki</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="41">
+            <td class="gid"><a href="#41">41</a></td>
             <td>lo</td>
             <td>打摘</td>
             <td>dǎ zhāi</td>
@@ -989,13 +1046,15 @@ Cv9,6|02 BLv9\6|02
               <txs>0<r>lo</r>5</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="42">
+            <td class="gid"><a href="#42">42</a></td>
             <td>U</td>
-            <td>历</td>
+            <td><span class="nw">历</span>, <span class="nw">歴</span></td>
             <td>lì</td>
             <td>
               <jzp>0<r>U</r>65</jzp>
               <txs>散<r>历</r>六五</txs>
+              <txs>散<r>歴</r>六五</txs>
               <txs>0<r>U</r>65</txs>
             </td>
           </tr>
@@ -1011,13 +1070,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table table-sm">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Usage</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="43">
+            <td class="gid"><a href="#43">43</a></td>
             <td>C</td>
             <td>撮</td>
             <td>cuō</td>
@@ -1027,7 +1088,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>C</r>d8,7<r>|</r>05</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="44">
+            <td class="gid"><a href="#44">44</a></td>
             <td>DC</td>
             <td>大撮</td>
             <td>dà cuō</td>
@@ -1037,7 +1099,8 @@ Cv9,6|02 BLv9\6|02
               <txs><r>DC</r>d8,7<r>|</r>02</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="45">
+            <td class="gid"><a href="#45">45</a></td>
             <td>FC</td>
             <td>反撮</td>
             <td>fǎn cuō</td>
@@ -1047,17 +1110,20 @@ Cv9,6|02 BLv9\6|02
               <txs><r>FC</r>d8,7<r>|</r>02</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="46">
+            <td class="gid"><a href="#46">46</a></td>
             <td>B</td>
-            <td>拨</td>
+            <td><span class="nw">拨</span>, <span class="nw">撥</span></td>
             <td>bō</td>
             <td>
               <jzp><r>B</r>d7,7<r>|</r>06</jzp>
               <txs><r>拨</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>撥</r>中七，七<r>｜</r>散六</txs>
               <txs><r>B</r>d7,7<r>|</r>06</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="47">
+            <td class="gid"><a href="#47">47</a></td>
             <td>L</td>
             <td>剌</td>
             <td>là</td>
@@ -1067,33 +1133,39 @@ Cv9,6|02 BLv9\6|02
               <txs><r>L</r>d7,7<r>|</r>06</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="48">
+            <td class="gid"><a href="#48">48</a></td>
             <td>BL</td>
-            <td>拨剌</td>
+            <td><span class="nw">拨剌</span>, <span class="nw">撥剌</span></td>
             <td>bō là</td>
             <td>
               <jzp><r>BL</r>d7,7<r>|</r>06</jzp>
               <txs><r>拨剌</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>撥剌</r>中七，七<r>｜</r>散六</txs>
               <txs><r>BL</r>d7,7<r>|</r>06</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="49">
+            <td class="gid"><a href="#49">49</a></td>
             <td>TT</td>
-            <td>双弹</td>
+            <td><span class="nw">双弹</span>, <span class="nw">雙彈</span></td>
             <td>shuāng dàn</td>
             <td>
               <jzp><r>TT</r>d7,7<r>|</r>06</jzp>
               <txs><r>双弹</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>雙彈</r>中七，七<r>｜</r>散六</txs>
               <txs><r>TT</r>d7,7<r>|</r>06</txs>
             </td>
           </tr>
-          <tr>
+          <tr id="50">
+            <td class="gid"><a href="#50">50</a></td>
             <td>TTT</td>
-            <td>三弹</td>
+            <td><span class="nw">三弹</span>, <span class="nw">三彈</span></td>
             <td>sān dàn</td>
             <td>
               <jzp><r>TTT</r>d7,7<r>|</r>06</jzp>
               <txs><r>三弹</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>三彈</r>中七，七<r>｜</r>散六</txs>
               <txs><r>TTT</r>d7,7<r>|</r>06</txs>
             </td>
           </tr>
@@ -1110,80 +1182,93 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="51">
+            <td class="gid"><a href="#51">51</a></td>
             <td>:lun</td>
-            <td>:轮</td>
+            <td><span class="nw">:轮</span>, <span class="nw">:輪</span></td>
             <td>lún</td>
             <td><jzp>:轮</jzp></td>
           </tr>
-          <tr>
-            <td>:banlun, :bl</td>
-            <td>:半轮</td>
+          <tr id="52">
+            <td class="gid"><a href="#52">52</a></td>
+            <td><span class="nw">:banlun</span>, <span class="nw">:bl</span></td>
+            <td><span class="nw">:半轮</span>, <span class="nw">:半輪</span></td>
             <td>bàn lún</td>
             <td><jzp>:半轮</jzp></td>
           </tr>
-          <tr>
+          <tr id="53">
+            <td class="gid"><a href="#53">53</a></td>
             <td>:dayuan</td>
-            <td>:打圆</td>
+            <td><span class="nw">:打圆</span>, <span class="nw">:打圓</span></td>
             <td>dǎ yuán</td>
             <td><jzp>:打圆</jzp></td>
           </tr>
-          <tr>
+          <tr id="54">
+            <td class="gid"><a href="#54">54</a></td>
             <td>:gun</td>
-            <td>:滚</td>
+            <td><span class="nw">:滚</span>, <span class="nw">:滾</span></td>
             <td>gǔn</td>
             <td><jzp>:滚</jzp></td>
           </tr>
-          <tr>
+          <tr id="55">
+            <td class="gid"><a href="#55">55</a></td>
             <td>:fu</td>
             <td>:沸</td>
             <td>fèi</td>
             <td><jzp>:沸</jzp></td>
           </tr>
-          <tr>
+          <tr id="56">
+            <td class="gid"><a href="#56">56</a></td>
             <td>:beisuo</td>
             <td>:背璅</td>
             <td>bèi suǒ</td>
             <td><jzp>:背璅</jzp></td>
           </tr>
-          <tr>
+          <tr id="57">
+            <td class="gid"><a href="#57">57</a></td>
             <td>:duansuo</td>
             <td>:短璅</td>
             <td>duǎn suǒ</td>
             <td><jzp>:短璅</jzp></td>
           </tr>
-          <tr>
+          <tr id="58">
+            <td class="gid"><a href="#58">58</a></td>
             <td>:zhangsuo</td>
             <td>:长璅</td>
             <td>zhǎng suǒ</td>
             <td><jzp>:长璅</jzp></td>
           </tr>
-          <tr>
-            <td>:diejuan, :dj</td>
-            <td>:叠蠲</td>
+          <tr id="59">
+            <td class="gid"><a href="#59">59</a></td>
+            <td><span class="nw">:diejuan</span>, <span class="nw">:dj</span></td>
+            <td><span class="nw">:叠蠲</span>, <span class="nw">:疊蠲</span></td>
             <td>dié juān</td>
             <td><jzp>:叠蠲</jzp></td>
           </tr>
-          <tr>
-            <td>:yanlou, :yl</td>
-            <td>:圆搂</td>
+          <tr id="60">
+            <td class="gid"><a href="#60">60</a></td>
+            <td><span class="nw">:yanlou</span>, <span class="nw">:yl</span></td>
+            <td><span class="nw">:圆搂</span>, <span class="nw">:圓摟</span></td>
             <td>yuán lǒu</td>
             <td><jzp>:圆搂</jzp></td>
           </tr>
-          <tr>
-            <td>:banfu, :bf</td>
+          <tr id="61">
+            <td class="gid"><a href="#61">61</a></td>
+            <td><span class="nw">:banfu</span>, <span class="nw">:bf</span></td>
             <td>:半扶</td>
             <td>bàn fú</td>
             <td><jzp>:半扶</jzp></td>
           </tr>
-          <tr>
-            <td>:quanfu, :qf</td>
+          <tr id="62">
+            <td class="gid"><a href="#62">62</a></td>
+            <td><span class="nw">:quanfu</span>, <span class="nw">:qf</span></td>
             <td>:全扶</td>
             <td>quán fú</td>
             <td><jzp>:全扶</jzp></td>
@@ -1205,43 +1290,50 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="63">
+            <td class="gid"><a href="#63">63</a></td>
             <td>:fan</td>
             <td>:泛</td>
             <td>fàn</td>
             <td><jzp>:泛</jzp></td>
           </tr>
-          <tr>
+          <tr id="64">
+            <td class="gid"><a href="#64">64</a></td>
             <td>:zhi</td>
             <td>:止</td>
             <td>zhì</td>
             <td><jzp>:止</jzp></td>
           </tr>
-          <tr>
+          <tr id="65">
+            <td class="gid"><a href="#65">65</a></td>
             <td>:qi</td>
             <td>:起</td>
             <td>qǐ</td>
             <td><jzp>:起</jzp></td>
           </tr>
-          <tr>
+          <tr id="66">
+            <td class="gid"><a href="#66">66</a></td>
             <td>:fanqi</td>
             <td>:泛起</td>
             <td>fàn qǐ</td>
             <td><jzp>:泛起</jzp></td>
           </tr>
-          <tr>
+          <tr id="67">
+            <td class="gid"><a href="#67">67</a></td>
             <td>:fanzhi</td>
             <td>:泛止</td>
             <td>fàn zhì</td>
             <td><jzp>:泛止</jzp></td>
           </tr>
-          <tr>
+          <tr id="68">
+            <td class="gid"><a href="#68">68</a></td>
             <td>:ru</td>
             <td>:如</td>
             <td>rú</td>
@@ -1255,55 +1347,64 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="69">
+            <td class="gid"><a href="#69">69</a></td>
             <td>:1..:13</td>
             <td>:一..:十三</td>
             <td></td>
             <td><jzp>:一</jzp> <jzp>:十三</jzp></td>
           </tr>
-          <tr>
-            <td>:wai, :13+</td>
+          <tr id="70">
+            <td class="gid"><a href="#70">70</a></td>
+            <td><span class="nw">:wai</span>, <span class="nw">:13+</span></td>
             <td>:外</td>
             <td>wài</td>
             <td><jzp>:外</jzp></td>
           </tr>
-          <tr>
-            <td>:0, :san</td>
+          <tr id="71">
+            <td class="gid"><a href="#71">71</a></td>
+            <td><span class="nw">:0</span>, <span class="nw">:san</span></td>
             <td>:散</td>
             <td>sàn</td>
             <td><jzp>:散</jzp></td>
           </tr>
-          <tr>
+          <tr id="72">
+            <td class="gid"><a href="#72">72</a></td>
             <td>:ban</td>
             <td>:半</td>
             <td>bàn</td>
             <td><jzp>:半</jzp></td>
           </tr>
-          <tr>
+          <tr id="73">
+            <td class="gid"><a href="#73">73</a></td>
             <td>:jiu</td>
             <td>:就</td>
             <td>jiù</td>
             <td><jzp>:就</jzp></td>
           </tr>
-          <tr>
+          <tr id="74">
+            <td class="gid"><a href="#74">74</a></td>
             <td>:shang</td>
             <td>:上</td>
             <td>shàng</td>
             <td><jzp>:上</jzp></td>
           </tr>
-          <tr>
+          <tr id="75">
+            <td class="gid"><a href="#75">75</a></td>
             <td>:xia</td>
             <td>:下</td>
             <td>xià</td>
             <td><jzp>:下</jzp></td>
           </tr>
-          <tr>
+          <tr id="76">
+            <td class="gid"><a href="#76">76</a></td>
             <td>:zhi4</td>
             <td>:至</td>
             <td>zhì</td>
@@ -1320,19 +1421,22 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="77">
+            <td class="gid"><a href="#77">77</a></td>
             <td>:vxi</td>
             <td>:大息</td>
             <td>dà xī</td>
             <td><jzp>:大息</jzp></td>
           </tr>
-          <tr>
+          <tr id="78">
+            <td class="gid"><a href="#78">78</a></td>
             <td>:shaoxi</td>
             <td>:少息</td>
             <td>shǎo xī</td>
@@ -1346,13 +1450,15 @@ Cv9,6|02 BLv9\6|02
         <table class="table">
           <thead>
             <tr>
-              <th width="25%">ASCII</th>
-              <th width="25%">中文</th>
-              <th width="25%">拼音</th>
+              <th class="gid" width="6%">ID</th>
+              <th width="23%">ASCII</th>
+              <th width="23%">中文</th>
+              <th width="23%">拼音</th>
               <th width="25%">Output</th>
             </tr>
           </thead>
-          <tr>
+          <tr id="79">
+            <td class="gid"><a href="#79">79</a></td>
             <td>:*</td>
             <td></td>
             <td></td>
