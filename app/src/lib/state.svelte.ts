@@ -191,6 +191,18 @@ class DesignState {
   get latestFont(): string {
     return this.main?.version ? `${this.main.version} (latest)` : 'the latest';
   }
+  /** A newer release is out than the draft's reference font (hosted): the banner's case. The
+   *  font's files can also move without a release (a new CSV column, say); then only the More
+   *  menu offers to follow them. */
+  get newRelease(): boolean {
+    if (!this.fontMoved) return false;
+    const have = this.draftBase?.version.version, now = this.main?.version;
+    return !have || !now || have !== now;
+  }
+  /** The release the banner is about, for remembering a Not now ("3.300", or the files' date). */
+  get latestRelease(): string {
+    return this.main?.version ?? this.main?.date ?? '';
+  }
   /** The font has moved since the draft started (hosted). */
   get fontMoved(): boolean {
     const b = this.draftBase, m = this.main;

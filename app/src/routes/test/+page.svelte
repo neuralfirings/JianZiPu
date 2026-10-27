@@ -28,6 +28,13 @@
   /** What builds have that the released font doesn't: CHANGELOG.md's Unreleased lines */
   let base = $state<BaseInfo | null>(null);
   const queued = $derived(unreleasedLines(base?.unreleased));
+  /** The queue as it was when the note was closed: the note stays away until another change is queued */
+  const QUEUED_HIDDEN = 'jzp-queued-hidden';
+  let queuedHidden = $state<string | null>((() => { try { return localStorage.getItem(QUEUED_HIDDEN); } catch { return null; } })());
+  function hideQueued() {
+    queuedHidden = base?.unreleased ?? '';
+    try { localStorage.setItem(QUEUED_HIDDEN, queuedHidden); } catch {}
+  }
   let liga = $state(true);
   let kern = $state(true);
   let vertical = $state(false);
@@ -133,12 +140,13 @@
   </details>
 {/snippet}
 {#snippet queuedNote()}
-  {#if queued.length}
+  {#if queued.length && queuedHidden !== base?.unreleased}
     <div class="banner info queued"><span class="ic"><I.Info /></span>
       <span><b>Builds include changes that aren't in the released font{base?.version ? ` ${base.version}` : ''} yet.</b> They go out with the next release.
         <details><summary>{queued.length} queued change{queued.length === 1 ? '' : 's'}</summary>
           <ul>{#each queued as line}<li>{#each line.split('`') as part, i}{#if i % 2}<code>{part}</code>{:else}{part}{/if}{/each}</li>{/each}</ul>
         </details></span>
+      <button class="quiet" onclick={hideQueued} data-tip="Hide until another change is queued" aria-label="Hide until another change is queued"><I.Close /></button>
     </div>
   {/if}
 {/snippet}
@@ -296,6 +304,7 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; }
+  .queued { align-items: flex-start; }
   .queued details { margin-top: var(--space-2); }
   .queued ul { margin: var(--space-2) 0 0; padding-left: var(--space-6); }
   /* a phone: the folded controls on top, the words scroll, the typing field docked at the bottom */

@@ -17,7 +17,7 @@
   import ContactDialog from '$lib/components/ContactDialog.svelte';
   import { editor } from '$lib/editor.svelte';
   import { hosted } from '$lib/hosted.svelte';
-  import { day, downloadZip, hhmm, pilot, welcomed } from '$lib/pilot.svelte';
+  import { day, dismissUpdate, downloadZip, hhmm, pilot, updateDismissedFor, welcomed } from '$lib/pilot.svelte';
   import { panels, editorPanels } from '$lib/panels.svelte';
   let { children } = $props();
   // Icons: Lucide, drawn the design system's way (16px, 1.5px line; caps in app.css).
@@ -44,6 +44,7 @@
     if (!hosted.isHosted || hosted.user) { await app.load(); greet(); }
   }
   function greet() {
+    if (hosted.isHosted && hosted.user && updateDismissedFor(hosted.user.id, app.latestRelease)) pilot.updateDismissed = true;
     if (hosted.isHosted && hosted.user && !welcomed(hosted.user.id)) pilot.dialog = 'welcome';
   }
   beforeNavigate(() => app.flush());
@@ -196,7 +197,7 @@
       {#if hosted.isHosted && hosted.user}
         <span class="pill-wrap">
           <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-            <I.Draft size={14} />Your draft{#if app.fontMoved && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
+            <I.Draft size={14} />Your draft{#if app.newRelease && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
           </button>
           {#if pill}
             <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
@@ -316,12 +317,12 @@
     <div class="banner danger"><span class="ic"><I.Alert /></span> <b>Your draft isn't saved.</b> The server turned it down: {app.saveRefused}. Your changes are kept in this browser. If trying again doesn't work, export your draft so you have a copy, and send feedback.
       <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button> <button onclick={() => (feedback = true)}>Send feedback</button></div>
   {/if}
-  {#if hosted.isHosted && app.fontMoved && !pilot.updateDismissed && !app.loading}
+  {#if hosted.isHosted && app.newRelease && !pilot.updateDismissed && !app.loading}
     <div class="banner info">
       <span class="ic"><I.Info /></span>
       <span><b>{app.main?.version ? `JianZiPu ${app.main.version} is out.` : `The font was updated${app.main?.date ? ` on ${day(app.main.date)}` : ''}.`}</b> Your reference font is {app.referenceFont}.</span>
       <span class="spacer"></span>
-      <button onclick={() => (pilot.updateDismissed = true)}>Not now</button>
+      <button onclick={() => dismissUpdate(hosted.user?.id, app.latestRelease)}>Not now</button>
       <button class="primary" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>
     </div>
   {/if}

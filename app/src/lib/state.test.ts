@@ -269,4 +269,22 @@ describe('hosted draft', () => {
     expect(app.referenceFont).toMatch(/^the font of /);
     expect(app.design!.areas.left.size).toEqual([350, 350]);
   });
+
+  it('offers a new release with a banner, and a same-version file change only from the menu', async () => {
+    api.base.mockResolvedValue({ commit: 'abc', version: '3.200', date: '2026-10-15T10:00:00Z', design_hash: 'd0', csv_hash: 'c0', svg_hashes: {} });
+    await app.load();
+    app.applyChanges('Glyph md_7', { svgWrites: { md_7: SVG('M1 1h20v20z') } });
+    await app.save();
+    expect(app.referenceFont).toBe('3.200');
+    // main's spellings file changed (a new column), still 3.200: no "3.200 is out"
+    api.base.mockResolvedValue({ commit: 'def', version: '3.200', date: '2026-10-27T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
+    await app.load();
+    expect(app.fontMoved).toBe(true);
+    expect(app.newRelease).toBe(false);
+    // 3.300 is released
+    api.base.mockResolvedValue({ commit: 'fed', version: '3.300', date: '2026-11-01T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
+    await app.load();
+    expect(app.newRelease).toBe(true);
+    expect(app.latestRelease).toBe('3.300');
+  });
 });
