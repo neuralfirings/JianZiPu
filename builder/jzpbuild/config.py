@@ -64,11 +64,14 @@ if not re.fullmatch(r"\d+\.\d{3}", FONT_VERSION):
 # The commit a release font is built from (build --source-commit), added to name ID 5 so a font
 # file can be traced to its sources; None for everyday builds.
 SOURCE_COMMIT: str | None = None
+# Changes queued for the next release ("## [Unreleased]"), shown on Build & test (webserver.py)
+CHANGELOG = BUILDER_DIR.parent / "CHANGELOG.md"
 
 
 def version_string() -> str:
-    """name ID 5: "Version 3.200", plus "; git-1a2b3c4" for a release build."""
-    return f"Version {FONT_VERSION}" + (f"; git-{SOURCE_COMMIT}" if SOURCE_COMMIT else "")
+    """name ID 5: "Version 3.200; git-1a2b3c4" for a release build. Everyday builds (Build & test,
+    testers' builds) say they aren't the release: they can hold changes 3.200 doesn't have."""
+    return f"Version {FONT_VERSION}; " + (f"git-{SOURCE_COMMIT}" if SOURCE_COMMIT else "dev build, not a release")
 
 
 # Vertical metrics (README §1.1: OS/2 uses 1100 asc / 500 desc / 100 gap)

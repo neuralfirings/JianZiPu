@@ -207,7 +207,10 @@ candidate tagged `v<version>-rc.N` (two commits: the design, then the font built
 records the design commit's hash), the pull request merged with a merge commit, then Publish tags
 `v<version>` on main. `.github/workflows/release.yml` turns each tag into a GitHub Release with
 `site/JianZiPu.ttf` attached; `scope.yml` keeps font files (`FONT_PATHS`) on release branches and
-code off them.
+code off them. `CHANGELOG.md` is open to both: a code change that alters the built font adds a line
+under `## [Unreleased]`, Build & test lists those lines, and the next candidate's entry starts from
+them (`release.queued_notes`). Fonts built outside a release say "dev build, not a release" in name
+ID 5.
 
 The whole process, versions, scope rules, the ruleset on main and troubleshooting:
 [docs/maintainers/releasing.md](../docs/maintainers/releasing.md).

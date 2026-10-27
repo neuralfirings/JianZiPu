@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { commitMessage, forRelease, missing, nextVersion, releaseNotes } from './release';
+import { commitMessage, forRelease, missing, nextVersion, releaseNotes, unreleasedLines } from './release';
 import type { ChangeRequest } from './requests';
 import { applyMerge } from './merge';
 
@@ -50,5 +50,24 @@ describe('release candidate', () => {
     expect(releaseNotes(rs)).toBe('### Changed\n\n- Hui spacing (thanks to Mei Chen)\n- New glyph 歴\n');
     expect(commitMessage('3.200', rs).split('\n')[0]).toBe('3.200: changes from 2 Change Requests');
     expect(commitMessage('3.200', rs)).toContain('- Hui spacing (Mei, 1 of 2 kept)');
+  });
+});
+
+describe('changes queued for the next release', () => {
+  const queued = '### Added\n\n- `shang34` gives the same as `:shang34`\n';
+  it('starts the entry from the queued lines, then the requests', () => {
+    expect(releaseNotes([req({})], queued)).toBe('### Added\n\n- `shang34` gives the same as `:shang34`\n\n### Changed\n\n- Hui spacing (thanks to Mei Chen)\n');
+    expect(releaseNotes([], queued)).toBe('### Added\n\n- `shang34` gives the same as `:shang34`\n');
+  });
+  it("a second candidate keeps the first one's entry and adds only what's new", () => {
+    const previous = '### Added\n\n- `shang34` gives the same as `:shang34`\n\n### Changed\n\n- Hui spacing (thanks to Mei Chen)';
+    const later = '### Fixed\n\n- chord spacing';
+    expect(releaseNotes([req({}), req({ id: 'r2', title: 'New glyph 歴', credit: '' })], later, previous)).toBe(
+      '### Added\n\n- `shang34` gives the same as `:shang34`\n\n### Changed\n\n- Hui spacing (thanks to Mei Chen)\n- New glyph 歴\n\n### Fixed\n\n- chord spacing\n');
+  });
+  it('lists the queued lines for Build & test', () => {
+    expect(unreleasedLines(queued)).toEqual(['`shang34` gives the same as `:shang34`']);
+    expect(unreleasedLines('')).toEqual([]);
+    expect(unreleasedLines(undefined)).toEqual([]);
   });
 });

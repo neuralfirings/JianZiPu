@@ -52,9 +52,11 @@
   onMount(() => { void refresh(); });
   $effect(() => { if (admin && requests === null) void loadRequests(); });
   $effect(() => {
-    // the changelog entry starts from the requests in the release (edit it before building)
-    const key = taking.map((r) => r.id).join('|');
-    if (key !== notesFor) { notesFor = key; notes = releaseNotes(taking); }
+    // the changelog entry starts from the last candidate's entry, the lines code changes queued
+    // under Unreleased, and the requests in the release (edit it before building)
+    const queued = g?.unreleased ?? '', previous = g?.previous_notes ?? '';
+    const key = [taking.map((r) => r.id).join('|'), queued, previous].join('\0');
+    if (key !== notesFor) { notesFor = key; notes = releaseNotes(taking, queued, previous); }
   });
 
   /** Run one step on the server, then follow its log until it's done. */

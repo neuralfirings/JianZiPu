@@ -39,11 +39,14 @@ requests.
 4. Open a pull request against `main`.
 
 A code branch must not change font files: `builder/inputs/`,
-`builder/VERSION`, `CHANGELOG.md`, `site/JianZiPu.ttf` and
-`site/version.json`. Those change only through a release, and the `scope`
+`builder/VERSION`, `site/JianZiPu.ttf` and `site/version.json`. Those change only through a release, and the `scope`
 check on every pull request enforces this. If your change really must touch
 them (say, converting `design.json` to a new format), say so in the pull
 request and a maintainer will add the `font-files` label.
+
+If your change alters the font the Builder builds (a new substitution or
+positioning rule, say), add a line for it under `## [Unreleased]` in
+`CHANGELOG.md`. It goes out with the next release.
 
 ## Licences
 
