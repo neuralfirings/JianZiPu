@@ -75,6 +75,24 @@ def test_usage_rows_fill_the_template_with_the_glyphs_spellings():
     assert glossary.render(out, r, sec) == out
 
 
+def test_rows_show_every_spelling_and_an_id():
+    r = rows("mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn,1c", "mod_chuo,,/,,,绰,綽,chuò,1c", "lg_banlun,,,banlun,bl,半轮,半輪,bàn lún,2c")
+    sec = {"1c": {"kind": "usage", "usage": ["{}s9u6", "{}名九挑六"]}, "2c": {"kind": "vertical"}}
+    out = glossary.render(page("1c", "2c"), r, sec)
+    assert "<td><span class=\"nw\">fanyin</span>, <span class=\"nw\">fy</span></td>" in out and "<td>泛音</td>" in out          # the same traditional isn't repeated
+    assert "<txs><r>fanyin</r>s9u6</txs>" in out and "<txs><r>fy</r>s9u6</txs>" in out
+    assert "<td><span class=\"nw\">绰</span>, <span class=\"nw\">綽</span></td>" in out and "<txs><r>綽</r>名九挑六</txs>" in out
+    assert "<span class=\"nw\">:bl</span>" in out and "<span class=\"nw\">:半輪</span>" in out
+    assert '<tr id="1c.1">' in out and '<a href="#1c.2">1c.2</a>' in out and '<tr id="2c.1">' in out
+    # a section's vertical table (1d-v) goes on counting its rows
+    r2 = rows("md_san,,0,,,散,,sàn,1d", "md_dai,,,dai,,带,,dài,", "md_qi,,,qi,,起,,qǐ,")
+    out2 = glossary.render(page("1d", "1d-v"), r2, {"1d": {"kind": "usage", "usage": ["{}k5", "{}勾五"]},
+                                                    "1d-v": {"kind": "vertical", "rows": [["md_dai", "md_qi"]]}})
+    assert '<tr id="1d.1">' in out2 and '<tr id="1d.2">' in out2 and "1d-v." not in out2
+    ex = [e for w, e in glossary.examples(out, r, sec)]          # every spelling gets typed
+    assert ["泛音名九挑六", "fanyins9u6", "fys9u6"] in ex and ["绰名九挑六", "綽名九挑六", "/s9u6"] in ex
+
+
 def test_spellings_are_escaped():
     r = rows("mod_ji,,>,,,急,,jí,1b")
     out = glossary.render(page("1b"), r, {"1b": {"kind": "usage", "usage": ["s9{}k3", "名九{}勾三"]}})
@@ -87,7 +105,7 @@ def test_vertical_rows_words_partners_and_numbers():
     sec = {"3c": {"title": "3c: Numbers", "kind": "vertical", "rows": ["md_1", "md_2", "md_san", ["md_dai", "md_qi"]]}}
     out = glossary.render(page("3c"), r, sec)
     assert "<td>:1..:2</td>" in out and "<td>:一..:二</td>" in out
-    assert "<td>:0, :san</td>" in out and "<td>:散</td>" in out and "<td>sàn</td>" in out
+    assert "<td><span class=\"nw\">:0</span>, <span class=\"nw\">:san</span></td>" in out and "<td>:散</td>" in out and "<td>sàn</td>" in out
     assert "<td>:daiqi</td>" in out and "<jzp>:带起</jzp>" in out and "<td>dài qǐ</td>" in out
     assert out.index(":daiqi") < out.index("<td>:qi</td>")     # glyphs rows leaves out come after
     assert glossary.missing(r, sec) == []                        # md_san2 by its partner, md_dai in a word

@@ -242,6 +242,12 @@ so its spellings are the font's:
 - `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
   `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
   around them stay as written.
+- Each row shows every spelling: the ASCII ones (`fanyin, fy`) and the
+  Chinese ones (simplified, then traditional when it differs: `绰, 綽`), with
+  the example word typed each way.
+- Each row has an ID, its section and place (`1a.1`, `1a.2`…), which links to
+  the row (`jianzipufont.com/#1a.1`). IDs go by position, so a row added to a
+  section renumbers the rows after it.
 
 `builder/tests/test_glossary.py` fails when the page's tables are out of date,
 when a glyph with a spelling has no row, or when an example anywhere on the

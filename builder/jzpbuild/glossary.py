@@ -85,6 +85,12 @@ def _esc(s: str) -> str:
     return html.escape(s, quote=False)
 
 
+def _list(items: list[str]) -> str:
+    """Spellings for one cell, escaped; two or more each kept on one line (a phone breaks at the comma)."""
+    items = [_esc(i) for i in items]
+    return items[0] if len(items) == 1 else ", ".join(f'<span class="nw">{i}</span>' for i in items)
+
+
 def _plain(s: str) -> str:
     return html.unescape(re.sub(r"<[^>]+>", "", s))
 
@@ -118,15 +124,23 @@ def entries(sid: str, sec: dict, rows: dict[str, dict]) -> list[str | list[str]]
     return listed + [g for g in placed if g not in listed]
 
 
+def chinese(rec: dict) -> list[str]:
+    """The glyph's Chinese spellings: simplified, then traditional when it differs."""
+    return [c for i, c in enumerate((rec["simplified"], rec["traditional"])) if c and c not in (rec["simplified"], rec["traditional"])[:i]]
+
+
 def _usage_row(sec: dict, g: str, rec: dict) -> Row:
-    sp = spellings(rec)
+    sp, zh = spellings(rec), chinese(rec)
     if not sp or not rec["simplified"]:
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
-    a, z = sec.get("examples", {}).get(g, sec["usage"])
-    a, z = _fill(a, sp[0]), _fill(z, rec["simplified"])
-    usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n{INDENT}      <txs>{z}</txs>\n{INDENT}      <txs>{a}</txs>\n{INDENT}    ")
-    return Row(", ".join(_esc(s) for s in sp), _esc(rec["simplified"]), _esc(rec["pinyin"]), usage,
-               [[_plain(a), _plain(z)]])
+    ta, tz = sec.get("examples", {}).get(g, sec["usage"])
+    a, z = _fill(ta, sp[0]), _fill(tz, rec["simplified"])
+    # the same example with each other spelling: Chinese (traditional) under Chinese, ASCII under ASCII
+    zs, as_ = [z] + [_fill(tz, c) for c in zh[1:]], [a] + [_fill(ta, s) for s in sp[1:]]
+    usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
+             + f"{INDENT}    ")
+    return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), usage,
+               [[_plain(x) for x in zs + as_]])
 
 
 def _vertical_row(rows: dict[str, dict], e: str | list[str]) -> Row:
@@ -140,11 +154,12 @@ def _vertical_row(rows: dict[str, dict], e: str | list[str]) -> Row:
                    f"<jzp>{_esc(z)}</jzp>", [[a, z]])
     rec, other = rows[e], _partner(rows, e)
     sp = spellings(rec) + (spellings(other) if other else [])
-    zh = rec["simplified"] or (other or {}).get("simplified", "")
+    zhs = chinese(rec) or (chinese(other) if other else [])
+    zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
-    examples = [[":" + s] + ([":" + zh] if zh else []) for s in sp] or ([[":" + zh]] if zh else [])
+    examples = [[":" + s] + [":" + c for c in zhs] for s in sp] or ([[":" + c for c in zhs]] if zhs else [])
     out = ":" + (zh or (sp[0] if sp else ""))
-    return Row(", ".join(_esc(":" + s) for s in sp), _esc(":" + zh) if zh else "", _esc(py),
+    return Row(_list([":" + s for s in sp]) if sp else "", _list([":" + c for c in zhs]) if zhs else "", _esc(py),
                f"<jzp>{_esc(out)}</jzp>", examples)
 
 
@@ -180,14 +195,17 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
     return out
 
 
-def table_html(sid: str, sec: dict, rows: dict[str, dict]) -> str:
+def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
+    """The section's table; its rows are numbered `start`, `start` + 1… after the section's id."""
     cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
-    lines = [f'<table class="{cls}">', "  <thead>", "    <tr>"]
-    lines += [f'      <th width="25%">{h}</th>' for h in ("ASCII", "中文", "拼音", last)]
+    lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="10%">ID</th>']
+    lines += [f'      <th width="22%">{h}</th>' for h in ("ASCII", "中文", "拼音")] + [f'      <th width="24%">{last}</th>']
     lines += ["    </tr>", "  </thead>"]
-    for r in section_rows(sid, sec, rows):
-        lines += ["  <tr>", f"    <td>{r.ascii}</td>", f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
-                  f"    <td>{r.usage}</td>", "  </tr>"]
+    base = sid.split("-")[0]          # 1d-v (1d's vertical table) goes on counting 1d's rows
+    for n, r in enumerate(section_rows(sid, sec, rows), start):
+        rid = f"{base}.{n}"           # by position: a row added above renumbers the ones below it
+        lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
+                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
 
@@ -224,13 +242,17 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
     rows = load_rows() if rows is None else rows
     sections = load_sections() if sections is None else sections
     seen = set()
+    count: dict[str, int] = {}        # rows numbered so far, per section id before the "-"
 
     def sub(m: re.Match) -> str:
         sid = m.group(2)
         if sid not in sections:
             raise GlossaryError(f"site/index.html has a glossary marker for {sid}, which site/glossary.json doesn't define.")
         seen.add(sid)
-        return f"{m.group(1)}\n{table_html(sid, sections[sid], rows)}\n{INDENT}{m.group(4)}"
+        base = sid.split("-")[0]
+        html = table_html(sid, sections[sid], rows, count.get(base, 0) + 1)
+        count[base] = count.get(base, 0) + len(section_rows(sid, sections[sid], rows))
+        return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
 
     out = BLOCK_RE.sub(sub, page)
     if unused := [s for s in sections if s not in seen]:
