@@ -6,7 +6,7 @@
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
+  import { dismissUpdate, downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
   import SvgText from './SvgText.svelte';
 
   const close = () => (pilot.dialog = null);
@@ -126,7 +126,7 @@
         {/if}
         <div class="row end">
           <button onclick={() => (pilot.dialog = 'export')}>Export my draft first</button>
-          <button onclick={() => { pilot.updateDismissed = true; close(); }}>Not now</button>
+          <button onclick={() => { dismissUpdate(hosted.user?.id, app.latestRelease); close(); }}>Not now</button>
           <button class="primary" onclick={update}>Set reference font to {app.latestFont}</button>
         </div>
       {/if}

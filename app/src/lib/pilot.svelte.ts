@@ -30,6 +30,18 @@ export function markWelcomed(uid: string) {
   try { localStorage.setItem(`${WELCOMED}:${uid}`, '1'); } catch {}
 }
 
+const UPDATE_DISMISSED = 'jzp-update-dismissed';
+/** Whether this tester put off the new-release banner for `release` with Not now (this browser). */
+export function updateDismissedFor(uid: string, release: string): boolean {
+  try { return localStorage.getItem(`${UPDATE_DISMISSED}:${uid}`) === release; } catch { return false; }
+}
+/** Not now on the new-release banner: hidden until a newer release is out. */
+export function dismissUpdate(uid: string | undefined, release: string) {
+  pilot.updateDismissed = true;
+  if (!uid) return;
+  try { localStorage.setItem(`${UPDATE_DISMISSED}:${uid}`, release); } catch {}
+}
+
 const REVIEWED = 'jzp-reviewed';
 /** uid -> {stamp of the draft reviewed, when}. */
 export function reviewedMarks(): Record<string, { stamp: string; at: string }> {

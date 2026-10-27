@@ -152,7 +152,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 - **Build font** builds from the saved files. Online, it builds from your draft as it is now, unsaved edits included. On your own computer, with unsaved changes the button reads **Save & build** and saves first. It takes about half a minute; the build log opens below.
 - Each build is a separate file. **Download JianZiPu.ttf** saves it; earlier builds from this session stay in the list.
 - **Font** is the font the page shows: the newest build, an earlier one, or any **.ttf file** you open (the released font, say). It's loaded into the page under its own name, so a JianZiPu installed on your computer never stands in for it.
-- When the Builder has changes the released font doesn't have yet, a note at the top says so (**Builds include changes that aren't in the released font … yet**) and lists them. They go out with the next release. A font built here says "dev build, not a release" in its version.
+- When the Builder has changes the released font doesn't have yet, a note at the top says so (**Builds include changes that aren't in the released font … yet**) and lists them. They go out with the next release; close the note to hide it until another change is queued. A font built here says "dev build, not a release" in its version.
 
 ![Build and test, Test the design view: each word drawn live above the same word in the built font](https://builder.jianzipufont.com/help/build-design.jpg)
 ***Test the design** with Compare both: the live drawing on top, the built font below. Under each word, what was typed and the glyphs it became.*
@@ -187,7 +187,7 @@ Invited testers use the Builder online. You sign in with a link sent to your ema
 - Your draft is compared with a **reference font**, a release such as 3.200: **Your changes** are what your draft does differently from it. The **Your draft** pill in the header shows your reference font and how much you've changed. **See my changes** lists the changes item by item.
 - On that list, **Undo this change** puts one item back the way your reference font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
 - To share your work, **More** → **Export my draft (.zip)…** and send the file. **Import a draft (.zip)…** opens one again.
-- When a new release is out, a banner offers **Set reference font to 3.200 (latest)…** (with the new number). Your changes stay yours and are compared with the new release from then on: its changes come in, the ones it already has leave Your changes, and where you both changed the same thing you pick **Keep mine** or **Take the font's**.
+- When a new release is out, a banner offers **Set reference font to 3.200 (latest)…** (with the new number). Your changes stay yours and are compared with the new release from then on: its changes come in, the ones it already has leave Your changes, and where you both changed the same thing you pick **Keep mine** or **Take the font's**. **Not now** hides the banner until the next release. When the font's files change without a new release, only **More** → **Set reference font to …** offers it.
 - **Feedback** in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.
 
 ## Change Requests
