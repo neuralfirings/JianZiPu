@@ -17,6 +17,7 @@ WORKDIR /repo/builder
 COPY builder/pyproject.toml builder/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY builder/VERSION ./
+COPY CHANGELOG.md /repo/CHANGELOG.md
 COPY builder/jzpbuild ./jzpbuild
 COPY builder/inputs ./inputs
 COPY --from=app /repo/app/build /repo/app/build

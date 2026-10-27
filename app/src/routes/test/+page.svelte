@@ -11,19 +11,23 @@
   import { replaceState } from '$app/navigation';
   import { app } from '$lib/state.svelte';
   import { hosted } from '$lib/hosted.svelte';
-  import { api, type Build, type BuildStatus, type WordPayload } from '$lib/api';
+  import { api, type BaseInfo, type Build, type BuildStatus, type WordPayload } from '$lib/api';
   import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from '$lib/components/WordCanvas.svelte';
   import { SAMPLE_SETS } from '$lib/words';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
   import { segments } from '$lib/cmap';
   import { parseView, pickBuild, buildFailure, type TestView } from '$lib/buildtest';
+  import { unreleasedLines } from '$lib/release';
 
   let view = $state<TestView>(parseView(page.url.searchParams.get('view')));
   let text = $state(page.url.searchParams.get('words') || (localStorage.getItem('jzp-test-words') ?? SAMPLE_SETS['Basic words'].join(' ')));
   let mode = $state<'live' | 'font' | 'both'>('live');
   let size = $state(96);
   let showBoxes = $state(false);
+  /** What builds have that the released font doesn't: CHANGELOG.md's Unreleased lines */
+  let base = $state<BaseInfo | null>(null);
+  const queued = $derived(unreleasedLines(base?.unreleased));
   let liga = $state(true);
   let kern = $state(true);
   let vertical = $state(false);
@@ -110,7 +114,7 @@
     status = r.status ?? status;
     refreshStatus();
   }
-  onMount(() => { refreshStatus(); });
+  onMount(() => { refreshStatus(); api.base().then((b) => (base = b), () => {}); });
 
   function saveSet() {
     const name = prompt('Name for this word set:', 'My set');
@@ -128,6 +132,17 @@
     <pre>{(status?.log ?? []).join('\n') || 'No build yet. Builds read the saved design.json and components.csv.'}</pre>
   </details>
 {/snippet}
+{#snippet queuedNote()}
+  {#if queued.length}
+    <div class="banner info queued"><span class="ic"><I.Info /></span>
+      <span><b>Builds include changes that aren't in the released font{base?.version ? ` ${base.version}` : ''} yet.</b> They go out with the next release.
+        <details><summary>{queued.length} queued change{queued.length === 1 ? '' : 's'}</summary>
+          <ul>{#each queued as line}<li>{#each line.split('`') as part, i}{#if i % 2}<code>{part}</code>{:else}{part}{/if}{/each}</li>{/each}</ul>
+        </details></span>
+    </div>
+  {/if}
+{/snippet}
+
 {#snippet controls()}
     <div class="row wrap">
       <span class="muted">
@@ -226,11 +241,13 @@
     <!-- a phone: the words first, the typing field docked under them; building and fonts fold away -->
     <details class="top folded">
       <summary>{#if status?.build}Built {fmtTime(status.build.time)}{:else}No build yet{/if}{#if font} · {font.label}{/if} · {view === 'words' ? 'Test the design' : 'Test the font file'}</summary>
+      {@render queuedNote()}
       {@render controls()}
       {@render buildLog()}
     </details>
   {:else}
   <div class="top">
+{@render queuedNote()}
 {@render controls()}
 {@render typeRow()}
   </div>
@@ -279,6 +296,8 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; }
+  .queued details { margin-top: var(--space-2); }
+  .queued ul { margin: var(--space-2) 0 0; padding-left: var(--space-6); }
   /* a phone: the folded controls on top, the words scroll, the typing field docked at the bottom */
   .phone .top.folded { padding: 0; gap: 0; }
   .phone .top.folded > summary { padding: var(--space-4); min-height: var(--control-md); cursor: pointer; font-weight: 600; }

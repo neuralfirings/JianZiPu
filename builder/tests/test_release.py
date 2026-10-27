@@ -61,7 +61,8 @@ def candidate(repo, notes="- wider hui", **kw):
 def test_scope_both_ways():
     files = ["builder/inputs/design.json", "site/JianZiPu.ttf", "app/src/x.ts", "CHANGELOG.md", "builder/VERSION"]
     assert release.scope(files, "release/3.200") == ["app/src/x.ts"]
-    assert release.scope(files, "feat/release-management") == ["builder/inputs/design.json", "site/JianZiPu.ttf", "CHANGELOG.md", "builder/VERSION"]
+    # CHANGELOG.md is open to both: a code change queues a line under Unreleased
+    assert release.scope(files, "feat/release-management") == ["builder/inputs/design.json", "site/JianZiPu.ttf", "builder/VERSION"]
     assert release.scope(["builder/tests/JianZiPu.ttf"], "release/3.200") == []
     assert release.scope(["builder/inputsx/a"], "release/3.200") == ["builder/inputsx/a"]   # a folder, not a prefix
 
@@ -110,6 +111,44 @@ def test_changelog_section_goes_under_unreleased_and_is_replaced_on_a_new_candid
     again = release.changelog_with(once, "3.200", "- wider hui\n- new glyph", "2026-10-22")
     assert again.count("## [3.200]") == 1 and "- new glyph" in again and "2026-10-21" not in again
     assert "- the first" in again
+
+
+def test_a_candidate_takes_the_queued_lines_and_empties_unreleased():
+    text = "# Changelog\n\n## [Unreleased]\n\n### Added\n- auto colon\n\n## [3.100] - 2026-10-19\n\n- the first\n"
+    out = release.changelog_with(text, "3.200", "### Added\n- auto colon", "2026-10-21")
+    assert release.changelog_section(out, "Unreleased") == ""
+    assert release.changelog_section(out, "3.200") == "### Added\n- auto colon"
+    assert out.index("## [Unreleased]") < out.index("## [3.200]") < out.index("## [3.100]")
+
+
+def queue(repo, line):
+    """A code change on main that alters the built font, with its line under Unreleased."""
+    cl = repo / "CHANGELOG.md"
+    cl.write_text(cl.read_text().replace("## [Unreleased]\n", f"## [Unreleased]\n\n### Added\n- {line}\n", 1))
+    (repo / "builder" / "jzpbuild" / "x.py").write_text(f"x = {line!r}\n")
+    sh(repo, "commit", "-am", line)
+    sh(repo, "push", "origin", "main")
+
+
+def test_queued_code_changes_go_into_the_next_release(repo):
+    queue(repo, "auto colon")
+    assert release.scope(sh(repo, "diff", "--name-only", "HEAD~1").splitlines(), "feat/auto-colon") == []
+    assert release.status(repo)["unreleased"] == "### Added\n- auto colon"
+    release.start("3.200", repo=repo, log=lambda _: None)
+    st = release.status(repo)
+    assert st["unreleased"] == "### Added\n- auto colon" and st["previous_notes"] == ""
+    candidate(repo, notes="### Added\n- auto colon")
+    # the second candidate starts from the first one's entry, which took the queued line
+    st = release.status(repo)
+    assert st["unreleased"] == "" and st["previous_notes"] == "### Added\n- auto colon"
+    # merged; a code change queued on main after the candidate doesn't hold up the release
+    sh(repo, "push", "origin", "release/3.200:main")
+    sh(repo, "switch", "main")
+    sh(repo, "merge", "--ff-only", "origin/main")
+    queue(repo, "next thing")
+    sh(repo, "switch", "release/3.200")
+    assert release.publish(repo=repo, log=lambda _: None)["tag"] == "v3.200"
+    assert release.status(repo)["unreleased"] == "### Added\n- next thing"
 
 
 def test_versions_need_a_three_digit_minor():

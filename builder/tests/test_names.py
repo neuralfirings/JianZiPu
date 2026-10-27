@@ -45,7 +45,7 @@ def test_version_is_one_number_in_both_places(monkeypatch):
     assert font["name"].getName(5, 3, 1, 0x409).toUnicode() == "Version 3.200; git-1a2b3c4"
     monkeypatch.setattr(config, "SOURCE_COMMIT", None)
     base.set_metadata(font)
-    assert font["name"].getName(5, 3, 1, 0x409).toUnicode() == "Version 3.200"
+    assert font["name"].getName(5, 3, 1, 0x409).toUnicode() == "Version 3.200; dev build, not a release"
 
 
 def test_version_file_holds_a_three_digit_minor():

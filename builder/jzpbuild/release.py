@@ -10,7 +10,9 @@ command line does the same:
     python3 -m jzpbuild.release notes v3.200-rc.1    # CI: check the tag matches the files, print its notes
 
 A release branch carries only font files (FONT_PATHS); Builder code goes to main on its own
-branches. `scope` checks both directions, here and in CI (.github/workflows/scope.yml).
+branches. `scope` checks both directions, here and in CI (.github/workflows/scope.yml). CHANGELOG.md
+is open to both: a code change that alters the built font adds a line under "## [Unreleased]", and
+the next candidate's notes start from those lines (queued_notes).
 Stdlib and the git command line only.
 """
 
@@ -31,7 +33,9 @@ REPO = config.BUILDER_DIR.parent
 PREFIX = "release/"
 # What a release changes, and the only paths a release branch may touch (repo-relative; a trailing
 # slash is a folder). Code branches may touch none of them.
-FONT_PATHS = ("builder/inputs/", "builder/VERSION", "CHANGELOG.md", "site/JianZiPu.ttf", "site/version.json")
+FONT_PATHS = ("builder/inputs/", "builder/VERSION", "site/JianZiPu.ttf", "site/version.json")
+# open to every branch: a release writes its section, a code change queues a line under Unreleased
+SHARED_PATHS = ("CHANGELOG.md",)
 # also allowed on a release branch (the classic-positioning golden, if a release refreshes it)
 RELEASE_EXTRA = ("builder/tests/JianZiPu.ttf",)
 # the font page, whose glossary tables a release regenerates from components.csv (glossary.py):
@@ -59,11 +63,11 @@ def _under(path: str, prefixes: tuple[str, ...]) -> bool:
 
 
 def scope(files: list[str], branch: str, glossary_only: bool = False) -> list[str]:
-    """The files a branch may not change: anything but font files on a release branch, and any
-    font file on every other branch. `glossary_only`: the font page changed only in its generated
-    glossary tables, which a release may do."""
+    """The files a branch may not change: anything but font files (and CHANGELOG.md) on a release
+    branch, and any font file on every other branch. `glossary_only`: the font page changed only in
+    its generated glossary tables, which a release may do."""
     if branch.startswith(PREFIX):
-        return [f for f in files if not _under(f, FONT_PATHS + RELEASE_EXTRA)
+        return [f for f in files if not _under(f, FONT_PATHS + SHARED_PATHS + RELEASE_EXTRA)
                 and not (f == GLOSSARY_PAGE and glossary_only)]
     return [f for f in files if _under(f, FONT_PATHS)]
 
@@ -128,7 +132,7 @@ def status(repo: Path = REPO) -> dict:
     release = branch[len(PREFIX):] if branch.startswith(PREFIX) else None
     tags = git("tag", "--list", "v*", "--sort=-creatordate", repo=repo).split()[:8]
     out = {"branch": branch, "release": release, "version": version, "dirty": dirty_files(repo), "tags": tags,
-           "candidates": rc_tags(release, repo) if release else [], "repo": None}
+           "candidates": rc_tags(release, repo) if release else [], "repo": None, **queued_notes(release, repo)}
     try:
         out["repo"] = github_slug(repo)
     except ReleaseError:
@@ -178,9 +182,19 @@ def regenerate_glossary(repo: Path = REPO) -> bool:
         raise ReleaseError(f"The glossary on the font page can't be made from components.csv: {e}") from e
 
 
+def queued_notes(release: str | None = None, repo: Path = REPO) -> dict:
+    """What the next candidate's changelog entry starts from: the lines code changes queued under
+    Unreleased, and on a release branch the entry its last candidate wrote (which took the lines
+    queued until then)."""
+    cl = repo / "CHANGELOG.md"
+    text = cl.read_text() if cl.exists() else ""
+    return {"unreleased": changelog_section(text, "Unreleased"),
+            "previous_notes": changelog_section(text, release) if release else ""}
+
+
 def changelog_with(text: str, version: str, notes: str, date: str) -> str:
     """CHANGELOG.md with the section for `version` written (replaced if it is there already) under
-    the title and any Unreleased section."""
+    the title and an emptied Unreleased section: its lines are in `notes` (queued_notes)."""
     head = f"## [{version}] - {date}"
     body = notes.strip()
     section = f"{head}\n\n{body}\n" if body else f"{head}\n"
@@ -195,6 +209,12 @@ def changelog_with(text: str, version: str, notes: str, date: str) -> str:
             done = True
             continue
         out.append(lines[i])
+        if lines[i].lower().startswith("## [unreleased]"):
+            out.append("\n")
+            i += 1
+            while i < len(lines) and not lines[i].startswith("## "):
+                i += 1
+            continue
         i += 1
     if done:
         return "".join(out)

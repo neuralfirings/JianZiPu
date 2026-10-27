@@ -152,6 +152,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 - **Build font** builds from the saved files. Online, it builds from your draft as it is now, unsaved edits included. On your own computer, with unsaved changes the button reads **Save & build** and saves first. It takes about half a minute; the build log opens below.
 - Each build is a separate file. **Download JianZiPu.ttf** saves it; earlier builds from this session stay in the list.
 - **Font** is the font the page shows: the newest build, an earlier one, or any **.ttf file** you open (the released font, say). It's loaded into the page under its own name, so a JianZiPu installed on your computer never stands in for it.
+- When the Builder has changes the released font doesn't have yet, a note at the top says so (**Builds include changes that aren't in the released font … yet**) and lists them. They go out with the next release. A font built here says "dev build, not a release" in its version.
 
 ![Build and test, Test the design view: each word drawn live above the same word in the built font](https://builder.jianzipufont.com/help/build-design.jpg)
 ***Test the design** with Compare both: the live drawing on top, the built font below. Under each word, what was typed and the glyphs it became.*
@@ -217,7 +218,7 @@ On your own computer, [Release](https://builder.jianzipufont.com/release) (from 
 1. **Start a release candidate** with the next version number, such as 3.200. The Builder makes the branch `release/3.200` from main. A release branch holds only font files; Builder code goes to main on its own branch.
 2. **Add kept changes** brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.
 3. Check the result in Layouts and Build & test, adjust, then Save.
-4. **Build candidate** runs the tests, builds the font, writes the version and the changelog entry, and tags `v3.200-rc.1`. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (`rc.2`).
+4. **Build candidate** runs the tests, builds the font, writes the version and the changelog entry (it starts with any code changes queued under *Unreleased* in `CHANGELOG.md`), and tags `v3.200-rc.1`. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (`rc.2`).
 5. Merge the pull request on GitHub with **Create a merge commit** (not squash or rebase, which would leave the candidate's tag off main), then **Publish**: main is tagged `v3.200`, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become **Released**.
 
 Version numbers have a three-digit minor part (3.100, 3.200, 3.201), because the font stores the version as a number. Raise the first number only when existing documents would look different or break.
