@@ -158,7 +158,7 @@ After that:
 
 - https://github.com/neuralfirings/JianZiPu/releases/latest/download/JianZiPu.ttf
   always serves the newest font.
-- The MailerLite download email links to
+- The EmailOctopus download email links to
   `https://jianzipufont.com/JianZiPu.ttf`, which is also the newest.
 - In the hosted Builder (redeployed at the merge), testers see "JianZiPu
   3.300 is out" and choose **Set reference font to 3.300 (latest)…**, which
