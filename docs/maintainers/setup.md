@@ -132,7 +132,7 @@ they had in MailerLite (each MailerLite group came over as a tag). The free plan
 allows 2,500 contacts, 10,000 emails a month, 3 automations and 10 tags per list.
 
 **Tags, choices and segments.** A tag is a label on a contact (where they came
-from: `jzp-font`, `gt-users`, and the old MailerLite groups). A choice field is
+from: `jzp-download`, `gt-users`, and the old MailerLite groups). A choice field is
 a question on the form; the font page's "I am a…" is one, set to allow several
 answers (Musician, Engineer, …), and people can change their answers from the
 link in every email. A segment is a saved rule you send a campaign to, matching
@@ -147,10 +147,12 @@ the id in the form's embed code (`https://eocampaign1.com/form/<id>.js`). With
 the id empty, Download just downloads the font. In EmailOctopus:
 
 - The form (Forms → the form → Settings) adds its subscribers to the list with
-  the tag `jzp-font` (click the email field, then Tags), and asks "I am a…" as
+  the tag `jzp-download` (click the email field, then Tags), and asks "I am a…" as
   a choice field allowing several answers, with the same options as the
   MailerLite form's groups.
-- An automation, triggered by "Contact tagged" `jzp-font`, sends the email with
+- A segment, **jzp-download**: has tag `jzp-download` (plus, for subscribers who
+  came from MailerLite, their old download group's tag, or bulk-tag them).
+- An automation, triggered by "Contact tagged" `jzp-download`, sends the email with
   the download link. That link must be `https://jianzipufont.com/JianZiPu.ttf`,
   or `https://github.com/neuralfirings/JianZiPu/releases/latest/download/JianZiPu.ttf`.
   Both always serve the newest release, so the email never needs editing. Don't
@@ -161,4 +163,6 @@ a MailerLite API key, brings the subscribers and their groups (as tags). Or
 export from MailerLite with the Groups column (Set columns → Groups) and import
 the CSV, mapping that column with "Import comma-separated tags". Then rebuild
 each MailerLite segment in EmailOctopus as a segment matching *any* of the old
-group's tag and the matching "I am a…" answer.
+group's tag and the matching "I am a…" answer. Bulk-tag the imported downloaders
+`jzp-download` (Contacts → select → Add tag) *before* turning the download
+automation on, or they would all get the download email again.
