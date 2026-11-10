@@ -198,6 +198,12 @@
     .signup-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
     .signup-close { display: flex; justify-content: flex-end; margin: 0 0 4px; }
     .signup-dialog h1, .signup-dialog h2, .signup-dialog h3 { margin-top: 0; padding-top: 0; border-top: 0; } /* not the page's section headings */
+    .signup-done { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+    .signup-done[hidden] { display: none; }
+    .signup-done p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: #555; text-align: center; }
+    .signup-download { display: block; padding: 14px 16px; background: #000; color: #fff; text-align: center; font-size: 1.1rem; text-decoration: none; border-radius: 2px; }
+    .signup-download:hover, .signup-download:focus-visible { background: #333; color: #fff; }
+    .signup-download:focus-visible { outline: 2px solid #0a5cbf; outline-offset: 2px; }
     .text-entry-examples {
       font-size: 0.8em
     }
@@ -1686,6 +1692,11 @@ Cv9,6|02 BLv9\6|02
   <dialog id="get-the-font" class="signup-dialog" aria-label="Get the JianZiPu font">
     <form method="dialog" class="signup-close"><button class="btn-close" aria-label="Close"></button></form>
     <div id="eo-form"></div>
+    <!-- shown once the form has taken the address: the font right away, as the MailerLite pop-up did -->
+    <div id="signup-done" class="signup-done" hidden>
+      <a class="signup-download" href="./JianZiPu.ttf" download>Download JianZiPu Font</a>
+      <p>The link is in your inbox too. Not there in a few minutes? Check your spam folder, or <a href="https://guqintabs.com/contact" target="_blank" rel="noopener">write to me</a> and I&rsquo;ll send you the font the old-fashioned way.</p>
+    </div>
   </dialog>
   <script>
     // Download: the EmailOctopus form in a dialog, which emails the font's link (EmailOctopus sends it,
@@ -1711,6 +1722,19 @@ Cv9,6|02 BLv9\6|02
       });
       // a click on the dimmed page around the form closes it
       dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+      // Signed up: EmailOctopus swaps its email box for its thank-you message. Once a box that was
+      // there has gone, the Download button shows under the message.
+      const box = document.getElementById('eo-form');
+      const done = document.getElementById('signup-done');
+      let seen = false;
+      const check = () => {
+        const email = box.querySelector('input[type="email"], input[name*="mail" i]');
+        const shown = !!email && email.getClientRects().length > 0;
+        if (shown) seen = true;
+        else if (seen) { done.hidden = false; observer.disconnect(); }
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
     })();
   </script>
 </body>
