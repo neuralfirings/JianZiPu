@@ -193,6 +193,11 @@
       color: #c8c8c8;
       text-decoration: underline;
     }
+    /* the "send me the font" form (EmailOctopus) */
+    .signup-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px 20px; border: 1px solid #c4c4c4; border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); }
+    .signup-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+    .signup-close { display: flex; justify-content: flex-end; margin: 0 0 4px; }
+    .signup-dialog h1, .signup-dialog h2, .signup-dialog h3 { margin-top: 0; padding-top: 0; border-top: 0; } /* not the page's section headings */
     .text-entry-examples {
       font-size: 0.8em
     }
@@ -241,15 +246,10 @@
 
   </style>
   
-  <!-- MailerLite Universal -->
-  <script>
-    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
-    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
-    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
-    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
-    ml('account', '1128028');
-  </script>
-  <!-- End MailerLite Universal -->
+  <!-- "Send me the font": an EmailOctopus sign-up form (docs/maintainers/setup.md, EmailOctopus).
+       Its id is the one in the form's embed code, eocampaign1.com/form/<id>.js. Empty: the Download
+       button downloads the font straight away. -->
+  <script>window.EO_FORM_ID = '';</script>
 </head>
 <body>
 
@@ -296,10 +296,9 @@
         <a class="sub" href="#glossary-symbols">General symbols</a>
       </nav>
     </details>
-    <a class="ml-onclick-form download" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">
+    <a class="download" id="download-font" href="./JianZiPu.ttf" download>
       Download<span class="download-name"> JianZiPu Font</span>
     </a>
-    <!-- <button class="ml-onclick-form btn btn-primary" href="javascript:void(0)" onclick="ml('show', 'qrPIXW', true)">Download JianZiPu Font</button> -->
     <small class="font-version" id="font-version"></small>
   </div>
   <div class="container">   
@@ -1682,6 +1681,36 @@ Cv9,6|02 BLv9\6|02
         document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
+    })();
+  </script>
+  <dialog id="get-the-font" class="signup-dialog" aria-label="Get the JianZiPu font">
+    <form method="dialog" class="signup-close"><button class="btn-close" aria-label="Close"></button></form>
+    <div id="eo-form"></div>
+  </dialog>
+  <script>
+    // Download: the EmailOctopus form in a dialog, which emails the font's link (EmailOctopus sends it,
+    // an automation on the form's tag). The form's script loads the first time it opens. Without a
+    // form id, or with no <dialog> support, the link downloads the font straight away.
+    (function () {
+      const link = document.getElementById('download-font');
+      const dialog = document.getElementById('get-the-font');
+      const id = (window.EO_FORM_ID || '').trim();
+      if (!link || !dialog || !id || typeof dialog.showModal !== 'function') return;
+      let loaded = false;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!loaded) {
+          const s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://eocampaign1.com/form/' + encodeURIComponent(id) + '.js';
+          s.dataset.form = id;
+          document.getElementById('eo-form').appendChild(s);
+          loaded = true;
+        }
+        dialog.showModal();
+      });
+      // a click on the dimmed page around the form closes it
+      dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
     })();
   </script>
 </body>

@@ -11,7 +11,7 @@ where the settings live. Secrets never go in this repository.
 | Resend | Sends the Change Request emails | resend.com, `supabase/functions/notify/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
-| MailerLite | The "send me the font" email on the font page | mailerlite.com |
+| EmailOctopus | The "send me the font" email on the font page, and the email list shared with Guqin Tabs | emailoctopus.com, `site/index.html` |
 
 ## Your computer
 
@@ -122,10 +122,31 @@ again.
   `JianZiPu.ttf` for an hour, so people get a new release soon after it
   deploys.
 
-## MailerLite
+## EmailOctopus
 
-The signup form on the font page sends an email with the download link. That
-link must be `https://jianzipufont.com/JianZiPu.ttf`, or
-`https://github.com/neuralfirings/JianZiPu/releases/latest/download/JianZiPu.ttf`.
-Both always serve the newest release, so the email never needs editing. Don't
-link to a release candidate.
+One EmailOctopus list holds everyone who asked for email: people who got the font
+from the font page, and Guqin Tabs users who ticked "Email me Guqin Tabs updates"
+(guqintabs.com adds them through the API, tagged `gt-users`). Segments are built
+from tags, so the font page's subscribers keep the segments they had in
+MailerLite (each MailerLite group came over as a tag). The free plan allows 2,500
+contacts, 10,000 emails a month, 3 automations and 10 tags per list.
+
+**The font page's form.** The Download button opens an EmailOctopus sign-up form
+in a dialog. Its id is `window.EO_FORM_ID` near the top of `site/index.html`:
+the id in the form's embed code (`https://eocampaign1.com/form/<id>.js`). With
+the id empty, Download just downloads the font. In EmailOctopus:
+
+- The form (Forms → the form → Settings) adds its subscribers to the list with
+  the tag `jzp-font` (click the email field, then Tags), plus any fields or
+  choices the MailerLite form asked for.
+- An automation, triggered by "Contact tagged" `jzp-font`, sends the email with
+  the download link. That link must be `https://jianzipufont.com/JianZiPu.ttf`,
+  or `https://github.com/neuralfirings/JianZiPu/releases/latest/download/JianZiPu.ttf`.
+  Both always serve the newest release, so the email never needs editing. Don't
+  link to a release candidate.
+
+**Moving from MailerLite (once).** Contacts → Import → MailerLite, connected with
+a MailerLite API key, brings the subscribers and their groups (as tags). Or
+export from MailerLite with the Groups column (Set columns → Groups) and import
+the CSV, mapping that column with "Import comma-separated tags". Then rebuild
+each MailerLite segment in EmailOctopus as a segment on those tags.
