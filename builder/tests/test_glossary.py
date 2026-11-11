@@ -217,37 +217,49 @@ def test_the_check_reports_what_a_release_would_stop_on():
     assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
 
 
-def test_http_check_is_local_only(monkeypatch):
+def test_http_check_locally_and_online(monkeypatch):
     pytest.importorskip("uharfbuzz")
     import json
     import threading
     import urllib.error
     import urllib.request
     from http.server import ThreadingHTTPServer
-    from jzpbuild import webserver
+    from jzpbuild import hosted, webserver
     srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
 
-    def post(body):
+    def post(body, token=None):
+        headers = {"Content-Type": "application/json", **({"Authorization": f"Bearer {token}"} if token else {})}
         req = urllib.request.Request(base + "/api/glossary/check", data=json.dumps(body).encode(), method="POST",
-                                     headers={"Content-Type": "application/json"})
+                                     headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
                 return r.status, json.loads(r.read())
         except urllib.error.HTTPError as err:
             return err.code, json.loads(err.read())
+
+    def font(url):
+        with urllib.request.urlopen(base + url, timeout=30) as r:
+            return r.read()[:4] in (b"\x00\x01\x00\x00", b"OTTO", b"true")
     try:
         status, res = post({"rows": shipped()[::-1]})       # the Builder sends them in any order
         assert status == 200 and res["ok"] and res["problems"] == [] and res["tables"]
         text = config.SITE_INDEX.read_text(encoding="utf-8")
         assert all(t["html"] in text for t in res["tables"])  # in components.csv's order, as the page has them
         assert post({"rows": "nope"})[1]["ok"] is False
-        with urllib.request.urlopen(base + "/api/glossary/font", timeout=30) as r:
-            assert r.read()[:4] in (b"\x00\x01\x00\x00", b"OTTO", b"true")    # a font file
-        monkeypatch.setattr(webserver.SETTINGS, "hosted", True)
-        assert post({"rows": shipped()})[0] == 403
-        with pytest.raises(urllib.error.HTTPError, match="403"):
-            urllib.request.urlopen(base + "/api/glossary/font", timeout=30)
+        assert font(res["font_url"]) and font("/api/glossary/font")
+        # online: a signed-in tester checks their draft's spellings; signed out, nothing
+        s = hosted.Settings(hosted=True, supabase_url="https://example.supabase.co", supabase_anon_key="anon")
+        auth = hosted.Auth(s)
+        monkeypatch.setattr(auth, "fetch_user", lambda token: {"id": "user-a"} if token == "tok-a" else None)
+        monkeypatch.setattr(webserver, "SETTINGS", s)
+        monkeypatch.setattr(webserver, "AUTH", auth)
+        assert post({"rows": shipped()})[0] == 401
+        new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū", "glossary": "1c: Left Hand Techniques"}
+        status, res = post({"rows": shipped(md_foo=new)}, "tok-a")
+        assert status == 200 and res["ok"] and res["not_built"] == ["md_foo"]
+        assert any("<td>tc</td>" in t["html"] for t in res["tables"])
+        assert font(res["font_url"]) and font("/api/glossary/font")
     finally:
         srv.shutdown()

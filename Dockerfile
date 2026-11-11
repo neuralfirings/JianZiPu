@@ -20,6 +20,8 @@ COPY builder/VERSION ./
 COPY CHANGELOG.md /repo/CHANGELOG.md
 COPY builder/jzpbuild ./jzpbuild
 COPY builder/inputs ./inputs
+# the font page's glossary and the released font, for More > Check the glossary
+COPY site/index.html site/glossary.json site/JianZiPu.ttf /repo/site/
 COPY --from=app /repo/app/build /repo/app/build
 RUN useradd --create-home builder && mkdir -p src_font && chown -R builder /repo/builder
 USER builder

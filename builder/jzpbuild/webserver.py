@@ -27,9 +27,11 @@ API (all JSON):
   POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
                                    compiled into the last build (GSUB only): typed words, round trip,
                                    clashes, characters the font doesn't carry yet, words that change
-  POST /api/glossary/check         local only: {design?, rows} -> the font page's glossary with these spellings:
-                                   problems, examples that type another glyph (in the last build), its tables
-  GET  /api/glossary/font          local only: the font that check types with (the last build, else the released one)
+  POST /api/glossary/check         {design?, rows} -> the font page's glossary with these spellings (hosted: the
+                                   tester's draft): problems, examples that type another glyph (in the last
+                                   build), its tables, and `font_url`, the font they were typed with
+  GET  /api/glossary/font          the font that check types with when it isn't a build of this server's
+                                   (locally the last build on disk, else the released one; hosted: main's)
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
@@ -547,7 +549,7 @@ def glyphs_payload() -> dict:
 
 def glossary_sections() -> list[dict]:
     """The font page's glossary sections, for the Typing view's Glossary column; none where the
-    server has no site/ folder (the hosted image)."""
+    server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
         return [{"id": k, "title": v.get("title", k)} for k, v in glossary.load_sections().items()]
     except (OSError, ValueError, KeyError):
@@ -645,11 +647,13 @@ def glossary_payload(body: dict, owner: str = "local") -> dict:
         return {"ok": False, "error": "rows: a list of spellings, please."}
     design = body.get("design") or json.loads(_read_design_text())
     font = glossary_font(owner)
+    build = next((b for b in BUILD.builds if b["path"] == font), None)
     # the rows as Save would write them: in the file's order (a section's unlisted rows follow it), new ones last
     clean = [typing_preview.clean_record(r) for r in recs if isinstance(r, dict)]
     text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
     out = glossary.check(glossary.records(list(csv.DictReader(io.StringIO(text)))), design, font)
-    return {**out, "font": "released" if font == config.SITE_FONT else "build"}
+    return {**out, "font": "released" if font == config.SITE_FONT else "build",
+            "font_url": BUILD.public(build)["url"] if build else "/api/glossary/font"}
 
 
 def glossary_font(owner: str = "local") -> Path:
@@ -859,10 +863,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
-            if path == "/api/glossary/font":
-                if SETTINGS.hosted:
-                    return self._json({"ok": False, "error": "The glossary is checked from the Builder on your own computer."}, 403)
-                return self._font(glossary_font())
+            if path == "/api/glossary/font":            # hosted: main's, nobody's own
+                return self._font(glossary_font(MAIN if SETTINGS.hosted else "local"))
             if path == "/api/release/status":
                 if SETTINGS.hosted:
                     return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
@@ -905,8 +907,6 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             if path.startswith("/api/release/") and SETTINGS.hosted:
                 return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
-            if path == "/api/glossary/check" and SETTINGS.hosted:
-                return self._json({"ok": False, "error": "The glossary is checked from the Builder on your own computer."}, 403)
             owner = self._owner()
             if owner is None:
                 return self._json({"ok": False, "error": "Sign in first.", "auth": True}, 401)

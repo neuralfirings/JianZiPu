@@ -171,6 +171,7 @@
   <button onclick={() => goto('/requests')}>Your Change Requests</button>
   <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
   <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
+  <button onclick={() => (dialog = 'glossary')} title="The glossary on jianzipufont.com as it would be with your draft's spellings, and what it would leave out">Check the glossary…</button>
   <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `Set reference font to ${app.latestFont}…` : `Reference font: ${app.latestFont}`}</button>
   <button onclick={() => (feedback = true)}>Send feedback…</button>
   <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>

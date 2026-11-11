@@ -1,10 +1,11 @@
 <script lang="ts">
-  // More > Check the glossary (local mode): the glossary on jianzipufont.com as the next release
-  // would write it from the spellings as they are now, unsaved ones included, with what it would
-  // leave out and the examples that type another glyph. Nothing is written; a release rewrites the page.
+  // More > Check the glossary: the glossary on jianzipufont.com as the next release would write it
+  // from the spellings as they are now (online: the tester's draft), unsaved ones included, with what
+  // it would leave out and the examples that type another glyph. Nothing is written; a release rewrites the page.
   import { onMount } from 'svelte';
   import * as I from '$lib/icons';
   import { api, GLOSSARY_FONT, type GlossaryCheck } from '$lib/api';
+  import { hosted } from '$lib/hosted.svelte';
   import { loadFontFrom } from '$lib/fontload';
   import { openedAnyway, phone } from '$lib/phone.svelte';
   import { app } from '$lib/state.svelte';
@@ -16,6 +17,7 @@
   let err = $state<string | null>(null);
   let busy = $state(false);
   let family = $state<string | null>(null);
+  let runs = 0;
 
   async function run() {
     if (!app.design) return;
@@ -24,7 +26,7 @@
       res = await api.glossaryCheck(T.toRecords(app.typing), app.design);
       if (!res.ok && !res.error) err = 'The check failed.';
       // the font the examples were typed in: a new build since the last check replaces it
-      try { family = (await loadFontFrom(GLOSSARY_FONT, 'glossary', 'build', 'glossary')).family; } catch { family = null; }
+      try { family = (await loadFontFrom(res.font_url ?? GLOSSARY_FONT, 'glossary', 'build', `glossary${++runs}`)).family; } catch { family = null; }
     } catch (e) { err = (e as Error).message; }
     finally { busy = false; }
   }
@@ -47,8 +49,13 @@
         <button class="quiet" onclick={onclose} aria-label="Close" data-tip="Close"><I.Close /></button>
       </header>
       <p class="muted">
-        The glossary on jianzipufont.com as the next release would write it, from the spellings as they are now{app.typingDirty ? ', unsaved changes included' : ''}.
-        Nothing is written: a release rewrites the page.
+        {#if hosted.isHosted}
+          The glossary on jianzipufont.com as it would be if a release took your draft's spellings{app.typingDirty ? ', unsaved changes included' : ''}.
+          Nothing is sent: the page changes only when a release includes your changes.
+        {:else}
+          The glossary on jianzipufont.com as the next release would write it, from the spellings as they are now{app.typingDirty ? ', unsaved changes included' : ''}.
+          Nothing is written: a release rewrites the page.
+        {/if}
         {#if res?.font}Examples are typed and drawn in {res.font === 'build' ? 'the last build' : 'the released font, since there is no build yet'}.{/if}
       </p>
 
