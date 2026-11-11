@@ -76,6 +76,15 @@ export type TypingPreview = {
   words?: (WordPayload['words'][number] & { texts: string[] })[];
   changed?: { word: string; before: string[]; after: string[]; after_texts: string[] }[];
 };
+/** Builder > More > Check the glossary. `problems`: glyphs left out, unknown sections; `typing`: examples whose
+ *  spellings give different glyphs; `not_built`: glyphs the font hasn't got, whose examples wait for a build;
+ *  `tables`: each section's table as the next release writes it; `error`: what a release would stop on. */
+export type GlossaryCheck = {
+  ok: boolean; error?: string; problems?: string[]; typing?: string[]; not_built?: string[];
+  tables?: { id: string; title: string; html: string }[]; font?: 'build' | 'released';
+};
+/** The font the glossary check types with (the last build, else the released one). */
+export const GLOSSARY_FONT = '/api/glossary/font';
 /** One finished build: its exact TTF lives in a temp dir on the server while it runs. */
 export type Build = { id: string; time: number; bytes: number; ok: boolean; seconds: number | null; url: string; file: string };
 export type BuildStatus = {
@@ -136,6 +145,9 @@ export const api = {
   /** Unsaved spellings compiled into the last build (GSUB only): typed words, round trip, words that change. */
   typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[] }) =>
     call<TypingPreview>('POST', '/api/typing/preview', body),
+  /** Local only: the font page's glossary made from these (unsaved) spellings; its font is at GLOSSARY_FONT. */
+  glossaryCheck: (rows: Record<string, string>[], design?: Design) =>
+    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design }),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),

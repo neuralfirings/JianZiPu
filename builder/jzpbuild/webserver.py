@@ -27,6 +27,9 @@ API (all JSON):
   POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
                                    compiled into the last build (GSUB only): typed words, round trip,
                                    clashes, characters the font doesn't carry yet, words that change
+  POST /api/glossary/check         local only: {design?, rows} -> the font page's glossary with these spellings:
+                                   problems, examples that type another glyph (in the last build), its tables
+  GET  /api/glossary/font          local only: the font that check types with (the last build, else the released one)
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
@@ -81,6 +84,7 @@ MAIN = "main"                         # owner of the checked-in font's build (ho
 MAX_BODY = 16 * 1024 * 1024           # a whole draft (design, spellings, changed SVGs) fits many times over
 MAX_WORDS = 2000                      # per request, for /api/words and /api/typing/preview
 MAX_WORD_LEN = 200
+MAX_ROWS = 5000                       # spelling rows per request, for /api/glossary/check
 
 
 # ---------------------------------------------------------------- helpers
@@ -631,6 +635,31 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     return out
 
 
+def glossary_payload(body: dict, owner: str = "local") -> dict:
+    """Builder > More > Check the glossary: the font page's glossary made from the unsaved spellings,
+    its examples typed through them on the last build (the released font before the first build)."""
+    if not config.SITE_INDEX.exists():
+        return {"ok": False, "error": "This copy of the Builder has no font page (site/index.html) to check."}
+    recs = body.get("rows")
+    if not isinstance(recs, list) or len(recs) > MAX_ROWS:
+        return {"ok": False, "error": "rows: a list of spellings, please."}
+    design = body.get("design") or json.loads(_read_design_text())
+    font = glossary_font(owner)
+    # the rows as Save would write them: in the file's order (a section's unlisted rows follow it), new ones last
+    clean = [typing_preview.clean_record(r) for r in recs if isinstance(r, dict)]
+    text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
+    out = glossary.check(glossary.records(list(csv.DictReader(io.StringIO(text)))), design, font)
+    return {**out, "font": "released" if font == config.SITE_FONT else "build"}
+
+
+def glossary_font(owner: str = "local") -> Path:
+    """The font the glossary check types with and its preview draws in: the latest build, else the
+    released one (never font_for()'s last resort, the golden: too old to type the page's examples)."""
+    return next((p for p in (BUILD.latest_for(owner), BUILD.latest_for(MAIN),
+                             config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None) if p and p.exists()),
+                config.SITE_FONT)
+
+
 # ---------------------------------------------------------------- HTTP
 
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
@@ -826,6 +855,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            if path == "/api/glossary/font":
+                if SETTINGS.hosted:
+                    return self._json({"ok": False, "error": "The glossary is checked from the Builder on your own computer."}, 403)
+                return self._font(glossary_font())
             if path == "/api/release/status":
                 if SETTINGS.hosted:
                     return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
@@ -868,6 +901,8 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             if path.startswith("/api/release/") and SETTINGS.hosted:
                 return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
+            if path == "/api/glossary/check" and SETTINGS.hosted:
+                return self._json({"ok": False, "error": "The glossary is checked from the Builder on your own computer."}, 403)
             owner = self._owner()
             if owner is None:
                 return self._json({"ok": False, "error": "Sign in first.", "auth": True}, 401)
@@ -895,6 +930,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(words_payload(design, word_list(body), font=BUILD.font_for(owner)))
             if path == "/api/typing/preview":
                 return self._json(typing_payload(body, owner))
+            if path == "/api/glossary/check":
+                return self._json(glossary_payload(body, owner))
             if path == "/api/svg/check":
                 try:
                     return self._json({"ok": True, **glyphs.flatten_svg_text(body["svg"])})

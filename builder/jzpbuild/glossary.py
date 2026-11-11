@@ -30,7 +30,8 @@ from . import config
 
 # components.csv's columns (typing_preview.ROW_FIELDS); not imported from there, so the release
 # scope check can read the page with the standard library alone
-FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin", "glossary")
+FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin", "glossary",
+          "meaning")
 
 BLOCK_RE = re.compile(r"(<!-- glossary (\S+)[^>]*-->)(.*?)(<!-- /glossary \2 -->)", re.S)
 INDENT = " " * 8
@@ -45,8 +46,10 @@ class Row:
     ascii: str
     chinese: str
     pinyin: str
-    usage: str                  # the fourth cell's HTML
+    usage: str                  # the last cell's HTML
     examples: list[list[str]]   # each example's spellings as plain text, to type in check_typing()
+    meaning: str = ""           # what the glyph means, escaped; a section with any gets a Meaning column
+    glyphs: tuple[str, ...] = ()  # the glyph(s) the row is for
 
 
 def load_rows(path: Path | None = None) -> dict[str, dict]:
@@ -140,7 +143,7 @@ def _usage_row(sec: dict, g: str, rec: dict) -> Row:
     usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
              + f"{INDENT}    ")
     return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), usage,
-               [[_plain(x) for x in zs + as_]])
+               [[_plain(x) for x in zs + as_]], _esc(rec["meaning"]), (g,))
 
 
 def _vertical_row(rows: dict[str, dict], e: str | list[str]) -> Row:
@@ -151,16 +154,17 @@ def _vertical_row(rows: dict[str, dict], e: str | list[str]) -> Row:
         a = ":" + "".join(spellings(r)[0] for r in recs)
         z = ":" + "".join(r["simplified"] for r in recs)
         return Row(_esc(a), _esc(z), _esc(" ".join(r["pinyin"] for r in recs if r["pinyin"])),
-                   f"<jzp>{_esc(z)}</jzp>", [[a, z]])
+                   f"<jzp>{_esc(z)}</jzp>", [[a, z]], glyphs=tuple(e))
     rec, other = rows[e], _partner(rows, e)
     sp = spellings(rec) + (spellings(other) if other else [])
     zhs = chinese(rec) or (chinese(other) if other else [])
     zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
+    meaning = rec["meaning"] or (other or {}).get("meaning", "")
     examples = [[":" + s] + [":" + c for c in zhs] for s in sp] or ([[":" + c for c in zhs]] if zhs else [])
     out = ":" + (zh or (sp[0] if sp else ""))
     return Row(_list([":" + s for s in sp]) if sp else "", _list([":" + c for c in zhs]) if zhs else "", _esc(py),
-               f"<jzp>{_esc(out)}</jzp>", examples)
+               f"<jzp>{_esc(out)}</jzp>", examples, _esc(meaning), (e,))
 
 
 def _number_row(recs: list[dict]) -> Row:
@@ -169,7 +173,7 @@ def _number_row(recs: list[dict]) -> Row:
     z = f":{first['simplified']}..:{last['simplified']}"
     usage = " ".join(f"<jzp>:{_esc(r['simplified'])}</jzp>" for r in (first, last))
     return Row(_esc(a), _esc(z), "", usage,
-               [[f":{r['common']}", f":{r['simplified']}"] for r in recs])
+               [[f":{r['common']}", f":{r['simplified']}"] for r in recs], glyphs=tuple(r["glyph_name"] for r in recs))
 
 
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
@@ -196,15 +200,21 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
-    """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page)."""
+    """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
+    A Meaning column joins it once any of its glyphs has a meaning in components.csv."""
     cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
+    body = section_rows(sid, sec, rows)
+    meaning = any(r.meaning for r in body)
+    widths = (16, 16, 16, 22, 24) if meaning else (23, 23, 23, 0, 25)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
-    lines += [f'      <th width="23%">{h}</th>' for h in ("ASCII", "中文", "拼音")] + [f'      <th width="25%">{last}</th>']
+    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
+    lines += ([f'      <th width="{widths[3]}%">Meaning</th>'] if meaning else []) + [f'      <th width="{widths[4]}%">{last}</th>']
     lines += ["    </tr>", "  </thead>"]
-    for n, r in enumerate(section_rows(sid, sec, rows), start):
+    for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
         lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
-                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
+                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
+                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), f"    <td>{r.usage}</td>", "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
 
@@ -265,7 +275,7 @@ def strip_generated(page: str) -> str:
 
 
 def examples(page: str | None = None, rows: dict[str, dict] | None = None,
-             sections: dict[str, dict] | None = None) -> list[tuple[str, list[str]]]:
+             sections: dict[str, dict] | None = None, skip: set[str] = frozenset()) -> list[tuple[str, list[str]]]:
     """Every example on the page as (where, spellings that must type the same glyph): the generated
     tables' rows, and the hand-written ones (<text>/<txs> spellings and the <jzp> rendering they
     give, in the lessons and around the tables)."""
@@ -275,7 +285,8 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     out = []
     for sid, sec in sections.items():
         for r in section_rows(sid, sec, rows):
-            out += [(f"glossary {sid}", ex) for ex in r.examples]
+            if not skip.intersection(r.glyphs):          # `skip`: glyphs the font hasn't got yet
+                out += [(f"glossary {sid}", ex) for ex in r.examples]
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<!--(?! glossary| /glossary).*?-->", " ",
                   strip_generated(page), flags=re.S)
     for m in re.finditer(r"<(li|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
@@ -297,21 +308,28 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     return [(w, ex) for w, ex in out if len(ex) > 1 or w.startswith("glossary")]
 
 
-def check_typing(font: Path | None = None, page: str | None = None) -> list[str]:
-    """Type every example through components.csv's spellings (compiled onto the released font, the
-    way the Builder's Typing preview does, so a release's new spellings count before it's built) and
-    return the examples whose spellings give different glyphs (a vertical form counts as its glyph),
-    or letters the font didn't turn into a glyph. Examples using a glyph the font doesn't have yet are skipped."""
+def check_typing(font: Path | None = None, page: str | None = None, rows: dict[str, dict] | None = None,
+                 design: dict | None = None, sections: dict[str, dict] | None = None) -> list[str]:
+    """Type every example through components.csv's spellings (or `rows`: the Builder's unsaved ones),
+    compiled onto the released font (or `font`, a build) the way the Builder's Typing preview does, so
+    a release's new spellings count before it's built, and return the examples whose spellings give
+    different glyphs (a vertical form counts as its glyph), or letters the font didn't turn into a
+    glyph. Examples using a glyph the font doesn't have yet are skipped."""
+    return _typing(font, page, rows, design, sections)[0]
+
+
+def _typing(font, page, rows, design, sections) -> tuple[list[str], list[str]]:
+    """check_typing(), and the glyphs it skipped because the font hasn't got them."""
     from . import typing_preview
     font = font or config.SITE_FONT
-    design = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8"))
-    rows = load_rows()
+    design = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8")) if design is None else design
+    rows = load_rows() if rows is None else rows
     grows = typing_preview.rows_from(list(rows.values()), design)
     prev = typing_preview.FONTS.get(font, grows, design)
     skip = set(prev.not_built)
     horizontal = {r["vert_variant"]: g for g, r in rows.items() if r["vert_variant"]}
     problems = []
-    for where, ex in examples(page, rows):
+    for where, ex in examples(page, rows, sections, skip):
         typed = typing_preview.shape(prev, ex)
         # the same glyph, written on its own after a colon or not (外, :wai)
         glyphs = [[horizontal.get(g, g) for g in t["glyphs"] if g != "blank_colon"] for t in typed]
@@ -322,7 +340,41 @@ def check_typing(font: Path | None = None, page: str | None = None) -> list[str]
         if len({json.dumps(g) for g in glyphs}) > 1 or leftover:
             detail = "; ".join(f"{w} -> {' '.join(g)}" for w, g in zip(ex, glyphs))
             problems.append(f"[{where}] {detail}" + (f" (not a glyph: {', '.join(leftover)})" if leftover else ""))
-    return problems
+    return problems, sorted(skip)
+
+
+def records(recs: list[dict]) -> dict[str, dict]:
+    """The Builder's spelling records (unsaved ones included) as load_rows() gives the CSV's."""
+    out = {}
+    for rec in recs:
+        r = {k: str(rec.get(k) or "").strip() for k in FIELDS}
+        if r["glyph_name"]:
+            out[r["glyph_name"]] = r
+    return out
+
+
+def check(rows: dict[str, dict], design: dict | None = None, font: Path | None = None) -> dict:
+    """The Builder's "Check the glossary": with these spellings, what the font page's glossary
+    would leave out or get wrong, and its tables as they would be written (each section's HTML,
+    numbered down the page). `font`: the build to type the examples with (default the released one)."""
+    sections = load_sections()
+    page = config.SITE_INDEX.read_text(encoding="utf-8")
+    out: dict = {"ok": True, "problems": missing(rows, sections), "typing": [], "tables": []}
+    order = [m.group(2) for m in BLOCK_RE.finditer(page)]
+    try:
+        render(page, rows, sections)          # the same errors a release would stop on
+        count = 0
+        for sid in order:
+            sec = sections[sid]
+            out["tables"].append({"id": sid, "title": sec.get("title", sid),
+                                  "html": table_html(sid, sec, rows, count + 1)})
+            count += len(section_rows(sid, sec, rows))
+    except GlossaryError as e:
+        return {**out, "ok": False, "error": str(e)}
+    out["typing"], unbuilt = _typing(font, page, rows, design, sections)
+    # glyphs the glossary shows that the font hasn't got: their examples wait for a build
+    out["not_built"] = [g for g in unbuilt if g in rows and section_ids(rows[g])]
+    return out
 
 
 def write(path: Path | None = None, csv_path: Path | None = None, sections_path: Path | None = None) -> bool:

@@ -109,7 +109,7 @@ describe('records and CSV', () => {
   it('round-trips through CSV, in the given order, quoting commas', () => {
     const t = base(); t.lg_ti.pinyin = 'a, b';
     const text = toCsv(t, ['md_san', 'lg_gou']);
-    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary');
+    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary,meaning');
     expect(text.split('\n')[1].startsWith('md_san,')).toBe(true);
     expect(text).toContain('"a, b"');
     const back = fromCsv(text);
@@ -118,7 +118,7 @@ describe('records and CSV', () => {
   });
   it('imports an old CSV with ID/keys/filename columns', () => {
     const t = fromCsv('ID,keys,filename,glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n1,s,md_ming,md_ming,,,s,,名,,míng\n');
-    expect(t.md_ming).toMatchObject({ latin: 's', simplified: '名', pinyin: 'míng', glossary: '' });
+    expect(t.md_ming).toMatchObject({ latin: 's', simplified: '名', pinyin: 'míng', glossary: '', meaning: '' });
   });
   it('keeps the Glossary column, which no glyph inherits and nothing clashes on', () => {
     const t = base(); t.lg_gou.glossary = '2a: Basic Right Hand'; t.lg_tuo.glossary = '2a: Basic Right Hand';
@@ -126,6 +126,15 @@ describe('records and CSV', () => {
     expect(issues(t)).toEqual([]);
     expect(fromCsv(toCsv(t)).md_san.glossary).toBe('1d: Special Cases; 3c: Related to String & Hui Number');
     expect(shown(t, 'md_san2', 'glossary')).toEqual({ value: '', inherited: null });
+    expect(changedGlyphs(base(), t)).toEqual(['lg_gou', 'lg_tuo', 'md_san']);
+  });
+  it('keeps the Meaning column: free text, never typed, inherited or checked', () => {
+    const t = base(); t.lg_gou.meaning = 'Pluck the string inward, with the middle finger'; t.lg_tuo.meaning = 'Pluck the string inward, with the middle finger';
+    expect(issues(t)).toEqual([]);
+    expect(cellNote(t, 'lg_gou', 'meaning', 'k')).toBeNull();          // the same as a spelling: no clash
+    expect(fromCsv(toCsv(t)).lg_gou.meaning).toBe('Pluck the string inward, with the middle finger');
+    t.md_san.meaning = 'Open string';
+    expect(shown(t, 'md_san2', 'meaning')).toEqual({ value: '', inherited: null });
     expect(changedGlyphs(base(), t)).toEqual(['lg_gou', 'lg_tuo', 'md_san']);
   });
   it('parses a spreadsheet paste', () => expect(parseGrid('a\tb\nc\td\n')).toEqual([['a', 'b'], ['c', 'd']]));

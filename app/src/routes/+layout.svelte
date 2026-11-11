@@ -12,6 +12,7 @@
   import { app } from '$lib/state.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
+  import GlossaryCheck from '$lib/components/GlossaryCheck.svelte';
   import PilotDialogs from '$lib/components/PilotDialogs.svelte';
   import SignIn from '$lib/components/SignIn.svelte';
   import ContactDialog from '$lib/components/ContactDialog.svelte';
@@ -25,7 +26,7 @@
   let menu = $state(false);
   let person = $state(false);
   let pill = $state(false);
-  let dialog = $state<'import' | 'export' | null>(null);
+  let dialog = $state<'import' | 'export' | 'glossary' | null>(null);
   let showChanges = $state(false);
   let feedback = $state(false);
 
@@ -182,6 +183,7 @@
   <button onclick={() => (dialog = 'export')}>Export…</button>
   <button onclick={() => downloadZip(app.bundle())} title="design.json, components.csv and changed glyph files as a draft .zip, for the Review screen">Download as draft .zip</button>
   <button onclick={() => { pilot.review = null; goto('/review'); }}>Review a draft…</button>
+  <button onclick={() => (dialog = 'glossary')} title="The glossary on jianzipufont.com as the next release would write it from these spellings, and what it would leave out">Check the glossary…</button>
   <button onclick={() => goto('/release')}>Make a release…</button>
   <button onclick={() => app.reloadFromDisk()}>Reload from disk</button>
   <button onclick={() => app.discard()} disabled={!app.dirty}>Discard unsaved changes</button>
@@ -406,7 +408,9 @@
     </nav>
   {/if}
 
-  {#if dialog}
+  {#if dialog === 'glossary'}
+    <GlossaryCheck onclose={() => (dialog = null)} />
+  {:else if dialog}
     <ImportExport mode={dialog} onclose={() => (dialog = null)} />
   {/if}
   <PilotDialogs />

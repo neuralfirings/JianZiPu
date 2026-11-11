@@ -151,3 +151,103 @@ def test_hand_written_examples_are_split_at_sentences():
             "<li><text>名九勾五</text> or <text>s9k5</text> → <jzp>s9k5</jzp></li>")
     ex = [e for w, e in glossary.examples(text, {}, {})]
     assert ex == [["外", "13+", ":wai"], ["名九勾五", "s9k5", "s9k5"]]
+
+
+# ---------------------------------------------------------------- the Meaning column
+
+def test_a_meaning_column_joins_only_a_section_that_has_one():
+    sec = {"2a": {"kind": "usage", "usage": ["0{}5", "散{}五"]}, "2c": {"kind": "vertical"}}
+    r = rows("lg_gou,,,k,,勾,,gōu,2a,Pluck the string inward with the middle finger <m>",
+             "lg_tiao,,,u,,挑,,tiāo,2a,", "lg_lun,,,lun,,轮,,lún,2c,")
+    out = glossary.render(page("2a", "2c"), r, sec)
+    a, c = out.split("<!-- glossary 2c -->")
+    assert '<th width="22%">Meaning</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
+    assert '<td class="meaning"></td>' in a                                  # every row of the section gets the cell
+    assert "Meaning" not in c and '<th width="23%">ASCII</th>' in c          # 2c has none: the table stays as it was
+    assert glossary.render(out, r, sec) == out
+
+
+def test_a_vertical_row_falls_back_to_the_partners_meaning():
+    sec = {"3c": {"title": "3c: Numbers", "kind": "vertical"}}
+    r = rows("md_san,md_san2,0,,,散,,sàn,3c: Numbers,", "md_san2,,,san,,,,,,Open string")
+    assert '<td class="meaning">Open string</td>' in glossary.render(page("3c"), r, sec)
+    r["md_san"]["meaning"] = "Its own"
+    assert '<td class="meaning">Its own</td>' in glossary.render(page("3c"), r, sec)
+
+
+def test_a_csv_without_the_meaning_column_still_loads(tmp_path):
+    p = tmp_path / "components.csv"
+    p.write_text("glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary\n"
+                 "lg_gou,,,k,,勾,,gōu,2a\n", encoding="utf-8")
+    assert glossary.load_rows(p)["lg_gou"]["meaning"] == ""
+
+
+# ---------------------------------------------------------------- the Builder's check
+
+def shipped(**extra) -> list[dict]:
+    """components.csv as the Builder sends it, plus `extra` rows by glyph name."""
+    import csv
+    with open(config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
+        recs = list(csv.DictReader(f))
+    return recs + [{"glyph_name": g, **r} for g, r in extra.items()]
+
+
+def test_the_check_passes_the_shipped_files():
+    pytest.importorskip("uharfbuzz")
+    out = glossary.check(glossary.records(shipped()))
+    assert out["ok"] and out["problems"] == [] and out["typing"] == [] and out["not_built"] == []
+    text = config.SITE_INDEX.read_text(encoding="utf-8")
+    assert [t["id"] for t in out["tables"]] == [m.group(2) for m in glossary.BLOCK_RE.finditer(text)]
+    assert all(t["html"] in text for t in out["tables"])                    # the tables the page has
+
+
+def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
+    pytest.importorskip("uharfbuzz")
+    new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū", "glossary": "1c: Left Hand Techniques",
+           "meaning": "Push the string out"}
+    out = glossary.check(glossary.records(shipped(md_foo=new, md_bar={"latin": "zz", "glossary": "9z: Nowhere"})))
+    t = next(t for t in out["tables"] if t["id"] == "1c")
+    assert "<td>tc</td>" in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
+    assert out["not_built"] == ["md_bar", "md_foo"] and out["typing"] == []   # not a false alarm: Build, then check
+    assert any("9z: Nowhere" in p for p in out["problems"])
+
+
+def test_the_check_reports_what_a_release_would_stop_on():
+    out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc", "glossary": "1c: Left Hand Techniques"})))
+    assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
+
+
+def test_http_check_is_local_only(monkeypatch):
+    pytest.importorskip("uharfbuzz")
+    import json
+    import threading
+    import urllib.error
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+    from jzpbuild import webserver
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+
+    def post(body):
+        req = urllib.request.Request(base + "/api/glossary/check", data=json.dumps(body).encode(), method="POST",
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as err:
+            return err.code, json.loads(err.read())
+    try:
+        status, res = post({"rows": shipped()[::-1]})       # the Builder sends them in any order
+        assert status == 200 and res["ok"] and res["problems"] == [] and res["tables"]
+        text = config.SITE_INDEX.read_text(encoding="utf-8")
+        assert all(t["html"] in text for t in res["tables"])  # in components.csv's order, as the page has them
+        assert post({"rows": "nope"})[1]["ok"] is False
+        with urllib.request.urlopen(base + "/api/glossary/font", timeout=30) as r:
+            assert r.read()[:4] in (b"\x00\x01\x00\x00", b"OTTO", b"true")    # a font file
+        monkeypatch.setattr(webserver.SETTINGS, "hosted", True)
+        assert post({"rows": shipped()})[0] == 403
+        with pytest.raises(urllib.error.HTTPError, match="403"):
+            urllib.request.urlopen(base + "/api/glossary/font", timeout=30)
+    finally:
+        srv.shutdown()
