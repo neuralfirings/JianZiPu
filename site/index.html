@@ -58,6 +58,11 @@
     .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
     td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: #777; }
     tr:target { background-color: #fff6d6; }
+    /* the glossary's search box (script at the end of the page) */
+    [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
+    .glossary-search { margin: 8px 0 16px; }
+    .glossary-search input { max-width: 420px; }
+    .glossary-search p { margin: 4px 0 0; color: #666; font-size: 0.875rem; min-height: 1.3em; }
     html { scroll-padding-top: 96px; }   /* a linked row or heading lands below the sticky download bar */
     jzp {
       font-size: 2.5rem;
@@ -552,6 +557,12 @@ Cv9,6|02 BLv9\6|02
     </div>
     <div class="row">
       <div class="col">
+        <div class="glossary-search" role="search">
+          <label for="glossary-search">Search the glossary</label>
+          <input id="glossary-search" type="search" class="form-control" autocomplete="off" spellcheck="false"
+            placeholder="k, gou, 勾, a meaning, or a section such as chords" />
+          <p id="glossary-search-status" aria-live="polite"></p>
+        </div>
         <h4 id="glossary-left">1: Left Hand</h4>
         <label>1a: Left Hand Finger</label>
         <!-- glossary 1a: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
@@ -1735,6 +1746,58 @@ Cv9,6|02 BLv9\6|02
       };
       const observer = new MutationObserver(check);
       observer.observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+    })();
+  </script>
+  <script>
+    // Glossary search: shows the rows whose ASCII, 中文, 拼音 or Meaning holds the search (tone marks,
+    // case and spaces don't count, so "banfu" finds bàn fú), or every row of a section whose title holds
+    // it. The examples column isn't searched: nearly every example has 勾 in it. The Builder's
+    // Check the glossary dialog searches the same way (app/src/lib/glossarySearch.ts).
+    (function () {
+      var input = document.getElementById('glossary-search');
+      var status = document.getElementById('glossary-search-status');
+      if (!input) return;
+      var norm = function (t) { return (t || '').normalize('NFD').replace(/[̀-ͯ\s]/g, '').toLowerCase(); };
+      var isTable = function (e) { return e.tagName === 'TABLE' && e.querySelector('td.gid'); };
+      // each column holding glossary tables, cut into blocks: a table and everything since the one
+      // before it (its titles and notes); text after a column's last table belongs to no table
+      var blocks = [], loose = [], heads = [], cols = [];
+      document.querySelectorAll('table').forEach(function (t) {
+        if (isTable(t) && cols.indexOf(t.parentElement) < 0) cols.push(t.parentElement);
+      });
+      cols.forEach(function (col) {
+        var pending = [];
+        Array.prototype.forEach.call(col.children, function (e) {
+          if (e.classList.contains('glossary-search')) return;
+          if (e.tagName === 'H4') { heads.push({ h: e, blocks: [] }); loose = loose.concat(pending); pending = []; }
+          else if (isTable(e)) {
+            var b = { table: e, intro: pending, title: norm(pending.filter(function (x) { return /^(LABEL|U)$/.test(x.tagName); })
+              .map(function (x) { return x.textContent; }).join(' ')) };
+            blocks.push(b); if (heads.length) heads[heads.length - 1].blocks.push(b); pending = [];
+          } else pending.push(e);
+        });
+        loose = loose.concat(pending);
+      });
+      function run() {
+        var q = norm(input.value), shown = 0;
+        blocks.forEach(function (b) {
+          var whole = !!q && b.title.indexOf(q) >= 0;
+          b.any = false;
+          Array.prototype.forEach.call(b.table.rows, function (tr) {
+            if (!tr.querySelector('td.gid')) return;
+            var cells = Array.prototype.slice.call(tr.cells, 1, tr.cells.length - 1);
+            var hit = !q || whole || cells.some(function (c) { return norm(c.textContent).indexOf(q) >= 0; });
+            tr.hidden = !hit;
+            if (hit) { b.any = true; shown++; }
+          });
+          b.table.hidden = !b.any;
+          b.intro.forEach(function (e) { e.hidden = !b.any; });
+        });
+        heads.forEach(function (x) { x.h.hidden = !!q && !x.blocks.some(function (b) { return b.any; }); });
+        loose.forEach(function (e) { e.hidden = !!q; });
+        status.textContent = !q ? '' : shown ? shown + (shown === 1 ? ' row' : ' rows') : 'No glossary row matches. Try the pinyin without tones, or one character.';
+      }
+      input.addEventListener('input', run);
     })();
   </script>
 </body>
