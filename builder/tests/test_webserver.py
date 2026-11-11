@@ -280,3 +280,63 @@ def test_security_headers(server):
     assert r.getheader("X-Frame-Options") == "DENY"
     assert "Python" not in (r.getheader("Server") or "")
     assert r.getheader("Strict-Transport-Security") is None          # local: plain http
+
+
+# ---------------------------------------------------------------- the PR preview's tab icon
+
+from jzpbuild import preview_favicon  # noqa: E402
+
+ICONS = """    <title>JianZiPu Font Builder</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+"""
+
+
+@pytest.mark.parametrize("host, pr", [
+    ("builder-pr-29.up.railway.app", "29"), ("Builder-PR-104.up.railway.app:443", "104"),
+    ("builder-pr-7.up.railway.app, proxy.internal", "7"),
+    ("builder.jianzipufont.com", None), ("jianzipufont.com", None), ("x-pr-3.jianzipufont.com", None),
+    ("builder-production.up.railway.app", None), ("localhost:5713", None), ("", None), (None, None),
+])
+def test_preview_pr_number(host, pr):
+    assert preview_favicon.pr_number(host) == pr
+
+
+def test_preview_icon_is_the_number_in_dark_brown():
+    from urllib.parse import unquote
+    svg = unquote(preview_favicon.href("29").removeprefix("data:image/svg+xml,"))
+    assert ">29</text>" in svg and 'fill="#5C3A21"' in svg and 'font-size="26"' in svg
+    assert 'font-size="14"' in unquote(preview_favicon.href("1234"))
+    with pytest.raises(ValueError):
+        preview_favicon.href("<b>")
+
+
+def test_preview_page_gets_one_icon_and_production_none():
+    out = preview_favicon.apply(ICONS, "builder-pr-29.up.railway.app")
+    assert out.count('rel="icon"') == 1 and 'href="data:image/svg+xml,' in out and 'type="image/svg+xml"' in out
+    assert "apple-touch-icon" in out and "favicon.ico" not in out
+    assert out.splitlines()[1].startswith('    <link rel="icon" href="data:')
+    assert preview_favicon.apply(ICONS, "builder.jianzipufont.com") == ICONS
+    assert preview_favicon.apply(ICONS, "127.0.0.1:5713") == ICONS
+
+
+def test_hosted_server_puts_the_pr_icon_in_the_page(tmp_path, monkeypatch):
+    (tmp_path / "index.html").write_text("<head>\n" + ICONS + "</head>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", tmp_path)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/glyphs"
+
+    def page(host):
+        req = urllib.request.Request(url, headers={"X-Forwarded-Host": host})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read().decode("utf-8")
+    try:
+        assert "favicon.ico" in page("builder-pr-29.up.railway.app")      # local mode: never changed
+        monkeypatch.setattr(webserver.SETTINGS, "hosted", True)
+        assert "data:image/svg+xml" in page("builder-pr-29.up.railway.app")
+        assert "favicon.ico" in page("builder.jianzipufont.com")
+    finally:
+        srv.shutdown()

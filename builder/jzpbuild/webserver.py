@@ -73,7 +73,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from . import config, data, glossary, glyphs, hosted, release, typing_preview
+from . import config, data, glossary, glyphs, hosted, preview_favicon, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -828,6 +828,10 @@ class Handler(SimpleHTTPRequestHandler):
         if ctype.startswith("text/") and "charset" not in ctype:
             ctype += "; charset=utf-8"           # llms.txt and the like hold Chinese
         body = target.read_bytes()
+        if ctype.startswith("text/html") and SETTINGS.hosted:
+            # a pull request preview's tab shows its number (preview_favicon.py); production is untouched
+            host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+            body = preview_favicon.apply(body.decode("utf-8"), host).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))

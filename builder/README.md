@@ -130,7 +130,9 @@ your machine: webserver (local) → /review (decide) → /release (candidate bra
   5 min); builds are per tester, random ids, and take the draft as inputs (`--design`,
   `--input-components`, `--input-svg-dir`); `/api/words` and typing previews use the tester's latest
   build, else main's. At start it downloads the base font from Storage (`JZP_BASE_FONT_OBJECT`, default
-  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once.
+  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once. On a Railway pull
+  request preview (`…-pr-29.up.railway.app`) the page's tab icon is the PR number in dark brown
+  (`jzpbuild/preview_favicon.py`); builder.jianzipufont.com keeps its icons.
 - **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
   sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
   tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first
