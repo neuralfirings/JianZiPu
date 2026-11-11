@@ -359,9 +359,10 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
     numbered down the page). `font`: the build to type the examples with (default the released one)."""
     sections = load_sections()
     page = config.SITE_INDEX.read_text(encoding="utf-8")
-    out: dict = {"ok": True, "problems": missing(rows, sections), "typing": [], "tables": []}
+    out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
     order = [m.group(2) for m in BLOCK_RE.finditer(page)]
     try:
+        out["problems"] = missing(rows, sections)
         render(page, rows, sections)          # the same errors a release would stop on
         count = 0
         for sid in order:

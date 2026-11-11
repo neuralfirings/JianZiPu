@@ -6,6 +6,7 @@
   import * as I from '$lib/icons';
   import { api, GLOSSARY_FONT, type GlossaryCheck } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
+  import { withChanges } from '$lib/merge';
   import { loadFontFrom } from '$lib/fontload';
   import { openedAnyway, phone } from '$lib/phone.svelte';
   import { app } from '$lib/state.svelte';
@@ -23,7 +24,11 @@
     if (!app.design) return;
     busy = true; err = null;
     try {
-      res = await api.glossaryCheck(T.toRecords(app.typing), app.design);
+      // online: the font as it is now with all of the draft's changes, the way a release would take them
+      // (a column the draft is older than comes from the font, not as the draft's empty one)
+      const merged = hosted.isHosted && app.mainDesign
+        ? withChanges(app.bundle(), { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : null;
+      res = await api.glossaryCheck(T.toRecords(merged?.typing ?? app.typing), merged?.design ?? app.design);
       if (!res.ok && !res.error) err = 'The check failed.';
       // the font the examples were typed in: a new build since the last check replaces it
       try { family = (await loadFontFrom(res.font_url ?? GLOSSARY_FONT, 'glossary', 'build', `glossary${++runs}`)).family; } catch { family = null; }
@@ -50,7 +55,7 @@
       </header>
       <p class="muted">
         {#if hosted.isHosted}
-          The glossary on jianzipufont.com as it would be if a release took your draft's spellings{app.typingDirty ? ', unsaved changes included' : ''}.
+          The glossary on jianzipufont.com as it would be if a release took all of your draft's changes{app.typingDirty ? ', unsaved ones included' : ''}.
           Nothing is sent: the page changes only when a release includes your changes.
         {:else}
           The glossary on jianzipufont.com as the next release would write it, from the spellings as they are now{app.typingDirty ? ', unsaved changes included' : ''}.

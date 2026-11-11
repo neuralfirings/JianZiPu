@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
-import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph } from './merge';
+import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph, withChanges } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
 
@@ -114,6 +114,21 @@ describe('three-way merge', () => {
     const items = diffBundle(b, cur);
     expect(items.map((i) => i.kind === 'spelling' && i.fields.map((f) => f.field))).toEqual([['latin']]);
     expect(applyMerge(items, defaultKeep(items), cur).typing.md_7).toMatchObject({ latin: 'qi', glossary: '3c: Numbers' });
+  });
+  it('puts every change of a draft, conflicts too, on the font as it is now', () => {
+    const old = 'glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n';
+    const b = makeBundle({
+      design: design(), typing: T.fromCsv(old + 'md_7,,7,qi,,,,qī\nmd_9,,9,jiu,,,,jiǔ\n'), svgs: baseSvgs,
+      baseDesign: design(), baseTyping: T.fromCsv(old + 'md_7,,7,,,,,qī\nmd_9,,9,,,,,jiǔ\n'), baseSvgs, base,
+      author: { id: 'u1', name: 'Mei Lin' }, now: new Date('2026-10-18T10:00:00Z')
+    });
+    const cur = { ...current(), typing: {
+      md_7: { ...T.empty(), common: '7', pinyin: 'qī', glossary: '3c: Numbers' },
+      md_9: { ...T.empty(), common: '9', latin: 'nine', pinyin: 'jiǔ', glossary: '3c: Numbers' }
+    } as T.Typing };
+    const m = withChanges(b, cur);
+    expect(m.typing.md_7).toMatchObject({ latin: 'qi', glossary: '3c: Numbers' });   // not the draft's empty column
+    expect(m.typing.md_9).toMatchObject({ latin: 'jiu', glossary: '3c: Numbers' });  // a conflict: the draft's
   });
   it('keeps the meaning column under a draft saved before it existed', () => {
     const old = 'glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary\n';

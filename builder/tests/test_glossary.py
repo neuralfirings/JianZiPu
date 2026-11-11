@@ -217,6 +217,13 @@ def test_the_check_reports_what_a_release_would_stop_on():
     assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
 
 
+def test_the_check_reports_a_glyph_whose_glossary_column_is_empty():
+    # a draft older than the Glossary column: glossary.json lists the glyph, the row doesn't name the section
+    recs = [{**r, "glossary": ""} if r["glyph_name"] == "mod_chuo" else r for r in shipped()]
+    out = glossary.check(glossary.records(recs))
+    assert not out["ok"] and "lists mod_chuo" in out["error"]
+
+
 def test_http_check_locally_and_online(monkeypatch):
     pytest.importorskip("uharfbuzz")
     import json

@@ -189,6 +189,14 @@ function setUnit(d: Design, u: DesignUnit, v: unknown) {
   else { if (val === undefined) delete d.test_sets; else d.test_sets = val as Design['test_sets']; }
 }
 
+/** The current font with every change the draft makes, conflicts included: what a release would
+ *  hold if Review kept it all (Check the glossary, online). Fields the draft never touched, such as
+ *  a column added after it started, come from the font. */
+export function withChanges(b: Bundle, cur: Current): Merged {
+  const items = diffBundle(b, cur);
+  return applyMerge(items, Object.fromEntries(items.map((i) => [i.id, true])), cur);
+}
+
 /** Default choices: keep everything that doesn't conflict; conflicts keep the current font. */
 export function defaultKeep(items: Item[]): Record<string, boolean> {
   return Object.fromEntries(items.map((i) => [i.id, !i.conflict]));
