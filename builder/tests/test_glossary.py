@@ -281,14 +281,14 @@ def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
 SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/></svg>'
 
 
-def test_the_check_draws_a_new_glyph_in_from_its_drawing():
+def test_the_check_draws_a_new_glyph_in_from_its_drawing(monkeypatch, tmp_path):
     pytest.importorskip("uharfbuzz")
+    monkeypatch.setattr(config, "SOURCE_FONT", tmp_path / "none.ttf")   # no base font to copy 出 推 from
     new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū"}
     out = glossary.check(glossary.records(shipped(md_foo=new)), svg=lambda n: SQUARE if n == "md_foo" else None,
                          sections=with_rows(**{"1c": [g("md_foo")]}))
     assert out["ok"] and out["drawn"] == ["md_foo"] and out["not_built"] == [] and out["typing"] == []
-    # characters only a Build adds: its examples wait; with the base font here, the preview copies them in
-    assert out["missing_chars"] == ([] if config.SOURCE_FONT.exists() else ["出", "推"])
+    assert out["missing_chars"] == ["出", "推"]         # characters only a Build adds: its examples wait
     assert out["font_key"] and typing_preview.FONTS.by_key(out["font_key"]).font_bytes
 
 

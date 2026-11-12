@@ -294,7 +294,8 @@ def test_unsaved_spelling_previews_without_a_build(built_font):
     assert b["glyphs"][2] == "u" and b["texts"][2] == "u"       # the old spelling is now a stray letter
 
 
-def test_a_character_the_font_lacks_is_reported_not_compiled(built_font):
+def test_a_character_the_font_lacks_is_reported_not_compiled(built_font, monkeypatch, tmp_path):
+    monkeypatch.setattr(tp.config, "SOURCE_FONT", tmp_path / "none.ttf")   # no base font to copy 往 from
     recs = csv_records()
     for r in recs:
         if r["glyph_name"] == "md_tang":
