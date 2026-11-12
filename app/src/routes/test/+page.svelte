@@ -57,13 +57,13 @@
 
   $effect(() => { try { localStorage.setItem('jzp-test-words', text); } catch {} });
   $effect(() => {
-    const ws = words, d = app.design;
+    const ws = words, d = app.design, typed = app.typedWith;
     if (!d || view !== 'words') return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       if (composing) return;
       try {
-        const r = await api.words(d, ws);
+        const r = await api.words(d, ws, typed);
         if (r.ok) { result = r; err = null; } else err = r.error ?? 'preview failed';
       } catch (e) { err = (e as Error).message; }
     }, 150);
@@ -264,7 +264,7 @@
   {#if err}<p class="error">{err}</p>{/if}
   {#if view === 'words'}
     <div class="words">
-      {#each result?.words ?? [] as w (w.word)}
+      {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
         {@const pg = wordPage(w)}
         {@const cellW = Math.round((pg[1] / 1000) * size)}
         <div class="word">

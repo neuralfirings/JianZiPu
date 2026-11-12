@@ -35,7 +35,7 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
-  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : `Glyph · ${i.key}`);
+  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
   let picked = $derived(items.filter((i) => chosen[i.id]));
   /** A new glyph and its spellings go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
@@ -85,7 +85,7 @@
       if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
       const { bundle, itemIds } = snapshot(app.bundle(), app.mainSvgs, picked.map((i) => i.id));
       const clash = T.issues(bundle.typing, app.known);
-      if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → Typing, or leave those spellings out.`; return; }
+      if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → List view, or leave those spellings out.`; return; }
       const failed = await buildCheck(buildInputs(bundle, app.mainSvgs));
       if (failed) { problem = `The font didn't build with just these changes: ${failed}`; return; }
       step = 'sending';

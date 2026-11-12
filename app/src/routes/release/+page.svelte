@@ -33,7 +33,7 @@
   const rel = $derived(g?.release ?? version);
   const admin = $derived(!!hosted.user && hosted.isAdmin);
   let taking = $derived(requests && rel ? forRelease(requests, rel) : []);
-  const cur = () => ({ design: app.design!, typing: app.typing, svgs: app.svgs });
+  const cur = () => ({ design: app.design!, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout });
   let waiting = $derived(app.design ? taking.filter((r) => !settled.includes(r.id) && missing(r, app.mainSvgs, cur()).length) : []);
 
   async function refresh() {

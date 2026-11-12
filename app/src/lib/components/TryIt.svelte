@@ -35,7 +35,8 @@
       if (first) out.push({ label: ':' + first, word: ':' + first, want: ['blank_colon', s.vert_variant] });
     }
     if (T.isDecimal(glyph)) for (const p of T.decimalPatterns(glyph)) out.push({ label: p, word: p, want: [glyph] });
-    return out;
+    // one check per word: 简体 and 繁體 can be the same (推出 / 推出), and the list is keyed by word
+    return out.filter((c, i) => out.findIndex((o) => o.word === c.word) === i);
   });
   let words = $derived([...checks.map((c) => c.word), ...free.split(/\s+/).filter(Boolean)]);
 
@@ -45,15 +46,25 @@
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       try {
-        const r = await api.typingPreview({ design: d, rows, words: ws, roundtrip: false, svg_names: app.extraGlyphs });
+        const r = await api.typingPreview({ design: d, rows, words: ws, roundtrip: false, svg_names: app.extraGlyphs, svgs: app.extraSvgs });
         if (r.ok) { result = r; err = null; } else err = r.error ?? 'preview failed';
       } catch (e) { err = (e as Error).message; }
     }, 200);
   });
   let byWord = $derived(new Map((result?.words ?? []).map((w) => [w.word, w])));
-  let freeWords = $derived(free.split(/\s+/).filter(Boolean).map((w) => byWord.get(w)).filter(Boolean));
+  let freeWords = $derived([...new Set(free.split(/\s+/).filter(Boolean))].map((w) => byWord.get(w)).filter(Boolean));
   const same = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
   const name = (g: string) => app.charOf(g) || g;
+  /** The font adds the colon itself before a glyph only a vertical word can hold (tang types :尚). */
+  const autoColon = (got: string[], want: string[]) => want[0] !== 'blank_colon' && want.some((g) => app.verticalOnly.has(g)) && same(got, ['blank_colon', ...want]);
+  const ok = (got: string[], want: string[]) => same(got, want) || autoColon(got, want);
+  const glyphWords = (gs: string[]) => gs.map((g) => (g === 'blank_colon' ? 'the colon' : g === '.notdef' ? 'a character not in the font' : name(g) === g ? g : `${name(g)} (${g})`)).join(' + ');
+  /** The tile's tooltip: what typing it gives, and why when that isn't the glyph alone. */
+  function tip(c: { label: string; want: string[] }, got: string[]): string {
+    if (same(got, c.want)) return `${c.label} types ${glyphWords(got)}`;
+    if (autoColon(got, c.want)) return `${c.label} types ${glyphWords(got)}: only a vertical word can hold ${glyphWords(c.want)}, so the font adds the colon itself`;
+    return `${c.label} types ${glyphWords(got)}, not ${glyphWords(c.want)}: check the spellings for a clash or a typo`;
+  }
 
   let errors = $derived(app.typingErrors.filter((e) => (e.kind === 'clash' ? e.glyphs.includes(glyph) : e.glyph === glyph)));
   let warnings = $derived(typingCheck.warningsFor(glyph));
@@ -75,9 +86,9 @@
   <div class="checks">
     {#each checks as c (c.word)}
       {@const w = byWord.get(c.word)}
-      <div class="chk" class:ok={w && same(w.glyphs, c.want)} class:bad={w && !same(w.glyphs, c.want)} title={w && !same(w.glyphs, c.want) ? `gives ${w.glyphs.join(' + ')}` : ''}>
+      <div class="chk" class:ok={w && ok(w.glyphs, c.want)} class:bad={w && !ok(w.glyphs, c.want)} data-tip={w ? tip(c, w.glyphs) : null}>
         {#if w}{@render out(w.glyphs, w.texts)}{:else}<span class="muted">…</span>{/if}
-        <small class="mono">{c.label} {#if w}{#if same(w.glyphs, c.want)}<I.Check size={12} />{:else}<I.Warn size={12} />{/if}{/if}</small>
+        <small class="mono">{c.label} {#if w}{#if ok(w.glyphs, c.want)}<I.Check size={12} />{:else}<I.Warn size={12} />{/if}{/if}</small>
       </div>
     {:else}
       <span class="muted small">No spellings yet: type one and it previews here at once.</span>

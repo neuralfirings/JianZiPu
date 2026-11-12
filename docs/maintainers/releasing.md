@@ -225,23 +225,59 @@ so the rule holds without anyone having to remember it.
 
 ## The glossary
 
-The glossary on the font page ("6. Glossary") is made from `components.csv`,
-so its spellings are the font's:
+The glossary on the font page ("6. Glossary") is made from `site/glossary.json`
+and the spellings in `components.csv`, so its spellings are the font's:
 
-- A glyph's **Glossary** column (Glyphs → Typing) names the section(s) where
-  it has a row of its own, by title: `1c: Left Hand Techniques`, or two
-  separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui
-  Number`). The cell offers the titles to pick from. Leave it empty for a
-  glyph that only appears inside a word, such as 带 in :带起.
-- The id before the colon is what the generator goes by, and the titles must
-  match `site/glossary.json` (the test says which glyph doesn't). Renaming a
-  section means changing its title in both places.
-- `site/glossary.json` says how each section's table looks: the example word
-  for each row (`0{}5` / `散{}五`, where `{}` is the glyph), the order of the
-  rows, and words like :带起. Editing it is an ordinary site change on main.
-- `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
-  `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
-  around them stay as written.
+- `site/glossary.json` holds the whole glossary: its section titles (`groups`:
+  "1: Left Hand", a short `nav` name for the page's contents, a description, and
+  its subtitles in order) and its subtitles (`sections`, by id, `1c`), each with
+  its title, a description, how its table looks (an example word per row,
+  `0{}5` / `散{}五` with `{}` the glyph, or a vertical table) and its **rows in
+  page order**. A row is a glyph (`{"glyph": "lg_gou"}`) or a word written
+  together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
+  `"meaning"` for the Definition column (a section gets that column once one of
+  its rows has one).
+- A section can have a default example, `"usage": [ASCII, 中文]`, with `{}`
+  where the row's glyph goes (the Builder's "Default example" under a
+  subtitle). Without one, each row is typed on its own after a colon where the
+  font needs one. A row's own `"usage"` replaces either (the Builder's Input
+  column, where you type the example in one language and the other is made
+  from the spellings), e.g. `[":vxi7", ":大息七"]`. Older files said which with
+  `"kind": "usage"` or `"vertical"`; it still reads, and isn't written.
+- `"typed"` keeps what was typed to add or edit a row (`:shaoxi`, `勾`); the
+  Builder shows it again when the row is edited. A row without one opens with
+  its ASCII spelling, or its Chinese when it has none.
+- The rows are edited in the Builder's Glyphs → **Glossary**: drag a row to
+  move it, + Add to put a glyph or a word in a section, a definition and (in a
+  usage section) an example per row. The
+  Builder writes the file one row per line, so a diff shows the rows that moved.
+  It's a font file (`FONT_PATHS` in `jzpbuild/release.py`), so it changes through
+  a release, or a pull request with the `font-files` label (a new section or a
+  changed example template is such a change: add its `<!-- glossary <id> -->`
+  marker to `site/index.html` in the same pull request).
+- Every glyph with a spelling is in some section, on its own or in a word.
+  `4: Uncategorized` is for a glyph that doesn't fit a section yet. A subtitle
+  or a section title with `"hidden": true` (the Builder's eye switch) is left
+  off the page, a section title with everything under it, and its glyphs count
+  as left out on purpose, so the check doesn't report them (`99: Hidden in
+  Glossary` is a subtitle switched off; the old `"kind": "hidden"` still reads
+  as one).
+  A word can go in any section: among example words it shows typed on its own
+  after a colon, as in a vertical section.
+- A Change Request carries the glossary a section at a time: Review keeps or
+  skips a section whole, rows in the draft's order.
+- A glyph only a vertical word can hold (上, 退…) gets its colon from the font,
+  so the page writes its spellings without one, but only once `site/JianZiPu.ttf`
+  does that (the generator types one such spelling with it to see). A
+  candidate rewrites the glossary again after building the font, so the
+  release that brings a change like that brings the page's new spellings too.
+- `cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the
+  `<!-- glossary all -->` markers in `site/index.html` (every section title,
+  subtitle, description and table) and the contents links between
+  `<!-- glossary nav -->`; the rest of the page stays as written. Descriptions
+  are a little Markdown (`builder/jzpbuild/glossary.py` `markdown()`, the same
+  as the Builder's preview): any HTML but the page's `<u>`, `<jzp>`, `<text>`,
+  `<small>` and `<br>` is escaped.
 - Each row shows every spelling: the ASCII ones (`fanyin, fy`) and the
   Chinese ones (simplified, then traditional when it differs: `绰, 綽`), with
   the example word typed each way.

@@ -1,11 +1,13 @@
 """The glossary on the public font page (site/index.html, "6. Glossary"), generated from
-components.csv so its spellings can't drift from the font's.
+site/glossary.json and components.csv so its spellings can't drift from the font's.
 
-A glyph's `glossary` column in components.csv names the section(s) where it gets a row of its own,
-by title ("1c: Left Hand Techniques", two separated by "; "; the id before the colon is the key); site/glossary.json says how each section's table is laid out (an example word per
-row, or a vertical table, and the order of its rows, words like :带起 included). This module
-rewrites each table between `<!-- glossary <id> -->` and `<!-- /glossary <id> -->` in the page;
-the headings and text around the tables stay as written.
+site/glossary.json lists the sections (by id: "1c"), each with its title, how its table is laid out
+(an example word per row, or a vertical table) and its rows in page order. A row is one glyph
+({"glyph": "lg_gou"}) or a word written together ({"word": "少息", "glyphs": ["md_shao", "md_xi"]}),
+with an optional "meaning". Its ASCII, Chinese and pinyin come from the glyphs' spellings in
+components.csv. The Builder edits the rows in Glyphs > Glossary. This module rewrites each table
+between `<!-- glossary <id> -->` and `<!-- /glossary <id> -->` in the page; the headings and text
+around the tables stay as written.
 
     python3 -m jzpbuild.glossary            # rewrite the tables
     python3 -m jzpbuild.glossary --check    # exit 1 if a table is out of date or a glyph has no row
@@ -18,26 +20,101 @@ different glyphs.
 from __future__ import annotations
 
 import argparse
+import contextvars
 import csv
 import html
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import config
 
 # components.csv's columns (typing_preview.ROW_FIELDS); not imported from there, so the release
 # scope check can read the page with the standard library alone
-FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin", "glossary")
+FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin")
+
+
+def is_hidden(sec: dict) -> bool:
+    """Left off the page on purpose (its switch is off in the Builder): `"hidden": true`, or the old kind 'hidden'."""
+    return bool(sec.get("hidden")) or sec.get("kind") == "hidden"
+
+
+def default_example(sec: dict) -> tuple[str, str] | None:
+    """The section's default example, [ASCII, 中文] templates with {} for each row's glyph (s9{}k3), shown
+    by its rows without one of their own; None: each row typed on its own, after a colon where it needs one.
+    An older file's "kind" still counts: 'vertical' (or 'hidden') had none, 'usage' always one."""
+    if sec.get("kind") in ("vertical", "hidden"):
+        return None
+    u = sec.get("usage")
+    if isinstance(u, (list, tuple)) and len(u) == 2 and all(isinstance(x, str) for x in u) and any(x.strip() for x in u):
+        return (u[0].strip(), u[1].strip())
+    return ("{}", "{}") if sec.get("kind") == "usage" else None
+
+
+def effective(sections: dict[str, dict], groups: list[dict]) -> dict[str, dict]:
+    """`sections` with every subtitle under a hidden section title hidden too."""
+    off = {sid for g in groups if g.get("hidden") for sid in g.get("sections", [])}
+    return {sid: ({**sec, "hidden": True} if sid in off else sec) for sid, sec in sections.items()}
 
 BLOCK_RE = re.compile(r"(<!-- glossary (\S+)[^>]*-->)(.*?)(<!-- /glossary \2 -->)", re.S)
 INDENT = " " * 8
+MAX_MEANING = 300
+MAX_USAGE = 200
+MAX_WORD_GLYPHS = 12
+MAX_TITLE = 120
+MAX_DESCRIPTION = 4000
+ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}")
+ALL, NAV = "all", "nav"
+# glyphs the page's font sets vertically by themselves, so their spellings need no colon (render, check)
+_VO: contextvars.ContextVar = contextvars.ContextVar("glossary_vertical_only", default=frozenset())
+
+
+def _colon(*glyphs: str) -> str:
+    """The colon that starts a vertical word, unless one of its glyphs gets it from the font (shang = :shang)."""
+    return "" if _VO.get().intersection(glyphs) else ":"
+
+
+def vertical_only_for(design: dict | None = None) -> frozenset:
+    """The glyphs only a vertical word can place (features.vertical_only_glyphs), for `design` (default the
+    file's); the font sets a word holding one vertically without its colon. Empty if it can't be worked out."""
+    try:
+        from . import features
+        from .positioning import schema
+        token = features._DESIGN_OVERRIDE.set(schema.parse_design(design)) if design is not None else None
+        try:
+            return frozenset(features.vertical_only_glyphs())
+        finally:
+            if token is not None:
+                features._DESIGN_OVERRIDE.reset(token)
+    except Exception:
+        return frozenset()
+
+
+def site_vertical_only(font: Path | None = None, rows: dict[str, dict] | None = None) -> frozenset:
+    """vertical_only_for(), if the page's font (site/JianZiPu.ttf) already sets such a glyph vertically
+    without the colon; else nothing (an older font: the page keeps the colon its readers need)."""
+    vo = vertical_only_for()
+    try:
+        import uharfbuzz as hb
+        rows = load_rows() if rows is None else rows
+        probe = next((rows[g]["latin"] for g in sorted(vo) if g in rows and rows[g]["latin"]), None)
+        if not probe:
+            return frozenset()
+        hbfont = hb.Font(hb.Face(hb.Blob.from_file_path(str(font or config.SITE_FONT))))
+        buf = hb.Buffer()
+        buf.add_str(probe)
+        buf.guess_segment_properties()
+        hb.shape(hbfont, buf, {"liga": True})
+        first = hbfont.glyph_to_string(buf.glyph_infos[0].codepoint) if buf.glyph_infos else ""
+        return vo if first == "blank_colon" else frozenset()
+    except Exception:
+        return frozenset()     # the page's two markers: every section title, subtitle and table; the contents links
 
 
 class GlossaryError(Exception):
-    """components.csv and site/glossary.json don't agree; the message says how."""
+    """site/glossary.json and components.csv don't agree; the message says how."""
 
 
 @dataclass
@@ -45,31 +122,237 @@ class Row:
     ascii: str
     chinese: str
     pinyin: str
-    usage: str                  # the fourth cell's HTML
+    usage: str                  # the Output cell's HTML: the example drawn in the font
     examples: list[list[str]]   # each example's spellings as plain text, to type in check_typing()
+    meaning: str = ""           # the row's definition, escaped; a section with any gets a Definition column
+    glyphs: tuple[str, ...] = ()  # the glyph(s) the row is for
+    typed: list[str] = field(default_factory=list)  # the Input cell: what to type for the Output, one HTML line each
+
+
+@dataclass
+class Entry:
+    """One row of a section as site/glossary.json lists it: a glyph, or a word (several glyphs)."""
+    glyphs: tuple[str, ...]
+    word: str = ""              # the word's text (少息); "" for a glyph's row
+    meaning: str = ""
+    usage: tuple[str, str] | None = None   # its own example word as [ASCII, 中文] templates (a usage section)
+
+    @property
+    def glyph(self) -> str:
+        return self.glyphs[0]
+
+    @property
+    def name(self) -> str:
+        return self.word or self.glyph
 
 
 def load_rows(path: Path | None = None) -> dict[str, dict]:
+    """components.csv's rows by glyph name."""
     with open(path or config.COMPONENTS_CSV, newline="", encoding="utf-8-sig") as f:
         recs = [{k: str(r.get(k) or "").strip() for k in FIELDS} for r in csv.DictReader(f)]
     return {r["glyph_name"]: r for r in recs if r["glyph_name"]}
 
 
+def load_file(path: Path | None = None) -> dict:
+    """site/glossary.json as it is: {"about": [...], "sections": {id: {title, usage?, ..., rows}}}."""
+    return json.loads((path or config.GLOSSARY_SECTIONS).read_text(encoding="utf-8"))
+
+
 def load_sections(path: Path | None = None) -> dict[str, dict]:
-    return json.loads((path or config.GLOSSARY_SECTIONS).read_text(encoding="utf-8"))["sections"]
+    return load_file(path)["sections"]
 
 
-SEP = ";"   # between two sections in the glossary column (titles have spaces)
+def load_groups(path: Path | None = None) -> list[dict]:
+    """The section titles ("1: Left Hand"), each with its subtitles (the sections' ids) in page order."""
+    return load_file(path).get("groups", [])
 
 
-def section_items(rec: dict) -> list[tuple[str, str]]:
-    """The glossary column as (id, what it says): "1c: Left Hand Techniques" -> ("1c", that title)."""
-    items = [x.strip() for x in rec.get("glossary", "").split(SEP)]
-    return [(x.split(":", 1)[0].strip(), x) for x in items if x]
+def one_group(sections: dict[str, dict]) -> list[dict]:
+    """Every section under one untitled section title (a page or a test without groups)."""
+    return [{"id": "glossary", "title": "", "sections": list(sections)}]
 
 
-def section_ids(rec: dict) -> list[str]:
-    return [sid for sid, _ in section_items(rec)]
+def section_order(sections: dict[str, dict], groups: list[dict]) -> list[str]:
+    """The sections in page order: by their section titles, then any no title holds."""
+    seen = [sid for g in groups for sid in g.get("sections", []) if sid in sections]
+    return list(dict.fromkeys(seen + list(sections)))
+
+
+# ---------------------------------------------------------------- descriptions: a little Markdown
+
+# the page's own tags a description may use as they are; anything else is shown as text
+_TAGS = re.compile(r"&lt;(/?)(u|jzp|text|small|br ?/?)&gt;")
+_LINK = re.compile(r"\[([^\]]+)\]\(((?:https?://|/|#)[^\s()<>\"]*)\)")
+
+
+def _inline(s: str) -> str:
+    codes: list[str] = []
+    def keep(m: re.Match) -> str:
+        codes.append(m.group(1))
+        return f"\0{len(codes) - 1}\0"
+    s = re.sub(r"`([^`]+)`", keep, s)                      # `s9k3`: a typed example, the page's grey pill
+    s = _TAGS.sub(lambda m: "<" + m.group(1) + m.group(2) + ">", s)
+    s = _LINK.sub(lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', s)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])", r"<em>\1</em>", s)
+    return re.sub(r"\0(\d+)\0", lambda m: f"<text>{codes[int(m.group(1))]}</text>", s)
+
+
+def markdown(text: str) -> str:
+    """A description's HTML: paragraphs (a blank line between), a line break within one, lists of
+    "- " lines, **bold**, *italic*, `typed examples`, [links](https://…), and the page's <u>, <jzp>,
+    <text>, <small> and <br>. Any other HTML is escaped (app/src/lib/glossary.ts has the same)."""
+    out = []
+    for block in re.split(r"\n\s*\n", html.escape(text.strip(), quote=False)):
+        lines = [l.strip() for l in block.strip().split("\n") if l.strip()]
+        if not lines:
+            continue
+        if all(l.startswith("- ") for l in lines):
+            out.append("<ul>" + "".join(f"<li>{_inline(l[2:])}</li>" for l in lines) + "</ul>")
+        else:
+            out.append("<p>" + "<br />".join(_inline(l) for l in lines) + "</p>")
+    return "\n".join(out)
+
+
+def clean_row(x) -> dict:
+    """A row as site/glossary.json keeps it, or ValueError saying what's wrong with it."""
+    if not isinstance(x, dict):
+        raise ValueError("a glossary row is an object")
+    meaning = str(x.get("meaning") or "").strip()
+    if len(meaning) > MAX_MEANING:
+        raise ValueError(f"a definition longer than {MAX_MEANING} characters")
+    if x.get("word") is not None:
+        word = str(x["word"]).strip()
+        gs = x.get("glyphs")
+        if not word or not isinstance(gs, list) or not all(isinstance(g, str) and g.strip() for g in gs):
+            raise ValueError("a word's row has the word and its glyphs")
+        if len(gs) > MAX_WORD_GLYPHS:
+            raise ValueError(f"a word of more than {MAX_WORD_GLYPHS} glyphs")
+        out = {"word": word, "glyphs": [g.strip() for g in gs]}
+    elif isinstance(x.get("glyph"), str) and x["glyph"].strip():
+        out = {"glyph": x["glyph"].strip()}
+    else:
+        raise ValueError("a glossary row names a glyph or a word")
+    usage = x.get("usage")
+    if usage is not None:
+        if not (isinstance(usage, list) and len(usage) == 2 and all(isinstance(u, str) for u in usage)):
+            raise ValueError("a row's usage is its example as [ASCII, 中文]")
+        usage = [u.strip() for u in usage]
+        if any(len(u) > MAX_USAGE for u in usage):
+            raise ValueError(f"an example longer than {MAX_USAGE} characters")
+    typed = str(x.get("typed") or "").strip()
+    if len(typed) > MAX_USAGE:
+        raise ValueError(f"an entry longer than {MAX_USAGE} characters")
+    return {**out, **({"meaning": meaning} if meaning else {}), **({"usage": usage} if usage and any(usage) else {}),
+            **({"typed": typed} if typed else {})}
+
+
+def with_rows(sections: dict[str, dict], rows_by_section: dict) -> dict[str, dict]:
+    """`sections` with each section's rows replaced by the Builder's (unsaved ones). Refuses a
+    section that isn't there, a row that isn't one, or a glyph or word twice in one section."""
+    if not isinstance(rows_by_section, dict):
+        raise ValueError("glossary: an object of rows by section")
+    out = {sid: dict(sec) for sid, sec in sections.items()}
+    for sid, rows in rows_by_section.items():
+        if sid not in out:
+            raise ValueError(f"glossary: there's no section {sid}")
+        if not isinstance(rows, list):
+            raise ValueError(f"glossary: section {sid}'s rows are a list")
+        out[sid]["rows"] = [clean_row(r) for r in rows]
+    return out
+
+
+def _text(x, what: str, limit: int, required: bool = False) -> str:
+    if x is not None and not isinstance(x, str):
+        raise ValueError(f"{what}: text, please")
+    t = (x or "").strip()
+    if required and not t:
+        raise ValueError(f"{what} is empty")
+    if len(t) > limit:
+        raise ValueError(f"{what} is longer than {limit} characters")
+    return t
+
+
+def _id(x, what: str) -> str:
+    if not isinstance(x, str) or not ID_RE.fullmatch(x):
+        raise ValueError(f"{what}: an id of letters, digits, - and _ (up to 32), please")
+    return x
+
+
+def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None = None) -> tuple[dict[str, dict], list[dict]]:
+    """The Builder's section titles and subtitles (unsaved ones), checked, with each subtitle's rows: the
+    Builder's where it sends them, else the file's. `layout` is {"groups": [{id, title, nav?, description?,
+    sections: [id…]}], "sections": {id: {title, usage?, description?}}}. A subtitle the layout drops
+    goes only when it has no rows. Returns (sections in page order, groups)."""
+    if not isinstance(layout, dict) or not isinstance(layout.get("groups"), list) or not isinstance(layout.get("sections"), dict):
+        raise ValueError("layout: the section titles and subtitles, please")
+    metas = {}
+    for sid, m in layout["sections"].items():
+        _id(sid, "a subtitle's id")
+        if not isinstance(m, dict):
+            raise ValueError(f"subtitle {sid}: an object, please")
+        hidden = bool(m.get("hidden")) or m.get("kind") == "hidden"   # the old kind 'hidden': switched off
+        u = m.get("usage")
+        if u is not None and not (isinstance(u, list) and len(u) == 2 and all(isinstance(x, str) and len(x) <= MAX_USAGE for x in u)):
+            raise ValueError(f"subtitle {sid}: its default example is [ASCII, 中文], each up to {MAX_USAGE} characters")
+        # no title: rows straight under the section title, before its subtitles
+        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE), **({"hidden": True} if hidden else {})}
+        if ex := default_example(m):
+            meta["usage"] = list(ex)
+        if d := _text(m.get("description"), f"subtitle {sid}'s description", MAX_DESCRIPTION):
+            meta["description"] = d
+        metas[sid] = meta
+    groups, held = [], set()
+    if len(layout["groups"]) > 100:
+        raise ValueError("too many section titles")
+    for g in layout["groups"]:
+        if not isinstance(g, dict):
+            raise ValueError("a section title: an object, please")
+        gid = _id(g.get("id"), "a section title's id")
+        if any(x["id"] == gid for x in groups):
+            raise ValueError(f"two section titles have the id {gid}")
+        secs = g.get("sections") or []
+        if not isinstance(secs, list) or any(not isinstance(x, str) or x not in metas for x in secs):
+            raise ValueError(f"the section title {gid} lists a subtitle that isn't there")
+        if held.intersection(secs):
+            raise ValueError(f"{', '.join(sorted(held.intersection(secs)))} is under two section titles")
+        held.update(secs)
+        out = {"id": gid, "title": _text(g.get("title"), f"the section title {gid}", MAX_TITLE, True)}
+        if nav := _text(g.get("nav"), f"the section title {gid}'s short name", 40):
+            out["nav"] = nav
+        if d := _text(g.get("description"), f"the section title {gid}'s description", MAX_DESCRIPTION):
+            out["description"] = d
+        if g.get("hidden"):
+            out["hidden"] = True
+        groups.append({**out, "sections": list(secs)})
+    rows_by_section = rows_by_section or {}
+    for sid in sections:
+        if sid not in metas:
+            # the Builder sends every subtitle's rows: one it leaves out has none (deleted with its title)
+            left = rows_by_section.get(sid, []) if rows_by_section else sections[sid].get("rows", [])
+            if left:
+                raise ValueError(f"subtitle {sid} still has {len(left)} row(s): move or remove them before deleting it")
+    out = {}
+    for sid in section_order(metas, groups):
+        rows = rows_by_section[sid] if sid in rows_by_section else sections.get(sid, {}).get("rows", [])
+        if not isinstance(rows, list):
+            raise ValueError(f"glossary: section {sid}'s rows are a list")
+        out[sid] = {**metas[sid], "rows": [clean_row(r) for r in rows]}
+    if extra := [sid for sid in rows_by_section if sid not in out]:
+        raise ValueError(f"glossary: there's no section {extra[0]}")
+    return out, groups
+
+
+def entries(sid: str, sec: dict, rows: dict[str, dict] | None = None) -> list[Entry]:
+    """The section's rows in page order."""
+    out = []
+    for r in sec.get("rows", []):
+        r = clean_row(r)
+        if "word" in r:
+            out.append(Entry(tuple(r["glyphs"]), r["word"], r.get("meaning", ""), tuple(r["usage"]) if "usage" in r else None))
+        else:
+            out.append(Entry((r["glyph"],), "", r.get("meaning", ""), tuple(r["usage"]) if "usage" in r else None))
+    return out
 
 
 def spellings(rec: dict) -> list[str]:
@@ -110,18 +393,11 @@ def _is_number(rec: dict) -> bool:
     return rec["common"].isdigit() and int(rec["common"]) > 0
 
 
-def entries(sid: str, sec: dict, rows: dict[str, dict]) -> list[str | list[str]]:
-    """The section's rows in order: glyph names, and lists of glyph names for words."""
-    placed = [g for g, r in rows.items() if sid in section_ids(r)]
-    listed = sec.get("rows", [])
-    for e in listed:
-        for g in (e if isinstance(e, list) else [e]):
-            if g not in rows:
-                raise GlossaryError(f"site/glossary.json section {sid} lists {g}, which has no row in components.csv.")
-        if isinstance(e, str) and e not in placed:
-            raise GlossaryError(f"site/glossary.json section {sid} lists {e}, but its glossary column in "
-                                f"components.csv is {rows[e]['glossary'] or 'empty'!r}; add {sid} there.")
-    return listed + [g for g in placed if g not in listed]
+def _rec(rows: dict[str, dict], sid: str, e: Entry, g: str) -> dict:
+    if g not in rows:
+        raise GlossaryError(f"glossary {sid}: {e.name} uses {g}, which isn't a glyph in components.csv "
+                            f"(renamed or deleted?). Fix the row in Glyphs > Glossary.")
+    return rows[g]
 
 
 def chinese(rec: dict) -> list[str]:
@@ -129,38 +405,103 @@ def chinese(rec: dict) -> list[str]:
     return [c for i, c in enumerate((rec["simplified"], rec["traditional"])) if c and c not in (rec["simplified"], rec["traditional"])[:i]]
 
 
-def _usage_row(sec: dict, g: str, rec: dict) -> Row:
+def _usage_row(default: tuple[str, str], g: str, rec: dict, meaning: str = "", own: tuple[str, str] | None = None) -> Row:
+    """`own`: the row's own example ([ASCII, 中文] templates, either may be empty), else the section's default."""
     sp, zh = spellings(rec), chinese(rec)
     if not sp or not rec["simplified"]:
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
-    ta, tz = sec.get("examples", {}).get(g, sec["usage"])
-    a, z = _fill(ta, sp[0]), _fill(tz, rec["simplified"])
-    # the same example with each other spelling: Chinese (traditional) under Chinese, ASCII under ASCII
-    zs, as_ = [z] + [_fill(tz, c) for c in zh[1:]], [a] + [_fill(ta, s) for s in sp[1:]]
-    usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
-             + f"{INDENT}    ")
-    return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), usage,
-               [[_plain(x) for x in zs + as_]])
+    ta, tz = own or default
+    # the glyph in red only when the example has more in it than the glyph ({} alone: plain)
+    fill = _fill if marks_glyph((ta, tz)) else _unmarked
+    # the same example with each spelling: Chinese (traditional too) under Chinese, ASCII under ASCII
+    # one example per spelling where {} stands for the glyph; one where a spelling was written out (s9<r>bl</r>7)
+    zs = list(dict.fromkeys(fill(tz, c) for c in zh)) if tz else []
+    as_ = list(dict.fromkeys(fill(ta, s) for s in sp)) if ta else []
+    a = (as_ or zs)[0]
+    return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), f"<jzp>{a}</jzp>",
+               [[_plain(x) for x in zs + as_]], _esc(meaning), (g,), zs + as_)
 
 
-def _vertical_row(rows: dict[str, dict], e: str | list[str]) -> Row:
-    if isinstance(e, list):          # a word: each glyph's main spelling, run together
-        recs = [rows[g] for g in e]
+def marks_glyph(usage) -> bool:
+    """An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the glyph is marked in it."""
+    def more(t: str) -> bool:      # the glyph ({} or a spelling written out, <r>bl</r>) and something besides
+        bare = re.sub(r"<r>[^<]*</r>", "{}", t) if "{}" not in t else t
+        return "{}" in bare and bool(re.sub(r"[:：]?\{\}", "", re.sub(r"</?r>", "", bare), count=1).strip())
+    return any(more(t) for t in usage)
+
+
+def _unmarked(t: str, spelling: str) -> str:
+    return re.sub(r"</?r>", "", t).replace("{}", _esc(spelling))
+
+
+def mark_word_in(usage: tuple[str, str], recs: list[dict]) -> tuple[str, str]:
+    """A word row's example with the word marked <r>…</r>, for one saved before words were (s9k6 daiqi):
+    its spelling in each language, the glyphs' main spellings run together (or their second ones).
+    Whether it's red is then marks_glyph's rule, as for a glyph (as markWordIn in the Builder)."""
+    out = []
+    for x, langs in zip(usage, (spellings, chinese)):
+        if not x or "<r>" in x:
+            out.append(x)
+            continue
+        runs = {"".join((langs(r)[n] if len(langs(r)) > n else (langs(r) or [""])[0]) for r in recs) for n in (0, 1)}
+        hit = next((a for a in sorted(filter(None, runs), key=len, reverse=True) if _esc(a) in x), None)
+        out.append(x.replace(_esc(hit), f"<r>{_esc(hit)}</r>", 1) if hit else x)
+    return out[0], out[1]
+
+
+def _own_example(e: Entry, sa: str, sz: str, usage: tuple[str, str] | None = None) -> tuple[str, list[str], list[str]]:
+    """A vertical row's own example (the Builder's Input column): its Output, drawn from the ASCII
+    (else the Chinese), its Input lines (Chinese, then ASCII), and those as plain text to type.
+    {} is the glyph's spelling, marked red when the example has more in it than the glyph (:{}5),
+    not when it's the row on its own (:{})."""
+    ta, tz = usage = usage or e.usage
+    fill = _fill if marks_glyph(usage) else _unmarked
+    a = fill(ta, sa) if ta else ""
+    z = fill(tz, sz) if tz else ""
+    lines = [x for x in (z, a) if x]
+    return f"<jzp>{a or z}</jzp>", lines, [_plain(x) for x in (a, z) if x]
+
+
+def alone(e: Entry) -> bool:
+    """A vertical section's row or a word is typed on its own after a colon, unless its own example
+    isn't a vertical word: / in Vibratos and Slides with the example s9/k3 is spelled /, not :/
+    (as alone() in the Builder's GlossaryTable.svelte)."""
+    lines = [t.strip() for t in (e.usage or ()) if t and t.strip()]
+    return not lines or any(t[0] in ":：" for t in lines)
+
+
+def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
+    col = _colon if alone(e) else (lambda *_: "")    # the colon a glyph needs, where the row is typed on its own
+    if e.word:                       # a word: each glyph's main spelling, run together
+        recs = [rows[g] for g in e.glyphs]
         if not all(spellings(r) and r["simplified"] for r in recs):
-            raise GlossaryError(f"every glyph of the word {' + '.join(e)} needs an ASCII and a Chinese spelling.")
-        a = ":" + "".join(spellings(r)[0] for r in recs)
-        z = ":" + "".join(r["simplified"] for r in recs)
+            raise GlossaryError(f"every glyph of the word {e.word} ({' + '.join(e.glyphs)}) needs an ASCII and a Chinese spelling.")
+        a = col(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
+        z = col(*e.glyphs) + "".join(r["simplified"] for r in recs)
+        out, typed, examples = f"<jzp>{_esc(z)}</jzp>", [_esc(z), _esc(a)], [[a, z]]
+        if e.usage:                  # the word red where its example has more in it than the word
+            out, typed, own = _own_example(e, "", "", mark_word_in(e.usage, recs))
+            examples.append(own)
         return Row(_esc(a), _esc(z), _esc(" ".join(r["pinyin"] for r in recs if r["pinyin"])),
-                   f"<jzp>{_esc(z)}</jzp>", [[a, z]])
-    rec, other = rows[e], _partner(rows, e)
-    sp = spellings(rec) + (spellings(other) if other else [])
-    zhs = chinese(rec) or (chinese(other) if other else [])
+                   out, examples, _esc(e.meaning), e.glyphs, typed)
+    g = e.glyph
+    rec, other = rows[g], _partner(rows, g)
+    v = rec["vert_variant"]
+    # each spelling with the colon its glyph needs: none for one the font sets vertically itself (:0 but san)
+    if not alone(e):                 # spelled as in an example word: its own spellings, no colon
+        other = None
+    sp = [col(g) + s for s in spellings(rec)] + ([col(v) + s for s in spellings(other)] if other else [])
+    zhs = [col(g) + c for c in chinese(rec)] or ([col(v) + c for c in chinese(other)] if other else [])
     zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
-    examples = [[":" + s] + [":" + c for c in zhs] for s in sp] or ([[":" + c for c in zhs]] if zhs else [])
-    out = ":" + (zh or (sp[0] if sp else ""))
-    return Row(_list([":" + s for s in sp]) if sp else "", _list([":" + c for c in zhs]) if zhs else "", _esc(py),
-               f"<jzp>{_esc(out)}</jzp>", examples)
+    examples = [[s] + zhs for s in sp] or ([zhs] if zhs else [])
+    out = f"<jzp>{_esc(zh or (sp[0] if sp else ''))}</jzp>"
+    typed = [_esc(x) for x in zhs + sp]
+    if e.usage:
+        out, typed, own = _own_example(e, sp[0].lstrip(":") if sp else "", zh.lstrip(":"))
+        examples.append(own)
+    return Row(_list(sp) if sp else "", _list(zhs) if zhs else "", _esc(py),
+               out, examples, _esc(e.meaning), (g,), typed)
 
 
 def _number_row(recs: list[dict]) -> Row:
@@ -168,95 +509,198 @@ def _number_row(recs: list[dict]) -> Row:
     a = f":{first['common']}..:{last['common']}"
     z = f":{first['simplified']}..:{last['simplified']}"
     usage = " ".join(f"<jzp>:{_esc(r['simplified'])}</jzp>" for r in (first, last))
+    typed = [_esc(f":{first[k]} :{last[k]}") for k in ("simplified", "common")]
     return Row(_esc(a), _esc(z), "", usage,
-               [[f":{r['common']}", f":{r['simplified']}"] for r in recs])
+               [[f":{r['common']}", f":{r['simplified']}"] for r in recs], glyphs=tuple(r["glyph_name"] for r in recs), typed=typed)
 
 
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
+    if is_hidden(sec):                    # switched off: its glyphs are left out on purpose, no table
+        return []
+    ex = default_example(sec)
     out: list[Row] = []
     numbers: list[dict] = []
-    for e in entries(sid, sec, rows) + [None]:
-        if sec["kind"] == "vertical" and isinstance(e, str) and _is_number(rows[e]):
-            numbers.append(rows[e])
+    for e in entries(sid, sec) + [None]:
+        if e is not None:
+            for g in e.glyphs:
+                _rec(rows, sid, e, g)
+        if ex is None and e is not None and not e.word and not e.meaning and not e.usage and _is_number(rows[e.glyph]):
+            numbers.append(rows[e.glyph])
             continue
         if numbers:
             out.append(_number_row(numbers))
             numbers = []
         if e is None:
             break
-        if sec["kind"] == "usage":
-            if isinstance(e, list):
-                raise GlossaryError(f"section {sid} has example words; a word goes in a vertical section.")
-            out.append(_usage_row(sec, e, rows[e]))
-        elif sec["kind"] == "vertical":
+        if ex is not None and not e.word:
+            out.append(_usage_row(ex, e.glyph, rows[e.glyph], e.meaning, e.usage))
+        else:                   # a vertical section's row, or a word anywhere: typed on its own after a colon
             out.append(_vertical_row(rows, e))
-        else:
-            raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is neither 'usage' nor 'vertical'.")
     return out
 
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
-    """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page)."""
-    cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
+    """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
+    A Definition column (the rows' "meaning") joins it, last, once any of its rows has one."""
+    cls = "table table-sm" if default_example(sec) else "table"
+    body = section_rows(sid, sec, rows)
+    meaning = any(r.meaning for r in body)
+    widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
-    lines += [f'      <th width="23%">{h}</th>' for h in ("ASCII", "中文", "拼音")] + [f'      <th width="25%">{last}</th>']
+    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
+    lines += [f'      <th width="{widths[4]}%">Input</th>', f'      <th width="{widths[5]}%">Output</th>']
+    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
     lines += ["    </tr>", "  </thead>"]
-    for n, r in enumerate(section_rows(sid, sec, rows), start):
+    for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
         lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
-                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
+                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
+                  f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>",
+                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
 
 
+def _typed_cell(lines: list[str]) -> str:
+    """The Input cell: each way to type the Output on a line of its own (Chinese, then ASCII)."""
+    if not lines:
+        return ""
+    return "\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in lines) + f"{INDENT}    "
+
+
 def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
-    """Problems that leave a glyph out of the glossary, or point at a section that isn't there."""
+    """Problems that leave a glyph out of the glossary, or a row the page can't show."""
     problems = []
     shown: set[str] = set()
     for sid, sec in sections.items():
-        for e in entries(sid, sec, rows):
-            for g in (e if isinstance(e, list) else [e]):
+        seen: set[str] = set()
+        for e in entries(sid, sec):
+            key = "word " + e.word if e.word else e.glyph
+            if key in seen:
+                problems.append(f"glossary {sid}: {e.name} is in the section twice.")
+            seen.add(key)
+            if e.word and len(e.glyphs) < 2:
+                problems.append(f"glossary {sid}: the word {e.word} is one glyph; give the glyph its own row instead.")
+            for g in e.glyphs:
+                if g not in rows:
+                    problems.append(f"glossary {sid}: {e.name} uses {g}, which isn't a glyph in components.csv (renamed or deleted?).")
+                    continue
                 shown.add(g)
-                if sec["kind"] == "vertical" and isinstance(e, str) and _partner(rows, g):
+                if default_example(sec) is None and not e.word and _partner(rows, g):
                     shown.add(rows[g]["vert_variant"])
-    for sid, sec in sections.items():
-        if not sec.get("title", "").startswith(sid + ": "):
-            problems.append(f"site/glossary.json: section {sid}'s title should start with \"{sid}: \".")
     for g, r in rows.items():
-        for sid, said in section_items(r):
-            if sid not in sections:
-                problems.append(f"{g}: glossary section {said!r} isn't in site/glossary.json "
-                                f"(sections: {', '.join(s['title'] for s in sections.values())}).")
-            elif said != sections[sid].get("title"):
-                problems.append(f"{g}: the glossary column says {said!r}; site/glossary.json calls {sid} "
-                                f"{sections[sid].get('title')!r}. Use the same title in both.")
         if has_spelling(r) and g not in shown:
             problems.append(f"{g} ({r['simplified'] or spellings(r)[0]}) has spellings but no row in the glossary: "
-                            f"give it a glossary section in components.csv, or put it in a word in site/glossary.json.")
+                            f"add it to a section in Glyphs > Glossary (one switched off leaves it out on purpose).")
     return problems
 
 
-def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, dict] | None = None) -> str:
-    """`page` with every glossary table regenerated."""
+def missing_layout(sections: dict[str, dict], groups: list[dict]) -> list[str]:
+    """A subtitle no section title holds (so the page doesn't show it), or a section title naming one that isn't there."""
+    problems, held = [], {}
+    for g in groups:
+        for sid in g.get("sections", []):
+            if sid not in sections:
+                problems.append(f"site/glossary.json: the section title {g.get('title') or g.get('id')!r} lists {sid}, which isn't a section.")
+            elif sid in held:
+                problems.append(f"site/glossary.json: {sid} is under two section titles, {held[sid]!r} and {g.get('title')!r}.")
+            held.setdefault(sid, g.get("title") or g.get("id"))
+    for sid, sec in sections.items():
+        if sid not in held and not is_hidden(sec):
+            problems.append(f"{sec.get('title') or sid} isn't under a section title, so the page doesn't show it: "
+                            f"put it under one in Glyphs > Glossary.")
+    return problems
+
+
+def _desc(text: str, cls: str) -> list[str]:
+    return [f'<div class="{cls}">', *("  " + l for l in markdown(text).split("\n")), "</div>"] if text.strip() else []
+
+
+def page_html(sections: dict[str, dict], groups: list[dict], rows: dict[str, dict], start: int = 1) -> tuple[str, int]:
+    """Every section title, its description, its subtitles with theirs, and their tables, in page
+    order; and how many rows the tables numbered. A section title with only hidden subtitles is left
+    out, and a subtitle with the section title's own title shows it once."""
+    lines: list[str] = []
+    count = start - 1
+    for g in groups:
+        shown = [] if g.get("hidden") else [sid for sid in g.get("sections", []) if sid in sections and not is_hidden(sections[sid])]
+        if not shown:
+            continue
+        if lines:
+            lines.append("")
+        gid = g.get("id", "")
+        lines.append(f'<h4 id="glossary-{_esc(gid)}">{_esc(g.get("title", ""))}</h4>')
+        lines += _desc(g.get("description", ""), "glossary-desc")
+        for sid in shown:
+            sec = sections[sid]
+            if sec.get("title", "").strip() and sec["title"].strip() != g.get("title", "").strip():
+                lines.append(f'<label id="glossary-{_esc(sid)}">{_esc(sec.get("title", ""))}</label>')
+            lines += _desc(sec.get("description", ""), "glossary-subdesc")
+            lines += [l[len(INDENT):] if l.startswith(INDENT) else l for l in table_html(sid, sec, rows, count + 1).split("\n")]
+            count += len(section_rows(sid, sec, rows))
+    return "\n".join(INDENT + l if l else l for l in lines), count - start + 1
+
+
+def nav_html(sections: dict[str, dict], groups: list[dict]) -> str:
+    """The contents' links to the section titles (each one's short `nav` name, else its title)."""
+    out = []
+    for g in groups:
+        if not g.get("hidden") and any(sid in sections and not is_hidden(sections[sid]) for sid in g.get("sections", [])):
+            out.append(f'{INDENT}<a class="sub" href="#glossary-{_esc(g.get("id", ""))}">{_esc(g.get("nav") or g.get("title", ""))}</a>')
+    return "\n".join(out)
+
+
+def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, dict] | None = None,
+           groups: list[dict] | None = None, vertical_only: frozenset | None = None) -> str:
+    """`page` with the glossary regenerated: the whole of it between `<!-- glossary all -->` markers and
+    its contents links between `<!-- glossary nav -->`, or (an older page, the tests) a table per
+    section's own marker."""
     rows = load_rows() if rows is None else rows
-    sections = load_sections() if sections is None else sections
+    if sections is None:
+        sections = load_sections()
+        groups = load_groups() if groups is None else groups
+        vertical_only = site_vertical_only(rows=rows) if vertical_only is None else vertical_only
+    groups = one_group(sections) if groups is None else groups
+    sections = effective(sections, groups)
+    token = _VO.set(frozenset(vertical_only)) if vertical_only is not None else None
+    try:
+        return _render(page, rows, sections, groups)
+    finally:
+        if token is not None:
+            _VO.reset(token)
+
+
+def _render(page: str, rows: dict[str, dict], sections: dict[str, dict], groups: list[dict]) -> str:
     seen = set()
     count = 0                         # rows numbered so far, in page order
 
     def sub(m: re.Match) -> str:
         sid = m.group(2)
+        nonlocal count
+        if sid == ALL:
+            seen.update(sections)
+            body, n = page_html(sections, groups, rows, count + 1)
+            count += n
+            return f"{m.group(1)}\n{body}\n{INDENT}{m.group(4)}"
+        if sid == NAV:
+            return f"{m.group(1)}\n{nav_html(sections, groups)}\n{INDENT}{m.group(4)}"
         if sid not in sections:
             raise GlossaryError(f"site/index.html has a glossary marker for {sid}, which site/glossary.json doesn't define.")
         seen.add(sid)
-        nonlocal count
         html = table_html(sid, sections[sid], rows, count + 1)
         count += len(section_rows(sid, sections[sid], rows))
         return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
 
     out = BLOCK_RE.sub(sub, page)
-    if unused := [s for s in sections if s not in seen]:
+    if unused := [s for s in sections if s not in seen and not is_hidden(sections[s])]:
         raise GlossaryError(f"site/index.html has no glossary marker for section(s) {', '.join(unused)}.")
     return out
+
+
+def descriptions_html(sections: dict[str, dict], groups: list[dict]) -> str:
+    """Every description as the page shows it, for examples() to type."""
+    texts = [g.get("description", "") for g in groups] + [s.get("description", "") for s in sections.values()]
+    return "\n".join(markdown(t) for t in texts if t.strip())
 
 
 def strip_generated(page: str) -> str:
@@ -265,19 +709,25 @@ def strip_generated(page: str) -> str:
 
 
 def examples(page: str | None = None, rows: dict[str, dict] | None = None,
-             sections: dict[str, dict] | None = None) -> list[tuple[str, list[str]]]:
+             sections: dict[str, dict] | None = None, skip: set[str] = frozenset(),
+             groups: list[dict] | None = None) -> list[tuple[str, list[str]]]:
     """Every example on the page as (where, spellings that must type the same glyph): the generated
     tables' rows, and the hand-written ones (<text>/<txs> spellings and the <jzp> rendering they
     give, in the lessons and around the tables)."""
     page = config.SITE_INDEX.read_text(encoding="utf-8") if page is None else page
     rows = load_rows() if rows is None else rows
-    sections = load_sections() if sections is None else sections
+    if sections is None:
+        sections, groups = load_sections(), load_groups() if groups is None else groups
+    groups = groups or []
+    sections = effective(sections, groups)
     out = []
     for sid, sec in sections.items():
         for r in section_rows(sid, sec, rows):
-            out += [(f"glossary {sid}", ex) for ex in r.examples]
+            if not skip.intersection(r.glyphs):          # `skip`: glyphs the font hasn't got yet
+                out += [(f"glossary {sid}", ex) for ex in r.examples]
+    # the hand-written page, and the descriptions the glossary is written with
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<!--(?! glossary| /glossary).*?-->", " ",
-                  strip_generated(page), flags=re.S)
+                  strip_generated(page) + "\n" + descriptions_html(sections, groups), flags=re.S)
     for m in re.finditer(r"<(li|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
         where = "page: " + re.sub(r"\s+", " ", _plain(m.group(2))).strip()[:60]
         # an example is a run of spellings and the rendering they give (`a or b → <jzp>`), joined
@@ -297,21 +747,31 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     return [(w, ex) for w, ex in out if len(ex) > 1 or w.startswith("glossary")]
 
 
-def check_typing(font: Path | None = None, page: str | None = None) -> list[str]:
-    """Type every example through components.csv's spellings (compiled onto the released font, the
-    way the Builder's Typing preview does, so a release's new spellings count before it's built) and
-    return the examples whose spellings give different glyphs (a vertical form counts as its glyph),
-    or letters the font didn't turn into a glyph. Examples using a glyph the font doesn't have yet are skipped."""
+def check_typing(font: Path | None = None, page: str | None = None, rows: dict[str, dict] | None = None,
+                 design: dict | None = None, sections: dict[str, dict] | None = None, svg=None) -> list[str]:
+    """Type every example through components.csv's spellings (or `rows`: the Builder's unsaved ones),
+    compiled onto the released font (or `font`, a build) the way the Builder's Typing preview does, so
+    a release's new spellings count before it's built, and return the examples whose spellings give
+    different glyphs (a vertical form counts as its glyph), or letters the font didn't turn into a
+    glyph. A glyph the font hasn't got is drawn in from its SVG (`svg(name)`, see typing_preview);
+    examples using one with no drawing either are skipped."""
+    return _typing(font, page, rows, design, sections, svg)[0]
+
+
+def _typing(font, page, rows, design, sections, svg=None, gpos=False, groups=None):
+    """check_typing(), the glyphs it skipped because the font hasn't got them, and the preview font."""
     from . import typing_preview
     font = font or config.SITE_FONT
-    design = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8"))
-    rows = load_rows()
+    design = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8")) if design is None else design
+    rows = load_rows() if rows is None else rows
     grows = typing_preview.rows_from(list(rows.values()), design)
-    prev = typing_preview.FONTS.get(font, grows, design)
+    prev = typing_preview.FONTS.get(font, grows, design, svg, gpos)
     skip = set(prev.not_built)
     horizontal = {r["vert_variant"]: g for g, r in rows.items() if r["vert_variant"]}
     problems = []
-    for where, ex in examples(page, rows):
+    for where, ex in examples(page, rows, sections, skip, groups):
+        if prev.lacking and any(ch in prev.lacking for x in ex for ch in x):
+            continue                                   # a character only a Build adds: wait for it
         typed = typing_preview.shape(prev, ex)
         # the same glyph, written on its own after a colon or not (外, :wai)
         glyphs = [[horizontal.get(g, g) for g in t["glyphs"] if g != "blank_colon"] for t in typed]
@@ -322,14 +782,109 @@ def check_typing(font: Path | None = None, page: str | None = None) -> list[str]
         if len({json.dumps(g) for g in glyphs}) > 1 or leftover:
             detail = "; ".join(f"{w} -> {' '.join(g)}" for w, g in zip(ex, glyphs))
             problems.append(f"[{where}] {detail}" + (f" (not a glyph: {', '.join(leftover)})" if leftover else ""))
-    return problems
+    return problems, sorted(skip), prev
+
+
+def records(recs: list[dict]) -> dict[str, dict]:
+    """The Builder's spelling records (unsaved ones included) as load_rows() gives the CSV's."""
+    out = {}
+    for rec in recs:
+        r = {k: str(rec.get(k) or "").strip() for k in FIELDS}
+        if r["glyph_name"]:
+            out[r["glyph_name"]] = r
+    return out
+
+
+def in_glossary(sections: dict[str, dict]) -> set[str]:
+    """The glyphs some section shows, on their own or in a word (hidden ones included)."""
+    return {g for sid, sec in sections.items() for e in entries(sid, sec) for g in e.glyphs}
+
+
+def check(rows: dict[str, dict], design: dict | None = None, font: Path | None = None, svg=None,
+          sections: dict[str, dict] | None = None, groups: list[dict] | None = None) -> dict:
+    """The Builder's "Check the glossary": with these spellings, what the font page's glossary
+    would leave out or get wrong, and its tables as they would be written (each section's HTML,
+    numbered down the page). `font`: the build to type the examples with (default the released one);
+    `svg(name)`: the drawing of a glyph it hasn't got. The examples are typed in a preview font: `font`
+    plus those glyphs, these spellings and the design's positioning, which `font_key` names
+    (typing_preview.FONTS.by_key) so the Builder can draw the tables in it; `drawn` lists the glyphs
+    drawn in from their files. `sections`, `groups`: the glossary with the Builder's unsaved rows and
+    titles (with_rows, with_layout)."""
+    sections = load_sections() if sections is None else sections
+    groups = load_groups() if groups is None else groups
+    # the next release's font sets these vertically without their colon (it's built from this design)
+    token = _VO.set(vertical_only_for(design))
+    try:
+        return _check(rows, design, font, svg, sections, groups)
+    finally:
+        _VO.reset(token)
+
+
+def _check(rows, design, font, svg, sections, groups) -> dict:
+    page = config.SITE_INDEX.read_text(encoding="utf-8")
+    out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
+    sections = effective(sections, groups)
+    order = [sid for sid in section_order(sections, groups) if not is_hidden(sections[sid])]
+    try:
+        out["problems"] = missing(rows, sections) + missing_layout(sections, groups)
+        render(page, rows, sections, groups)          # the same errors a release would stop on
+        count = 0
+        for sid in order:
+            sec = sections[sid]
+            out["tables"].append({"id": sid, "title": sec.get("title") or next((g.get("title") for g in groups if sid in g.get("sections", [])), sid),
+                                  "html": table_html(sid, sec, rows, count + 1)})
+            count += len(section_rows(sid, sec, rows))
+    except GlossaryError as e:
+        return {**out, "ok": False, "error": str(e)}
+    out["typing"], unbuilt, prev = _typing(font, page, rows, design, sections, svg, gpos=True, groups=groups)
+    # glyphs the glossary shows that have no drawing at all: their examples wait for one
+    shown = in_glossary(sections)
+    out["not_built"] = [g for g in unbuilt if g in shown]
+    out["drawn"] = [g for g in prev.drawn if g in shown]
+    out["missing_chars"] = sorted(prev.lacking)
+    out["font_key"] = prev.key
+    return out
+
+
+def dumps(data: dict) -> str:
+    """site/glossary.json's text: each section's settings on a line of their own and one row per
+    line, so a change in the Builder shows in a diff as the rows it moved."""
+    j = lambda v: json.dumps(v, ensure_ascii=False, separators=(", ", ": "))
+    lines = ["{"]
+    rest = [k for k in data if k != "sections"]
+    for k in rest:
+        v = data[k]
+        if isinstance(v, list):
+            lines.append(f'  {j(k)}: [' + ("" if v else "],"))
+            lines += [f"    {j(x)}," for x in v]
+            if v:
+                lines[-1] = lines[-1][:-1]
+                lines.append("  ],")
+        else:
+            lines.append(f"  {j(k)}: {j(v)},")
+    lines.append('  "sections": {')
+    secs = list(data.get("sections", {}).items())
+    for i, (sid, sec) in enumerate(secs):
+        lines.append(f"    {j(sid)}: {{")
+        keys = [k for k in sec if k != "rows"]
+        for k in keys:
+            lines.append(f"      {j(k)}: {j(sec[k])},")
+        rows = sec.get("rows", [])
+        lines.append('      "rows": [' + ("]" if not rows else ""))
+        if rows:
+            lines += [f"        {j(r)}," for r in rows]
+            lines[-1] = lines[-1][:-1]
+            lines.append("      ]")
+        lines.append("    }" + ("," if i < len(secs) - 1 else ""))
+    lines += ["  }", "}"]
+    return "\n".join(lines) + "\n"
 
 
 def write(path: Path | None = None, csv_path: Path | None = None, sections_path: Path | None = None) -> bool:
     """Rewrite the page's glossary tables; True when the file changed."""
     path = path or config.SITE_INDEX
     old = path.read_text(encoding="utf-8")
-    new = render(old, load_rows(csv_path), load_sections(sections_path))
+    new = render(old, load_rows(csv_path), load_sections(sections_path), load_groups(sections_path))
     if new != old:
         path.write_text(new, encoding="utf-8")
     return new != old
@@ -340,10 +895,10 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true", help="change nothing; exit 1 if the page is out of date")
     args = ap.parse_args(argv)
     try:
-        rows, sections = load_rows(), load_sections()
-        problems = missing(rows, sections)
+        rows, sections, groups = load_rows(), load_sections(), load_groups()
+        problems = missing(rows, sections) + missing_layout(sections, groups)
         page = config.SITE_INDEX.read_text(encoding="utf-8")
-        new = render(page, rows, sections)
+        new = render(page, rows, sections, groups)
     except GlossaryError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

@@ -2,7 +2,7 @@
 // preview includes, which glyph each part previews with, and the selection.
 import type { Design, GapEntry, Layout, Relationship, ResolvePayload, WordPiece } from './api';
 import { app, parseElement } from './state.svelte';
-import { choiceForNames, defaultChoice, shapeElements, type Choice, type ShapeElement } from './shape';
+import { choiceForNames, defaultChoice, sampleGlyph, shapeElements, type Choice, type ShapeElement } from './shape';
 import { entriesOf, isOtherwise } from './rules';
 
 export type BoxEdit = { area: string; size: [number, number]; before: { x: number; y: number; size: [number, number] }[] };
@@ -126,7 +126,7 @@ class Editor {
     for (const e of this.elements) {
       const glyphs = d.areas[e.area]?.glyphs ?? [];
       if (!next[e.name] || !glyphs.includes(next[e.name])) {
-        const g = this.pinByArea[e.area] && glyphs.includes(this.pinByArea[e.area]) ? this.pinByArea[e.area] : glyphs[0];
+        const g = this.pinByArea[e.area] && glyphs.includes(this.pinByArea[e.area]) ? this.pinByArea[e.area] : sampleGlyph(glyphs);
         if (g) { next[e.name] = g; changed = true; }
       }
     }

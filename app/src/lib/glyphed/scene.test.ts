@@ -203,6 +203,8 @@ describe('select tool (mouse)', () => {
     const path = scene.paths[0] as paper.Path;
     m.down(ev(60, 60)); m.up(ev(60, 60));                  // the fill: selects the shape
     expect(path.selected).toBe(true);
+    tools.doubleClick(new paper.Point(60, 60));             // a double-click opens its points
+    expect(tools.editing).toBe(path);
     const seg = path.segments.find((s) => s.point.equals(new paper.Point(10, 10)))!;
     m.down(ev(11, 11));                                     // within the hit tolerance of (10, 10)
     expect(seg.selected).toBe(true);
@@ -218,7 +220,7 @@ describe('select tool (mouse)', () => {
     scene.loadSvg(SQUARE);
     const tools = new Tools(scene), m = mouse(tools);
     const path = scene.paths[0] as paper.Path;
-    tools.selectPaths([path]);
+    tools.setEditing(path);
     const seg = path.segments.find((s) => s.point.equals(new paper.Point(110, 10)))!;
     seg.handleOut = new paper.Point(0, 30);
     seg.selected = true;
@@ -228,6 +230,73 @@ describe('select tool (mouse)', () => {
     m.up(ev(end.x + 10, end.y));
     expect(seg.handleOut.equals(new paper.Point(10, 30))).toBe(true);
     expect(seg.point.equals(new paper.Point(110, 10))).toBe(true);
+    tools.destroy();
+  });
+});
+
+describe('select tool: the box round the picked shapes', () => {
+  type Ev = { point: paper.Point; delta?: paper.Point; modifiers: Record<string, boolean>; event: { button: number; shiftKey?: boolean } };
+  const ev = (x: number, y: number, mods: Record<string, boolean> = {}): Ev => ({ point: new paper.Point(x, y), modifiers: mods, event: { button: 0, shiftKey: !!mods.shift } });
+  const mouse = (t: Tools) => t as unknown as { down(e: Ev): void; dragMove(e: Ev): void; up(e: Ev): void };
+  const TWO = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/><path d="M200 200h50v50h-50z" fill="black"/></svg>';
+
+  it('a click picks a shape and shows no points; a corner scales it from the opposite one', () => {
+    scene.loadSvg(SQUARE);
+    const tools = new Tools(scene), m = mouse(tools);
+    const path = scene.paths[0] as paper.Path;
+    m.down(ev(60, 60)); m.up(ev(60, 60));
+    expect(path.selected).toBe(true);
+    expect(paper.settings.handleSize).toBe(0);              // points hidden until a double-click
+    m.down(ev(110, 110));                                   // the bottom-right corner handle
+    m.dragMove({ ...ev(160, 135), delta: new paper.Point(50, 25) });
+    m.up(ev(160, 135));
+    expect([path.bounds.left, path.bounds.top, path.bounds.right, path.bounds.bottom].map(Math.round)).toEqual([10, 10, 160, 135]);
+    tools.destroy();
+  });
+
+  it('⇧ keeps the proportions; an edge scales one way only', () => {
+    scene.loadSvg(SQUARE);
+    const tools = new Tools(scene), m = mouse(tools);
+    const path = scene.paths[0] as paper.Path;
+    tools.selectPaths([path]);
+    m.down(ev(110, 110, { shift: true }));
+    m.dragMove({ ...ev(210, 130, { shift: true }), delta: new paper.Point(100, 20) });
+    m.up(ev(210, 130, { shift: true }));
+    expect([Math.round(path.bounds.width), Math.round(path.bounds.height)]).toEqual([200, 200]);
+    m.down(ev(210, 110));                                   // the right edge's middle
+    m.dragMove({ ...ev(110, 110), delta: new paper.Point(-100, 0) });
+    m.up(ev(110, 110));
+    expect([Math.round(path.bounds.width), Math.round(path.bounds.height)]).toEqual([100, 200]);
+    tools.destroy();
+  });
+
+  it('⇧-click adds a shape; the box holds both and a drag inside moves both', () => {
+    scene.loadSvg(TWO);
+    const tools = new Tools(scene), m = mouse(tools);
+    const [a, b] = scene.paths as paper.Path[];
+    m.down(ev(60, 60)); m.up(ev(60, 60));
+    m.down(ev(225, 225, { shift: true })); m.up(ev(225, 225, { shift: true }));
+    expect(tools.selectedPaths).toEqual([a, b]);
+    m.down(ev(150, 150));                                   // between them, inside the box
+    m.dragMove({ ...ev(160, 150), delta: new paper.Point(10, 0) });
+    const box = (tools as unknown as { box: paper.Group }).box;
+    expect(Math.round(box.bounds.center.x)).toBe(140);      // the box follows during the drag, not only on mouse-up
+    m.up(ev(160, 150));
+    expect([a.bounds.left, b.bounds.left]).toEqual([20, 210]);
+    tools.destroy();
+  });
+
+  it('a double-click opens a shape\'s points; clearing the selection closes them', () => {
+    scene.loadSvg(SQUARE);
+    const tools = new Tools(scene);
+    const path = scene.paths[0] as paper.Path;
+    tools.doubleClick(new paper.Point(60, 60));
+    expect(tools.editing).toBe(path);
+    expect(paper.settings.handleSize).toBeGreaterThan(0);
+    expect(paper.settings.segmentSize).toBeGreaterThan(0);  // Paper's default (null) draws no point squares
+    tools.clearSelection();
+    expect(tools.editing).toBeNull();
+    expect(paper.settings.handleSize).toBe(0);
     tools.destroy();
   });
 });

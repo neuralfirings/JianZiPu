@@ -1,4 +1,5 @@
 // Thin client for the Python web server (python3 -m jzpbuild.webserver).
+import type { GlossaryLayout, GlossaryRows, GRow, Group } from './glossary';
 export type Design = {
   version: 2;
   center: { x: number; y: number };
@@ -73,9 +74,24 @@ export type RoundTrip = { glyph: string; field: string; value: string; got: stri
 export type TypingPreview = {
   ok: boolean; error?: string; errors: TypingIssue[]; seconds?: number;
   not_built?: string[]; missing_chars?: Record<string, string[]>; roundtrip?: RoundTrip[];
+  /** Glyphs the last build hasn't got, drawn into the preview from their drawings (no Build needed). */
+  drawn?: string[];
+  /** Chinese characters the last build lacks, copied in from the base font; `base_font`: the server has it. */
+  copied?: string[]; base_font?: boolean;
   words?: (WordPayload['words'][number] & { texts: string[] })[];
   changed?: { word: string; before: string[]; after: string[]; after_texts: string[] }[];
 };
+/** Builder > More > Check the glossary. `problems`: glyphs left out, unknown sections; `typing`: examples whose
+ *  spellings give different glyphs; `not_built`: glyphs with no drawing yet, whose examples wait; `drawn`: glyphs
+ *  the last build hasn't got, drawn in from their files; `missing_chars`: Chinese characters only a Build adds;
+ *  `tables`: each section's table as the next release writes it; `error`: what a release would stop on;
+ *  `font_url`: the font the examples were typed with, to draw them in. */
+export type GlossaryCheck = {
+  ok: boolean; error?: string; problems?: string[]; typing?: string[]; not_built?: string[]; drawn?: string[]; missing_chars?: string[];
+  tables?: { id: string; title: string; html: string }[]; font?: 'build' | 'released'; font_url?: string;
+};
+/** The font the glossary check types with when it isn't one of this server's builds. */
+export const GLOSSARY_FONT = '/api/glossary/font';
 /** One finished build: its exact TTF lives in a temp dir on the server while it runs. */
 export type Build = { id: string; time: number; bytes: number; ok: boolean; seconds: number | null; url: string; file: string };
 export type BuildStatus = {
@@ -128,14 +144,23 @@ export const api = {
     'POST', '/api/design/check', { design }),
   resolve: (design: Design, layout: string, choice: (number | number[] | null)[], pinned: Record<string, string>, center = true) =>
     call<ResolvePayload>('POST', '/api/resolve', { design, layout, choice, pinned, center }),
-  words: (design: Design, words: string[]) => call<WordPayload & { error?: string }>('POST', '/api/words', { design, words }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string }[] }>('GET', '/api/glyphs'),
+  /** `typed`: the spellings to type the words with (unsaved too) and new glyphs' drawings (app.typedWith),
+   *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
+  words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
+    call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; usage?: [string, string] | null; description?: string; rows?: GRow[] }[]; glossary_groups?: Group[]; glossary_hash?: string; vertical_only?: string[] }>('GET', '/api/glyphs'),
+  /** Write the glossary's rows into site/glossary.json (local mode), hash-checked like the spellings. */
+  saveGlossary: (rows: GlossaryRows, base_hash: string, layout?: GlossaryLayout) =>
+    call<{ ok: boolean; hash?: string; error?: string; conflict?: boolean }>('PUT', '/api/glossary', { rows, base_hash, layout }),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),
   /** Unsaved spellings compiled into the last build (GSUB only): typed words, round trip, words that change. */
-  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[] }) =>
+  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[]; svgs?: Record<string, string> }) =>
     call<TypingPreview>('POST', '/api/typing/preview', body),
+  /** The font page's glossary made from these (unsaved) spellings; the font it typed with is at `font_url`. */
+  glossaryCheck: (rows: Record<string, string>[], design?: Design, svgs?: Record<string, string>, glossary?: GlossaryRows, layout?: GlossaryLayout) =>
+    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design, svgs, glossary, layout }),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),

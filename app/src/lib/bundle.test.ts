@@ -3,9 +3,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
-import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph } from './merge';
+import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, updateSummary, usesOfGlyph, withChanges } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
+import type { GlossaryRows } from './glossary';
 
 const design = (): Design => ({
   version: 2,
@@ -115,6 +116,33 @@ describe('three-way merge', () => {
     expect(items.map((i) => i.kind === 'spelling' && i.fields.map((f) => f.field))).toEqual([['latin']]);
     expect(applyMerge(items, defaultKeep(items), cur).typing.md_7).toMatchObject({ latin: 'qi', glossary: '3c: Numbers' });
   });
+  it('puts every change of a draft, conflicts too, on the font as it is now', () => {
+    const old = 'glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n';
+    const b = makeBundle({
+      design: design(), typing: T.fromCsv(old + 'md_7,,7,qi,,,,qī\nmd_9,,9,jiu,,,,jiǔ\n'), svgs: baseSvgs,
+      baseDesign: design(), baseTyping: T.fromCsv(old + 'md_7,,7,,,,,qī\nmd_9,,9,,,,,jiǔ\n'), baseSvgs, base,
+      author: { id: 'u1', name: 'Mei Lin' }, now: new Date('2026-10-18T10:00:00Z')
+    });
+    const cur = { ...current(), typing: {
+      md_7: { ...T.empty(), common: '7', pinyin: 'qī', glossary: '3c: Numbers' },
+      md_9: { ...T.empty(), common: '9', latin: 'nine', pinyin: 'jiǔ', glossary: '3c: Numbers' }
+    } as T.Typing };
+    const m = withChanges(b, cur);
+    expect(m.typing.md_7).toMatchObject({ latin: 'qi', glossary: '3c: Numbers' });   // not the draft's empty column
+    expect(m.typing.md_9).toMatchObject({ latin: 'jiu', glossary: '3c: Numbers' });  // a conflict: the draft's
+  });
+  it('keeps the meaning column under a draft saved before it existed', () => {
+    const old = 'glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary\n';
+    const b = makeBundle({
+      design: design(), typing: T.fromCsv(old + 'md_7,,7,qi,,,,qī,\n'), svgs: baseSvgs,
+      baseDesign: design(), baseTyping: T.fromCsv(old + 'md_7,,7,,,,,qī,\n'), baseSvgs, base,
+      author: { id: 'u1', name: 'Mei Lin' }, now: new Date('2026-10-18T10:00:00Z')
+    });
+    const cur = { ...current(), typing: { md_7: { ...T.empty(), common: '7', pinyin: 'qī', meaning: 'Seventh hui' } } as T.Typing };
+    const items = diffBundle(b, cur);
+    expect(items.map((i) => i.kind === 'spelling' && i.fields.map((f) => f.field))).toEqual([['latin']]);
+    expect(applyMerge(items, defaultKeep(items), cur).typing.md_7).toMatchObject({ latin: 'qi', meaning: 'Seventh hui' });
+  });
   it('applies only the kept items', () => {
     const cur = current();
     const items = diffBundle(draft(), cur);
@@ -174,6 +202,24 @@ describe('updating a draft to a newer font', () => {
   });
 });
 
+describe('what a font update brings, in words', () => {
+  const sp = (key: string, ...fields: T.SpellField[]) =>
+    ({ id: `spelling:${key}`, kind: 'spelling', key, status: 'changed', conflict: false,
+       fields: fields.map((field) => ({ field, base: '', theirs: 'x', current: '', conflict: false })) }) as never;
+  const gl = (key: string) => ({ id: `glyph:${key}`, kind: 'glyph', key, status: 'changed', conflict: false }) as never;
+  const lay = (name: string) => ({ id: `design:layout:${name}`, kind: 'design', unit: { type: 'layout', name }, status: 'changed', conflict: false }) as never;
+  it('counts glyphs per kind of change, biggest first', () => {
+    expect(updateSummary([sp('md_1', 'simplified'), sp('md_2', 'traditional', 'pinyin'), gl('md_3')]))
+      .toBe('Chinese spellings for 2 glyphs, pinyin for 1 glyph and 1 glyph drawing');
+    expect(updateSummary([sp('md_1', 'latin', 'latin_alt')])).toBe('Latin entries for 1 glyph');
+    const gs = (key: string) => ({ id: `glossary:${key}`, kind: 'glossary', key, status: 'changed', conflict: false }) as never;
+    expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('c', 'simplified'), gs('3e')]))
+      .toBe('2 word types, Chinese spellings for 1 glyph, 1 glyph drawing and more');
+    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary sections');
+    expect(updateSummary([])).toBe('');
+  });
+});
+
 describe('line diff', () => {
   it('marks removed and added lines and folds unchanged runs', () => {
     const d = lineDiff('a\nb\nc\nd\ne\nf\ng', 'a\nb\nC\nd\ne\nf\ng');
@@ -230,5 +276,67 @@ describe('undoing one change (Your changes)', () => {
     // a removed rule comes back where it was
     expect(revertRule(after, before, 'y|c|left||').relationships).toEqual([rel('a', 10), rel('b', 25), rel('c', 30), rel('d', 5)]);
     expect(revertRule(layout([rel('b', 25)]), before, 'y|a|left||').relationships).toEqual([rel('a', 10), rel('b', 25)]);
+  });
+});
+
+describe('the glossary in a draft', () => {
+  const g = (glyph: string, meaning?: string) => ({ glyph, ...(meaning ? { meaning } : {}) });
+  const w = (word: string) => ({ word, glyphs: ['md_a', 'md_b'] });
+  const mk = (glossary: GlossaryRows | undefined, baseGlossary: GlossaryRows | undefined) => makeBundle({
+    design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base, glossary, baseGlossary
+  });
+  it('carries it through JSON and the zip, and an old draft has none', () => {
+    const b = mk({ '3e': [w('少息'), g('md_a', 'rest')], '1a': [g('md_ming')] }, { '3e': [g('md_a')], '1a': [g('md_ming')] });
+    expect(isEmptyBundle(b)).toBe(false);
+    expect(fromJson(toJson(b)).glossary).toEqual(b.glossary);
+    expect(fromZip(toZip(b)).glossary).toEqual(b.glossary);
+    expect(fromZip(toZip(b)).base.glossary).toEqual({ '3e': [g('md_a')], '1a': [g('md_ming')] });
+    const old = mk(undefined, undefined);
+    expect(old.glossary).toBeUndefined();
+    expect(isEmptyBundle(old)).toBe(true);
+    expect(diffBundle(old, { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a')] } })).toEqual([]);
+    // a draft from the words.csv days: its words are dropped, the font's glossary stands
+    const legacy = fromJson(JSON.stringify({ ...JSON.parse(toJson(old)), words: [{ word: '少息', glyphs: 'md_a md_b' }] }));
+    expect((legacy as { words?: unknown }).words).toBeUndefined();
+  });
+  it('reviews a section whole: changed, conflicting, and left alone when the Builder has it already', () => {
+    const b = mk({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] },
+                 { '3e': [g('md_a')], '1a': [g('md_x'), g('md_y')], '2a': [] });
+    const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a'), g('md_c')], '1a': [g('md_x'), g('md_y')], '2a': [g('lg_gou')] } };
+    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary');
+    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['1a', 'changed', false], ['3e', 'changed', true]]);
+    const m = applyMerge(items, { 'glossary:1a': true, 'glossary:3e': true }, cur);
+    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
+    expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).glossary).toBeUndefined();   // left out: untouched
+  });
+});
+
+describe("the glossary's titles in a draft", () => {
+  const lay = (title: string, desc = '') => ({ groups: [{ id: 'right', title: '2: Right', sections: ['2a'] }],
+    sections: { '2a': { title, ...(desc ? { description: desc } : {}) } } });
+  const mk = (l: ReturnType<typeof lay>, bl: ReturnType<typeof lay>) => makeBundle({
+    design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base,
+    glossary: { '2a': [] }, baseGlossary: { '2a': [] }, glossaryLayout: l, baseGlossaryLayout: bl });
+  it('travels in JSON and the zip, and a subtitle\'s title goes with its rows in Review', () => {
+    const b = mk(lay('2a: New', '**d**'), lay('2a: Old'));
+    expect(isEmptyBundle(b)).toBe(false);
+    expect(fromJson(toJson(b)).glossaryLayout).toEqual(b.glossaryLayout);
+    expect(fromZip(toZip(b)).base.glossaryLayout).toEqual(lay('2a: Old'));
+    const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: { '2a': [] }, glossaryLayout: lay('2a: Old') };
+    const items = diffBundle(b, cur);
+    expect(items.map((i) => [i.id, i.conflict])).toEqual([['glossary:2a', false]]);
+    const m = applyMerge(items, { 'glossary:2a': true }, cur);
+    expect(m.glossaryLayout!.sections['2a']).toEqual({ title: '2a: New', description: '**d**' });
+  });
+  it('keeps section titles whole, and never lists a subtitle that was skipped', () => {
+    const fresh = { groups: [{ id: 'right', title: '2: Right', sections: ['2a', '2b'] }],
+      sections: { '2a': { title: '2a' }, '2b': { title: '2b: New' } } };
+    const b = makeBundle({ design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base,
+      glossaryLayout: fresh, baseGlossaryLayout: lay('2a') });
+    const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: {}, glossaryLayout: lay('2a') };
+    const items = diffBundle(b, cur);
+    expect(items.map((i) => i.id)).toEqual(['glossary:2b', 'glossary-titles']);
+    const m = applyMerge(items, { 'glossary-titles': true }, cur);              // titles kept, the new subtitle skipped
+    expect(m.glossaryLayout!.groups[0].sections).toEqual(['2a']);
   });
 });

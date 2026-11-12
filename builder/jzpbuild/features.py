@@ -229,9 +229,12 @@ def gen_s2j_single() -> list[str]:
 # latin lookups
 
 
+BRACKETS = {"[": "bracketleft", "]": "bracketright"}
+
+
 def spell_latin(key: str) -> str:
-    """'zhi4' -> 'z h i four' (letters stay letters, digits become names)."""
-    return " ".join(DIGIT[int(c)] if c.isdigit() else c for c in key)
+    """'zhi4' -> 'z h i four' (letters stay letters, digits and [ ] become glyph names)."""
+    return " ".join(DIGIT[int(c)] if c.isdigit() else BRACKETS.get(c, c) for c in key)
 
 
 def latin_entries(rows: list[GlyphRow]) -> dict[str, str]:
@@ -292,9 +295,9 @@ def gen_l2j_digit_liga(rows: list[GlyphRow]) -> list[str]:
 
 def gen_l2j_single(rows: list[GlyphRow]) -> list[str]:
     entries = latin_entries(rows)
-    single = [(k, g) for k, g in entries.items() if len(k) == 1 and k.isalpha()]
+    single = [(k, g) for k, g in entries.items() if len(k) == 1 and (k.isalpha() or k in BRACKETS)]
     lines = ["lookup l2j_single {"]
-    lines += [f"  sub {k} by {g};" for k, g in single]
+    lines += [f"  sub {spell_latin(k)} by {g};" for k, g in single]
     lines.append("} l2j_single;")
     return lines
 
@@ -304,12 +307,30 @@ def gen_l2j_single(rows: list[GlyphRow]) -> list[str]:
 
 
 def gen_c2j_char_symbols() -> list[str]:
+    """， ： ｜ typed in Chinese become , : | ahead of the Chinese spellings (after the number and
+    Latin lookups, so 名九，三 still reads its comma there)."""
     return [
         "lookup c2j_char_symbols {",
-        "  sub [ ch_bracketleft ch_bracketright ch_comma ch_colon ch_bar ]",
-        "  by [ bracketleft bracketright comma colon bar ];",
+        "  sub [ ch_comma ch_colon ch_bar ]",
+        "  by [ comma colon bar ];",
         "} c2j_char_symbols;",
     ]
+
+
+BRACKETS_ZH = [("【", "ch_bracketleft", "bracketleft"), ("】", "ch_bracketright", "bracketright")]
+
+
+def gen_c2j_bracket_symbols(rows: list[GlyphRow]) -> list[str]:
+    """【 】 typed in Chinese become [ ], ahead of the Latin lookups, so a Latin spelling with [ or ]
+    answers to them too (brackets mean nothing else to the font). A bracket a Chinese spelling uses
+    (typing_preview.CHINESE_RE allows them) is left alone, so it types that glyph instead."""
+    claimed = {ch for r in rows for ch in r.simplified + r.traditional}
+    keep = [(c, a) for ch, c, a in BRACKETS_ZH if ch not in claimed]
+    if not keep:
+        return []
+    return ["lookup c2j_bracket_symbols {",
+            *[f"  sub {c} by {a};" for c, a in keep],
+            "} c2j_bracket_symbols;"]
 
 
 def gen_c2j_char_left(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
@@ -506,7 +527,7 @@ def gen_auto_colon() -> list[str]:
 # feature block
 
 
-def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
+def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) -> list[str]:
     wild_repeat = lambda n: " ".join(["@area_wild"] * n)
     lines = [
         "feature liga {",
@@ -527,6 +548,9 @@ def gen_liga_feature(digit_lookup: bool = True) -> list[str]:
         "  lookup ch_dc_sub;",
         "",
     ]
+    if bracket_lookup:
+        lines += ["  # 【 】 typed in Chinese: [ ], before the Latin spellings read them",
+                  "  lookup c2j_bracket_symbols;", ""]
     if digit_lookup:
         lines += ["  # latin spellings with a digit (zhi4, xi4): before the numbers read the digit",
                   "  lookup l2j_digit_liga;", ""]
@@ -594,6 +618,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_classes(rows), [""],
         edge_cases, [""],
         # defined before the number lookups: lookups run in definition order
+        gen_c2j_bracket_symbols(rows),
         gen_l2j_digit_liga(rows), [""],
         gen_s2j_lat_ch_period_liga(),
         gen_s2j_liga(),
@@ -611,7 +636,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_char_deci_liga_parts(),
         gen_hui_and_commas(rows), [""],
         gen_auto_colon_insert(rows), [""],
-        gen_liga_feature(digit_lookup=bool(digit_entries(rows))),
+        gen_liga_feature(digit_lookup=bool(digit_entries(rows)), bracket_lookup=bool(gen_c2j_bracket_symbols(rows))),
     ]
     out = []
     for s in sections:

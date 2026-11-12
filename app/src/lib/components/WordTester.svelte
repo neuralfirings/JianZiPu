@@ -47,13 +47,13 @@
     const dd = d, g = glyph;
     if (!dd || !g || text) return;
     const all = [...new Set(Object.values(SAMPLE_SETS).flat())].filter((w) => !/\s/.test(w));
-    api.words(dd, all).then((r) => { if (r.ok && !text) text = r.words.filter((w) => w.glyphs.includes(g)).slice(0, 6).map((w) => w.word).join(' ') || DEFAULT_STRIP; }).catch(() => {});
+    api.words(dd, all, app.typedWith).then((r) => { if (r.ok && !text) text = r.words.filter((w) => w.glyphs.includes(g)).slice(0, 6).map((w) => w.word).join(' ') || DEFAULT_STRIP; }).catch(() => {});
   });
   $effect(() => {
-    const dd = d, ws = words;
+    const dd = d, ws = words, typed = app.typedWith;
     if (!dd || !ws.length) { result = null; return; }
     if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => { if (composing) return; const r = await api.words(dd, ws); if (r.ok) result = r; }, 120);
+    timer = setTimeout(async () => { if (composing) return; const r = await api.words(dd, ws, typed); if (r.ok) result = r; }, 120);
   });
   function random() {
     const all = Object.values(SAMPLE_SETS).flat();
@@ -73,7 +73,7 @@
     <a href="/test?words={encodeURIComponent(text)}" title="These words on Build & test, next to the built font">Build & test <I.Opens size={12} /></a>
   </div>
   <div class="words">
-    {#each result?.words ?? [] as w (w.word)}
+    {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
       {@const piece = w.pieces.find((p) => p.layout)}
       {@const pg = wordPage(w)}
       <svelte:element this={onpick ? 'button' : 'div'} role={onpick ? undefined : 'figure'} class="word" class:dim={!!glyph && !w.glyphs.includes(glyph)}

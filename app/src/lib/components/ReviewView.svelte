@@ -16,9 +16,11 @@
   import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
-  import { day, fontName, hhmm, pilot } from '$lib/pilot.svelte';
+  import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
+  import GlossaryRowsDiff from './GlossaryRowsDiff.svelte';
+  import { markdown, metaSummary, sectionSummary, titlesSummary } from '$lib/glossary';
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
@@ -35,8 +37,8 @@
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
   let current = $derived.by(() => {
-    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs };
-    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs) };
+    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout };
+    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs), glossary: bundle.base.glossary ?? app.mainGlossary, glossaryLayout: bundle.base.glossaryLayout ?? app.mainLayout };
   });
   let items = $derived(diffBundle(bundle, current));
   // true = take the draft's, false = keep what the Builder has, undefined = conflict not picked yet
@@ -58,7 +60,7 @@
   let skipped = $derived(items.filter((i) => picks[i.id] === false));
   let keeping = $derived(items.filter((i) => picks[i.id] === true));
   /** Your changes: the ones the font has now (released, or made the same way in the font). They
-   *  fold away at the bottom until Set reference font compares the draft with the font now. */
+   *  fold away at the bottom until the font's updates are brought into the draft. */
   let inFont = $derived(mode === 'mine' && app.mainDesign
     ? inTheFont(items, bundle, { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : new Set<string>());
   let done = $derived(items.filter((i) => inFont.has(i.id)));
@@ -68,7 +70,8 @@
   let sections = $derived([
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
-    { title: 'Design', items: shown.filter((i) => i.kind === 'design') }
+    { title: 'Design', items: shown.filter((i) => i.kind === 'design') },
+    { title: 'Glossary', items: shown.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles') }
   ]);
 
   function setAll(v: boolean) { picks = Object.fromEntries(items.map((i) => [i.id, v])); }
@@ -83,10 +86,12 @@
     const g = applied.filter((i) => i.kind === 'glyph').map((i) => i.key);
     const sp = applied.filter((i) => i.kind === 'spelling').length;
     const d = applied.filter((i) => i.kind === 'design').map((i) => (i.kind === 'design' ? i.label.replace(/^Area · |^Word type · /, '') : ''));
+    const gl = applied.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles').length;
     const parts = [
       ...(g.length > 3 ? [`${g.length} glyphs`] : g),
       ...(sp ? [`${sp} spelling${sp === 1 ? '' : 's'}`] : []),
-      ...(d.length > 3 ? [`${d.length} design items`] : d)
+      ...(d.length > 3 ? [`${d.length} design items`] : d),
+      ...(gl ? [`${gl} glossary item${gl === 1 ? '' : 's'}`] : [])
     ];
     return `Apply ${name}'s draft: ${parts.join(', ')}`;
   }
@@ -132,10 +137,10 @@
       if (sp) these = [it, sp];
     }
     asking = null;
-    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs });
+    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout });
     if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
     app.applyChanges(`Undo: ${nameOf(it)}`, m);
-    pilot.say(`${nameOf(it)} is back the way your reference font has it.`, { undo: true });
+    pilot.say(`${nameOf(it)} is back the way the font has it.`, { undo: true });
   }
   function undoRule(it: DesignItem, r: RuleChange) {
     const base = it.base as Layout;
@@ -143,7 +148,7 @@
       const i = d.layouts.findIndex((l) => l.name === it.unit.name);
       if (i >= 0) d.layouts[i] = revertRule(d.layouts[i], base, r.key);
     });
-    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way your reference font has it.`, { undo: true });
+    pilot.say(`That spacing rule of ${it.label.replace(/^Word type · /, '')} is back the way the font has it.`, { undo: true });
   }
   /** The spacing rules a changed word type differs in. */
   const rulesOf = (it: Item) => (it.kind === 'design' && it.unit.type === 'layout' && it.status === 'changed'
@@ -171,7 +176,7 @@
       <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : mode === 'decide' ? 'The changes' : `${name}'s draft`}</h2>
       <p class="muted">
         saved {day(m.updated)} {hhmm(m.updated)}
-        {#if m.base.version || m.base.date}· reference font: {fontName(m.base)}{/if}
+        {#if m.base.version || m.base.date}· compared with {fontOf(m.base)}{/if}
         {#if mode === 'owner' && app.main?.date}· your Builder is on {day(app.main.date)}{/if}
         {#if m.note}<br />“{m.note}”{/if}
       </p>
@@ -260,6 +265,16 @@
                 {/each}
               </tbody>
             </table>
+          {:else if it.kind === 'glossary'}
+            <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...sectionSummary(it.base, it.theirs)].join(' · ')}. A subtitle is one item: you keep its rows (in the draft's order), title and description whole.</p>
+            {#if it.meta?.theirs?.description && it.meta.theirs.description !== it.meta.base?.description}
+              <div class="desc">{@html markdown(it.meta.theirs.description)}</div>
+            {/if}
+            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs },
+              ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current }] : [])]} />
+          {:else if it.kind === 'glossary-titles'}
+            <p class="muted small">{titlesSummary(it.base, it.theirs).join(' · ')}. The section titles are one item, kept whole.</p>
+            <ul class="small">{#each it.theirs as g (g.id)}<li><b>{g.title}</b>{#if g.sections.length} · {g.sections.join(', ')}{/if}{#if g.description}<div class="desc">{@html markdown(g.description)}</div>{/if}</li>{/each}</ul>
           {:else}
             <div class="more">
               <button class="link" onclick={() => (open = { ...open, [it.id + ':w']: !open[it.id + ':w'] })}>{open[it.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
@@ -315,15 +330,15 @@
       </button></h3>
       <div class="banner saved">
         <span class="ic"><I.Check /></span>
-        <span>{done.length === 1 ? 'This change is' : 'These changes are'} in {fontName(app.main)}. Set your reference font to {app.latestFont} and {done.length === 1 ? 'it leaves' : 'they leave'} this list.</span>
-        {#if app.fontMoved}<button class="sm" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>{/if}
+        <span>{done.length === 1 ? 'This change is' : 'These changes are'} in {fontName(app.main)}. Bring the font's updates into your draft and {done.length === 1 ? 'it leaves' : 'they leave'} this list.</span>
+        {#if app.fontMoved}<button class="sm" onclick={() => (pilot.dialog = 'update')}>{app.bringLabel}…</button>{/if}
       </div>
       {#if doneOpen}
         <ul class="donelist">
           {#each done as it (it.id)}
             {@const r = released[it.id]}
             <li>
-              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : `Glyph · ${it.key}`}</b>
+              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : it.kind === 'glossary' ? `Glossary · ${it.key}` : it.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${it.key}`}</b>
               <span class="tag {it.status}">{it.status}</span>
               {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
               <span class="spacer"></span>
@@ -413,4 +428,6 @@
   .donelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); }
   .donelist li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--hairline); }
   .donelist li:last-child { border-bottom: 0; }
+  .desc { font-size: var(--t-small); color: var(--ink-muted); border-left: 2px solid var(--border); padding-left: var(--space-3); margin: var(--space-2) 0; }
+  .desc :global(text) { font-family: var(--font-mono); background: var(--bg-sunken); padding: 0 3px; border-radius: 3px; }
 </style>

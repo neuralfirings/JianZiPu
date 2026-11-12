@@ -254,7 +254,8 @@ describe('hosted draft', () => {
     await app.load();
     expect(app.fontMoved).toBe(true);
     expect(app.referenceFont).toMatch(/^the font of /);     // a draft from before versions: its date
-    expect(app.latestFont).toBe('3.200 (latest)');
+    expect(app.latestFont).toMatch(/^the font of .+ \(3\.200\)$/);
+    expect(app.bringLabel).toBe('Bring 3.200 into my draft');   // newer than a draft from before versions
     const items = app.fontUpdate();
     expect(items.map((i) => [i.id, i.conflict])).toEqual([['glyph:md_7', true], ['design:area:left', false]]);
     const r = await app.updateToFont(items, { 'glyph:md_7': false, 'design:area:left': true }, 'Update to the font of 18 Oct');
@@ -263,7 +264,7 @@ describe('hosted draft', () => {
     expect(app.svgs.md_7).toBe(SVG('M1 1h20v20z'));
     expect(app.fontMoved).toBe(false);
     expect(app.draftBase?.version.date).toBe('2026-10-18T10:00:00Z');
-    expect(app.referenceFont).toBe('3.200');
+    expect(app.referenceFont).toMatch(/^the font of .+ \(3\.200\)$/);
     app.undo();
     expect(app.fontMoved).toBe(true);
     expect(app.referenceFont).toMatch(/^the font of /);
@@ -275,16 +276,103 @@ describe('hosted draft', () => {
     await app.load();
     app.applyChanges('Glyph md_7', { svgWrites: { md_7: SVG('M1 1h20v20z') } });
     await app.save();
-    expect(app.referenceFont).toBe('3.200');
+    expect(app.referenceFont).toMatch(/^the font of .+ \(3\.200\)$/);
     // main's spellings file changed (a new column), still 3.200: no "3.200 is out"
     api.base.mockResolvedValue({ commit: 'def', version: '3.200', date: '2026-10-27T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
     await app.load();
     expect(app.fontMoved).toBe(true);
     expect(app.newRelease).toBe(false);
+    // both are 3.200: their dates tell them apart, and the button says updates, not a release
+    const d = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' });
+    expect(app.referenceFont).toBe(`the font of ${d('2026-10-15T10:00:00Z')} (3.200)`);
+    expect(app.latestFont).toBe(`the font of ${d('2026-10-27T10:00:00Z')} (3.200)`);
+    expect(app.bringLabel).toBe("Bring the font's updates into my draft");
+    expect(app.latestRelease).toBe('3.200 · 2026-10-27T10:00:00Z');
     // 3.300 is released
     api.base.mockResolvedValue({ commit: 'fed', version: '3.300', date: '2026-11-01T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
     await app.load();
     expect(app.newRelease).toBe(true);
-    expect(app.latestRelease).toBe('3.300');
+    expect(app.latestRelease).toBe('3.300 · 2026-11-01T10:00:00Z');
+    expect(app.bringLabel).toBe('Bring 3.300 into my draft');
+  });
+});
+
+describe('renaming a glyph', () => {
+  it('renames it everywhere in one undo step; the file moves on Save', async () => {
+    await app.load();
+    app.setSpelling('md_7', 'latin', 'qi');
+    expect(app.renameGlyph('md_7', 'md_ming')).toBe('md_ming already exists.');
+    expect(app.renameGlyph('md_7', 'md_qi')).toBeNull();
+    expect(app.svgs.md_qi).toBe(disk.md_7);
+    expect(app.svgs.md_7).toBeUndefined();
+    expect(app.typing.md_qi.latin).toBe('qi');
+    expect(app.pendingSvgs).toEqual({ md_qi: disk.md_7, md_7: null });
+    app.undo();
+    expect(app.svgs.md_7).toBe(disk.md_7);
+    expect(app.typing.md_7.latin).toBe('qi');
+    expect(app.pendingSvgs).toEqual({});
+  });
+  it('online: only a glyph the draft added', async () => {
+    hosted.isHosted = true;
+    await app.load();
+    expect(app.renameRefusal('md_ming')).toMatch(/only glyphs your draft added/);
+    app.applyChanges('Glyph md_new', { svgWrites: { md_new: SVG('M2 2h5v5z') } });
+    expect(app.renameRefusal('md_new')).toBeNull();
+    expect(app.renameGlyph('md_new', 'md_newer')).toBeNull();
+    expect(app.extraGlyphs).toEqual(['md_newer']);
+  });
+  it('a drawing the editor saved itself is not overwritten by an older one waiting for Save', async () => {
+    await app.load();
+    app.renameGlyph('md_7', 'md_qi');
+    app.noteSvgSaved('md_qi', SVG('M9 9h1v1z'));
+    expect(app.pendingSvgs).toEqual({ md_7: null });
+    expect(app.svgs.md_qi).toBe(SVG('M9 9h1v1z'));
+  });
+});
+
+describe('adding several glyphs from files', () => {
+  it('adds the files and joins the area in one undo step', async () => {
+    await app.load();
+    app.addGlyphs([{ name: 'md_a', svg: SVG('M0 0h5v5z') }, { name: 'md_b', svg: SVG('M1 1h5v5z') }], 'left');
+    expect(app.design!.areas.left.glyphs).toEqual(['md_ming', 'md_a', 'md_b']);
+    expect(Object.keys(app.pendingSvgs)).toEqual(['md_a', 'md_b']);
+    expect(app.svgs.md_b).toBe(SVG('M1 1h5v5z'));
+    app.undo();
+    expect(app.design!.areas.left.glyphs).toEqual(['md_ming']);
+    expect(app.svgs.md_a).toBeUndefined();
+  });
+});
+
+
+describe('the glossary', () => {
+  const sections = [{ id: '1a', title: '1a: Left Hand Finger', usage: ['{}9k3', '{}九勾三'] as [string, string], rows: [{ glyph: 'md_ming' }] },
+    { id: '3e', title: '3e: E', rows: [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] }];
+  it('edits are undo steps, Save writes site/glossary.json (local), and a rename follows into it', async () => {
+    api.glyphs.mockResolvedValue({ fields: [], glyphs: [{ glyph: 'md_ming', svg: true, areas: ['left'], latin: 'ming' }, { glyph: 'md_7', svg: true, areas: [] }], control: [], order: ['md_ming'], hash: 'c0', glossary_sections: sections, glossary_hash: 'g0' });
+    (api as unknown as { saveGlossary: unknown }).saveGlossary = vi.fn(async () => ({ ok: true, hash: 'g1' }));
+    await app.load();
+    expect(app.glossary).toEqual({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] });
+    expect(app.glossarySections.map((s) => s.usage ?? null)).toEqual([['{}9k3', '{}九勾三'], null]);
+    app.editGlossary('meaning', (rows) => ({ ...rows, '3e': [{ ...rows['3e'][0], meaning: 'seven' }] }));
+    expect(app.glossaryDirty).toBe(true);
+    app.undo();
+    expect(app.glossary['3e'][0].meaning).toBeUndefined();
+    app.redo();
+    expect(await app.save()).toBe(true);
+    expect((api as unknown as { saveGlossary: ReturnType<typeof vi.fn> }).saveGlossary)
+      .toHaveBeenCalledWith({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'], meaning: 'seven' }] }, 'g0',
+        expect.objectContaining({ groups: [expect.objectContaining({ sections: ['1a', '3e'] })] }));
+    expect(app.glossaryDirty).toBe(false);
+    expect(app.glossaryHash).toBe('g1');
+    expect(app.renameImpact('md_ming').glossary).toEqual(['1a', '3e']);
+    // titles and descriptions: an undo step, saved with the rows
+    app.editGlossaryLayout('title', (l) => { l.sections['1a'].title = '1a: Fingers'; l.groups[0].description = 'All **of** it'; return { layout: l }; });
+    expect(app.glossaryDirty).toBe(true);
+    expect(app.glossarySections[0].title).toBe('1a: Fingers');
+    app.undo();
+    expect(app.glossarySections[0].title).toBe('1a: Left Hand Finger');
+    app.redo();
+    expect(app.renameGlyph('md_7', 'md_qi')).toBeNull();
+    expect(app.glossary['3e'][0]).toMatchObject({ glyphs: ['md_ming', 'md_qi'] });
   });
 });

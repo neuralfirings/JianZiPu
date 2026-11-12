@@ -8,6 +8,7 @@
   import { beforeNavigate, goto } from '$app/navigation';
   import { app } from '$lib/state.svelte';
   import { hosted } from '$lib/hosted.svelte';
+  import { renaming } from '$lib/renaming.svelte';
   import { glyphEditor as ed } from '$lib/glyphed/editor.svelte';
   import type { Mode } from '$lib/glyphed/tools';
   import * as I from '$lib/icons';
@@ -47,11 +48,20 @@
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   function say(t: string) { toast = t; if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast = null), 4000); }
 
+  // ---- rename: the app's Rename box (RenameDialog), then this page moves to the new name
+  let renameBlocked = $derived(ed.isNew ? 'Save the new glyph first.' : ed.dirty ? 'Save or discard your edits to the drawing first.' : app.renameRefusal(name));
+  const pageOf = (n: string) => `/glyphs/${encodeURIComponent(n)}/edit${back ? `?back=${encodeURIComponent(back)}` : ''}`;
+  function askRename() {
+    renaming.ask(name, { done: (_f, to) => goto(pageOf(to), { replaceState: true }), undone: (f) => goto(pageOf(f), { replaceState: true }) });
+  }
+
   let row = $derived(app.glyphs.find((g) => g.glyph === name) ?? null);
   let typedAs = $derived(TY.TYPED.map((f) => TY.shown(app.typing, name, f).value).filter(Boolean).join(' · '));
   let areaName = $derived(isNew && area ? area : (Object.entries(app.design?.areas ?? {}).find(([, a]) => a.glyphs.includes(name))?.[0] ?? row?.areas[0] ?? null));
   let areaObj = $derived(areaName ? app.design?.areas[areaName] ?? null : null);
-  let sameArea = $derived((areaObj?.glyphs ?? []).filter((g) => g !== name && app.svgs[g]).slice(0, 8));
+  // the area's glyphs to compare with, 七 first where it's one of them
+  let sameArea = $derived((areaObj?.glyphs ?? []).filter((g) => g !== name && app.svgs[g])
+    .sort((a, b) => Number(b === 'md_7') - Number(a === 'md_7')).slice(0, 8));
   let ghostGlyphs = $derived(app.glyphs.filter((g) => g.svg && g.glyph !== name).map((g) => g.glyph));
   let sel = $derived(ed.selection);
   let canCombine = $derived(ed.preview?.kind === 'combine' || (sel.kind === 'shapes' && sel.n >= 2));
@@ -143,7 +153,7 @@
     if (mod) return;
     if (ed.trace) { if (e.key === 'Escape') ed.endTrace(); return; }
     switch (e.key) {
-      case 'Escape': if (popover) cancelPopover(); else if (ghostPick) ghostPick = null; else if (ed.drawing) ed.finishPen(); else ed.clearSelection(); return;
+      case 'Escape': if (popover) cancelPopover(); else if (ghostPick) ghostPick = null; else if (ed.drawing) ed.finishPen(); else if (ed.pointsOpen) ed.closePoints(); else ed.clearSelection(); return;
       case 'Enter': if (popover) applyPopover(); else if (ed.drawing) ed.finishPen(); return;
       case 'Delete': case 'Backspace': e.preventDefault(); ed.deleteSelection(); return;
       case 'ArrowLeft': e.preventDefault(); ed.nudge(e.shiftKey ? -10 : -1, 0); return;
@@ -282,7 +292,7 @@
       <div class="f"><span>Glyph</span><span>{ed.stats.paths} shape{ed.stats.paths === 1 ? '' : 's'} · {ed.stats.nodes} points</span></div>
       <div class="f"><span>Weight</span><span title="2 × area ÷ perimeter of the filled outline: right for long strokes, rough for blobs">≈ {ed.weightEstimate?.toFixed(0) ?? '—'} units <span class="muted">(reference {ed.referenceWeight})</span></span></div>
       <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.fitToBox()}>Fit to box</button><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.center()}>Center</button></div>
-      <p class="muted small">Click a shape to see its points. Drag the fill to move it, a point to move the point.</p>
+      <p class="muted small">Click a shape to pick it: drag it to move it, its box's corners and edges to scale it (⇧ keeps the proportions), ⇧-click to add another. Double-click a shape to see its points.</p>
     {/if}
   {:else if id === 'compare'}
     <label><input type="checkbox" checked={ed.dot} onchange={(e) => ed.setDot((e.target as HTMLInputElement).checked)} /> Reference dot <span class="muted">(D) · drag it over a stroke</span></label>
@@ -331,8 +341,8 @@
     <a href={backHref} class="back"><I.Back />{backLabel}</a>
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
-    {#if app.charOf(name)}<span class="char">{app.charOf(name)}</span>{/if}
-    {#if areaName}<a class="chip" href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area (sets the box): open it on the Layouts screen">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
+    <button class="sm quiet" onclick={askRename} disabled={!!renameBlocked} data-tip={renameBlocked ?? 'Give this glyph another name, everywhere it is used'}>Rename…</button>
+
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
       {:else if ed.isNew && !ed.dirty}<span class="chip">new · not saved yet</span>
@@ -515,7 +525,6 @@
   .mono { font-family: var(--font-mono); }
   .char { font-size: var(--t-panel); }
   .chip.accent { text-decoration: none; }
-  a.chip { text-decoration: none; color: inherit; }
   .spacer { flex: 1; }
   .body { display: flex; flex: 1; min-height: 0; }
   .rail { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4) 6px; border-right: 1px solid var(--border); background: var(--bg-panel); }

@@ -56,7 +56,7 @@ FEA_OUT_DEFAULT = BUILDER_DIR / "JianZiPu.fea"                  # build.py
 SITE_DIR = BUILDER_DIR.parent / "site"
 SITE_INDEX = SITE_DIR / "index.html"                   # its glossary tables are generated (glossary.py)
 SITE_FONT = SITE_DIR / "JianZiPu.ttf"                  # the released font, written by a release candidate
-GLOSSARY_SECTIONS = SITE_DIR / "glossary.json"         # how each glossary section's table is laid out
+GLOSSARY_SECTIONS = SITE_DIR / "glossary.json"         # the glossary's sections and their rows (glossary.py)
 
 # ---------------------------------------------------------------------------
 # font metrics / identity — used by: base.py, glyphs.py

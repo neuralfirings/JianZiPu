@@ -35,10 +35,17 @@ describe('issues', () => {
   });
   it.each([
     ['latin', '4xi', 'start with a letter'], ['latin', 'ban-lun', 'only letters'],
-    ['simplified', 'abc', 'Chinese characters only'], ['simplified', '点', 'marks a position']
+    ['simplified', 'abc', 'Chinese characters and Chinese punctuation'], ['simplified', '点', 'marks a position'],
+    ['simplified', '名：', 'read by the font itself'], ['traditional', '｜', 'read by the font itself'], ['latin', '4[', 'start with a letter']
   ] as const)('rejects %s = %s', (f, v, msg) => {
     const t = base(); t.lg_ti[f] = v;
     expect(issues(t)[0].message).toContain(msg);
+  });
+  it.each([
+    ['latin', '['], ['latin', ']'], ['latin_alt', '[k'], ['simplified', '【'], ['traditional', '【反】'], ['simplified', '《》'], ['simplified', '推出']
+  ] as const)('takes %s = %s', (f, v) => {
+    const t = base(); t.lg_ti[f] = v;
+    expect(issues(t)).toEqual([]);
   });
   it('checks vertical forms against the known glyphs', () => {
     const t = base(); t.lg_ti.vert_variant = 'md_nope';
@@ -56,12 +63,6 @@ describe('cellNote', () => {
     expect(cellNote(t, 'lg_tuo', 'latin', '4k')?.level).toBe('error');
     expect(cellNote(t, 'lg_tuo', 'latin', '')).toBeNull();
     expect(cellNote(t, 'lg_tuo', 'pinyin', 'tuō')).toBeNull();
-    const titles = ['1a: Left Hand Finger', '2a: Basic Right Hand'];
-    expect(cellNote(t, 'lg_tuo', 'glossary', '2a: Basic Right Hand', undefined, undefined, titles)).toBeNull();
-    expect(cellNote(t, 'lg_tuo', 'glossary', '1a: Left Hand Finger; 2a: Basic Right Hand', undefined, undefined, titles)).toBeNull();
-    expect(cellNote(t, 'lg_tuo', 'glossary', '2a: Basic Right Hand; 9z: Nowhere', undefined, undefined, titles)?.level).toBe('warn');
-    expect(cellNote(t, 'lg_tuo', 'glossary', '2a', undefined, undefined, titles)?.level).toBe('warn');   // the id alone isn't the title
-    expect(cellNote(t, 'lg_tuo', 'glossary', '9z')).toBeNull();     // no sections known: nothing to say
   });
 });
 
@@ -109,7 +110,7 @@ describe('records and CSV', () => {
   it('round-trips through CSV, in the given order, quoting commas', () => {
     const t = base(); t.lg_ti.pinyin = 'a, b';
     const text = toCsv(t, ['md_san', 'lg_gou']);
-    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary');
+    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin');
     expect(text.split('\n')[1].startsWith('md_san,')).toBe(true);
     expect(text).toContain('"a, b"');
     const back = fromCsv(text);
@@ -118,15 +119,12 @@ describe('records and CSV', () => {
   });
   it('imports an old CSV with ID/keys/filename columns', () => {
     const t = fromCsv('ID,keys,filename,glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n1,s,md_ming,md_ming,,,s,,名,,míng\n');
-    expect(t.md_ming).toMatchObject({ latin: 's', simplified: '名', pinyin: 'míng', glossary: '' });
+    expect(t.md_ming).toEqual({ ...empty(), latin: 's', simplified: '名', pinyin: 'míng' });
   });
-  it('keeps the Glossary column, which no glyph inherits and nothing clashes on', () => {
-    const t = base(); t.lg_gou.glossary = '2a: Basic Right Hand'; t.lg_tuo.glossary = '2a: Basic Right Hand';
-    t.md_san.glossary = '1d: Special Cases; 3c: Related to String & Hui Number';
-    expect(issues(t)).toEqual([]);
-    expect(fromCsv(toCsv(t)).md_san.glossary).toBe('1d: Special Cases; 3c: Related to String & Hui Number');
-    expect(shown(t, 'md_san2', 'glossary')).toEqual({ value: '', inherited: null });
-    expect(changedGlyphs(base(), t)).toEqual(['lg_gou', 'lg_tuo', 'md_san']);
+  it('drops the old glossary columns: the glossary is site/glossary.json now', () => {
+    const t = fromCsv('glyph_name,latin,simplified,glossary,glossary_order,meaning\nlg_gou,k,勾,2a: Basic Right Hand,1,pluck\n');
+    expect(t.lg_gou).toEqual({ ...empty(), latin: 'k', simplified: '勾' });
+    expect(toCsv(t).split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin');
   });
   it('parses a spreadsheet paste', () => expect(parseGrid('a\tb\nc\td\n')).toEqual([['a', 'b'], ['c', 'd']]));
   it('suggests a Latin Entry from the PinYin', () => {

@@ -20,13 +20,25 @@ API (all JSON):
   PUT  /api/design                 {design, base_hash} -> write (409 on conflict)
   POST /api/design/check           {design} -> errors/warnings/stats, no write
   POST /api/resolve                {design?, layout, choice, pinned?, center?} -> positions
-  POST /api/words                  {design?, words:[...]} -> per word: glyphs, layout, positions
-  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
+  POST /api/words                  {design?, words:[...], rows?, svgs?} -> per word: glyphs, layout, positions;
+                                   with `rows`, typed through those spellings (unsaved too) and new glyphs'
+                                   drawings in a preview font of the last build, so no Build is needed
+  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence, and the glossary's
+                                   sections with their rows (site/glossary.json) and its own hash
+  PUT  /api/glossary               {rows: {section: [row…]}, base_hash} -> rewrite the rows in site/glossary.json
+                                   (409 if it changed on disk)
   PUT  /api/glyphs                 {rows, base_hash, design?} -> rewrite components.csv (409 if it changed
                                    on disk, 400 with `errors` if a spelling clashes or is malformed)
   POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
                                    compiled into the last build (GSUB only): typed words, round trip,
                                    clashes, characters the font doesn't carry yet, words that change
+  POST /api/glossary/check         {design?, rows, glossary?} -> the font page's glossary with these spellings (hosted: the
+                                   tester's draft): problems, examples that type another glyph (in the last
+                                   build), its tables, and `font_url`, the font they were typed with
+  GET  /api/glossary/font          the font that check types with when it isn't a build of this server's
+                                   (locally the last build on disk, else the released one; hosted: main's)
+  GET  /api/preview-fonts/<key>.ttf a preview font the glossary check compiled (the last build plus new
+                                   glyphs drawn in from their SVGs, the unsaved spellings and positioning)
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
@@ -70,7 +82,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from . import config, data, glossary, glyphs, hosted, release, typing_preview
+from . import config, data, glossary, glyphs, hosted, preview_favicon, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -81,6 +93,7 @@ MAIN = "main"                         # owner of the checked-in font's build (ho
 MAX_BODY = 16 * 1024 * 1024           # a whole draft (design, spellings, changed SVGs) fits many times over
 MAX_WORDS = 2000                      # per request, for /api/words and /api/typing/preview
 MAX_WORD_LEN = 200
+MAX_ROWS = 5000                       # spelling rows per request, for /api/glossary/check
 
 
 # ---------------------------------------------------------------- helpers
@@ -358,9 +371,10 @@ class BuildRunner:
 
     def font_for(self, owner: str) -> Path:
         """The font previews use for `owner`: their latest build, else the checked-in font's
-        build, else the last plain build on disk, else the golden."""
+        build, else the last plain build on disk, else the released font, else the golden (old and
+        classic-positioned: its Han characters aren't the ones the spellings type)."""
         for p in (self.latest_for(owner), self.latest_for(MAIN),
-                  config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None):
+                  config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None, config.SITE_FONT):
             if p and p.exists():
                 return p
         return config.CURRENT_FONT
@@ -538,14 +552,29 @@ def glyphs_payload() -> dict:
                         **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
             "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
-            "glossary_sections": glossary_sections()}
+            "glossary_sections": glossary_sections(), "glossary_groups": glossary_groups(),
+            # glyphs the font sets vertically without their colon (shang = :shang): the Glossary view drops it
+            "vertical_only": sorted(glossary.vertical_only_for()),
+            "glossary_hash": _hash(_read_glossary_text())}
+
+
+def glossary_groups() -> list[dict]:
+    """The glossary's section titles, each with its subtitles in page order (Glyphs > Glossary)."""
+    try:
+        return glossary.load_groups()
+    except (OSError, ValueError, KeyError):
+        return []
 
 
 def glossary_sections() -> list[dict]:
-    """The font page's glossary sections, for the Typing view's Glossary column; none where the
-    server has no site/ folder (the hosted image)."""
+    """The font page's glossary sections in page order, each with its rows (Glyphs > Glossary); none
+    where the server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
-        return [{"id": k, "title": v.get("title", k)} for k, v in glossary.load_sections().items()]
+        return [{"id": k, "title": v.get("title", k), "hidden": glossary.is_hidden(v),
+                 "usage": list(ex) if (ex := glossary.default_example(v)) else None,
+                 "description": v.get("description", ""),
+                 "rows": [glossary.clean_row(r) for r in v.get("rows", [])]}
+                for k, v in glossary.load_sections().items()]
     except (OSError, ValueError, KeyError):
         return []
 
@@ -567,6 +596,32 @@ def write_glyph_rows(rows: list[dict], base_hash: str | None = None, design: dic
     config.COMPONENTS_CSV.write_text(text, encoding="utf-8")
     data.cache_clear_all()
     return {"ok": True, "rows": len(recs), "hash": _hash(text)}
+
+
+def _read_glossary_text() -> str:
+    p = config.GLOSSARY_SECTIONS
+    return p.read_text(encoding="utf-8") if p.exists() else ""
+
+
+def write_glossary(rows: dict, base_hash: str | None = None, layout: dict | None = None) -> dict:
+    """Rewrite the rows of site/glossary.json from the app's (Glyphs > Glossary); everything else in
+    the file stays. Refuses when the file changed on disk since `base_hash`, a section that isn't
+    there, or a row that isn't one."""
+    current = _read_glossary_text()
+    if not current:
+        raise ValueError("this copy of the Builder has no site/glossary.json")
+    if base_hash is not None and base_hash != _hash(current):
+        raise CsvConflict("site/glossary.json changed on disk since it was loaded")
+    if not isinstance(rows, dict) or sum(len(v) for v in rows.values() if isinstance(v, list)) > MAX_ROWS:
+        raise ValueError("rows: the glossary's rows by section, please.")
+    doc = json.loads(current)
+    if layout is not None:
+        doc["sections"], doc["groups"] = glossary.with_layout(doc["sections"], layout, rows)
+    else:
+        doc["sections"] = glossary.with_rows(doc["sections"], rows)
+    text = glossary.dumps(doc)
+    config.GLOSSARY_SECTIONS.write_text(text, encoding="utf-8")
+    return {"ok": True, "rows": sum(len(v.get("rows", [])) for v in doc["sections"].values()), "hash": _hash(text)}
 
 
 def rows_to_csv(rows: list[dict], order_from: str) -> str:
@@ -595,6 +650,22 @@ def base_payload() -> dict:
 
 
 
+def svg_source(body: dict):
+    """Where a preview finds the drawing of a glyph the last build hasn't got: `svgs` in the request
+    (a draft's own glyphs, hosted), else inputs/svg/<name>.svg on disk."""
+    sent = body.get("svgs") if isinstance(body.get("svgs"), dict) else {}
+
+    def get(name: str) -> str | None:
+        if isinstance(sent.get(name), str):
+            return sent[name]
+        try:
+            p = svg_path_for(name)
+        except ValueError:
+            return None
+        return p.read_text(encoding="utf-8") if p.exists() else None
+    return get
+
+
 def _preview_base_font(owner: str = "local") -> Path | None:
     p = BUILD.font_for(owner)
     return p if p.exists() else None
@@ -603,7 +674,8 @@ def _preview_base_font(owner: str = "local") -> Path | None:
 def typing_payload(body: dict, owner: str = "local") -> dict:
     """Unsaved spellings -> preview font -> typed words, the spelling round trip,
     clashes, and which sample words change against the saved spellings.
-    `svg_names`: glyphs a draft adds (not on disk), so their spellings aren't flagged unknown."""
+    `svg_names`: glyphs a draft adds (not on disk), so their spellings aren't flagged unknown;
+    `svgs`: their drawings, so the preview can draw them in when the last build hasn't got them."""
     design = body.get("design") or json.loads(_read_design_text())
     rows = typing_preview.rows_from(body.get("rows", []), design)
     known = typing_preview.known_glyphs(design) | set(body.get("svg_names") or [])
@@ -611,8 +683,10 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     base = _preview_base_font(owner)
     if base is None:
         return {**out, "ok": False, "error": "Build the font once to preview spellings."}
-    prev = typing_preview.FONTS.get(base, rows, design)
-    out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars,
+    svg = svg_source(body)
+    prev = typing_preview.FONTS.get(base, rows, design, svg)
+    out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars, drawn=prev.drawn,
+               copied=prev.copied, base_font=config.SOURCE_FONT.exists(),
                roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
     words = word_list(body)
     if words:
@@ -620,15 +694,76 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         sd = schema.parse_design(design)
         laid = words_payload(sd, words, runs=[s["glyphs"] for s in shaped])["words"]
         for w, s in zip(laid, shaped):
-            w["texts"] = s["texts"]
+            w["texts"], w["clusters"] = s["texts"], s["clusters"]
         out["words"] = laid
     compare = word_list(body, "compare_words")
     if compare and body.get("base_rows") is not None:
-        before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design), compare)
+        before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design, svg), compare)
         after = typing_preview.shape(prev, compare)
         out["changed"] = [{"word": a["word"], "before": a["glyphs"], "after": b["glyphs"], "after_texts": b["texts"]}
                           for a, b in zip(before, after) if a["glyphs"] != b["glyphs"]]
     return out
+
+
+def words_typed_payload(body: dict, design: schema.Design, owner: str = "local") -> dict:
+    """/api/words with `rows`: the words typed through these spellings (and `svgs`, a draft's new
+    glyphs) in a preview font of the last build, so Build & test's live preview and the Layouts
+    word strip show new spellings and glyphs without a Build."""
+    base = _preview_base_font(owner)
+    words = word_list(body)
+    if base is None:
+        return words_payload(design, words, font=BUILD.font_for(owner))
+    raw = body.get("design") or json.loads(_read_design_text())
+    prev = typing_preview.FONTS.get(base, typing_preview.rows_from(body["rows"], raw), raw, svg_source(body))
+    shaped = typing_preview.shape(prev, words)
+    out = words_payload(design, words, runs=[s["glyphs"] for s in shaped])
+    for w, s in zip(out["words"], shaped):
+        w["texts"], w["clusters"] = s["texts"], s["clusters"]
+    return {**out, "drawn": prev.drawn, "copied": prev.copied}
+
+
+def glossary_payload(body: dict, owner: str = "local") -> dict:
+    """Builder > More > Check the glossary: the font page's glossary made from the unsaved spellings,
+    its examples typed through them on the last build (the released font before the first build)."""
+    if not config.SITE_INDEX.exists():
+        return {"ok": False, "error": "This copy of the Builder has no font page (site/index.html) to check."}
+    recs = body.get("rows")
+    if not isinstance(recs, list) or len(recs) > MAX_ROWS:
+        return {"ok": False, "error": "rows: a list of spellings, please."}
+    design = body.get("design") or json.loads(_read_design_text())
+    font = glossary_font(owner)
+    build = next((b for b in BUILD.builds if b["path"] == font), None)
+    # the rows as Save would write them: in the file's order (a section's unlisted rows follow it), new ones last
+    clean = [typing_preview.clean_record(r) for r in recs if isinstance(r, dict)]
+    text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
+    rows = glossary.records(list(csv.DictReader(io.StringIO(text))))
+    # the glossary's rows: the Builder's (unsaved too), else site/glossary.json's
+    sections, groups = glossary.load_sections(), glossary.load_groups()
+    if body.get("layout") is not None:
+        try:
+            sections, groups = glossary.with_layout(sections, body["layout"], body.get("glossary") or {})
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+    elif body.get("glossary") is not None:
+        g = body["glossary"]
+        if not isinstance(g, dict) or sum(len(v) for v in g.values() if isinstance(v, list)) > MAX_ROWS:
+            return {"ok": False, "error": "glossary: the rows by section, please."}
+        try:
+            sections = glossary.with_rows(sections, g)
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+    out = glossary.check(rows, design, font, svg_source(body), sections, groups)
+    key = out.pop("font_key", None)
+    url = (f"/api/preview-fonts/{key}.ttf" if key else BUILD.public(build)["url"] if build else "/api/glossary/font")
+    return {**out, "font": "released" if font == config.SITE_FONT else "build", "font_url": url}
+
+
+def glossary_font(owner: str = "local") -> Path:
+    """The font the glossary check types with and its preview draws in: the latest build, else the
+    released one (never font_for()'s last resort, the golden: too old to type the page's examples)."""
+    return next((p for p in (BUILD.latest_for(owner), BUILD.latest_for(MAIN),
+                             config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None) if p and p.exists()),
+                config.SITE_FONT)
 
 
 # ---------------------------------------------------------------- HTTP
@@ -717,7 +852,9 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _font(self, path: Path, attachment: bool = False):
-        body = path.read_bytes()
+        return self._font_bytes(path.read_bytes(), attachment)
+
+    def _font_bytes(self, body: bytes, attachment: bool = False):
         self.send_response(200)
         self.send_header("Content-Type", "font/ttf")
         self.send_header("Content-Length", str(len(body)))
@@ -799,6 +936,10 @@ class Handler(SimpleHTTPRequestHandler):
         if ctype.startswith("text/") and "charset" not in ctype:
             ctype += "; charset=utf-8"           # llms.txt and the like hold Chinese
         body = target.read_bytes()
+        if ctype.startswith("text/html") and SETTINGS.hosted:
+            # a pull request preview's tab shows its number (preview_favicon.py); production is untouched
+            host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+            body = preview_favicon.apply(body.decode("utf-8"), host).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -826,6 +967,14 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            m = re.match(r"^/api/preview-fonts/([0-9a-f]{64})\.ttf$", path)
+            if m:                                      # by its content hash: only who made it knows it
+                p = typing_preview.FONTS.by_key(m.group(1))
+                if not p or not p.font_bytes:
+                    return self._json({"ok": False, "error": "That preview font is gone: check again."}, 404)
+                return self._font_bytes(p.font_bytes)
+            if path == "/api/glossary/font":            # hosted: main's, nobody's own
+                return self._font(glossary_font(MAIN if SETTINGS.hosted else "local"))
             if path == "/api/release/status":
                 if SETTINGS.hosted:
                     return self._json({"ok": False, "error": "Releases are made from the Builder on your own computer."}, 403)
@@ -892,9 +1041,13 @@ class Handler(SimpleHTTPRequestHandler):
                                                   body.get("center", True)))
             if path == "/api/words":
                 design = _design_from(body)
+                if isinstance(body.get("rows"), list):          # the Builder's spellings, unsaved ones too
+                    return self._json(words_typed_payload(body, design, owner))
                 return self._json(words_payload(design, word_list(body), font=BUILD.font_for(owner)))
             if path == "/api/typing/preview":
                 return self._json(typing_payload(body, owner))
+            if path == "/api/glossary/check":
+                return self._json(glossary_payload(body, owner))
             if path == "/api/svg/check":
                 try:
                     return self._json({"ok": True, **glyphs.flatten_svg_text(body["svg"])})
@@ -931,6 +1084,13 @@ class Handler(SimpleHTTPRequestHandler):
                 config.DESIGN_JSON.write_text(text, encoding="utf-8")
                 data.cache_clear_all()
                 return self._json({"ok": True, **{k: v for k, v in _design_payload(body["design"], text).items() if k != "design"}})
+            if path == "/api/glossary":
+                try:
+                    return self._json(write_glossary(body.get("rows"), body.get("base_hash"), body.get("layout")))
+                except CsvConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_glossary_text())}, 409)
+                except ValueError as err:
+                    return self._json({"ok": False, "error": str(err)}, 400)
             if path == "/api/glyphs":
                 try:
                     return self._json(write_glyph_rows(body["rows"], body.get("base_hash"), body.get("design")))

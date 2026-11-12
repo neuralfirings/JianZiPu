@@ -280,3 +280,117 @@ def test_security_headers(server):
     assert r.getheader("X-Frame-Options") == "DENY"
     assert "Python" not in (r.getheader("Server") or "")
     assert r.getheader("Strict-Transport-Security") is None          # local: plain http
+
+
+# ---------------------------------------------------------------- the PR preview's tab icon
+
+from jzpbuild import preview_favicon  # noqa: E402
+
+ICONS = """    <title>JianZiPu Font Builder</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+"""
+
+
+@pytest.mark.parametrize("host, pr", [
+    ("builder-pr-29.up.railway.app", "29"), ("Builder-PR-104.up.railway.app:443", "104"),
+    ("builder-pr-7.up.railway.app, proxy.internal", "7"),
+    ("builder.jianzipufont.com", None), ("jianzipufont.com", None), ("x-pr-3.jianzipufont.com", None),
+    ("builder-production.up.railway.app", None), ("localhost:5713", None), ("", None), (None, None),
+])
+def test_preview_pr_number(host, pr):
+    assert preview_favicon.pr_number(host) == pr
+
+
+def test_preview_icon_is_the_number_in_dark_brown():
+    from urllib.parse import unquote
+    svg = unquote(preview_favicon.href("29").removeprefix("data:image/svg+xml,"))
+    assert ">29</text>" in svg and 'fill="#5C3A21"' in svg and 'font-size="26"' in svg
+    assert 'font-size="14"' in unquote(preview_favicon.href("1234"))
+    with pytest.raises(ValueError):
+        preview_favicon.href("<b>")
+
+
+def test_preview_page_gets_one_icon_and_production_none():
+    out = preview_favicon.apply(ICONS, "builder-pr-29.up.railway.app")
+    assert out.count('rel="icon"') == 1 and 'href="data:image/svg+xml,' in out and 'type="image/svg+xml"' in out
+    assert "apple-touch-icon" in out and "favicon.ico" not in out
+    assert out.splitlines()[1].startswith('    <link rel="icon" href="data:')
+    assert preview_favicon.apply(ICONS, "builder.jianzipufont.com") == ICONS
+    assert preview_favicon.apply(ICONS, "127.0.0.1:5713") == ICONS
+
+
+def test_hosted_server_puts_the_pr_icon_in_the_page(tmp_path, monkeypatch):
+    (tmp_path / "index.html").write_text("<head>\n" + ICONS + "</head>", encoding="utf-8")
+    monkeypatch.setattr(webserver, "APP_BUILD_DIR", tmp_path)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), webserver.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/glyphs"
+
+    def page(host):
+        req = urllib.request.Request(url, headers={"X-Forwarded-Host": host})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read().decode("utf-8")
+    try:
+        assert "favicon.ico" in page("builder-pr-29.up.railway.app")      # local mode: never changed
+        monkeypatch.setattr(webserver.SETTINGS, "hosted", True)
+        assert "data:image/svg+xml" in page("builder-pr-29.up.railway.app")
+        assert "favicon.ico" in page("builder.jianzipufont.com")
+    finally:
+        srv.shutdown()
+
+
+# ---------------------------------------------------------------- the glossary's rows (site/glossary.json)
+
+def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatch):
+    f = tmp_path / "glossary.json"
+    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
+    p = webserver.glyphs_payload()
+    secs = {s["id"]: s for s in p["glossary_sections"]}
+    assert secs["1a"]["title"] == "1a: Left Hand Finger" and secs["1a"]["usage"] == ["{}9k3", "{}九勾三"]
+    assert secs["1a"]["rows"][0] == {"glyph": "md_ming"}
+    assert {"word": "少息", "glyphs": ["md_shao", "md_xi"]} in secs["3e"]["rows"]
+    rows = {"3e": [{"word": "大息", "glyphs": ["md_da", "md_xi"], "meaning": "rest"}], "1a": secs["1a"]["rows"][::-1]}
+    r = webserver.write_glossary(rows, p["glossary_hash"])
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    assert r["ok"] and doc["sections"]["3e"]["rows"] == rows["3e"] and doc["sections"]["1a"]["rows"][-1] == {"glyph": "md_ming"}
+    assert doc["sections"]["1a"]["usage"] == ["{}9k3", "{}九勾三"] and doc["about"]       # the rest of the file stays
+    assert doc["sections"]["2a"]["rows"] == secs["2a"]["rows"]                             # sections not sent stay
+    with pytest.raises(webserver.CsvConflict):
+        webserver.write_glossary(rows, p["glossary_hash"])        # the file moved on since that hash
+    with pytest.raises(ValueError, match="no section 9z"):
+        webserver.write_glossary({"9z": []}, r["hash"])
+    with pytest.raises(ValueError):
+        webserver.write_glossary({"3e": [{"glyph": ""}]}, r["hash"])
+
+
+def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, monkeypatch):
+    f = tmp_path / "glossary.json"
+    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
+    p = webserver.glyphs_payload()
+    groups = p["glossary_groups"]
+    assert groups[0]["title"] == "1: Left Hand" and groups[0]["sections"][0] == "1a"
+    metas = {s["id"]: {k: s[k] for k in ("title", "usage", "description") if s.get(k)} for s in p["glossary_sections"]}
+    assert metas["2b"]["description"].startswith("These notes")
+    rows = {s["id"]: s["rows"] for s in p["glossary_sections"]}
+    # a new subtitle under a new section title, a renamed one, a description
+    metas["5a"] = {"title": "5a: Ornaments", "description": "Written **after** the note."}
+    metas["1a"]["title"] = "1a: Fingers"
+    layout = {"groups": groups + [{"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}], "sections": metas}
+    rows["5a"] = [{"glyph": "md_placeholder"}]
+    rows["3x"] = []
+    r = webserver.write_glossary(rows, p["glossary_hash"], layout)
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    assert r["ok"] and doc["groups"][-1] == {"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}
+    assert doc["sections"]["5a"] == {"title": "5a: Ornaments", "description": "Written **after** the note.",
+                                     "rows": [{"glyph": "md_placeholder"}]}
+    assert doc["sections"]["1a"]["title"] == "1a: Fingers" and list(doc)[:3] == ["about", "groups", "sections"]
+    # a subtitle with rows can't be dropped
+    del layout["sections"]["2b"]
+    layout["groups"][1]["sections"].remove("2b")
+    with pytest.raises(ValueError, match="still has"):
+        webserver.write_glossary(rows, r["hash"], layout)

@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Glyphs: every glyph, as Tiles (drawings) or Typing (a spelling table, components.csv).
+  // Glyphs: every glyph, as Tiles (drawings) or List view (a spelling table, components.csv).
   // The sidebar groups by design.json area (a glyph in several areas is in each); the 130
   // position decimals fold inside 徽 position. The bottom panel shows what the view doesn't:
-  // in Tiles it edits the spellings; in Typing the row is the editor, so it shows Try it,
+  // in Tiles it edits the spellings; in List view the row is the editor, so it shows Try it,
   // What changes and Issues. View, group, filter and selection live in the URL. On a phone the
   // sidebar is two selects and the selected glyph's card covers the tiles until closed.
   import * as I from '$lib/icons';
@@ -14,6 +14,8 @@
   import TypingTable, { type Section } from '$lib/components/TypingTable.svelte';
   import TypingCards from '$lib/components/TypingCards.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
+  import GlossaryTable from '$lib/components/GlossaryTable.svelte';
+  import { describeUses, glossarySearchText, leftOut, usesOf } from '$lib/glossary';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
@@ -23,14 +25,60 @@
   import { DEFAULT_WEIGHT } from '$lib/glyphed/editor.svelte';
   import { phone } from '$lib/phone.svelte';
 
-  type View = 'tiles' | 'typing';
+  type View = 'tiles' | 'typing' | 'glossary';
   type Filter = '' | 'attention' | 'clashes' | 'nospell' | 'pairs' | 'unsaved';
   const params = page.url.searchParams;
   const storedView = (() => { try { return localStorage.getItem('jzp-glyphs-view'); } catch { return null; } })();
-  let view = $state<View>((params.get('view') ?? storedView) === 'typing' ? 'typing' : 'tiles');
+  const asView = (v: string | null): View => (v === 'typing' || v === 'glossary' ? v : v === 'words' ? 'glossary' : 'tiles');
+  let view = $state<View>(asView(params.get('view') ?? storedView));
+  /** Glyphs > Glossary: the glyph a List view row's Glossary column opened, in that section ('' = in none) */
+  let glossaryShown = $state<{ sid: string; glyph: string } | null>(null);
+  function showInGlossary(sid: string, glyph: string) { glossaryShown = { sid, glyph }; q = ''; view = 'glossary'; }
   let group = $state(params.get('group') ?? 'all');
   let filter = $state<Filter>((params.get('f') as Filter) ?? '');
   let selected = $state<string | null>(params.get('g'));
+  // desktop: the sidebar's width (or folded away) and the glyph panel's height (or closed), kept in this browser
+  const LAYOUT_KEY = 'jzp-glyphs-layout';
+  const kept: { sideW?: number; sideOpen?: boolean; inspH?: number | null; inspOpen?: boolean } =
+    (() => { try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}'); } catch { return {}; } })();
+  let sideW = $state(kept.sideW ?? 220);
+  let sideOpen = $state(kept.sideOpen ?? true);
+  let inspH = $state<number | null>(kept.inspH ?? null);   // null: as tall as it needs, up to 48% of the window
+  // the glyph panel opens when you click a glyph's drawing (a tile, a row's drawing), never on selecting a
+  // row; a link with ?g= opens it with that glyph
+  let inspOpen = $state(!!params.get('g') && (kept.inspOpen ?? true));
+  let inspEl = $state<HTMLElement>();
+  /** Click on a glyph's drawing: select it and show it in the glyph panel. */
+  function showGlyph(g: string) { selected = g; inspOpen = true; }
+  $effect(() => {
+    const v = JSON.stringify({ sideW, sideOpen, inspH, inspOpen });
+    try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private window: not kept */ }
+  });
+  const SIDE = [150, 480] as const;
+  const clampH = (h: number) => Math.round(Math.min(window.innerHeight * 0.8, Math.max(110, h)));
+  /** Drag the sidebar's right edge or the glyph panel's top edge. */
+  function resize(e: PointerEvent, which: 'side' | 'insp') {
+    e.preventDefault();
+    const start = which === 'side' ? e.clientX : e.clientY;
+    const from = which === 'side' ? sideW : (inspEl?.getBoundingClientRect().height ?? 240);
+    const move = (m: PointerEvent) => {
+      if (which === 'side') sideW = Math.round(Math.min(SIDE[1], Math.max(SIDE[0], from + m.clientX - start)));
+      else inspH = clampH(from - (m.clientY - start));
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); document.body.classList.remove('resizing'); };
+    document.body.classList.add('resizing');
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  /** The same with the arrow keys, 16 px a press; Home puts it back. */
+  function resizeKey(e: KeyboardEvent, which: 'side' | 'insp') {
+    const d = { ArrowLeft: -16, ArrowRight: 16, ArrowUp: 16, ArrowDown: -16 }[e.key];
+    if (e.key === 'Home') { e.preventDefault(); if (which === 'side') sideW = 220; else inspH = null; return; }
+    if (d === undefined) return;
+    e.preventDefault();
+    if (which === 'side') sideW = Math.min(SIDE[1], Math.max(SIDE[0], sideW + d));
+    else inspH = clampH((inspH ?? inspEl?.getBoundingClientRect().height ?? 240) + d);
+  }
   let q = $state('');
   let newDialog = $state(false);
   let menu = $state(false);
@@ -51,7 +99,7 @@
   $effect(() => {
     const u = new URL(page.url);
     const set = (k: string, v: string | null) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
-    set('view', view === 'typing' ? 'typing' : null);
+    set('view', view === 'tiles' ? null : view);
     set('group', group === 'all' ? null : group);
     set('f', filter || null);
     set('g', selected);
@@ -96,7 +144,13 @@
   let filterCounts = $derived(Object.fromEntries(FILTERS.map(([f]) => [f, all.filter((g) => matchFilter[f as Exclude<Filter, ''>](g)).length])));
 
   let needle = $derived(q.trim().toLowerCase());
-  const keep = (g: string) => (!filter || matchFilter[filter](g)) && (!needle || T.searchText(app.typing, g).includes(needle));
+  // the search finds a glyph by its name, spellings and pinyin, and by List view's Glossary column (1c, a
+  // section's title, "in 少息", "not in the glossary")
+  let glossaryUses = $derived(usesOf(app.glossary, app.glossarySections));
+  /** Where the glossary shows the glyph in the panel (read-only: the Glossary tab changes it). */
+  let selUses = $derived(selected ? glossaryUses[selected] ?? [] : []);
+  const keep = (g: string) => (!filter || matchFilter[filter](g)) && (!needle || T.searchText(app.typing, g).includes(needle)
+    || glossarySearchText(app.typing, g, glossaryUses, app.glossarySections).includes(needle));
 
   /** The glyphs of the current group (decimals separate, so they can fold). */
   let groupGlyphs = $derived.by(() => {
@@ -164,7 +218,6 @@
 </script>
 
 <datalist id="jzp-glyph-names">{#each all.filter((g) => !T.isDecimal(g)) as g}<option value={g}></option>{/each}</datalist>
-<datalist id="jzp-glossary-sections">{#each app.glossarySections as s}<option value={s.title}></option>{/each}</datalist>
 
 <div class="page">
   <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
@@ -172,11 +225,13 @@
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
-      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>Typing</button>
+      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>List view</button>
+      <button role="tab" class:on={view === 'glossary'} aria-selected={view === 'glossary'} onclick={() => (view = 'glossary')}>Glossary</button>
     </span>
     {#if view === 'typing' && !phone.on}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
     {#if phone.on}
+      {#if view !== 'glossary'}
       <div class="picks">
         <select aria-label="Area" bind:value={group}>
           <option value="all">All glyphs ({all.length})</option>
@@ -191,6 +246,7 @@
           {#each FILTERS as [f, label]}<option value={f}>{label} ({filterCounts[f]})</option>{/each}
         </select>
       </div>
+      {/if}
     {:else}
     <span class="spacer"></span>
     <label class="weight" title="The stroke thickness every glyph should sit around, in units (= font units). The editor's compare dot and new lines use it. Match the body of main strokes, not the tapers.">
@@ -219,8 +275,11 @@
   {#if typingCheck.error}<div class="banner warn"><span class="ic"><I.Warn /></span> Spelling check: {typingCheck.error}</div>{/if}
 
   <div class="body">
-    {#if !phone.on}
-    <aside class="groups">
+    {#if !phone.on && !sideOpen}
+      <button class="rail" onclick={() => (sideOpen = true)} aria-label="Show the sidebar" data-tip="Show the sidebar" data-tip-side="right"><I.Next size={14} /></button>
+    {/if}
+    {#if !phone.on && sideOpen}
+    <aside class="groups" style:width="{sideW}px">
       <button class:on={group === 'all'} onclick={() => (group = 'all')}><span>All</span><span class="muted">{all.length}</span></button>
       <div class="gh">Areas</div>
       {#each areaNames as a}
@@ -238,9 +297,17 @@
           onclick={() => (filter = filter === f ? '' : f)}><span>{label}</span><span class="muted">{filterCounts[f]}</span></button>
       {/each}
     </aside>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
+    <div class="vresize" role="separator" aria-orientation="vertical" aria-label="Resize the sidebar" tabindex="0"
+      data-tip="Drag to resize · arrow keys · Home resets" data-tip-side="right" onpointerdown={(e) => resize(e, 'side')} onkeydown={(e) => resizeKey(e, 'side')}>
+      <button class="fold-tab" onclick={() => (sideOpen = false)} onpointerdown={(e) => e.stopPropagation()} aria-label="Fold the sidebar away" data-tip="Fold the sidebar away" data-tip-side="right"><I.Prev size={14} /></button>
+    </div>
     {/if}
 
     <section class="grid-wrap">
+      {#if view === 'glossary'}
+        <GlossaryTable {q} focus={glossaryShown} onnotice={say} onopen={showGlyph} />
+      {:else}
       {#if d.areas[group]}
         {@const ar = d.areas[group]}
         {@const uses = usedIn(d, group)}
@@ -264,7 +331,7 @@
           {#each tiles as g (g)}
             {@const fs = T.firstSpelling(app.typing, g)}
             <div class="tile" class:on={selected === g} class:unassigned={!areasOf[g]?.length} role="button" tabindex="0"
-              onclick={() => (selected = g)} ondblclick={() => goto(editUrl(g))}
+              onclick={() => showGlyph(g)} ondblclick={() => goto(editUrl(g))}
               onkeydown={(e) => { if (e.key === 'Enter') goto(editUrl(g)); }}>
               {#if errGlyphs.has(g)}<span class="mark e"><I.Problem size={14} /></span>{:else if warnGlyphs.has(g)}<span class="mark"><I.Warn size={14} /></span>{/if}
               <div class="art"><Glyph name={g} size={72} /></div>
@@ -278,9 +345,11 @@
           {/if}
         </div>
       {:else if phone.on}
-        <TypingCards {sections} {selected} onselect={(g) => (selected = g)} />
+        <TypingCards {sections} {selected} onselect={showGlyph} />
       {:else}
-        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} flat={searching} {showAreas} onnotice={say} />
+        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} onopen={showGlyph} flat={searching} {showAreas} onnotice={say}
+          onglossary={showInGlossary} />
+      {/if}
       {/if}
     </section>
   </div>
@@ -291,13 +360,20 @@
   {#if addTo}<AddGlyphsDialog area={addTo} onclose={() => (addTo = null)} />{/if}
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
-  {#if sel}
-    <section class="inspector" class:typing={view === 'typing'} class:card={phone.on}>
+  {#if sel && (phone.on || inspOpen)}
+    {#if !phone.on}
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
+      <div class="hresize" role="separator" aria-orientation="horizontal" aria-label="Resize the glyph panel" tabindex="0"
+        data-tip="Drag to resize · arrow keys · Home resets" onpointerdown={(e) => resize(e, 'insp')} onkeydown={(e) => resizeKey(e, 'insp')}></div>
+    {/if}
+    <section class="inspector" class:typing={view === 'typing'} class:card={phone.on} bind:this={inspEl}
+      style:height={!phone.on && inspH ? `${inspH}px` : null} style:max-height={!phone.on && inspH ? 'none' : null}>
+      {#if !phone.on}<button class="quiet close" onclick={() => (inspOpen = false)} aria-label="Close the glyph panel" data-tip="Close the glyph panel"><I.Close /></button>{/if}
       {#if phone.on}<div class="cardbar"><button class="quiet" onclick={() => (selected = null)}><I.Back /> All glyphs</button><span class="id">{sel.glyph}</span></div>{/if}
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' && !phone.on ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
-        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles' || phone.on} />
+        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles' || phone.on} onrenamed={(n) => (selected = n)} />
         {#if phone.on}
         <div class="row" style="margin-top: var(--space-4)">
           <a href={editUrl(sel.glyph)}><button><I.Computer /> Edit outline</button></a><span class="muted small">needs a computer</span>
@@ -311,11 +387,21 @@
         </div>
         {/if}
       </div>
-      {#if view === 'tiles' || phone.on}
-        <div class="col">
-          <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
-          <TypingFields glyph={sel.glyph} />
+      <div class="col">
+        <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
+        <TypingFields glyph={sel.glyph} />
+        <div class="colh gl">Glossary</div>
+        <div class="uses">
+          {#each describeUses(selUses, app.glossarySections) as line, i (line)}
+            <button class="use" onclick={() => showInGlossary(selUses.map((u) => u.sid).filter((x, j, a) => a.indexOf(x) === j)[i], sel.glyph)}
+              data-tip="Show it in Glyphs > Glossary">{line}</button>
+          {:else}
+            <span class="small" class:warn={leftOut(app.typing, sel.glyph, glossaryUses, app.glossarySections.length > 0)}>{leftOut(app.typing, sel.glyph, glossaryUses, app.glossarySections.length > 0) ? 'Not in the glossary yet: the glossary check will ask for it' : 'Not in the glossary'}</span>
+          {/each}
         </div>
+        <p class="muted small">Where it appears is changed in the <button class="link" onclick={() => (view = 'glossary')}>Glossary</button> tab.</p>
+      </div>
+      {#if view === 'tiles' || phone.on}
         <div class="col">
           <div class="colh">Try it <span class="muted">· live, saved or not</span></div>
           <TryIt glyph={sel.glyph} />
@@ -354,7 +440,7 @@
   .seg button.on { background: var(--sel-bg); color: var(--ink); }
   .banner { border-width: 0 0 1px; border-radius: 0; padding: var(--space-4) var(--space-6); font-size: var(--t-small); }
   .body { display: flex; flex: 1; min-height: 0; }
-  .groups { width: 220px; flex: none; border-right: 1px solid var(--border); padding: var(--space-4); display: flex; flex-direction: column; gap: 2px; overflow: auto; }
+  .groups { width: 220px; flex: none; position: relative; border-right: 1px solid var(--border); padding: var(--space-4); display: flex; flex-direction: column; gap: 2px; overflow: auto; }
   .groups button { display: flex; justify-content: space-between; border: 1px solid transparent; background: transparent; text-align: left; height: auto; min-height: 26px; gap: var(--space-4); font-weight: 400; }
   .groups button span:first-child { min-width: 0; }
   .groups button.sub { padding-left: 22px; font-size: var(--t-small); }
@@ -383,12 +469,29 @@
   .tile .sub { font-size: var(--t-caption); max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .empty { padding: var(--space-8); display: flex; flex-direction: column; align-items: center; gap: var(--space-5); }
   .ok { color: var(--status-saved); }
-  .inspector { display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-7); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); max-height: 48vh; overflow: auto; align-items: flex-start; }
+  .fold-tab { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); width: 18px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-panel); color: var(--ink-muted); cursor: pointer; }
+  .fold-tab:hover { color: var(--ink); background: var(--bg-hover); }
+  .rail { flex: none; width: 24px; height: auto; padding: var(--space-4) 0 0; display: flex; justify-content: center; align-items: flex-start; border: 0; border-right: 1px solid var(--border); border-radius: 0; background: var(--bg-panel); color: var(--ink-muted); }
+  .rail:hover { color: var(--ink); background: var(--bg-hover); }
+  .vresize { flex: none; width: 6px; margin-left: -3px; margin-right: -3px; cursor: col-resize; position: relative; z-index: 2; }
+  .hresize { height: 6px; margin-bottom: -3px; cursor: row-resize; position: relative; z-index: 2; }
+  .vresize, .hresize { touch-action: none; }
+  .vresize:hover, .vresize:focus-visible, .hresize:hover, .hresize:focus-visible { background: var(--sel-bg); outline: none; }
+  :global(body.resizing) { user-select: none; }
+  .inspector .close { position: absolute; top: var(--space-2); right: var(--space-3); padding: 0 var(--space-2); }
+  .inspector { position: relative; display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-7); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); max-height: 48vh; overflow: auto; align-items: flex-start; }
   .col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; flex: 1 1 260px; }
   .col.facts { flex: 1 1 300px; }
   .col.wide { flex: 2 1 380px; }
   .facts .row { flex-wrap: wrap; }
   .colh { font-size: var(--t-caption); color: var(--ink-muted); border-bottom: 1px dashed var(--border); padding-bottom: 2px; margin-bottom: 2px; }
+  .colh.gl { margin-top: var(--space-3); }
+  .uses { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+  .uses .use { height: auto; padding: 0; border: 0; background: transparent; color: var(--link); font-size: var(--t-small); text-align: left; cursor: pointer; }
+  .uses .use:hover { text-decoration: underline; }
+  .uses .warn { color: var(--status-draft); }
+  button.link { height: auto; padding: 0; border: 0; background: transparent; color: var(--link); font: inherit; cursor: pointer; text-decoration: underline; }
+  @media (max-width: 759.98px) { .uses .use, button.link { min-height: var(--control-sm); } }
   .big { padding: var(--space-4); background: var(--bg-field); border: 1px solid var(--border); border-radius: var(--radius-md); }
   .small { font-size: var(--t-caption); }
   .warn { color: var(--status-draft); }
@@ -398,7 +501,7 @@
   .menu button:hover { background: var(--bg-hover); }
   .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; font-size: var(--t-small); display: flex; gap: var(--space-4); align-items: center; }
 
-  /* a phone: search, Tiles | Typing and the two selects wrap; the tiles fill the width; the card covers them */
+  /* a phone: search, Tiles | List view and the two selects wrap; the tiles fill the width; the card covers them */
   .picks { display: flex; gap: var(--space-3); flex: 1 1 100%; min-width: 0; }
   .picks select { flex: 1 1 0; min-width: 0; }
   @media (max-width: 759.98px) {

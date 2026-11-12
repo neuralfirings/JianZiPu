@@ -38,7 +38,7 @@ Every box where you type words in the Builder, and the font itself, read the sam
 | `C03\|s6,5` | Chords: `C` 撮 (also `DC`, `FC`), the left note, `\|`, the right note. `TT` 双弹 and `BL` 拨剌 work the same way. |
 | `#` `+` | `#` starts a new word without a space; `+` adds an advance between words. |
 
-The exact keys for each part are its spellings, listed and edited in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing). The **Sample set…** menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).
+The exact keys for each part are its spellings, listed and edited in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing). The **Sample set…** menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).
 
 ## Glyphs
 
@@ -50,28 +50,30 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 ### Finding and adding
 
 - **Search** finds a glyph by spelling, character, pinyin, name or decimal: `k`, `勾`, `gou`, `lg_gou` and `7.6` all work.
-- **+ New glyph** opens a new drawing: give it a name (such as `md_9`), pick its area, and start blank, from an SVG file, or from an image to trace.
+- **+ New glyph** opens a new drawing: give it a name (such as `md_9`), pick its area, and start blank, from an SVG file, or from an image to trace. **Several SVG files** adds many at once: drop the files on the dialog (or choose them), and each becomes a glyph named after its file, in the area you picked. Each file is checked the way the build reads it, and the list says which to fix (a name already taken, a file with nothing to draw) before **Add**. It's one step Undo takes back; the files are written when you Save (online, into your draft).
 - With an area picked, **+ Add glyphs** puts existing drawings into it. One glyph can be in several areas.
 - Click a tile to select it; double-click it (or press Enter, or its **Edit** pill) to open the [glyph editor](https://jianzipufont.com/help/#editor).
 
 On a phone, two menus above the tiles pick the area and a spelling filter, and tapping a tile opens the glyph's card over the tiles: its areas, its spellings to edit, and Try it. **All glyphs** goes back. Drawing needs a computer, and so do **+ New glyph**, the reference weight and the CSV import and export.
 
-Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
+Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings (Latin Entry and its Alt, 简体, 繁體, Vertical form, PinYin, editable here in every view, List view and Glossary included), where the glossary shows it (click a line to see it there; the Glossary tab changes it), and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live. Hover a spelling's tile to see what it types: a glyph only a vertical word can hold (尚, 上…) types with a colon in front, `tang` giving `:尚`, since the font adds the colon itself.
+
+On a computer, drag the sidebar's right edge or the glyph panel's top edge to resize them (or focus the edge and use the arrow keys; Home puts it back). **Fold the sidebar away** on the sidebar's edge folds it away; **Show the sidebar** on the thin strip left behind brings it back. The glyph panel opens when you click a glyph's drawing: a tile, or the drawing at the start of a List view row (selecting a row to edit its spellings leaves it as it is). **Close** closes it. The Builder remembers the sizes in this browser.
 
 ### Typing: spellings
 
-The **Tiles | Typing** switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:
+The **Tiles | List view | Glossary** switch: List view turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:
 
-![The Typing table for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin](https://builder.jianzipufont.com/help/typing.jpg)
-*Typing, showing the Left hand area: `s` types 名, `d` types 中.*
+![The List view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin](https://builder.jianzipufont.com/help/typing.jpg)
+*List view, showing the Left hand area: `s` types 名, `d` types 中.*
 
-- Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.
-- Latin Entry (Alt): A second way to type it (`bl`, `fy`).
+- Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the faint, slanted suggestion made from the pinyin; until you take it, it isn't a spelling and typing it gives separate letters.
+- Latin Entry (Alt): A second way to type it (`bl`, `fy`). Both Latin columns take letters, digits, `[` and `]`, not starting with a digit. A glyph spelled `[` also answers to 【 typed in Chinese (and `]` to 】), unless another glyph's Chinese spelling claims 【 itself.
 - Number/Symbol: Digits and symbols typed the same in any input mode (`7`, `13+`, `/`). Shown, not edited here.
-- 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.
+- 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体. Chinese punctuation such as 【 】 or 《 》 can be a spelling too, except the marks the font reads itself: 。 ， ： ｜ (and 点 徽 alone).
 - Vertical form: The glyph the font swaps in after a colon (the centred version).
 - PinYin: For search and labels only; never typed.
-- Glossary: Where the glyph has a row in the glossary on jianzipufont.com, by the section's title: pick one from the list, such as `1c: Left Hand Techniques`, or two separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui Number`). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed.
+- Glossary: Read-only: where the glossary on jianzipufont.com shows the glyph, a section at a time: *1c: own row*, or *3e: in 少息, 大息* when it's part of words. Click it to go to that row in the Glossary view. **not in the glossary** marks a glyph with spellings that no section shows; click it to add it to one. The search box above the list finds glyphs by this column too: a section (`1c`, or its title), a word (`少息`), or `not in the glossary`.
 
 - Enter keeps a cell and moves down (⇧Enter moves up), Tab moves right, Esc puts the old value back.
 - Paste a range copied from a spreadsheet to fill down and across in one step.
@@ -79,7 +81,26 @@ The **Tiles | Typing** switch turns the screen into a table of every glyph's spe
 - Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a **clash** holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.
 - The **Typing** filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.
 
-On a phone, Typing is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.
+On a phone, List view is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.
+
+### The glossary
+
+**Glossary**, the third view, is the glossary on jianzipufont.com: its sections in page order, each with its rows in the order the page shows them. A row is one glyph, or a word written together, such as :少息. Its ASCII, 中文 and 拼音 come from the glyphs' spellings; its **Definition** is its own, a few plain words on what it means or asks the player to do (`pluck the string inward with the middle finger`). The columns are ASCII, 中文, 拼音, **Input**, **Output** and Definition, as on the page; a section on the page shows a Definition column, last, once one of its rows has one.
+
+- Drag a row by its grip **grip** to move it, within its section or into another; a blue line shows where it lands (red where it can't go), and Esc puts it back. On a phone, press and hold the grip first. Dropped on a folded section's title, it goes to the end of that section.
+- The glossary has **section titles** (1: Left Hand) and, under each, **subtitles** (1a: Left Hand Finger), each subtitle with its table; beside each, how many entries it holds. Drag a section title or a subtitle by its grip **grip** to move it: a subtitle within its section title or under another (dropped on a section title, it goes first). Entries can sit straight under a section title, before its subtitles: **+ Add an entry** under the title adds one there, and a row dropped on the title's heading (or on the box that shows under it while you drag) goes there; the page shows them right under the heading. Clearing a subtitle's title does the same; moving or removing the last of them leaves the title with only its subtitles. Folding first makes the moves short. Click a section title or a subtitle to fold it away, its description with it, or open it again. The links at the top fold or unfold them all: **Fold all sections** and **Unfold all sections** for the section titles, **Fold all subsections** and **Unfold all subsections** for the subtitles. The Builder remembers which are folded in this browser.
+- Next to a section title or a subtitle, **Rename** renames it (a section title also takes its **Name in the page's contents**, the short name in the page's side menu, such as *Left hand*), **Describe** adds or edits its description, and **Delete** deletes it: a subtitle once its rows are moved or removed, a section title once its subtitles are. Click a description to edit it too.
+- A description is a little Markdown: a blank line starts a paragraph, `**bold**`, `*italic*`, `` `s9k3` `` for a typed example (the page's grey pill), `[a link](https://…)`, lines starting “- ” for a list, and the page's own `<u>`, `<jzp>` (drawn in the font) and `<small>`. Any other HTML shows as text. The preview under the box shows it as the page will.
+- **Add subtitle**, under a section title's last subtitle, adds one with its title; give it a default example under its title if its rows should share one. **Add section title**, at the very end, adds a section title; give it subtitles, then rows.
+- **Shown** next to a section title or a subtitle switches it off the page (**Hidden**) and back. A hidden one is faded here and left out of the page, a section title with everything under it; its glyphs count as left out on purpose, so the check doesn't report them. The switch is its own, whatever the title says (`99: Hidden in Glossary` is just a subtitle that's switched off).
+- **Input** is how to type the row's example, in Chinese and in ASCII, and **Output** is that example drawn as the font sets it, made from the Input (click it to see the glyph in the glyph panel). A section can have a **default example**, typed under its title with `{}` where each row's glyph goes (`s9{}k3` and `名九{}勾三`, as the 1 and 2 sections have): a row without an example of its own shows it, faded, with its glyph in red (`s9/k3`, the `/` red). Leave it empty, as a new subtitle starts, and each row is typed on its own after a colon (`:vxi`), all in black, a word standing vertically; a glyph only a vertical word can hold (上, 退, 带起…) needs no colon, since the font sets it vertically by itself, so it shows without one (`shang`), and the page drops those colons too once the font it offers does that; give it a longer example (`0k5` for 散) and its glyph is red there too. The rule is the same for every row, a glyph or a word: its glyphs are red when the example has more in it than the row itself (`s9k6 daiqi` marks 带起), and all in black when the example is just the row (`:daiqi`). A row with an example word of its own that isn't typed after a colon (`s9/k3`) is spelled as in that word, without the colon (`/`, not `:/`). Click either Input line and type another example, in either language on either line (what you type decides which it is) (`s9k3` or `名九勾三`, `:vxi7`): the Builder types it through the spellings as they are now and makes the other line from the glyphs' spellings, so you only type one. What you type stays as you typed it (`s9bl7` keeps `bl`, not `banlun`); typed with the glyph's first spelling, the page also lists the example with each of its other spellings. In the Chinese it makes, a hui number before a numeral or 半 gets a comma (名九，半轮七; 名九半 would read as 9.5), and 十一 to 十三 get 徽. Where a glyph has no spelling in the other language, that line stays as it was and you type it yourself. Emptying a line gives the row its default example back.
+- **Show in the glyph panel** shows the row's glyph in the glyph panel at the bottom; for a word, a menu lists its glyphs (大 and 息 for 大息) to choose from. Clicking the Output drawing does the same.
+- **+ Add an entry** under a section types what you give it as in the font, unsaved spellings and new glyphs included: one glyph (`k`, `勾`, or its name, `lg_gou`) or a word (`:shaoxi`, `少息`). It goes at the end of the section; drag it into place.
+- **Edit** edits a row: it shows the row as it was entered (or, for a row from before, its ASCII spelling, or its Chinese when it has none), and you type it again, as for **+ Add**; Enter keeps it, Esc leaves it. The definition stays, and so does its example while the glyph is the same.
+- **Remove** removes a row from its section. A glyph can have rows in two sections (散 in 1d and 3c).
+- A word can go in any section: even where there's a default example, its example is the word typed on its own after a colon, standing vertically. `4: Uncategorized` is for a glyph that doesn't fit a section yet.
+- Every move, addition and definition is one step for Undo, and they save with Saveinto your draft, going in a Change Request like any other change. Review takes a section whole: its rows as your draft orders theminto `site/glossary.json`; the page's tables are rewritten from it at the next release. The search box above narrows the view to rows whose name, spellings, pinyin or definition hold what you type.
+- **More** → **Check the glossary…** shows the tables as a release would write them, unsaved changes included(online, the font's with all of your draft's changes), with any glyph left out and any example that types another glyph. Its search box (like the one on the font page) shows the rows whose ASCII, Chinese, pinyin or definition holds what you type, tone marks optional.
 
 ## The glyph editor
 
@@ -91,7 +112,8 @@ Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), 
 ### Drawing
 
 - Tools: Select `V`, Pen `P`, Pencil `⇧P`, Rectangle `R`, Ellipse `O`, Hand `H` (or hold Space), Zoom `Z`. **Keyboard shortcuts** on the rail lists every shortcut.
-- To edit points, use Select (`V`): click a shape to show its points, then click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
+- Select (`V`) picks shapes: a click picks one and draws a box round it; `⇧`-click adds or removes a shape, and the box holds them all. Drag inside the box to move them; drag a corner or an edge of the box to scale them from the opposite side (`⇧` keeps the proportions). Dragging across empty canvas picks every shape the box touches.
+- To edit points, double-click a shape: its points show (`Esc`, or a click off it, closes them). Click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
 - Combine two selected shapes with Union, Subtract, Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
 - Lines drawn with the Pen or Pencil are strokes until **Outline line(s)** turns them into filled shapes. Save does this for you.
 - **SVG file…** imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.
@@ -104,8 +126,8 @@ Each panel's **?** shows the same text as below.
 - **Selection**: The position and size of what is selected: points (corner, smooth or free) or whole shapes (move, scale, rotate, centre in the box). With nothing selected it shows the glyph's shape count and its estimated stroke weight.
 - **Compare**: Things to measure against while drawing: a **reference dot** (`D`) at the stroke weight to aim for, another glyph laid over this one (`G`), or the last saved outline (`L`).
 - **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to.
-- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing).
-- **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. Red means "not in the font" until the next build.
+- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing).
+- **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. A glyph newer than the last build is drawn in from its drawing and a new Chinese character copied from the base font, so no Build is needed; red means a character not even the base font has.
 - **Checks**: Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. **Check as built** runs the same conversion as the font build.
 - **Tester**: Words that use this glyph, drawn live as you edit, so you can see it in context before saving.
 - **Trace**: Turns the image you opened into an outline. Adjust **Threshold** (or **Auto**), specks, corners and simplify, then **Use this outline**. The image stays in your browser. `Esc` leaves trace mode.
@@ -113,6 +135,8 @@ Each panel's **?** shows the same text as below.
 ### Saving a glyph
 
 The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. Online, saving puts the glyph into your draft. On your own computer, saving writes `builder/inputs/svg/<name>.svg` at once; if the file changed on disk meanwhile, you're asked which version to keep. A new glyph joins its area on its first save. The font picks up the new drawing at the next **Build font**.
+
+**Rename…**, next to the glyph's name in the editor, gives it another name; so does clicking the name in the Glyphs screen's glyph panel or in List view's Glyph Name column. The name is the glyph's ID, so the new one goes everywhere the old one was used: its drawing, its spellings, other glyphs' Vertical form, its areas and the spacing rules that name it. A box lists what changes before you confirm, and it's one step: Undo (or **Undo** on the note that follows) takes all of it back. Online you can rename only glyphs your draft added; the font's own glyphs are renamed on the Builder on your own computer. The glossary's rows follow it too. On your own computer the drawing's file moves when you Save. Save or discard your edits to the drawing first.
 
 ## Layouts
 
@@ -159,7 +183,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 
 ### Two views
 
-- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design as it is now, unsaved changes included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a live word to open it in Layouts. **+ Save as set** keeps the current words as a sample set.
+- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design and the spellings as they are now, unsaved changes and new glyphs included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a live word to open it in Layouts. **+ Save as set** keeps the current words as a sample set.
 - **Test the font file**: Running text in the font file, as a reader sees it. Switch **liga** (substitution) and **kern** (positioning) off to see the raw parts, try **vertical columns**, or **compare with a second font** side by side.
 
 ![Build and test, Test the font file view: the same words as running text in the built font](https://builder.jianzipufont.com/help/build-font.jpg)
@@ -173,7 +197,7 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 
 - Edits to the design and the spellings stay in the browser until you **Save** (`⌘S`). The header shows **unsaved** with a count; click it to see the list or **Discard all**.
 - **Undo** **Redo** in the header (`⌘Z`, `⇧⌘Z`) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.
-- Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
+- Save waits while a spelling clashes, and says which ones; fix them in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention).
 - Unsaved work survives a reload: the Builder offers to restore it.
 - On a phone, the header is one row (the screen's name, its status, **Undo** **Redo** on Glyphs and Layouts, and **More**), the screens are tabs at the bottom, and **Save** sits in a bar above the tabs while something is unsaved.
 - Online, your draft also saves itself 30 seconds after an edit, when you change screen, and when you leave the tab.
@@ -184,10 +208,10 @@ A character the font doesn't have is drawn by another font in red, so it can't p
 
 Invited testers use the Builder online. You sign in with a link sent to your email (no password). Everything you change goes into your own **draft**: only you see it, and nothing you do changes the real font or anyone else's work.
 
-- Your draft is compared with a **reference font**, a release such as 3.200: **Your changes** are what your draft does differently from it. The **Your draft** pill in the header shows your reference font and how much you've changed. **See my changes** lists the changes item by item.
-- On that list, **Undo this change** puts one item back the way your reference font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
+- Your draft starts from the font as it is that day, and **Your changes** are what your draft does differently from that font. The **Your draft** pill in the header shows which font that is (“compared with the font of 21 Oct (3.200)”) and how much you've changed. **See my changes** lists the changes item by item.
+- On that list, **Undo this change** puts one item back the way the font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, **Show the spacing rules** lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with **Undo**. To throw everything away at once, use **More** → **Discard my draft…**.
 - To share your work, **More** → **Export my draft (.zip)…** and send the file. **Import a draft (.zip)…** opens one again.
-- When a new release is out, a banner offers **Set reference font to 3.200 (latest)…** (with the new number). Your changes stay yours and are compared with the new release from then on: its changes come in, the ones it already has leave Your changes, and where you both changed the same thing you pick **Keep mine** or **Take the font's**. **Not now** hides the banner until the next release. When the font's files change without a new release, only **More** → **Set reference font to …** offers it.
+- When the font changes after your draft started, a banner says what changed: “JianZiPu 3.300 is out: …” for a new release, or “The font was updated on 12 Nov: Chinese spellings for 79 glyphs” when it changed without a new number. Your draft doesn't have those changes until you bring them in: **Bring the updates into my draft…** (or **More** → **Bring the font's updates into my draft…**). Changes to things you didn't touch come in on their own; where you both changed the same thing you pick **Keep mine** or **Take the font's**. Your own changes stay, and from then on Your changes compares your draft with the font as it is now. **Not now** hides the banner until the font changes again.
 - **Feedback** in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.
 
 ## Change Requests
@@ -201,7 +225,7 @@ When some of your changes are ready for the real font, send them as a **Change R
 - [Your Change Requests](https://builder.jianzipufont.com/requests) shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.
 - Statuses: **Sent**, **In review**, **In a release candidate** (a test version of the next font), **Released**, **Declined**, **Withdrawn**. A request can be partly kept: "3 of 5 changes in v3.200".
 - **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.
-- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Set reference font to 3.200 (latest)…** compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
+- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Bring 3.300 into my draft…** (with the new number) compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
 
 ## Reviewing Change Requests
 
@@ -232,7 +256,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 - `⌘S`: Save
 - `⌘Z` / `⇧⌘Z`: Undo / redo (not while typing in a field)
 
-**Glyphs → Typing**
+**Glyphs → List view**
 
 - `Enter` / `⇧Enter`: Keep the cell, move down / up
 - `Tab`: Next cell; accepts a suggestion in an empty Latin Entry
@@ -257,7 +281,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 
 ## When something looks wrong
 
-- **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. In Try it, red means "not in the font until the next build".
+- **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. The live previews (Try it, Check the glossary, and Live preview in Build & test) don't need a Build for a new glyph or spelling: they draw a new glyph in from its drawing and copy a new Chinese character from the base font. There, red means a character not even the base font has.
 - **The live preview and the font differ**: The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.
 - **warning under a word**: Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.
 - **Save is waiting**: A spelling clashes with another glyph's or isn't valid. **Show them** lists the cells to fix.
@@ -290,7 +314,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### Saving
 
-- **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
+- **“Save is waiting”**: Some spellings would stop the font from building; the dialog lists them. **Show them** opens [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) at the cells to fix, or **Undo last change**. Your changes are kept meanwhile.
 - **“design.json changed on disk” / “components.csv changed on disk”**: On your own computer: the file changed since you opened it (a git pull, another tab, an editor). **Export mine first**, then **Reload from disk**; or **Overwrite** if yours should win.
 - **“Not saved: …”**: On your own computer: the server couldn't write a file; the reason follows (“Not saved: *name*.svg: …” for a glyph file). Your changes are still here. Fix the cause, then **Try again**. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press **Try again**.
 - **“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”**: On your own computer: the Builder's server isn't running. Start it with that command and reload.
@@ -301,14 +325,28 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 - **“*k*” types 2 glyphs (*a, b*). A spelling can make only one glyph.**: A clash (under the cell: “already used by …”): two glyphs share a spelling, and Save waits until it's fixed. Give one of them another spelling. If one is the vertical form of the other, link them in **Vertical form** instead of repeating the spelling.
 - **“start with a letter: a leading digit is read as a string or position number”**: A Latin Entry must start with a letter; digits at the start mean strings and hui.
-- **“use only letters a–z, A–Z and digits”**: Latin entries take no spaces, accents or symbols; symbols go in Number/Symbol.
+- **“use only letters a–z, A–Z, digits, [ and ]”**: Latin entries take no spaces, accents or other symbols.
 - **“alone it marks a position; it can't type a glyph”**: 点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “*x*” alone marks a position; it can't type a glyph.
-- **“Chinese characters only”**: The 简体 and 繁體 columns take only Chinese characters.
+- **“Chinese characters and Chinese punctuation (【 】 《 》…) only”**: The 简体 and 繁體 columns take Chinese characters and Chinese punctuation, not Latin letters, digits or spaces.
+- **“… is read by the font itself (a position, a comma, the vertical colon or the chord bar), so a spelling can't hold it”**: 。 ， ： ｜ already mean something when typed (。 a position like 点, ， a separator, ： the start of vertical text, ｜ a chord's divider), so a glyph can't take them as a spelling.
 - **“*name* doesn't exist” / “Vertical form *name* doesn't exist.”**: The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.
-- **“no glossary section “*9z: …*” on the font page: pick a title from the list”**: A warning: the Glossary column names a section the font page doesn't have, or spells its title differently. Save still works, but the next release can't put the glyph in the glossary; pick the title from the list the cell offers.
+- **“… isn't a glyph's spelling: check the spellings, or give the glyph name.”**: From **+ Add** in the Glossary view: part of what you typed doesn't become a glyph. Check that each glyph has that spelling, type it another way (in Latin: `:shaoxi`), or give the glyph's name (`lg_gou`).
+- **“… isn't in the font yet (Build font once, or add the base font), so it can't be typed in Chinese here: type it in Latin (:shaoxi), or give the glyph name.”**: The characters aren't in the font this Builder types with yet. Type it in Latin or by the glyph's name, or **Build font** once and try again.
+- **“*example* doesn't type *glyph* (…): an example has the row's glyph in it.”**: From an Example line: the example you typed doesn't contain the row's glyph (or a word's glyphs), so it isn't an example of that row. Put the glyph in (its spelling, typed as in the font).
+- **“The ASCII example can't be made automatically, since *part* has no ASCII spelling yet: click it to type it yourself.” (or Chinese)**: A glyph in the example can be typed only one way so far, so the Builder couldn't write the other line, which stays as it was. Click that line and type it yourself, or give the glyph a spelling in that language. An example can hold several words, separated by a space (`名九勾三 推出`): the space stays as it is in both lines.
+- **“*lun* without the colon types *lg_lun*; its vertical form, *md_lun*, needs the colon, so the page keeps *:lun*.” (or “… isn't set vertically, so the page keeps …”)**: You edited a row in the Glossary view and left the colon out, but the font needs it for what that row shows: `lun` on its own is the right hand's 轮, and only `:lun` gives the vertical 轮. The row keeps the colon on the page. A glyph that only a vertical word can hold (打圆, 滚, 上…) needs none, and shows without it.
+- **“*中文 line* and *ASCII line* type different glyphs: click a line to fix it.”**: A row's example, in the Glossary view: its two lines don't type the same glyphs, so someone copying one from the page gets something else. The Builder checks every example this way as it draws them. Usually a number: after a finger, two Chinese numerals, or a numeral and 半, read as a decimal position (名十二 is 名 and 10.2, 名九半 is 名 and 9.5), so write 名十二徽 or 名九，半轮; the Builder adds the 徽 or the comma itself when it makes the Chinese line. Click the line that's wrong and type it again.
+- **“Delete or move its subtitles first.”**: A section title is deleted only once it holds no subtitle: delete each of them first.
+- **“It has *n* rows: move or remove them first.”**: A subtitle is deleted only once it's empty, so no row is lost by accident: drag its rows to another subtitle, or remove them.
+- **“*title* isn't under a section title, so the page doesn't show it: put it under one in Glyphs > Glossary.”**: From **Check the glossary…**: a subtitle no section title holds (one whose section title was skipped in Review, say). The Glossary view lists it under *Not under a section title*; pick one there.
+- **“*name* is in *section* already.”**: A section has one row per glyph or word. Move the row that's there, or pick another section.
+- **“*name* isn't in the glossary, so the glossary check reports it.”**: From List view's Glossary column: the glyph has spellings and no section shows it. Pick a section and **Add**, or a hidden one to leave it off the page on purpose.
+- **“The glossary can't be made, so a release would stop here.”**: From **Check the glossary…**: the glossary and the spellings disagree, and the message after it says how. Usually a glyph in a section has no ASCII or Chinese spelling for its example, or a row names a glyph that was renamed or deleted; fix the spelling or the row in the Glossary view, then **Check again**.
 - **“joins *a* + *b*: typing *ab* gives this glyph instead of …”**: A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.
 - **Typing “*x*” gives *a + b*, not *glyph*.**: Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.
-- **“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”**: The spelling or glyph is newer than the last build. **Build font** in [Build & test](https://builder.jianzipufont.com/test).
+- **“not in the font yet. It arrives with the next Build.”**: The spelling uses a Chinese character the font doesn't have yet, and this Builder has no base font (`src_font/TW-Kai-98.ttf`) to copy it from: a Build adds it once the base font is there. Where the base font is (online, and on your own computer once you've copied it in), previews copy new characters in themselves, like new glyphs.
+- **“the base font (TW-Kai) doesn't have this character, so the font can't type it.”**: The base font has no such character, so no Build can add it either. Use another spelling, or ask for the character to be drawn as a glyph of its own.
+- **“*name* has no drawing yet, so it can't be previewed. Draw it in the glyph editor.”**: The glyph has spellings but no drawing, so there's nothing to type it into. Draw it, or **Replace…** it with a file; once it has a drawing, Try it and Check the glossary use it without a Build.
 - **“Build the font once to preview spellings.”**: Try it needs one build first: **Build font**.
 - **“Can't read *file*: no glyph_name column”**: A spellings CSV needs a header row that includes `glyph_name`. **Export spellings (CSV)** gives a file of the right shape to start from.
 
@@ -341,7 +379,7 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 ### Build & test
 
-- **“ValidationError: input validation failed”**: The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) and build again.
+- **“ValidationError: input validation failed”**: The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing&f=attention) and build again.
 - **“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”**: A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.
 - **“FileNotFoundError: … src_font/TW-Kai-98.ttf”**: The base font is missing. On your own computer, copy `TW-Kai-98.ttf` into `builder/src_font/` (it isn't in git). Online, the server couldn't fetch it: send **Feedback**.
 - **“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in *n* seconds.”**: Builds run one at a time, with a short pause between yours online. Wait, then **Build font** again.

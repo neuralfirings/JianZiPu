@@ -27,6 +27,15 @@ export { default as TabRequests } from '@lucide/svelte/icons/inbox';
 
 // panels, menus, disclosure
 export { default as Grip } from '@lucide/svelte/icons/grip-vertical';
+/** edit a row by typing it again (Glyphs > Glossary) */
+export { default as EditRow } from '@lucide/svelte/icons/pencil-line';
+/** add or edit a description (Glyphs > Glossary) */
+export { default as Description } from '@lucide/svelte/icons/text-align-start';
+/** a glossary section shown on the page / hidden from it (its switch) */
+export { default as Shown } from '@lucide/svelte/icons/eye';
+export { default as Hidden } from '@lucide/svelte/icons/eye-off';
+/** show a glyph in the Glyphs screen's bottom panel */
+export { default as GlyphPanel } from '@lucide/svelte/icons/panel-bottom-open';
 export { default as Folded } from '@lucide/svelte/icons/chevron-right';
 export { default as Unfolded } from '@lucide/svelte/icons/chevron-down';
 export { default as Dropdown } from '@lucide/svelte/icons/chevron-down';
@@ -41,6 +50,7 @@ export { default as Warn } from '@lucide/svelte/icons/triangle-alert';
 export { default as Alert } from '@lucide/svelte/icons/circle-alert';
 export { default as Unsaved } from '@lucide/svelte/icons/circle-dot';
 export { default as Working } from '@lucide/svelte/icons/loader-circle';
+export { default as Upload } from '@lucide/svelte/icons/upload';         // drop files here
 export { default as Info } from '@lucide/svelte/icons/info';
 export { default as Draft } from '@lucide/svelte/icons/circle-dashed';
 export { default as Current } from '@lucide/svelte/icons/circle-dot';     // the one in use: font, rule row

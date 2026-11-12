@@ -1,12 +1,13 @@
 // Three-way merge of a draft into the current font: base (what the draft started from),
 // theirs (the draft), current (the font as it is now). Each change is one reviewable item:
-// a glyph file, one glyph's spellings, or one unit of design.json (an area, a word type, the
-// page center, the stroke weight, the sample sets). An item conflicts when the current font
+// a glyph file, one glyph's spellings, one unit of design.json (an area, a word type, the
+// page center, the stroke weight, the sample sets), or one section of the glossary (its rows, whole). An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
 import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
+import { changedSections, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
 
 export type Status = 'added' | 'changed' | 'deleted';
 type Base = { id: string; status: Status; conflict: boolean };
@@ -18,8 +19,14 @@ export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
 };
-export type Item = GlyphItem | SpellingItem | DesignItem;
-export type Current = { design: Design; typing: T.Typing; svgs: SvgMap };
+/** One subtitle of the glossary (site/glossary.json): its rows in order and, from a draft that has
+ *  them, its title, kind, example and description (`meta`, undefined: not there), kept or skipped whole. */
+export type GlossaryItem = Base & { kind: 'glossary'; key: string; base: GRow[]; theirs: GRow[]; current: GRow[];
+  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta } };
+/** The glossary's section titles: their names, short names, descriptions and which subtitles each holds, whole. */
+export type GlossaryTitlesItem = Base & { kind: 'glossary-titles'; key: 'titles'; base: Group[]; theirs: Group[]; current: Group[] };
+export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryTitlesItem;
+export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
@@ -28,7 +35,33 @@ const status = (base: unknown, theirs: unknown): Status => (base === undefined ?
 /** Every change the draft makes, compared with the current font. Changes the current font
  *  already has are left out. */
 export function diffBundle(b: Bundle, cur: Current): Item[] {
-  return [...glyphItems(b, cur), ...spellingItems(b, cur), ...designItems(b.base.design, b.design, cur.design)];
+  return [...glyphItems(b, cur), ...spellingItems(b, cur), ...designItems(b.base.design, b.design, cur.design),
+    ...(b.glossary || b.glossaryLayout ? glossaryItems(b, cur) : [])];
+}
+
+/** The subtitles whose rows or settings the draft changed, and its section titles when it changed
+ *  them (a draft from before the glossary file has no rows to give, one from before titles no titles). */
+function glossaryItems(bundle: Bundle, cur: Current): Item[] {
+  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows, curRows = cur.glossary ?? {};
+  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay, curLay = cur.glossaryLayout;
+  const metaOf = (l: GlossaryLayout | undefined, k: string) => l?.sections[k];
+  const differ = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+  const ids = new Set([...changedSections(baseRows, rows), ...(lay ? Object.keys({ ...baseLay!.sections, ...lay.sections }).filter((k) => differ(metaOf(baseLay, k), metaOf(lay, k))) : [])]);
+  const out: Item[] = [];
+  for (const k of [...ids].sort()) {
+    const b = baseRows[k] ?? [], t = rows[k] ?? [], c = curRows[k] ?? [];
+    const meta = lay ? { base: metaOf(baseLay, k), theirs: metaOf(lay, k), current: metaOf(curLay, k) } : undefined;
+    if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
+    const gone = meta ? !meta.theirs : !t.length, fresh = meta ? !meta.base : !b.length;
+    out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
+      base: b, theirs: t, current: c, ...(meta ? { meta } : {}),
+      conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+  }
+  if (lay && differ(baseLay!.groups, lay.groups) && differ(lay.groups, curLay?.groups)) {
+    out.push({ id: 'glossary-titles', kind: 'glossary-titles', key: 'titles', status: 'changed',
+      base: baseLay!.groups, theirs: lay.groups, current: curLay?.groups ?? [], conflict: !!curLay && differ(curLay.groups, baseLay!.groups) });
+  }
+  return out;
 }
 
 function glyphItems(b: Bundle, cur: Current): GlyphItem[] {
@@ -126,7 +159,7 @@ export function designSummary(current: Design, file: Design): string[] {
   return designItems(current, file, current).map((i) => `${i.label}: ${i.summary.join(', ')}`);
 }
 
-/** "Set reference font" to the latest: the font's changes since the draft's base, as items to bring
+/** Bring the font's updates into a draft: the font's changes since the draft's base, as items to bring
  *  into the draft (theirs = the font now, current = the draft). Glyphs the draft never touched
  *  already show the font's outline, so only the draft's own glyphs can conflict. With
  *  `defaultKeep`, everything the draft didn't change comes in and conflicts keep the draft's. */
@@ -144,24 +177,75 @@ export function fontUpdateItems(base: Current, font: Current, mine: Current): It
   }
   const pseudo = {
     manifest: { svgs: { added, changed, deleted } }, design: font.design, typing: font.typing, svgs: fontSvgs,
-    base: { design: base.design, typing: base.typing, svgs: baseSvgs }
+    ...(font.glossary ? { glossary: font.glossary } : {}), ...(font.glossaryLayout ? { glossaryLayout: font.glossaryLayout } : {}),
+    base: { design: base.design, typing: base.typing, svgs: baseSvgs, ...(base.glossary ? { glossary: base.glossary } : {}),
+      ...(base.glossaryLayout ? { glossaryLayout: base.glossaryLayout } : {}) }
   } as unknown as Bundle;
   return diffBundle(pseudo, mine);
 }
 
+const SPELLING_NOUN: Record<T.SpellField, string> = {
+  latin: 'Latin entries', latin_alt: 'Latin entries', simplified: 'Chinese spellings', traditional: 'Chinese spellings',
+  common: 'number or symbol spellings', vert_variant: 'vertical forms', pinyin: 'pinyin'
+};
+
+/** What a font update brings, in a few words: "Chinese spellings for 79 glyphs, 2 glyph drawings
+ *  and 1 word type". The three biggest kinds, then "and more". */
+export function updateSummary(items: Item[]): string {
+  const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  const fields = new Map<string, Set<string>>();
+  let drawings = 0, sections = 0;
+  const design = new Map<string, number>();
+  for (const it of items) {
+    if (it.kind === 'glyph') drawings++;
+    else if (it.kind === 'glossary' || it.kind === 'glossary-titles') sections++;
+    else if (it.kind === 'spelling') {
+      for (const f of it.fields) {
+        const noun = SPELLING_NOUN[f.field];
+        if (!fields.has(noun)) fields.set(noun, new Set());
+        fields.get(noun)!.add(it.key);
+      }
+    } else {
+      const w = it.unit.type === 'layout' ? 'word type' : it.unit.type === 'area' ? 'area' : 'design setting';
+      design.set(w, (design.get(w) ?? 0) + 1);
+    }
+  }
+  const parts: [number, string][] = [
+    ...[...fields].map(([noun, gs]): [number, string] => [gs.size, `${noun} for ${n(gs.size, 'glyph')}`]),
+    ...(drawings ? [[drawings, n(drawings, 'glyph drawing')] as [number, string]] : []),
+    ...(sections ? [[sections, n(sections, 'glossary section')] as [number, string]] : []),
+    ...[...design].map(([w, k]): [number, string] => [k, n(k, w)])
+  ].sort((a, b) => b[0] - a[0]);
+  const words = parts.slice(0, 3).map((p) => p[1]);
+  if (parts.length > 3) words.push('more');
+  return words.length <= 1 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+}
+
 // ---------------------------------------------------------------- applying
 
-export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; applied: Item[] };
+/** `glossary`, `glossaryLayout`: only when `cur` had them, so a caller that leaves them out can't empty them. */
+export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; glossary?: GlossaryRows;
+  glossaryLayout?: GlossaryLayout; applied: Item[] };
 
 /** Apply the kept items (`keep[id] === true`) to the current font. */
 export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Current): Merged {
   const design: Design = JSON.parse(JSON.stringify(cur.design));
   const typing: T.Typing = JSON.parse(JSON.stringify(cur.typing));
   const svgWrites: SvgMap = {}, svgDeletes: string[] = [], applied: Item[] = [];
+  const glossary: GlossaryRows = JSON.parse(JSON.stringify(cur.glossary ?? {}));
+  const layout: GlossaryLayout = JSON.parse(JSON.stringify(cur.glossaryLayout ?? { groups: [], sections: {} }));
+  const copy = <V>(v: V): V => JSON.parse(JSON.stringify(v));
   for (const it of items) {
     if (!keep[it.id]) continue;
     applied.push(it);
-    if (it.kind === 'glyph') {
+    if (it.kind === 'glossary') {
+      glossary[it.key] = copy(it.theirs);
+      if (it.meta) {
+        if (it.meta.theirs) layout.sections[it.key] = copy(it.meta.theirs);
+        else { delete layout.sections[it.key]; delete glossary[it.key]; }
+      }
+    } else if (it.kind === 'glossary-titles') layout.groups = copy(it.theirs);
+    else if (it.kind === 'glyph') {
       if (it.theirs == null) svgDeletes.push(it.key);
       else svgWrites[it.key] = it.theirs;
     } else if (it.kind === 'spelling') {
@@ -171,7 +255,10 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
       else typing[it.key] = s;
     } else setUnit(design, it.unit, it.theirs);
   }
-  return { design, typing, svgWrites, svgDeletes, applied };
+  // a section title can't hold a subtitle that isn't there (one whose own item was skipped)
+  for (const g of layout.groups) g.sections = g.sections.filter((id) => id in layout.sections);
+  return { design, typing, svgWrites, svgDeletes, ...(cur.glossary !== undefined ? { glossary } : {}),
+    ...(cur.glossaryLayout !== undefined ? { glossaryLayout: layout } : {}), applied };
 }
 
 function setUnit(d: Design, u: DesignUnit, v: unknown) {
@@ -189,6 +276,14 @@ function setUnit(d: Design, u: DesignUnit, v: unknown) {
   else { if (val === undefined) delete d.test_sets; else d.test_sets = val as Design['test_sets']; }
 }
 
+/** The current font with every change the draft makes, conflicts included: what a release would
+ *  hold if Review kept it all (Check the glossary, online). Fields the draft never touched, such as
+ *  a column added after it started, come from the font. */
+export function withChanges(b: Bundle, cur: Current): Merged {
+  const items = diffBundle(b, cur);
+  return applyMerge(items, Object.fromEntries(items.map((i) => [i.id, true])), cur);
+}
+
 /** Default choices: keep everything that doesn't conflict; conflicts keep the current font. */
 export function defaultKeep(items: Item[]): Record<string, boolean> {
   return Object.fromEntries(items.map((i) => [i.id, !i.conflict]));
@@ -200,7 +295,9 @@ export function defaultKeep(items: Item[]): Record<string, boolean> {
  *  The items come from comparing the draft with its base (Review's "mine" view). */
 export function revertItems(items: Item[], cur: Current): Merged {
   const back = items.map((it): Item =>
-    it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) } : { ...it, theirs: it.base } as Item);
+    it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) }
+      : it.kind === 'glossary' && it.meta ? { ...it, theirs: it.base, meta: { ...it.meta, theirs: it.meta.base } }
+      : { ...it, theirs: it.base } as Item);
   return applyMerge(back, Object.fromEntries(back.map((i) => [i.id, true])), cur);
 }
 

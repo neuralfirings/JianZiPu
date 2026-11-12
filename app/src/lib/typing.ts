@@ -6,39 +6,41 @@
 export type Spelling = {
   vert_variant: string; common: string; latin: string; latin_alt: string;
   simplified: string; traditional: string; pinyin: string;
-  /** The glossary section(s) on the font page with a row for this glyph, by title
-   *  ("1c: Left Hand Techniques"; two separated by "; "). Not typed. */
-  glossary: string;
 };
 export type SpellField = keyof Spelling;
 /** glyph name -> spelling. Glyph Name is the ID (it is the SVG file name). */
 export type Typing = Record<string, Spelling>;
 
-export const FIELDS: SpellField[] = ['latin', 'latin_alt', 'common', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary'];
+export const FIELDS: SpellField[] = ['latin', 'latin_alt', 'common', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
 /** Fields people type to get the glyph (Number/Symbol is built into the number rules). */
 export const TYPED: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional'];
-export const EDITABLE: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary'];
+export const EDITABLE: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
 export const LABEL: Record<SpellField, string> = {
   latin: 'Latin Entry', latin_alt: 'Latin Entry (Alt)', common: 'Number/Symbol',
-  simplified: '简体', traditional: '繁體', vert_variant: 'Vertical form', pinyin: 'PinYin', glossary: 'Glossary'
+  simplified: '简体', traditional: '繁體', vert_variant: 'Vertical form', pinyin: 'PinYin'
 };
 export const HELP: Record<SpellField, string> = {
-  latin: 'What you type on an English keyboard: a one-letter shortcut (k) or the pinyin (lun). Letters and digits, starting with a letter.',
+  latin: 'What you type on an English keyboard: a one-letter shortcut (k) or the pinyin (lun). Letters, digits, [ and ], not starting with a digit. [ also answers to 【 typed in Chinese, ] to 】.',
   latin_alt: 'A second way to type it (bl for banlun, fy for fanyin).',
   common: 'Digits and symbols typed the same in any input mode (7, 13+, /). Built into the font\'s number rules; shown, not edited.',
-  simplified: 'The character(s) as typed with a simplified-Chinese input method.',
+  simplified: 'The character(s) as typed with a simplified-Chinese input method; Chinese punctuation such as 【 】 too.',
   traditional: 'The traditional form, only if it differs from 简体.',
   vert_variant: 'In vertical notation (after a colon) the font swaps this glyph for its centred version.',
-  pinyin: 'Pinyin with tones, for search and labels. Not typed.',
-  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph, by title (1c: Left Hand Techniques); two separated by “; ”. Empty: no row of its own. Not typed.'
+  pinyin: 'Pinyin with tones, for search and labels. Not typed.'
 };
-export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin', 'glossary'] as const;
+export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin'] as const;
 
-const LATIN_RE = /^[A-Za-z][A-Za-z0-9]*$/;
+// letters and digits, starting with a letter; [ and ] too (builder features.spell_latin), so 【 】 type through them
+const LATIN_RE = /^[A-Za-z[\]][A-Za-z0-9[\]]*$/;
 const HAN_RE = /^[㐀-鿿豈-﫿\u{20000}-\u{2ffff}]+$/u;
 const RESERVED = new Set(['点', '點', '徽', '。', '，']);
+// CJK punctuation a Chinese spelling may hold (【 】 《 》 「 」 、 ！ …), not the marks the font reads itself:
+// 。 (a position, with 点 / 徽) and ， ： ｜, which become , : | (builder typing_preview.CHINESE_RE)
+const NOT_SPELLABLE = ['。', '，', '：', '｜'];
+const PUNCT = '\u3001-\u3003\u3008-\u3011\u3014-\u301f\uff01-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff60';
+const CHINESE_RE = new RegExp(HAN_RE.source.replace(/\]\+\$$/, PUNCT + ']+$'), 'u');
 
-export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '', glossary: '' });
+export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '' });
 export const isEmpty = (s: Spelling | undefined) => !s || FIELDS.every((f) => !s[f]);
 export const get = (t: Typing, g: string): Spelling => t[g] ?? empty();
 
@@ -65,7 +67,7 @@ export function partners(t: Typing): Record<string, string> {
 /** A spelling for display, falling back to the partner's for a vertical form. */
 export function shown(t: Typing, g: string, f: SpellField): { value: string; inherited: string | null } {
   const own = get(t, g)[f];
-  if (own || f === 'vert_variant' || f === 'common' || f === 'glossary') return { value: own, inherited: null };
+  if (own || f === 'vert_variant' || f === 'common') return { value: own, inherited: null };
   const p = partners(t)[g];
   return p && t[p]?.[f] ? { value: t[p][f], inherited: p } : { value: '', inherited: null };
 }
@@ -105,10 +107,12 @@ function isPair(t: Typing, a: string, b: string) {
 function formatProblem(f: SpellField, v: string, known?: Set<string>): string | null {
   if (!v) return null;
   if (f === 'latin' || f === 'latin_alt') {
-    if (!LATIN_RE.test(v)) return /^\d/.test(v) ? 'start with a letter: a leading digit is read as a string or position number' : 'use only letters a–z, A–Z and digits';
+    if (!LATIN_RE.test(v)) return /^\d/.test(v) ? 'start with a letter: a leading digit is read as a string or position number' : 'use only letters a–z, A–Z, digits, [ and ]';
   } else if (f === 'simplified' || f === 'traditional') {
     if (RESERVED.has(v)) return 'alone it marks a position; it can\'t type a glyph';
-    if (!HAN_RE.test(v)) return 'Chinese characters only';
+    const bad = NOT_SPELLABLE.filter((c) => v.includes(c));
+    if (bad.length) return `${bad.join('、')} is read by the font itself (a position, a comma, the vertical colon or the chord bar), so a spelling can't hold it`;
+    if (!CHINESE_RE.test(v)) return 'Chinese characters and Chinese punctuation (【 】 《 》…) only';
   } else if (f === 'vert_variant' && known && !known.has(v)) {
     return `${v} doesn't exist`;
   }
@@ -140,16 +144,10 @@ export function issues(t: Typing, known?: Set<string>): Issue[] {
 }
 
 export type CellNote = { level: 'free' | 'error' | 'shared' | 'joins' | 'warn'; text: string };
-/** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level).
- *  `sections`: the glossary's section titles, when the server knows them. */
-export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string,
-  sections?: string[]): CellNote | null {
+/** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level). */
+export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string): CellNote | null {
   const v = value.trim();
   if (!v || f === 'pinyin') return null;
-  if (f === 'glossary') {
-    const unknown = sections?.length ? v.split(';').map((x) => x.trim()).filter((x) => x && !sections.includes(x)) : [];
-    return unknown.length ? { level: 'warn', text: `no glossary section “${unknown.join('”, “')}” on the font page: pick a title from the list` } : null;
-  }
   const p = formatProblem(f, v, known);
   if (p) return { level: 'error', text: p };
   const space = spaceOf(f);
@@ -253,7 +251,6 @@ export const pinyinToLatin = (p: string) => p.normalize('NFD').replace(/[̀-ͯ]/
 export function searchText(t: Typing, g: string): string {
   const parts = [g];
   for (const f of FIELDS) {
-    if (f === 'glossary') continue;
     const v = shown(t, g, f).value;
     if (v) parts.push(v, ...(f === 'pinyin' ? [pinyinToLatin(v), v.replace(/\s+/g, '')] : []));
   }

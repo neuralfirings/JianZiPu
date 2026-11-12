@@ -13,10 +13,11 @@ class Pilot {
   /** The font-updated banner was dismissed (once per sign-in). */
   updateDismissed = $state(false);
   /** A one-line note after an action ("Saved lg_gou to your draft…"), with an optional Undo. */
-  toast = $state<{ text: string; undo?: boolean; copy?: string } | null>(null);
+  toast = $state<{ text: string; undo?: boolean; copy?: string; onundo?: () => void } | null>(null);
   review = $state<{ bundle: Bundle; source: ReviewSource } | null>(null);
 
-  say(text: string, o: { undo?: boolean; copy?: string } = {}) {
+  /** `onundo`: what else the toast's Undo does (a rename goes back to the old name's page). */
+  say(text: string, o: { undo?: boolean; copy?: string; onundo?: () => void } = {}) {
     this.toast = { text, ...o };
   }
 }
@@ -35,7 +36,7 @@ const UPDATE_DISMISSED = 'jzp-update-dismissed';
 export function updateDismissedFor(uid: string, release: string): boolean {
   try { return localStorage.getItem(`${UPDATE_DISMISSED}:${uid}`) === release; } catch { return false; }
 }
-/** Not now on the new-release banner: hidden until a newer release is out. */
+/** Not now on the font-update banner: hidden until the font changes again. */
 export function dismissUpdate(uid: string | undefined, release: string) {
   pilot.updateDismissed = true;
   if (!uid) return;
@@ -66,5 +67,9 @@ export const day = (iso: string | Date | null | undefined) =>
 /** A font the way a tester knows it: its version ("3.200"), else its date ("the font of 19 Oct"). */
 export const fontName = (v: { version?: string | null; date?: string | null } | null | undefined) =>
   v?.version ? v.version : v?.date ? `the font of ${day(v.date)}` : 'the font';
+/** The font a draft started from, by its date with the release after it: "the font of 21 Oct (3.200)".
+ *  The date tells two fonts apart when the files changed without a new release. */
+export const fontOf = (v: { version?: string | null; date?: string | null } | null | undefined) =>
+  v?.date ? `the font of ${day(v.date)}${v.version ? ` (${v.version})` : ''}` : v?.version ?? 'the font';
 export const hhmm = (iso: string | Date | null | undefined) =>
   iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';

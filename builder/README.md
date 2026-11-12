@@ -80,7 +80,7 @@ npm run build    # writes app/build/, which the Python server then serves at /
 ```
 
 Screens: **Glyphs** (every SVG on disk, grouped by area, with the
-unassigned ones called out; a **Tiles | Typing** switch, where Typing is a
+unassigned ones called out; a **Tiles | List view** switch, where List view is a
 spreadsheet of every glyph's spellings — the `components.csv` columns —
 with paste-a-range, CSV import/export, clash checks as you type, and an
 inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
@@ -130,7 +130,9 @@ your machine: webserver (local) → /review (decide) → /release (candidate bra
   5 min); builds are per tester, random ids, and take the draft as inputs (`--design`,
   `--input-components`, `--input-svg-dir`); `/api/words` and typing previews use the tester's latest
   build, else main's. At start it downloads the base font from Storage (`JZP_BASE_FONT_OBJECT`, default
-  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once.
+  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once. On a Railway pull
+  request preview (`…-pr-29.up.railway.app`) the page's tab icon is the PR number in dark brown
+  (`jzpbuild/preview_favicon.py`); builder.jianzipufont.com keeps its icons.
 - **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
   sign-in gate, "✎ Your draft" pill, Save and 30-second autosave to the draft (also on screen change and
   tab close), an offline buffer in the browser, "saved somewhere else" when another tab saved first
@@ -365,7 +367,7 @@ the four steps above only ever read what's already sitting there.
 | glyph shapes                       | Builder → Glyphs → Edit (draw, import or trace; writes `inputs/svg/`) |
 | which glyphs belong to which part  | Builder → Layouts → Area Properties, or Glyphs (writes `inputs/design.json`) |
 | word types, spacing, centering     | Builder → Layouts (writes `inputs/design.json`)                |
-| input keys / spellings             | Builder → Glyphs → Typing (writes `inputs/components.csv`)     |
+| input keys / spellings             | Builder → Glyphs → List view (writes `inputs/components.csv`)     |
 | Han char glyph names               | `builder/inputs/glyphRename.csv`                         |
 | disambiguation rules               | `builder/inputs/edge_cases.fea`                          |
 | metrics / naming / config          | `jzpbuild/config.py`                                           |
@@ -421,6 +423,10 @@ Columns:
   trigger this glyph, one column per script variant. Multi-character
   spellings (e.g. `半轮` for 半轮) become multi-glyph ligature rules;
   single-character ones become single substitution rules.
+- `pinyin` — reference only: never typed and never clash-checked. Where the
+  font page's glossary shows a glyph is `site/glossary.json` (see `docs/maintainers/releasing.md`,
+  "The glossary"), edited in the Builder's Glyphs → Glossary; an older CSV's
+  `glossary`, `glossary_order` and `meaning` columns are ignored.
 
 A blank cell means "not applicable," not "unset" — e.g. chord glyphs
 (`xl_cuo` etc.) have no `latin`/`latin_alt`, only `common`.
@@ -555,7 +561,7 @@ identity/metrics change or a new right-hand technique family is added to
 
 Two worked examples of adding new content. Both follow the same shape: get
 the SVG into `builder/inputs/svg/`, add the glyph to an area and give
-it spellings in the Builder (Glyphs → Typing), rebuild. Neither needs a
+it spellings in the Builder (Glyphs → List view), rebuild. Neither needs a
 code change: a new *member* of an existing area is positionable everywhere
 that area already appears. New word types, parts and spacing rules are
 edited in the Builder's Layouts screen (Advanced toggle for structure).
@@ -618,7 +624,7 @@ underlying mechanism explains what "conflict" means here:
    → pick it (or Layouts → Area Properties → switch to Character →
    Manage → + Add glyphs).
    Then Glyphs → select it → fill in its spellings (Latin Entry, 简体, 繁體,
-   …) in the inspector or the Typing table; Save writes `components.csv`.
+   …) in the inspector or the List view table; Save writes `components.csv`.
 3. **Save**, then Build & test → **Build font**. Type `:<key>` in the test
    box: the live preview shows it as a row of a vertical word before the
    build finishes; the built font afterwards. A glyph that is only in
@@ -632,7 +638,7 @@ add it to those areas too; one glyph can be in several.
 
 1. `inputs/svg/mod_<name>.svg`, 200×200 like `mod_chuo`/`mod_ji`.
 2. Glyphs → **急/绰 modifier** (`jc`) → + Add glyphs; set its typing key
-   (Glyphs → Typing).
+   (Glyphs → List view).
 3. Save and build. It is positioned by the existing `jc` rules in every
    word type that has a `jc` part; if it needs its own gap, open Layouts,
    select the part whose gap depends on it, and add an exception row
