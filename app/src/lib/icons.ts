@@ -29,6 +29,8 @@ export { default as TabRequests } from '@lucide/svelte/icons/inbox';
 export { default as Grip } from '@lucide/svelte/icons/grip-vertical';
 /** edit a row by typing it again (Glyphs > Glossary) */
 export { default as EditRow } from '@lucide/svelte/icons/pencil-line';
+/** show a glyph in the Glyphs screen's bottom panel */
+export { default as GlyphPanel } from '@lucide/svelte/icons/panel-bottom-open';
 export { default as Folded } from '@lucide/svelte/icons/chevron-right';
 export { default as Unfolded } from '@lucide/svelte/icons/chevron-down';
 export { default as Dropdown } from '@lucide/svelte/icons/chevron-down';

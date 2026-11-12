@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byId, exampleHtml, exampleText, usageFrom, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -71,6 +71,19 @@ describe("a row's example word", () => {
   it("says which part has no spelling in the other language, and refuses an example without the row's glyph", () => {
     expect(usageFrom('zzk', typed(['md_x', 'lg_gou'], ['zz', 'k']), 'lg_gou', t)).toMatchObject({ other: null, missing: ['zz'] });
     expect(usageFrom('s9', typed(['md_ming', 'md_9'], ['s', '9']), 'lg_gou', t)).toMatchObject({ error: expect.stringMatching(/doesn't type lg_gou \(勾\)/) });
+  });
+  it("makes a vertical row's example: a glyph as {} (its vertical form counts), a word written out, the colon kept", () => {
+    const tv: Typing = { ...t, md_san: sp({ common: '0', simplified: '散', vert_variant: 'md_san2' }), md_san2: sp({ latin: 'san' }),
+      md_da: sp({ latin: 'v', simplified: '大' }), md_xi: sp({ latin: 'xi', simplified: '息' }) };
+    expect(usageFrom(':san5', typed(['blank_colon', 'md_san2', 'md_5'], [':', 'san', '5']), 'md_san', { ...tv, md_5: sp({ common: '5', simplified: '五' }) }))
+      .toEqual({ source: ':{}5', other: ':{}五', zh: false, missing: [] });
+    expect(usageFrom('：大息七', typed(['blank_colon', 'md_da', 'md_xi', 'md_7'], ['：', '大', '息', '七']), ['md_da', 'md_xi'], tv))
+      .toEqual({ source: ':大息七', other: ':vxi7', zh: true, missing: [] });
+    expect(usageFrom(':v7', typed(['blank_colon', 'md_da', 'md_7'], [':', 'v', '7']), ['md_da', 'md_xi'], tv))
+      .toMatchObject({ error: expect.stringMatching(/doesn't type md_xi \(息\)/) });
+    expect(verticalTemplate(tv, { word: '大息', glyphs: ['md_da', 'md_xi'] })).toEqual([':vxi', ':大息']);
+    expect(verticalTemplate(tv, { glyph: 'md_san' })).toEqual([':{}', ':{}']);
+    expect(exampleHtml(':{}<r>|</r>', 'san', false)).toBe(':san|');
   });
   it('fills a template as text and as marked HTML', () => {
     expect(exampleText('{}d7,7<r>|</r>06', 'C')).toBe('Cd7,7|06');

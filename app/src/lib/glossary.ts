@@ -7,7 +7,7 @@ import * as T from './typing';
 /** `usage`: the row's own example word as [ASCII, 中文] templates ({} = the glyph's spelling), in a usage section. */
 /** `typed`: what was typed to add or edit the row (k, 勾, :shaoxi), shown again to edit it. */
 export type GlyphRow = { glyph: string; meaning?: string; usage?: [string, string]; typed?: string };
-export type WordRow = { word: string; glyphs: string[]; meaning?: string; typed?: string };
+export type WordRow = { word: string; glyphs: string[]; meaning?: string; typed?: string; usage?: [string, string] };
 export type GRow = GlyphRow | WordRow;
 /** section id -> its rows, in page order */
 export type GlossaryRows = Record<string, GRow[]>;
@@ -31,11 +31,15 @@ export function cleanRow(x: unknown): GRow | null {
   if (o.word != null) {
     const word = String(o.word).trim();
     const gs = Array.isArray(o.glyphs) ? o.glyphs.map((g) => String(g).trim()).filter(Boolean) : [];
-    return word && gs.length ? { word, glyphs: gs, ...m } : null;
+    return word && gs.length ? { word, glyphs: gs, ...m, ...usageOf(o) } : null;
   }
   const glyph = String(o.glyph ?? '').trim();
+  return glyph ? { glyph, ...m, ...usageOf(o) } : null;
+}
+
+function usageOf(o: Record<string, unknown>): { usage?: [string, string] } {
   const u = Array.isArray(o.usage) && o.usage.length === 2 ? (o.usage.map((x) => String(x ?? '').trim()) as [string, string]) : null;
-  return glyph ? { glyph, ...m, ...(u && (u[0] || u[1]) ? { usage: u } : {}) } : null;
+  return u && (u[0] || u[1]) ? { usage: u } : {};
 }
 
 /** Rows by section from anywhere (a draft, the server), cleaned; undefined when it isn't that. */
@@ -138,7 +142,7 @@ export function sectionSummary(base: GRow[], theirs: GRow[]): string[] {
   const common = tk.filter((k) => bk.includes(k)), was = bk.filter((k) => tk.includes(k));
   const moved = common.filter((k, i) => k !== was[i]).map((k) => rowName(theirs[tk.indexOf(k)]));
   const meaning = theirs.filter((r) => { const b = base[bk.indexOf(rowKey(r))]; return b && (b.meaning ?? '') !== (r.meaning ?? ''); }).map(rowName);
-  const usage = theirs.filter((r) => { const b = base[bk.indexOf(rowKey(r))]; return b && !isWord(r) && JSON.stringify((b as GlyphRow).usage ?? null) !== JSON.stringify(r.usage ?? null); }).map(rowName);
+  const usage = theirs.filter((r) => { const b = base[bk.indexOf(rowKey(r))]; return b && JSON.stringify(b.usage ?? null) !== JSON.stringify(r.usage ?? null); }).map(rowName);
   return [
     added.length ? `added ${added.join(', ')}` : '', removed.length ? `removed ${removed.join(', ')}` : '',
     moved.length ? `moved ${moved.join(', ')}` : '', meaning.length ? `meaning of ${meaning.join(', ')}` : '',
@@ -152,9 +156,17 @@ const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const unesc = (t: string) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 /** A template as plain text, the glyph's spelling in place of {} (what typing it means). */
 export const exampleText = (t: string, spelling: string) => unesc(t.replace(/<\/?r>/g, '').split('{}').join(spelling));
-/** A template as HTML, the glyph's spelling and any <r>…</r> marked: `<span class="r">`. */
-export const exampleHtml = (t: string, spelling: string) =>
-  t.split('{}').map((p) => p.replace(/<r>/g, '<span class="r">').replace(/<\/r>/g, '</span>')).join(`<span class="r">${esc(spelling)}</span>`);
+/** A template as HTML, the glyph's spelling and any <r>…</r> marked: `<span class="r">`. `mark` false
+ *  (a vertical section's row, whole on its own): nothing marked. */
+export const exampleHtml = (t: string, spelling: string, mark = true) => mark
+  ? t.split('{}').map((p) => p.replace(/<r>/g, '<span class="r">').replace(/<\/r>/g, '</span>')).join(`<span class="r">${esc(spelling)}</span>`)
+  : t.replace(/<\/?r>/g, '').split('{}').join(esc(spelling));
+/** A vertical section's row as it is typed on its own, after a colon: [ASCII, 中文] templates. */
+export function verticalTemplate(t: T.Typing, r: GRow): [string, string] {
+  if (!isWord(r)) return [':{}', ':{}'];
+  const sp = r.glyphs.map((g) => mainSpellings(t, g));
+  return [':' + esc(sp.map((x) => x[0]).join('')), ':' + esc(sp.map((x) => x[1]).join(''))];
+}
 /** The glyph's main spelling in each language, as the page fills the example with. */
 export function mainSpellings(t: T.Typing, g: string): [string, string] {
   const s = T.get(t, g);
@@ -162,8 +174,9 @@ export function mainSpellings(t: T.Typing, g: string): [string, string] {
 }
 
 const CN = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三'];
-// marks that type the same in either language (the font reads them: , separates, | divides a chord, : starts vertical text)
-const PUNCT: [string, string][] = [[',', '，'], ['|', '｜'], [':', '：']];
+// marks written differently in the two languages (the font reads them: , separates, | divides a chord); the
+// colon that starts vertical text is : in both (the page writes :大息), and ： typed in Chinese becomes it
+const PUNCT: [string, string][] = [[',', '，'], ['|', '｜']];
 const hasHan = (t: string) => /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]/.test(t);
 
 /** How glyph `g` is written in a language: its spellings there, main first (a position decimal by its pattern). */
@@ -175,15 +188,25 @@ function spellingsIn(t: T.Typing, g: string, zh: boolean): string[] {
   const shown = zh ? [T.shown(t, g, 'simplified').value, T.shown(t, g, 'traditional').value] : [T.shown(t, g, 'latin').value, T.shown(t, g, 'latin_alt').value];
   return [...new Set([...own, ...shown].filter(Boolean))];
 }
-const punct = (text: string, zh: boolean) => [...text].map((c) => PUNCT.find((p) => p[zh ? 1 : 0] === c)?.[zh ? 0 : 1] ?? c).join('');
+const punct = (text: string, zh: boolean) => [...text].map((c) => (zh && c === '：' ? ':' : PUNCT.find((p) => p[zh ? 1 : 0] === c)?.[zh ? 0 : 1] ?? c)).join('');
 
 /** A row's example from what someone typed (`text`, in either language) and how the font typed it: the
- *  [ASCII, 中文] templates, the row's glyph as {}, the other language made from the glyphs' spellings.
+ *  [ASCII, 中文] templates, the other language made from the glyphs' spellings. `row`: a glyph (it becomes
+ *  {} in the templates) or a word's glyphs (written out); a vertical form counts as its glyph (:san, 散).
  *  `other` is null where a glyph has no spelling in that language (`missing` names it). */
-export function usageFrom(text: string, typed: { glyphs: string[]; texts: string[]; clusters?: number[] }, glyph: string, t: T.Typing):
+export function usageFrom(text: string, typed: { glyphs: string[]; texts: string[]; clusters?: number[] }, row: string | string[], t: T.Typing):
   { error: string } | { source: string; other: string | null; zh: boolean; missing: string[] } {
   const zh = hasHan(text);
-  if (!typed.glyphs.includes(glyph)) return { error: `${text} doesn't type ${glyph}${mainSpellings(t, glyph)[1] ? ` (${mainSpellings(t, glyph)[1]})` : ''}: an example has the row's glyph in it.` };
+  const horizontal = T.partners(t);
+  const norm = (g: string) => horizontal[g] ?? g;
+  const glyph = typeof row === 'string' ? row : null;
+  const need = typeof row === 'string' ? [row] : row;
+  const got = new Set(typed.glyphs.map(norm));
+  const lacking = need.filter((g) => !got.has(g));
+  if (lacking.length) {
+    const name = (g: string) => g + (mainSpellings(t, g)[1] ? ` (${mainSpellings(t, g)[1]})` : '');
+    return { error: `${text} doesn't type ${lacking.map(name).join(', ')}: an example has the row's glyph${need.length > 1 ? 's' : ''} in it.` };
+  }
   // the clusters: the glyphs one stretch of the text became
   const groups: { glyphs: string[]; text: string }[] = [];
   typed.glyphs.forEach((g, i) => {
@@ -199,12 +222,13 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     // the glyph's spelling the text starts with, and what's left (a comma the font swallowed: 7, → md_7)
     const spelled = gs.length === 1 ? spellingsIn(t, gs[0], zh).find((sp) => gr.text.startsWith(sp)) ?? '' : '';
     const rest = spelled ? gr.text.slice(spelled.length) : gs.length ? '' : gr.text;
-    if (gs.includes(glyph)) { source += '{}' + esc(rest); other += '{}' + esc(punct(rest, zh)); continue; }
+    if (glyph && gs.map(norm).includes(glyph)) { source += '{}' + esc(rest); other += '{}' + esc(punct(rest, zh)); continue; }
     source += esc(gr.text);
     if (!gs.length) { other += esc(punct(gr.text, zh)); continue; }
     const made = gs.map((g) => spellingsIn(t, g, !zh)[0]);
     if (made.some((x) => !x)) { missing.push(gr.text); continue; }
     other += esc(made.join('') + punct(rest, zh));
   }
-  return { source, other: missing.length ? null : other, zh, missing };
+  // the colon that starts vertical text is written : in Chinese too, as the page has it (:大息)
+  return { source: zh ? source.replace(/：/g, ':') : source, other: missing.length ? null : other, zh, missing };
 }

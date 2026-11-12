@@ -166,6 +166,16 @@ def test_a_row_with_one_language_of_example_still_makes_its_row():
     assert "<jzp>散<r>勾</r>五</jzp>" in out
 
 
+def test_a_vertical_row_can_have_an_example_of_its_own():
+    r = rows("md_da,,,v,,大,,dà", "md_xi,,,xi,,息,,xī", "md_san,,0,,,散,,sàn")
+    sec = {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"], "usage": [":vxi7", ":大息七"]},
+                          {"glyph": "md_san", "usage": [":{}5", ":{}五"]})}
+    out = glossary.render(page("3e"), r, sec)
+    assert "<td><jzp>:vxi7</jzp></td>" in out and "<td><jzp>:05</jzp></td>" in out and "<r>" not in out   # nothing marked
+    ex = [e for _, e in glossary.examples(out, r, sec)]
+    assert [":vxi7", ":大息七"] in ex and [":05", ":散五"] in ex and [":daxi", ":大息"] not in ex
+
+
 def test_rows_from_the_builder_are_checked():
     secs = {"2a": usage("2a")}
     assert glossary.with_rows(secs, {"2a": [{"glyph": " lg_gou ", "meaning": ""}]})["2a"]["rows"] == [{"glyph": "lg_gou"}]

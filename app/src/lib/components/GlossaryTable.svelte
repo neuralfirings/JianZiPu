@@ -11,9 +11,8 @@
   import { app } from '$lib/state.svelte';
   import { Hold } from '$lib/hold';
   import * as T from '$lib/typing';
-  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, moveRow, refuse, rowKey, rowName, usageFrom,
-    type GlyphRow, type GRow, type Section } from '$lib/glossary';
-  import Glyph from './Glyph.svelte';
+  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, moveRow, refuse, rowKey, rowName, usageFrom, verticalTemplate,
+    type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
 
   let { q = '', focus = null, onnotice, onopen }: {
@@ -107,22 +106,21 @@
   const isFolded = (sid: string) => folded.includes(sid) && !q.trim() && shownGlyph?.sid !== sid;
   const fold = (sid: string) => (folded = folded.includes(sid) ? folded.filter((x) => x !== sid) : [...folded, sid]);
 
-  // ---------------------------------------------------------------- Usage: a row's example word
+  // ---------------------------------------------------------------- Example: a row's example word
 
-  /** The example a usage row shows: its own, else the section's. */
-  const templateOf = (r: GRow, s: Section): [string, string] => (!isWord(r) && r.usage) || s.usage || ['', ''];
-  /** A row of a vertical section as the font sets it: typed after a colon, a word's glyphs one under another. */
-  function verticalOf(r: GRow): string {
-    const parts = glyphsOfRow(r).map((g) => { const [a, z] = mainSpellings(app.typing, g); return a || z; });
-    return parts.every(Boolean) ? ':' + parts.join('') : '';
-  }
+  /** The example a row shows: its own, else in a usage section the section's, else (a vertical section)
+   *  the row typed on its own after a colon. */
+  const templateOf = (r: GRow, s: Section): [string, string] =>
+    r.usage || (s.kind === 'usage' ? (isWord(r) ? null : s.usage) : verticalTemplate(app.typing, r)) || ['', ''];
+  /** What {} stands for in each language: the glyph's main spellings (a word has none: it's written out). */
+  const spellsOf = (r: GRow): [string, string] => (isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph));
   /** The example as typed in the font (ASCII, else Chinese), to draw it. */
   function exampleOf(r: GRow, s: Section): string {
-    if (s.kind !== 'usage') return verticalOf(r);
-    if (isWord(r)) return '';
-    const [a, z] = templateOf(r, s), [sa, sz] = mainSpellings(app.typing, r.glyph);
+    const [a, z] = templateOf(r, s), [sa, sz] = spellsOf(r);
     return a ? exampleText(a, sa) : z ? exampleText(z, sz) : '';
   }
+  /** Faded: a usage row showing its section's example, not one of its own. */
+  const shared = (r: GRow, s: Section) => s.kind === 'usage' && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
   let drawn = $state<Record<string, WordPiece[]>>({});
   let drawKey = '';
@@ -150,19 +148,19 @@
   let usageBusy = $state<string | null>(null);
 
   /** The example, typed in one language: the other is made from the glyphs' spellings and typed back
-   *  to check it gives the same glyphs. Empty: the row takes the section's example again. */
+   *  to check it gives the same glyphs. Empty: the row's own example goes, and it shows the default again. */
   async function setUsage(sid: string, i: number, value: string, zh: boolean) {
     editing = null;
-    const r = rowsOf(sid)[i] as GlyphRow, s = sec(sid), key = `${sid}:${i}`;
-    if (!r || isWord(r) || !app.design) return;
-    const cur = templateOf(r, s), [sa, sz] = mainSpellings(app.typing, r.glyph);
+    const r = rowsOf(sid)[i], s = sec(sid), key = `${sid}:${i}`;
+    if (!r || !app.design) return;
+    const cur = templateOf(r, s), [sa, sz] = spellsOf(r);
     const text = value.trim();
     if (text === exampleText(cur[zh ? 1 : 0], zh ? sz : sa)) return;
     usageNote = null;
-    const put = (u: [string, string] | null) => edit(u ? `${r.glyph}: example in ${sid}` : `${r.glyph}: the section's example in ${sid}`, (rows) => {
+    const put = (u: [string, string] | null) => edit(u ? `${rowName(r)}: example in ${sid}` : `${rowName(r)}: the default example in ${sid}`, (rows) => {
       const list = [...rows[sid]];
-      const { usage: _, ...rest } = list[i] as GlyphRow;
-      list[i] = u ? { ...rest, usage: u } : rest;
+      const { usage: _, ...rest } = list[i];
+      list[i] = (u ? { ...rest, usage: u } : rest) as GRow;
       return { ...rows, [sid]: list };
     });
     if (!text) { if (r.usage) put(null); return; }
@@ -170,7 +168,7 @@
     try {
       const typed = (await api.words(app.design, [text], app.typedWith)).words?.[0] as unknown as { glyphs: string[]; texts: string[]; clusters?: number[] } | undefined;
       if (!typed?.texts) { usageNote = { key, level: 'error', text: "It couldn't be typed: is the Builder's server running?" }; return; }
-      const u = usageFrom(text, typed, r.glyph, app.typing);
+      const u = usageFrom(text, typed, isWord(r) ? r.glyphs : r.glyph, app.typing);
       if ('error' in u) { usageNote = { key, level: 'error', text: u.error }; return; }
       const otherLang = zh ? 'ASCII' : 'Chinese';
       let other = u.other;
@@ -212,7 +210,7 @@
       const why = refuse(app.glossary, r, sec(sid), i);
       if (why) { rowNote = { sid, i, text: why }; return; }
       // the meaning stays; the example too while the glyph is the same
-      const keepUsage = !isWord(old) && !isWord(r) && old.glyph === r.glyph && old.usage ? { usage: old.usage } : {};
+      const keepUsage = old.usage && JSON.stringify(glyphsOfRow(old)) === JSON.stringify(glyphsOfRow(r)) ? { usage: old.usage } : {};
       const next = { ...r, ...(old.meaning ? { meaning: old.meaning } : {}), ...keepUsage, typed: text.trim() } as GRow;
       edit(`Edit ${rowName(old)} in ${sid}`, (rows) => ({ ...rows, [sid]: rows[sid].map((x, j) => (j === i ? next : x)) }));
       rowEdit = null;
@@ -388,11 +386,14 @@
       {#if !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
-        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-m" /><col class="c-out" />{#if usage}<col class="c-u" />{/if}<col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th>Meaning</th><th>Output</th>{#if usage}<th title="The example word the page shows for it: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example.">Usage</th>{/if}<th></th></tr></thead>
+        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-u" /><col class="c-m" /><col class="c-act" /></colgroup>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "The example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "What the page shows for it, typed on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Example</th><th>Meaning</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
+            {@const tpl = templateOf(r, s)}
+            {@const sp = spellsOf(r)}
+            {@const key = `${s.id}:${i}`}
             <tr data-drop="row" data-sid={s.id} data-i={i} data-glyphs={glyphsOfRow(r).join(' ')}
               class:changed={changed(s.id, i)} class:on={shownGlyph?.sid === s.id && glyphsOfRow(r).includes(shownGlyph.glyph)}
               class:lifted={drag?.sid === s.id && drag.index === i}
@@ -414,46 +415,38 @@
               <td class="zh">{chinese(r, s)}</td>
               <td>{pinyin(r)}</td>
               {/if}
+              <td class="use" class:def={shared(r, s)}>
+                <div class="ex">
+                  {#if drawn[exampleOf(r, s)]}
+                    <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
+                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={usage && !isWord(r) ? r.glyph : ''} {...(usage ? {} : { scale: 0.04 })} /></button>
+                  {/if}
+                  <div class="lines">
+                    {#each [1, 0] as k (k)}
+                      {#if editing === `${key}:${k}`}
+                        <!-- svelte-ignore a11y_autofocus -->
+                        <input type="text" class:zh={k === 1} class:mono={k === 0} value={exampleText(tpl[k], sp[k])} autofocus spellcheck="false"
+                          aria-label="{k ? 'Chinese' : 'ASCII'} example for {rowName(r)}"
+                          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } else if (e.key === 'Escape') { editing = null; } }}
+                          onblur={(e) => { if (editing === `${key}:${k}`) void setUsage(s.id, i, (e.target as HTMLInputElement).value, k === 1); }} />
+                      {:else}
+                        <button class="line" class:zh={k === 1} class:mono={k === 0} disabled={usageBusy === key}
+                          onclick={() => { usageNote = null; editing = `${key}:${k}`; }}
+                          data-tip={shared(r, s) ? "The section's example: type this row's own" : 'Click to change it; the other line follows'}>
+                          {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], usage)}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
+                      {/if}
+                    {/each}
+                  </div>
+                </div>
+                {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
+                {#if usageBusy === key}<span class="small muted"><I.Working size={12} /> typing it…</span>{/if}
+                {#if usageNote?.key === key}<span class="small note" class:bad={usageNote.level === 'error'} role="status">{#if usageNote.level === 'error'}<I.Problem size={12} />{:else}<I.Warn size={12} />{/if} {usageNote.text}</span>{/if}
+              </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Meaning of {rowName(r)} in {s.id}" placeholder="what it means"
                 onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
-              <td class="out">
-                {#if !usage && drawn[exampleOf(r, s)]}
-                  <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
-                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark="" height={Math.min(144, 36 * glyphsOfRow(r).length)} /></button>
-                {:else}
-                {#each glyphsOfRow(r) as g, k (g + k)}<button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g}" data-tip="{g}: show it in the glyph panel"><Glyph name={g} size={24} /></button>{/each}
-                {/if}
-                {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
-              </td>
-              {#if usage}
-                {@const tpl = templateOf(r, s)}
-                {@const sp = isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph)}
-                {@const key = `${s.id}:${i}`}
-                <td class="use" class:def={isWord(r) || !r.usage}>
-                  <div class="ex">
-                    {#if drawn[exampleOf(r, s)] && !isWord(r)}<GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={r.glyph} />{/if}
-                    <div class="lines">
-                      {#each [1, 0] as k (k)}
-                        {#if editing === `${key}:${k}`}
-                          <!-- svelte-ignore a11y_autofocus -->
-                          <input type="text" class:zh={k === 1} class:mono={k === 0} value={exampleText(tpl[k], sp[k])} autofocus spellcheck="false"
-                            aria-label="{k ? 'Chinese' : 'ASCII'} example for {rowName(r)}"
-                            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } else if (e.key === 'Escape') { editing = null; } }}
-                            onblur={(e) => { if (editing === `${key}:${k}`) void setUsage(s.id, i, (e.target as HTMLInputElement).value, k === 1); }} />
-                        {:else}
-                          <button class="line" class:zh={k === 1} class:mono={k === 0} disabled={isWord(r) || usageBusy === key}
-                            onclick={() => { usageNote = null; editing = `${key}:${k}`; }}
-                            data-tip={!isWord(r) && !r.usage ? "The section's example: type this row's own" : 'Click to change it; the other line follows'}>
-                            {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k])}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
-                        {/if}
-                      {/each}
-                    </div>
-                  </div>
-                  {#if usageBusy === key}<span class="small muted"><I.Working size={12} /> typing it…</span>{/if}
-                  {#if usageNote?.key === key}<span class="small note" class:bad={usageNote.level === 'error'} role="status">{#if usageNote.level === 'error'}<I.Problem size={12} />{:else}<I.Warn size={12} />{/if} {usageNote.text}</span>{/if}
-                </td>
-              {/if}
               <td class="act">
+                <button class="quiet ic" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]} in the glyph panel"
+                  data-tip="Show {glyphsOfRow(r)[0]} in the glyph panel"><I.GlyphPanel size={14} /></button>
                 <button class="quiet ic" onclick={() => { rowNote = null; rowEdit = { sid: s.id, i, text: entryOf(r, s) }; }} disabled={!!rowEdit && rowEdit.sid === s.id && rowEdit.i === i}
                   aria-label="Edit {rowName(r)}" data-tip="Edit: type it again, as it was entered"><I.EditRow size={14} /></button>
                 <button class="quiet ic" onclick={() => remove(s.id, i)} aria-label="Remove {rowName(r)} from {s.id}" data-tip="Remove from this section (Undo brings it back)"><I.Close size={14} /></button>
@@ -463,7 +456,7 @@
           <tr class="addrow" data-drop="end" data-sid={s.id} data-i={rows.length} class:gap-before={gapBefore(s.id, rows.length) && !rows.length}
             class:no={!okDrop && drop?.sid === s.id}>
             <td></td>
-            <td colspan={usage ? 7 : 6}>
+            <td colspan="6">
               {#if !rows.length}<span class="muted small empty">No rows yet{drag ? ': drop here' : ''}.</span>{/if}
               <span class="add">
                 <input type="text" bind:value={adding[s.id]} placeholder={s.kind === 'usage' ? 'Add a glyph: k, 勾 or lg_gou' : 'Add a glyph or a word: 勾, :shaoxi'}
@@ -499,8 +492,7 @@
   /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
   .scroll { overflow: visible; }
   table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: fixed; font-size: var(--t-small); }
-  .c-grip { width: 32px; } .c-out { width: 150px; } .c-a { width: 18%; } .c-z { width: 14%; } .c-p { width: 14%; } .c-act { width: 64px; } .c-u { width: 22%; }
-  table.usage .c-a, table.usage .c-z, table.usage .c-p { width: 11%; }
+  .c-grip { width: 32px; } .c-a { width: 14%; } .c-z { width: 12%; } .c-p { width: 12%; } .c-u { width: 26%; } .c-act { width: 92px; }
   th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: var(--t-caption); color: var(--ink-muted); }
   /* clip, not hidden: a hidden cell is a scroller, and the wheel over it stopped scrolling the page */
   td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
@@ -510,16 +502,15 @@
   tr.gap-before td { box-shadow: inset 0 2px 0 var(--link); }
   tr.gap-after td { box-shadow: inset 0 -2px 0 var(--link); }
   tr.no.gap-before td, tr.no.gap-after td { box-shadow: inset 0 2px 0 var(--status-danger); }
-  td.grip, td.act, td.out { text-overflow: clip; }
+  td.grip, td.act, td.use { text-overflow: clip; }
   td.grip { padding: 0 3px; }
   .grip .g { width: 24px; min-height: 24px; height: 24px; padding: 0; cursor: grab; touch-action: none; color: var(--ink-muted); }
   .grip .g:disabled { cursor: default; opacity: .4; }
-  .out { white-space: normal; line-height: 0; padding-top: 2px; padding-bottom: 2px; }
   .redit { white-space: nowrap; }
   .redit input { width: 280px; height: 26px; font-family: var(--font-mono); margin-right: var(--space-2); }
   .redit .bad { margin-left: var(--space-2); white-space: normal; }
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer; vertical-align: middle; }
-  .ga.vert { width: auto; height: auto; padding: 2px; }
+  .ga.vert { width: auto; height: auto; min-width: 28px; min-height: 28px; padding: 2px; }
   .ga:hover { border-color: var(--sel-border); background: var(--sel-bg); }
   .zh { font-family: var(--font-serif); font-size: 15px; }
   .mono { font-family: var(--font-mono); }
@@ -555,7 +546,7 @@
   @media (max-width: 759.98px) {
     .scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
     .act .ic, .grip .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
-    .c-grip { width: 40px; } .c-act { width: 80px; }
+    .c-grip { width: 40px; } .c-act { width: 112px; }
     .add input { width: 100%; }
   }
 </style>

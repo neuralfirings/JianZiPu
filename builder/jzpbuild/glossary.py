@@ -144,7 +144,7 @@ def entries(sid: str, sec: dict, rows: dict[str, dict] | None = None) -> list[En
     for r in sec.get("rows", []):
         r = clean_row(r)
         if "word" in r:
-            out.append(Entry(tuple(r["glyphs"]), r["word"], r.get("meaning", "")))
+            out.append(Entry(tuple(r["glyphs"]), r["word"], r.get("meaning", ""), tuple(r["usage"]) if "usage" in r else None))
         else:
             out.append(Entry((r["glyph"],), "", r.get("meaning", ""), tuple(r["usage"]) if "usage" in r else None))
     return out
@@ -216,6 +216,15 @@ def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, 
                [[_plain(x) for x in zs + as_]], _esc(meaning), (g,))
 
 
+def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str]]:
+    """A vertical row's own example (the Builder's Example column): its Output, drawn from the ASCII
+    (else the Chinese), nothing marked, and the spellings to type it with. {} is the glyph's spelling."""
+    ta, tz = e.usage
+    a = ta.replace("{}", _esc(sa)) if ta else ""
+    z = tz.replace("{}", _esc(sz)) if tz else ""
+    return f"<jzp>{a or z}</jzp>", [_plain(x) for x in (a, z) if x]
+
+
 def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
     if e.word:                       # a word: each glyph's main spelling, run together
         recs = [rows[g] for g in e.glyphs]
@@ -223,8 +232,12 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
             raise GlossaryError(f"every glyph of the word {e.word} ({' + '.join(e.glyphs)}) needs an ASCII and a Chinese spelling.")
         a = ":" + "".join(spellings(r)[0] for r in recs)
         z = ":" + "".join(r["simplified"] for r in recs)
+        out, examples = f"<jzp>{_esc(z)}</jzp>", [[a, z]]
+        if e.usage:
+            out, own = _own_example(e, "", "")
+            examples.append(own)
         return Row(_esc(a), _esc(z), _esc(" ".join(r["pinyin"] for r in recs if r["pinyin"])),
-                   f"<jzp>{_esc(z)}</jzp>", [[a, z]], _esc(e.meaning), glyphs=e.glyphs)
+                   out, examples, _esc(e.meaning), glyphs=e.glyphs)
     g = e.glyph
     rec, other = rows[g], _partner(rows, g)
     sp = spellings(rec) + (spellings(other) if other else [])
@@ -232,9 +245,12 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
     zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
     examples = [[":" + s] + [":" + c for c in zhs] for s in sp] or ([[":" + c for c in zhs]] if zhs else [])
-    out = ":" + (zh or (sp[0] if sp else ""))
+    out = f"<jzp>{_esc(':' + (zh or (sp[0] if sp else '')))}</jzp>"
+    if e.usage:
+        out, own = _own_example(e, sp[0] if sp else "", zh)
+        examples.append(own)
     return Row(_list([":" + s for s in sp]) if sp else "", _list([":" + c for c in zhs]) if zhs else "", _esc(py),
-               f"<jzp>{_esc(out)}</jzp>", examples, _esc(e.meaning), (g,))
+               out, examples, _esc(e.meaning), (g,))
 
 
 def _number_row(recs: list[dict]) -> Row:
@@ -257,7 +273,7 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
         if e is not None:
             for g in e.glyphs:
                 _rec(rows, sid, e, g)
-        if sec["kind"] == "vertical" and e is not None and not e.word and not e.meaning and _is_number(rows[e.glyph]):
+        if sec["kind"] == "vertical" and e is not None and not e.word and not e.meaning and not e.usage and _is_number(rows[e.glyph]):
             numbers.append(rows[e.glyph])
             continue
         if numbers:

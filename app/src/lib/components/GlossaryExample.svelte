@@ -4,7 +4,8 @@
   import type { WordPiece } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { parseSvg } from '$lib/svg';
-  let { pieces, mark, height = 56 }: { pieces: WordPiece[]; mark: string; height?: number } = $props();
+  /** `scale`: px per font unit, so every character is the same size (a vertical word grows taller); else `height`. */
+  let { pieces, mark, height = 56, scale = 0 }: { pieces: WordPiece[]; mark: string; height?: number; scale?: number } = $props();
   // the blank control glyphs (the colon before a vertical word, the chord bar's space) draw nothing: leave
   // them out of the size, or a vertical word sits under an empty gap
   let els = $derived(pieces.flatMap((p) => p.elements).filter((e) => e.glyph && !app.control.includes(e.glyph)));
@@ -19,7 +20,8 @@
 </script>
 
 {#if box}
-  <svg class="ex" viewBox="{box.x} {box.y} {box.w} {box.h}" height={height} width={Math.max(16, Math.round((height * box.w) / box.h))} aria-hidden="true">
+  {@const h = scale ? Math.min(160, Math.round(box.h * scale)) : height}
+  <svg class="ex" viewBox="{box.x} {box.y} {box.w} {box.h}" height={h} width={Math.max(16, Math.round((h * box.w) / box.h))} aria-hidden="true">
     {#each els as e, i (i)}
       {@const g = parseSvg(app.svgs[e.glyph])}
       {#if g}<svg x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} viewBox={g.viewBox} class:mark={e.glyph === mark}>{@html g.inner}</svg>{/if}
