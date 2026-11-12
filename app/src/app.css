@@ -2,7 +2,7 @@
    paper, calligraphy ink and one seal red around loud glyphs. Token names follow the system's tokens.json; see CLAUDE.md "Design system". */
 :root {
   /* paper */
-  --bg-app: #eeeae5; --bg-panel: #f7f5f1; --bg-canvas: #fbfaf7; --bg-field: #fcfbf9;
+  --bg-app: #f3f1ed; --bg-panel: #faf9f6; --bg-canvas: #fdfcfa; --bg-field: #fefdfc;
   --bg-sunken: #e3ded8; --bg-hover: #e8e3dd; --bg-bar: #2e2a27; --on-bar: #f7f5f1;
   /* ink */
   --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a; --glyph: #1c1916;
