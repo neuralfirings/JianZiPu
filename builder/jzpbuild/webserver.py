@@ -371,9 +371,10 @@ class BuildRunner:
 
     def font_for(self, owner: str) -> Path:
         """The font previews use for `owner`: their latest build, else the checked-in font's
-        build, else the last plain build on disk, else the golden."""
+        build, else the last plain build on disk, else the released font, else the golden (old and
+        classic-positioned: its Han characters aren't the ones the spellings type)."""
         for p in (self.latest_for(owner), self.latest_for(MAIN),
-                  config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None):
+                  config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None, config.SITE_FONT):
             if p and p.exists():
                 return p
         return config.CURRENT_FONT

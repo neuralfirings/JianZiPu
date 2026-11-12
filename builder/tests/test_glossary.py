@@ -220,6 +220,7 @@ def test_a_meaning_column_joins_only_a_section_that_has_one():
     a, c = out.split("<!-- glossary 2c -->")
     assert '<th width="19%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
     assert '<td class="meaning"></td>' in a                                  # every row of the section gets the cell
+    assert a.index(">Input</th>") < a.index(">Output</th>") < a.index(">Definition</th>")   # Definition is last
     assert "Definition" not in c and '<th width="17%">ASCII</th>' in c          # 2c has none: no Definition column
     assert glossary.render(out, r, sec) == out
 

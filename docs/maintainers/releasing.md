@@ -239,7 +239,7 @@ and the spellings in `components.csv`, so its spellings are the font's:
   its rows has one).
 - A section with an example word per row (`"kind": "usage"`) has its example
   as `"usage": [ASCII, 中文]`, with `{}` where the row's glyph goes; a row's own
-  `"usage"` replaces it for that row (the Builder's Example column, where you type
+  `"usage"` replaces it for that row (the Builder's Input column, where you type
   the example in one language and the other is made from the spellings). A row
   of a vertical section can have one too: its Output then shows that example
   (`[":vxi7", ":大息七"]`) in place of the row typed on its own.

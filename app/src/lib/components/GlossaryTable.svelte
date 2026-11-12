@@ -374,6 +374,14 @@
       const next = { ...r, ...(old.meaning ? { meaning: old.meaning } : {}), ...keepUsage, typed: text.trim() } as GRow;
       edit(`Edit ${rowName(old)} in ${sid}`, (rows) => ({ ...rows, [sid]: rows[sid].map((x, j) => (j === i ? next : x)) }));
       rowEdit = null;
+      // typed without the colon where the page still needs it: say why it stays (lun alone is the right hand's 轮)
+      const t = text.trim(), gs = glyphsOfRow(next);
+      if (!/^[:：]/.test(t) && (sec(sid).kind === 'vertical' || isWord(next)) && colonFor(...gs) === ':') {
+        const v = !isWord(next) ? app.typing[gs[0]]?.vert_variant : '';
+        usageNote = { key: `${sid}:${i}`, level: 'warn', text: v
+          ? `${t} without the colon types ${gs[0]}; its vertical form, ${v}, needs the colon, so the page keeps :${t}.`
+          : `${t} without the colon isn't set vertically, so the page keeps :${t}.` };
+      }
     } catch (e) { rowNote = { sid, i, text: (e as Error).message }; }
     finally { rowBusy = false; }
   }
@@ -659,8 +667,8 @@
       {#if plain || !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
-        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-u" /><col class="c-m" /><col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "The example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "What the page shows for it, typed on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Example</th><th>Definition</th><th></th></tr></thead>
+        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -689,11 +697,6 @@
               <td>{pinyin(r)}</td>
               {/if}
               <td class="use" class:def={shared(r, s)}>
-                <div class="ex">
-                  {#if drawn[exampleOf(r, s)]}
-                    <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
-                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} {...(marked(r, s) ? {} : { scale: 0.04 })} /></button>
-                  {/if}
                   <div class="lines">
                     {#each [1, 0] as k (k)}
                       {#if editing === `${key}:${k}`}
@@ -710,7 +713,6 @@
                       {/if}
                     {/each}
                   </div>
-                </div>
                 {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
                 {#if usageBusy === key}<span class="small muted"><I.Working size={12} /> typing it…</span>{/if}
                 {#if disagree(r, s) && usageNote?.key !== key}
@@ -718,6 +720,12 @@
                   <span class="small note" role="status"><I.Warn size={12} /> {lz} and {la} type different glyphs: click a line to fix it.</span>
                 {/if}
                 {#if usageNote?.key === key}<span class="small note" class:bad={usageNote.level === 'error'} role="status">{#if usageNote.level === 'error'}<I.Problem size={12} />{:else}<I.Warn size={12} />{/if} {usageNote.text}</span>{/if}
+              </td>
+              <td class="out" class:def={shared(r, s)}>
+                {#if drawn[exampleOf(r, s)]}
+                  <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
+                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} {...(marked(r, s) ? {} : { scale: 0.04 })} /></button>
+                {/if}
               </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
                 onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
@@ -732,7 +740,7 @@
           {/each}
           <tr class="addrow" data-drop="end" data-sid={s.id} data-i={rows.length} class:gap-before={gapBefore(s.id, rows.length) && !rows.length}
             class:no={!okDrop && drop?.sid === s.id}>
-            <td colspan="7" class="addcell">
+            <td colspan="8" class="addcell">
               {#if !rows.length}<span class="muted small empty">No entries yet{drag ? ': drop here' : ''}.</span>{/if}
               <span class="add">
                 {#if opened === `row:${s.id}`}
@@ -934,7 +942,7 @@
   /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
   .scroll { overflow: visible; }
   table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: fixed; font-size: var(--t-small); }
-  .c-grip { width: 32px; } .c-a { width: 14%; } .c-z { width: 12%; } .c-p { width: 12%; } .c-u { width: 26%; } .c-act { width: 92px; }
+  .c-grip { width: 32px; } .c-a { width: 14%; } .c-z { width: 12%; } .c-p { width: 12%; } .c-in { width: 22%; } .c-out { width: 12%; } .c-act { width: 92px; }
   th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: var(--t-caption); color: var(--ink-muted); }
   /* clip, not hidden: a hidden cell is a scroller, and the wheel over it stopped scrolling the page */
   td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
@@ -944,7 +952,7 @@
   tr.gap-before td { box-shadow: inset 0 2px 0 var(--link); }
   tr.gap-after td { box-shadow: inset 0 -2px 0 var(--link); }
   tr.no.gap-before td, tr.no.gap-after td { box-shadow: inset 0 2px 0 var(--status-danger); }
-  td.grip, td.act, td.use { text-overflow: clip; }
+  td.grip, td.act, td.use, td.out { text-overflow: clip; }
   td.grip { padding: 0 3px; }
   .grip .g { width: 24px; min-height: 24px; height: 24px; padding: 0; cursor: grab; touch-action: none; color: var(--ink-muted); }
   .grip .g:disabled { cursor: default; opacity: .4; }
@@ -967,13 +975,13 @@
   .fold { display: inline-flex; align-items: center; gap: var(--space-1); height: auto; min-height: 24px; padding: 0 var(--space-1) 0 0; font: inherit; color: var(--ink); }
   .lnk { margin-left: var(--space-2); border: 0; background: transparent; padding: 0; height: auto; min-height: 24px; color: var(--link); font-size: inherit; cursor: pointer; }
   td.use { padding-top: var(--space-1); padding-bottom: var(--space-1); white-space: normal; }
-  .ex { display: flex; align-items: center; gap: var(--space-3); }
-  .lines { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  td.out { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .lines { display: flex; flex-direction: column; min-width: 0; }
   .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
   .line:hover:not(:disabled) { border-color: var(--border); }
   .line:disabled { cursor: default; }
   .line :global(.r) { color: var(--accent); }
-  td.use.def .line, td.use.def :global(svg.ex) { opacity: .55; }
+  td.use.def .line, td.out.def :global(svg.ex) { opacity: .55; }
   .lines input { height: 24px; width: 100%; font-size: var(--t-small); }
   .note { display: block; color: var(--status-draft); white-space: normal; }
   .note.bad { color: var(--status-danger); }

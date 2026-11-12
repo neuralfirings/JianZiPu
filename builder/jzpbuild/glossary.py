@@ -423,7 +423,7 @@ def marks_glyph(usage) -> bool:
 
 
 def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str], list[str]]:
-    """A vertical row's own example (the Builder's Example column): its Output, drawn from the ASCII
+    """A vertical row's own example (the Builder's Input column): its Output, drawn from the ASCII
     (else the Chinese), its Input lines (Chinese, then ASCII), and those as plain text to type.
     {} is the glyph's spelling, marked red when the example has more in it than the glyph (:{}5),
     not when it's the row on its own (:{})."""
@@ -504,22 +504,22 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
     """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
-    A Definition column (the rows' "meaning") joins it once any of its rows has one."""
+    A Definition column (the rows' "meaning") joins it, last, once any of its rows has one."""
     cls = "table table-sm" if sec["kind"] == "usage" else "table"
     body = section_rows(sid, sec, rows)
     meaning = any(r.meaning for r in body)
     widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
     lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
-    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
     lines += [f'      <th width="{widths[4]}%">Input</th>', f'      <th width="{widths[5]}%">Output</th>']
+    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
     lines += ["    </tr>", "  </thead>"]
     for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
         lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
                   f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
-                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []),
-                  f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
+                  f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>",
+                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
 
