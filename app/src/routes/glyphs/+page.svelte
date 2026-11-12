@@ -491,6 +491,7 @@
   .uses .use:hover { text-decoration: underline; }
   .uses .warn { color: var(--status-draft); }
   button.link { height: auto; padding: 0; border: 0; background: transparent; color: var(--link); font: inherit; cursor: pointer; text-decoration: underline; }
+  @media (max-width: 759.98px) { .uses .use, button.link { min-height: var(--control-sm); } }
   .big { padding: var(--space-4); background: var(--bg-field); border: 1px solid var(--border); border-radius: var(--radius-md); }
   .small { font-size: var(--t-caption); }
   .warn { color: var(--status-draft); }
