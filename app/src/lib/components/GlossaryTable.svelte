@@ -111,8 +111,14 @@
 
   /** The example a usage row shows: its own, else the section's. */
   const templateOf = (r: GRow, s: Section): [string, string] => (!isWord(r) && r.usage) || s.usage || ['', ''];
+  /** A row of a vertical section as the font sets it: typed after a colon, a word's glyphs one under another. */
+  function verticalOf(r: GRow): string {
+    const parts = glyphsOfRow(r).map((g) => { const [a, z] = mainSpellings(app.typing, g); return a || z; });
+    return parts.every(Boolean) ? ':' + parts.join('') : '';
+  }
   /** The example as typed in the font (ASCII, else Chinese), to draw it. */
   function exampleOf(r: GRow, s: Section): string {
+    if (s.kind !== 'usage') return verticalOf(r);
     if (isWord(r)) return '';
     const [a, z] = templateOf(r, s), [sa, sz] = mainSpellings(app.typing, r.glyph);
     return a ? exampleText(a, sa) : z ? exampleText(z, sz) : '';
@@ -122,7 +128,7 @@
   let drawKey = '';
   let drawTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
-    const words = [...new Set(sections.filter((s) => s.kind === 'usage' && !isFolded(s.id))
+    const words = [...new Set(sections.filter((s) => !isFolded(s.id))
       .flatMap((s) => rowsOf(s.id).map((r) => exampleOf(r, s))).filter((w) => w && !(w in drawn)))];
     const typed = app.typedWith, design = app.design;
     const key = JSON.stringify([words, typed.rows.length, Object.keys(typed.svgs)]);
@@ -382,8 +388,8 @@
       {#if !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
-        <colgroup><col class="c-grip" /><col class="c-out" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-m" />{#if usage}<col class="c-u" />{/if}<col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>Output</th><th>ASCII</th><th>中文</th><th>拼音</th><th>Meaning</th>{#if usage}<th title="The example word the page shows for it: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example.">Usage</th>{/if}<th></th></tr></thead>
+        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-m" /><col class="c-out" />{#if usage}<col class="c-u" />{/if}<col class="c-act" /></colgroup>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th>Meaning</th><th>Output</th>{#if usage}<th title="The example word the page shows for it: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example.">Usage</th>{/if}<th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -395,7 +401,7 @@
               <td class="grip"><button class="quiet g" onpointerdown={(e) => grab(e, s.id, i)} disabled={!!q.trim()}
                 aria-label="Drag {rowName(r)} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move · a finger: press and hold first'}><I.Grip size={14} /></button></td>
               {#if rowEdit?.sid === s.id && rowEdit.i === i}
-                <td colspan="4" class="redit">
+                <td colspan="3" class="redit">
                   <!-- svelte-ignore a11y_autofocus -->
                   <input type="text" bind:value={rowEdit.text} autofocus spellcheck="false" aria-label="Type {rowName(r)} again"
                     onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveRow(); } else if (e.key === 'Escape') { rowEdit = null; rowNote = null; } }} />
@@ -404,16 +410,21 @@
                   {#if rowNote?.sid === s.id && rowNote.i === i}<span class="small bad" role="status"><I.Problem size={12} /> {rowNote.text}</span>{/if}
                 </td>
               {:else}
-              <td class="out">
-                {#each glyphsOfRow(r) as g, k (g + k)}<button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g}" data-tip="{g}: show it in the glyph panel"><Glyph name={g} size={24} /></button>{/each}
-                {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
-              </td>
               <td class="mono">{ascii(r, s)}</td>
               <td class="zh">{chinese(r, s)}</td>
               <td>{pinyin(r)}</td>
               {/if}
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Meaning of {rowName(r)} in {s.id}" placeholder="what it means"
                 onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
+              <td class="out">
+                {#if !usage && drawn[exampleOf(r, s)]}
+                  <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
+                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark="" height={Math.min(120, 30 + 26 * glyphsOfRow(r).length)} /></button>
+                {:else}
+                {#each glyphsOfRow(r) as g, k (g + k)}<button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g}" data-tip="{g}: show it in the glyph panel"><Glyph name={g} size={24} /></button>{/each}
+                {/if}
+                {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
+              </td>
               {#if usage}
                 {@const tpl = templateOf(r, s)}
                 {@const sp = isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph)}
@@ -485,12 +496,14 @@
   .banner select { height: 26px; }
   .sec h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: var(--t-label); font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
   .sec.hidden h3 > span:first-child { color: var(--ink-muted); }
-  .scroll { overflow-x: auto; }
+  /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
+  .scroll { overflow: visible; }
   table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: fixed; font-size: var(--t-small); }
   .c-grip { width: 32px; } .c-out { width: 150px; } .c-a { width: 18%; } .c-z { width: 14%; } .c-p { width: 14%; } .c-act { width: 64px; } .c-u { width: 22%; }
   table.usage .c-a, table.usage .c-z, table.usage .c-p { width: 11%; }
   th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: var(--t-caption); color: var(--ink-muted); }
-  td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+  /* clip, not hidden: a hidden cell is a scroller, and the wheel over it stopped scrolling the page */
+  td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
   tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--status-draft); }
   tr.on td { background: var(--sel-bg); }
   tr.lifted td { opacity: .4; }
@@ -506,6 +519,7 @@
   .redit input { width: 280px; height: 26px; font-family: var(--font-mono); margin-right: var(--space-2); }
   .redit .bad { margin-left: var(--space-2); white-space: normal; }
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer; vertical-align: middle; }
+  .ga.vert { width: auto; height: auto; padding: 2px; }
   .ga:hover { border-color: var(--sel-border); background: var(--sel-bg); }
   .zh { font-family: var(--font-serif); font-size: 15px; }
   .mono { font-family: var(--font-mono); }
@@ -522,7 +536,7 @@
   td.use { padding-top: var(--space-1); padding-bottom: var(--space-1); white-space: normal; }
   .ex { display: flex; align-items: center; gap: var(--space-3); }
   .lines { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-  .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
   .line:hover:not(:disabled) { border-color: var(--border); }
   .line:disabled { cursor: default; }
   .line :global(.r) { color: var(--accent); }
@@ -539,6 +553,7 @@
   .ghost { position: fixed; z-index: 50; pointer-events: none; padding: 2px 8px; background: var(--bg-panel); border: 1px solid var(--sel-border); border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,.15); font-size: var(--t-small); }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (max-width: 759.98px) {
+    .scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
     .act .ic, .grip .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
     .c-grip { width: 40px; } .c-act { width: 80px; }
     .add input { width: 100%; }

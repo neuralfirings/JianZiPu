@@ -85,7 +85,7 @@ On a phone, List view is a list of cards, one per glyph: its spellings and anyth
 
 ### The glossary
 
-**Glossary**, the third view, is the glossary on jianzipufont.com: its sections in page order, each with its rows in the order the page shows them. A row is one glyph, or a word written together, such as :少息. Its ASCII, 中文 and 拼音 come from the glyphs' spellings; its **Meaning** is its own, a few plain words on what it means or asks the player to do (`pluck the string inward with the middle finger`). A section shows a Meaning column once one of its rows has a meaning.
+**Glossary**, the third view, is the glossary on jianzipufont.com: its sections in page order, each with its rows in the order the page shows them. A row is one glyph, or a word written together, such as :少息. Its ASCII, 中文 and 拼音 come from the glyphs' spellings; its **Meaning** is its own, a few plain words on what it means or asks the player to do (`pluck the string inward with the middle finger`). The columns run as on the page: ASCII, 中文, 拼音, Meaning, then **Output**, drawn as the font sets it (a word typed after a colon stands vertically; click it to show its glyph). A section shows a Meaning column once one of its rows has a meaning.
 
 - Drag a row by its grip **grip** to move it, within its section or into another; a blue line shows where it lands (red where it can't go), and Esc puts it back. On a phone, press and hold the grip first. Dropped on a folded section's title, it goes to the end of that section.
 - Click a section's title to fold it away or open it again; **Fold every section** folds them all. The Builder remembers which are folded in this browser.

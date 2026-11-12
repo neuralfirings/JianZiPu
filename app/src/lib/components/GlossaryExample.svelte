@@ -11,7 +11,7 @@
     const x0 = Math.min(...els.map((e) => e.x)), x1 = Math.max(...els.map((e) => e.x + e.size[0]));
     const y0 = Math.min(...els.map((e) => e.y)), y1 = Math.max(...els.map((e) => e.y + e.size[1]));
     // a drawing can reach past its part's box (散's top over its box): leave room for it, and don't clip
-    const pad = Math.max(40, 0.15 * Math.max(x1 - x0, y1 - y0));
+    const pad = 0.1 * Math.max(x1 - x0, y1 - y0);
     return { x: x0 - pad, y: -(y1 + pad), w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
   });
 </script>
