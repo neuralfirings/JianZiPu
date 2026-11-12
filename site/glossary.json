@@ -7,6 +7,8 @@
     "Then `cd builder && python3 -m jzpbuild.glossary`",
     "rewrites the tables between the <!-- glossary <id> --> markers; headings and text around them stay as written.",
     "A section gets a Meaning column (components.csv `meaning`) once any of its glyphs has a meaning.",
+    "kind 'hidden' (99: Hidden in Glossary): no table and no marker on the page; its glyphs are left out on",
+    "purpose, so the check doesn't report them as missing.",
     "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the example as [ASCII, 中文]; {} is the glyph's",
     "spelling, marked red; <r>…</r> marks more. `examples` overrides it for one glyph.",
     "kind 'vertical': each spelling after a colon, typed on its own. `rows` sets the order: a glyph name, or a",
@@ -95,6 +97,14 @@
     "3x": {
       "title": "3x: Placeholder for Future/Unknown Characters",
       "kind": "vertical"
+    },
+    "4": {
+      "title": "4: Uncategorized",
+      "kind": "vertical"
+    },
+    "99": {
+      "title": "99: Hidden in Glossary",
+      "kind": "hidden"
     }
   }
 }

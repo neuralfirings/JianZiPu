@@ -177,6 +177,8 @@ def _number_row(recs: list[dict]) -> Row:
 
 
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
+    if sec["kind"] == "hidden":           # 99: Hidden in Glossary: its glyphs are left out on purpose, no table
+        return []
     out: list[Row] = []
     numbers: list[dict] = []
     for e in entries(sid, sec, rows) + [None]:
@@ -195,7 +197,7 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
         elif sec["kind"] == "vertical":
             out.append(_vertical_row(rows, e))
         else:
-            raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is neither 'usage' nor 'vertical'.")
+            raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is none of 'usage', 'vertical' or 'hidden'.")
     return out
 
 
@@ -242,7 +244,8 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
                                 f"{sections[sid].get('title')!r}. Use the same title in both.")
         if has_spelling(r) and g not in shown:
             problems.append(f"{g} ({r['simplified'] or spellings(r)[0]}) has spellings but no row in the glossary: "
-                            f"give it a glossary section in components.csv, or put it in a word in site/glossary.json.")
+                            f"give it a glossary section in components.csv (99: Hidden in Glossary leaves it out on purpose), "
+                            f"or put it in a word in site/glossary.json.")
     return problems
 
 
@@ -264,7 +267,7 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
         return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
 
     out = BLOCK_RE.sub(sub, page)
-    if unused := [s for s in sections if s not in seen]:
+    if unused := [s for s in sections if s not in seen and sections[s]["kind"] != "hidden"]:
         raise GlossaryError(f"site/index.html has no glossary marker for section(s) {', '.join(unused)}.")
     return out
 

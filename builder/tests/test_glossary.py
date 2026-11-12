@@ -286,3 +286,26 @@ def test_http_check_locally_and_online(monkeypatch):
         assert res["font_url"].startswith("/api/preview-fonts/") and font(res["font_url"])
     finally:
         srv.shutdown()
+
+
+# ---------------------------------------------------------------- 4: Uncategorized and 99: Hidden in Glossary
+
+def test_a_hidden_section_has_no_table_and_leaves_its_glyphs_out_on_purpose():
+    sec = {"2a": {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"]},
+           "99": {"title": "99: Hidden in Glossary", "kind": "hidden"}}
+    r = rows("lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand,", "md_tc,,,tc,,,,,99: Hidden in Glossary,",
+             "md_left,,,lf,,左,,zuǒ,,")
+    probs = glossary.missing(r, sec)
+    assert not any("md_tc" in p for p in probs)                  # hidden on purpose: no complaint
+    assert any("md_left" in p and "99: Hidden in Glossary" in p for p in probs)   # empty: still reported, says how
+    out = glossary.render(page("2a"), r, sec)                     # no marker for 99, and none needed
+    assert "tc" not in out and glossary.section_rows("99", sec["99"], r) == []
+    assert [sorted(ex) for _, ex in glossary.examples(out, r, sec)] == [sorted(["0k5", "散勾五"])]
+
+
+def test_the_shipped_sections_include_uncategorized_and_hidden():
+    secs = glossary.load_sections()
+    assert secs["4"] == {"title": "4: Uncategorized", "kind": "vertical"}
+    assert secs["99"] == {"title": "99: Hidden in Glossary", "kind": "hidden"}
+    text = config.SITE_INDEX.read_text(encoding="utf-8")
+    assert "<!-- glossary 4" in text and "<!-- glossary 99" not in text
