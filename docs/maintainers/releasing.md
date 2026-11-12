@@ -232,10 +232,7 @@ so its spellings are the font's:
   it has a row of its own, by title: `1c: Left Hand Techniques`, or two
   separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui
   Number`). The cell offers the titles to pick from. Leave it empty for a
-  glyph that only appears inside a word, such as 带 in :带起. Any other glyph
-  with spellings and an empty Glossary column gets a row in `3x: Uncategorized`
-  (the section `site/glossary.json` marks `"default": true`), so a new glyph
-  is never left out; give it a proper section when you know where it belongs.
+  glyph that only appears inside a word, such as 带 in :带起.
 - The id before the colon is what the generator goes by, and the titles must
   match `site/glossary.json` (the test says which glyph doesn't). Renaming a
   section means changing its title in both places.

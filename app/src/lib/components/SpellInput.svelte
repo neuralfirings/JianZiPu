@@ -69,8 +69,6 @@
   let picker = $state<HTMLElement>();
   let chosen = $derived(own.split(';').map((x) => x.trim()).filter(Boolean));
   let sections = $derived(app.glossarySections.map((s) => s.title));
-  /** where an empty cell's glyph goes: the default section (3x: Uncategorized) */
-  let fallback = $derived(app.glossarySections.find((s) => s.default)?.title ?? null);
   let unknown = $derived(chosen.filter((c) => !sections.includes(c)));
   function toggle(title: string) {
     const next = chosen.includes(title) ? chosen.filter((c) => c !== title) : [...chosen, title];
@@ -114,7 +112,7 @@
       {#if open}
         <div class="float menu" style={place} role="listbox" aria-multiselectable="true" aria-label="Glossary sections">
           <button type="button" role="option" aria-selected={!chosen.length} onclick={() => { app.setSpelling(glyph, 'glossary', ''); open = false; }}>
-            <span class="tick">{#if !chosen.length}<I.Check size={14} />{/if}</span>{#if fallback}None: it goes in {fallback}, unless a word on the page shows it{:else}None (no row of its own){/if}</button>
+            <span class="tick">{#if !chosen.length}<I.Check size={14} />{/if}</span>None (no row of its own)</button>
           {#each sections as s (s)}
             <button type="button" role="option" aria-selected={chosen.includes(s)} onclick={() => toggle(s)}>
               <span class="tick">{#if chosen.includes(s)}<I.Check size={14} />{/if}</span>{s}</button>

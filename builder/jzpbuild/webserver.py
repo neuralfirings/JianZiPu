@@ -555,8 +555,7 @@ def glossary_sections() -> list[dict]:
     """The font page's glossary sections, for the Typing view's Glossary column; none where the
     server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
-        return [{"id": k, "title": v.get("title", k), **({"default": True} if v.get("default") else {})}
-                for k, v in glossary.load_sections().items()]
+        return [{"id": k, "title": v.get("title", k)} for k, v in glossary.load_sections().items()]
     except (OSError, ValueError, KeyError):
         return []
 

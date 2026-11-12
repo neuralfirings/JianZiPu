@@ -219,9 +219,9 @@ def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> st
     return "\n".join(INDENT + l if l else l for l in lines)
 
 
-def _shown(rows: dict[str, dict], sections: dict[str, dict]) -> set[str]:
-    """The glyphs the glossary shows: a row of their own, a vertical form beside its partner, or a
-    glyph inside a word."""
+def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
+    """Problems that leave a glyph out of the glossary, or point at a section that isn't there."""
+    problems = []
     shown: set[str] = set()
     for sid, sec in sections.items():
         for e in entries(sid, sec, rows):
@@ -229,27 +229,6 @@ def _shown(rows: dict[str, dict], sections: dict[str, dict]) -> set[str]:
                 shown.add(g)
                 if sec["kind"] == "vertical" and isinstance(e, str) and _partner(rows, g):
                     shown.add(rows[g]["vert_variant"])
-    return shown
-
-
-def defaulted(rows: dict[str, dict], sections: dict[str, dict]) -> dict[str, dict]:
-    """`rows` with every glyph the glossary would leave out put in the default section (site/glossary.json
-    `"default": true`, 3x: Uncategorized): it has spellings, its Glossary column is empty, and no section
-    or word shows it. A column naming a section that isn't there stays a problem (missing())."""
-    default = next((sid for sid, sec in sections.items() if sec.get("default")), None)
-    if default is None:
-        return rows
-    shown = _shown(rows, sections)
-    title = sections[default].get("title", default)
-    return {g: ({**r, "glossary": title} if has_spelling(r) and not r.get("glossary", "").strip() and g not in shown else r)
-            for g, r in rows.items()}
-
-
-def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
-    """Problems that leave a glyph out of the glossary, or point at a section that isn't there."""
-    problems = []
-    rows = defaulted(rows, sections)
-    shown = _shown(rows, sections)
     for sid, sec in sections.items():
         if not sec.get("title", "").startswith(sid + ": "):
             problems.append(f"site/glossary.json: section {sid}'s title should start with \"{sid}: \".")
@@ -271,7 +250,6 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
     """`page` with every glossary table regenerated."""
     rows = load_rows() if rows is None else rows
     sections = load_sections() if sections is None else sections
-    rows = defaulted(rows, sections)
     seen = set()
     count = 0                         # rows numbered so far, in page order
 
@@ -304,7 +282,6 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     page = config.SITE_INDEX.read_text(encoding="utf-8") if page is None else page
     rows = load_rows() if rows is None else rows
     sections = load_sections() if sections is None else sections
-    rows = defaulted(rows, sections)
     out = []
     for sid, sec in sections.items():
         for r in section_rows(sid, sec, rows):
@@ -392,7 +369,6 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
     out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
     order = [m.group(2) for m in BLOCK_RE.finditer(page)]
     try:
-        rows = defaulted(rows, sections)      # a glyph left out goes to 3x: Uncategorized
         out["problems"] = missing(rows, sections)
         render(page, rows, sections)          # the same errors a release would stop on
         count = 0

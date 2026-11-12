@@ -7,8 +7,6 @@
     "Then `cd builder && python3 -m jzpbuild.glossary`",
     "rewrites the tables between the <!-- glossary <id> --> markers; headings and text around them stay as written.",
     "A section gets a Meaning column (components.csv `meaning`) once any of its glyphs has a meaning.",
-    "The section with \"default\": true (3x: Uncategorized) also gets every glyph that has spellings, an empty",
-    "glossary column and no row or word anywhere else, so a new glyph is never left out of the glossary.",
     "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the example as [ASCII, 中文]; {} is the glyph's",
     "spelling, marked red; <r>…</r> marks more. `examples` overrides it for one glyph.",
     "kind 'vertical': each spelling after a colon, typed on its own. `rows` sets the order: a glyph name, or a",
@@ -95,9 +93,8 @@
       "rows": [["md_da", "md_xi"], ["md_shao", "md_xi"]]
     },
     "3x": {
-      "title": "3x: Uncategorized",
-      "kind": "vertical",
-      "default": true
+      "title": "3x: Placeholder for Future/Unknown Characters",
+      "kind": "vertical"
     }
   }
 }
