@@ -67,12 +67,20 @@
       "title": "2c: Other Right Hand Strum Techniques",
       "kind": "vertical"
     },
+    "3a": {
+      "title": "3a: Related to Score",
+      "kind": "vertical"
+    },
     "3b": {
       "title": "3b: Related to Notes",
       "kind": "vertical"
     },
     "3c": {
       "title": "3c: Related to String & Hui Number",
+      "kind": "vertical"
+    },
+    "3d": {
+      "title": "3d: Related to position",
       "kind": "vertical"
     },
     "3e": {
