@@ -182,6 +182,11 @@ class DesignState {
   get extraGlyphs(): string[] {
     return Object.keys(this.svgs).filter((n) => !(n in this.mainSvgs));
   }
+  /** What words are typed with in the live previews (api.words): the spellings as they are now and
+   *  the new glyphs' drawings. */
+  get typedWith(): { rows: Record<string, string>[]; svgs: Record<string, string> } {
+    return { rows: T.toRecords(this.typing), svgs: this.extraSvgs };
+  }
   /** Their drawings, so a preview can draw them in when the last build hasn't got them. */
   get extraSvgs(): Record<string, string> {
     return Object.fromEntries(this.extraGlyphs.map((n) => [n, this.svgs[n]]));

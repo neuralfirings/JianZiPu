@@ -106,7 +106,7 @@ Each panel's **?** shows the same text as below.
 - **Compare**: Things to measure against while drawing: a **reference dot** (`D`) at the stroke weight to aim for, another glyph laid over this one (`G`), or the last saved outline (`L`).
 - **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to.
 - **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → Typing](https://builder.jianzipufont.com/glyphs?view=typing).
-- **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. A glyph newer than the last build is drawn in from its drawing, so no Build is needed; red means a Chinese character the font doesn't have, which only a Build adds.
+- **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. A glyph newer than the last build is drawn in from its drawing and a new Chinese character copied from the base font, so no Build is needed; red means a character not even the base font has.
 - **Checks**: Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. **Check as built** runs the same conversion as the font build.
 - **Tester**: Words that use this glyph, drawn live as you edit, so you can see it in context before saving.
 - **Trace**: Turns the image you opened into an outline. Adjust **Threshold** (or **Auto**), specks, corners and simplify, then **Use this outline**. The image stays in your browser. `Esc` leaves trace mode.
@@ -160,7 +160,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 
 ### Two views
 
-- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design as it is now, unsaved changes included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a live word to open it in Layouts. **+ Save as set** keeps the current words as a sample set.
+- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design and the spellings as they are now, unsaved changes and new glyphs included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a live word to open it in Layouts. **+ Save as set** keeps the current words as a sample set.
 - **Test the font file**: Running text in the font file, as a reader sees it. Switch **liga** (substitution) and **kern** (positioning) off to see the raw parts, try **vertical columns**, or **compare with a second font** side by side.
 
 ![Build and test, Test the font file view: the same words as running text in the built font](https://builder.jianzipufont.com/help/build-font.jpg)
@@ -258,7 +258,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 
 ## When something looks wrong
 
-- **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. Try it and Check the glossary don't need a Build for a new glyph (they draw it in from its drawing); there, red means a Chinese character the font doesn't have, which only a Build adds.
+- **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. The live previews (Try it, Check the glossary, and Live preview in Build & test) don't need a Build for a new glyph or spelling: they draw a new glyph in from its drawing and copy a new Chinese character from the base font. There, red means a character not even the base font has.
 - **The live preview and the font differ**: The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.
 - **warning under a word**: Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.
 - **Save is waiting**: A spelling clashes with another glyph's or isn't valid. **Show them** lists the cells to fix.
@@ -310,7 +310,8 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“The glossary can't be made, so a release would stop here.”**: From **Check the glossary…**: `site/glossary.json` and the spellings disagree, and the message after it says how. Usually a glyph in a section has no ASCII or Chinese spelling for its example, or `site/glossary.json` lists a glyph whose Glossary column doesn't name that section; fix the spelling or the column, then **Check again**.
 - **“joins *a* + *b*: typing *ab* gives this glyph instead of …”**: A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.
 - **Typing “*x*” gives *a + b*, not *glyph*.**: Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.
-- **“not in the font yet. It arrives with the next Build.”**: The spelling uses a Chinese character the font doesn't have yet. Only a Build adds characters (from the base font): **Build font** in [Build & test](https://builder.jianzipufont.com/test). A new glyph doesn't need one: previews draw it in from its drawing.
+- **“not in the font yet. It arrives with the next Build.”**: The spelling uses a Chinese character the font doesn't have yet, and this Builder has no base font (`src_font/TW-Kai-98.ttf`) to copy it from: a Build adds it once the base font is there. Where the base font is (online, and on your own computer once you've copied it in), previews copy new characters in themselves, like new glyphs.
+- **“the base font (TW-Kai) doesn't have this character, so the font can't type it.”**: The base font has no such character, so no Build can add it either. Use another spelling, or ask for the character to be drawn as a glyph of its own.
 - **“*name* has no drawing yet, so it can't be previewed. Draw it in the glyph editor.”**: The glyph has spellings but no drawing, so there's nothing to type it into. Draw it, or **Replace…** it with a file; once it has a drawing, Try it and Check the glossary use it without a Build.
 - **“Build the font once to preview spellings.”**: Try it needs one build first: **Build font**.
 - **“Can't read *file*: no glyph_name column”**: A spellings CSV needs a header row that includes `glyph_name`. **Export spellings (CSV)** gives a file of the right shape to start from.

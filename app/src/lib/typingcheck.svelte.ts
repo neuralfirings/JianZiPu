@@ -11,6 +11,8 @@ class TypingCheck {
   changed = $state<NonNullable<TypingPreview['changed']>>([]);
   notBuilt = $state<string[]>([]);
   missing = $state<Record<string, string[]>>({});
+  /** The server has the base font, so a missing character is one the base font lacks too. */
+  baseFont = $state(false);
   error = $state<string | null>(null);
   busy = $state(false);
   ran = $state(false);
@@ -46,6 +48,7 @@ class TypingCheck {
       this.changed = r.changed ?? [];
       this.notBuilt = r.not_built ?? [];
       this.missing = r.missing_chars ?? {};
+      this.baseFont = !!r.base_font;
       this.ran = true;
     } catch (e) {
       if (id === this.seq) this.error = (e as Error).message;
@@ -57,7 +60,9 @@ class TypingCheck {
   /** Warnings for one glyph (Save still works). */
   warningsFor(g: string): string[] {
     const out = this.roundtrip.filter((r) => r.glyph === g).map((r) => r.message);
-    for (const v of this.missing[g] ?? []) out.push(`${v}: not in the font yet. It arrives with the next Build.`);
+    for (const v of new Set(this.missing[g] ?? []))      // 简体 and 繁體 alike: once
+      out.push(this.baseFont ? `${v}: the base font (TW-Kai) doesn't have this character, so the font can't type it.`
+        : `${v}: not in the font yet. It arrives with the next Build.`);
     if (this.notBuilt.includes(g)) out.push(`${g} has no drawing yet, so it can't be previewed. Draw it in the glyph editor.`);
     return out;
   }

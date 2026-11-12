@@ -47,13 +47,13 @@
     const dd = d, g = glyph;
     if (!dd || !g || text) return;
     const all = [...new Set(Object.values(SAMPLE_SETS).flat())].filter((w) => !/\s/.test(w));
-    api.words(dd, all).then((r) => { if (r.ok && !text) text = r.words.filter((w) => w.glyphs.includes(g)).slice(0, 6).map((w) => w.word).join(' ') || DEFAULT_STRIP; }).catch(() => {});
+    api.words(dd, all, app.typedWith).then((r) => { if (r.ok && !text) text = r.words.filter((w) => w.glyphs.includes(g)).slice(0, 6).map((w) => w.word).join(' ') || DEFAULT_STRIP; }).catch(() => {});
   });
   $effect(() => {
-    const dd = d, ws = words;
+    const dd = d, ws = words, typed = app.typedWith;
     if (!dd || !ws.length) { result = null; return; }
     if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => { if (composing) return; const r = await api.words(dd, ws); if (r.ok) result = r; }, 120);
+    timer = setTimeout(async () => { if (composing) return; const r = await api.words(dd, ws, typed); if (r.ok) result = r; }, 120);
   });
   function random() {
     const all = Object.values(SAMPLE_SETS).flat();

@@ -343,6 +343,43 @@ def test_a_new_glyph_is_drawn_in_from_its_drawing_without_a_build():
     assert bad.not_built == ["md_wang"]
 
 
+def fake_base_font(path):
+    """A stand-in for TW-Kai with only 推 and 出, a square each."""
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+
+    def square():
+        pen = TTGlyphPen(None)
+        pen.moveTo((100, 100)); pen.lineTo((100, 900)); pen.lineTo((900, 900)); pen.lineTo((900, 100)); pen.closePath()
+        return pen.glyph()
+    fb = FontBuilder(1024, isTTF=True)
+    names = [".notdef", "uni63A8", "uni51FA"]
+    fb.setupGlyphOrder(names)
+    fb.setupCharacterMap({0x63A8: "uni63A8", 0x51FA: "uni51FA"})
+    fb.setupGlyf({n: square() for n in names})
+    fb.setupHorizontalMetrics({n: (1024, 100) for n in names})
+    fb.setupHorizontalHeader(ascent=900, descent=-124)
+    fb.setupNameTable({"familyName": "Fake", "styleName": "Regular"})
+    fb.setupOS2()
+    fb.setupPost()
+    fb.save(str(path))
+    return path
+
+
+def test_a_new_character_is_copied_in_from_the_base_font(tmp_path, monkeypatch):
+    pytest.importorskip("uharfbuzz")
+    font = config.SITE_FONT
+    # 推 and 出 aren't in the released font
+    rows = tp.rows_from([dict(r, simplified="推出") if r["glyph_name"] == "md_tang" else r for r in csv_records()], DESIGN)
+    monkeypatch.setattr(config, "SOURCE_FONT", tmp_path / "none.ttf")
+    p = tp.FONTS.get(font, rows, DESIGN)
+    assert p.missing_chars == {"md_tang": ["推出"]} and p.lacking == {"推", "出"} and p.copied == []
+    monkeypatch.setattr(config, "SOURCE_FONT", fake_base_font(tmp_path / "TW-Kai-98.ttf"))
+    p = tp.FONTS.get(font, rows, DESIGN)
+    assert p.copied == ["出", "推"] and p.missing_chars == {} and p.lacking == set()
+    assert "md_tang" in tp.shape(p, ["推出"])[0]["glyphs"]
+
+
 # ---------------------------------------------------------------- HTTP
 
 @pytest.fixture
@@ -386,3 +423,18 @@ def test_http_preview_reports_a_clash(server):
             r["latin"] = "k"
     status, res = post(server, "/api/typing/preview", {"rows": edited})
     assert status == 200 and [e["value"] for e in res["errors"]] == ["k"]
+
+
+def test_words_typed_through_unsaved_spellings_and_new_glyphs(monkeypatch):
+    """Build & test's live preview and the Layouts word strip (/api/words with rows): no Build needed."""
+    pytest.importorskip("uharfbuzz")
+    monkeypatch.setattr(webserver, "_preview_base_font", lambda *_: config.SITE_FONT)
+    design = json.loads(json.dumps(DESIGN))
+    design["areas"]["char"]["glyphs"].append("md_wang")
+    body = {"design": design, "words": ["s9wang5"], "svgs": {"md_wang": SQUARE},
+            "rows": csv_records() + [{"glyph_name": "md_wang", "latin": "wang"}]}
+    out = webserver.words_typed_payload(body, webserver._design_from(body))
+    assert out["drawn"] == ["md_wang"] and "md_wang" in out["words"][0]["glyphs"]
+    del body["svgs"]                                        # no drawing: the letters stay letters
+    out = webserver.words_typed_payload(body, webserver._design_from(body))
+    assert "md_wang" not in out["words"][0]["glyphs"] and "w" in out["words"][0]["glyphs"]

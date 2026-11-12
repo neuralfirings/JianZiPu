@@ -14,8 +14,10 @@ A glyph the last build doesn't have but whose drawing exists (`svg`: its SVG
 file, or a draft's) is drawn into the preview font from that file (about 0.06 s
 each), so a new glyph can be typed and checked without a Build; it is listed in
 `drawn`. Anything else the build doesn't contain (a glyph with no drawing, a
-Chinese character the font doesn't carry yet) is left out of the preview font
-and reported, never guessed. With `gpos`, the positioning rules are compiled
+Chinese character neither the font nor the base font has) is left out of the
+preview font and reported, never guessed. A Chinese character the last build
+lacks is copied in from the base font (src_font/TW-Kai-98.ttf) when it's there,
+as a build would, under the same name. With `gpos`, the positioning rules are compiled
 too (about 2 s), so the font can also draw words (Check the glossary).
 """
 
@@ -147,7 +149,8 @@ class Preview:
     vertical_only: set = field(default_factory=set)    # glyphs that get their colon untyped (shang = :shang)
     seconds: float = 0.0
     drawn: list = field(default_factory=list)         # glyphs not in the build, drawn in from their SVGs
-    lacking: set = field(default_factory=set)         # the characters behind missing_chars: only a Build adds them
+    lacking: set = field(default_factory=set)         # the characters behind missing_chars: no font here has them
+    copied: list = field(default_factory=list)        # characters the build lacks, copied in from the base font
     key: str = ""                                     # the cache key, to serve font_bytes by
     font_bytes: bytes = b""                           # the compiled preview font
 
@@ -175,6 +178,51 @@ def _shapeable(rows: list[GlyphRow], design: dict, font_glyphs: set) -> tuple[li
     for a in d.get("areas", {}).values():
         a["glyphs"] = [g for g in a.get("glyphs", []) if g in font_glyphs]
     return rows, d, not_built, missing, lacking
+
+
+_SOURCE: dict = {}
+
+
+def _source_font() -> TTFont | None:
+    """The base font a build subsets (TW-Kai), loaded once; None when it isn't on this machine."""
+    p = config.SOURCE_FONT
+    if not p.exists():
+        return None
+    mtime = p.stat().st_mtime
+    if _SOURCE.get("mtime") != mtime:
+        f = TTFont(str(p), lazy=True)
+        _SOURCE.update(mtime=mtime, font=f, cmap=f.getBestCmap())
+    return _SOURCE["font"]
+
+
+def _copy_chars(font: TTFont, rows: list[GlyphRow]) -> list[str]:
+    """Copy the Chinese characters the spellings use that `font` lacks from the base font, as
+    build_base() keeps them (outlines as they are, the name resolve_char_to_glyph_name gives);
+    return the ones copied."""
+    import copy as _copy
+    from . import glyphs
+    c2g = resolve_char_to_glyph_name(rows)
+    have = set(font.getGlyphOrder())
+    cmap = font.getBestCmap() or {}
+    want = sorted({ch for r in rows for ch in r.simplified + r.traditional
+                   if c2g.get(ch) not in have and ord(ch) not in cmap})
+    src = _source_font() if want else None
+    if src is None:
+        return []
+    added = []
+    for ch in want:
+        name = _SOURCE["cmap"].get(ord(ch))
+        if not name:
+            continue                                    # the base font hasn't got it either
+        g = src["glyf"][name]
+        if g.isComposite():
+            continue
+        g = _copy.deepcopy(g)
+        g.expand(src["glyf"])
+        advance, lsb = src["hmtx"][name]
+        glyphs.add_glyph(font, c2g[ch], g, advance=advance, lsb=lsb, codepoint=ord(ch))
+        added.append(ch)
+    return added
 
 
 def _draw_in(font: TTFont, names: list[str], svg: Callable[[str], str | None]) -> list[str]:
@@ -245,6 +293,7 @@ class PreviewFonts:
         missing = [n for n in wanted if n not in self._glyph_names(base_font)]
         drawings = {n: t for n in missing if svg and (t := svg(n))}
         key = hashlib.sha256(json.dumps([gpos, {n: hashlib.sha256(t.encode()).hexdigest() for n, t in drawings.items()},
+            config.SOURCE_FONT.exists(),
             str(base_font), base_font.stat().st_mtime,
             [[r.glyph_name, r.vert_variant, r.common, r.latin, r.latin_alt, r.simplified, r.traditional,
               sorted(r.areas)] for r in rows],
@@ -257,6 +306,7 @@ class PreviewFonts:
         t0 = time.time()
         font = TTFont(io.BytesIO(self._base_bytes(base_font)))
         drawn = _draw_in(font, sorted(drawings), drawings.get)
+        copied = _copy_chars(font, rows)
         font_glyphs = set(font.getGlyphOrder())
         srows, sdesign, not_built, missing_chars, lacking = _shapeable(rows, design, font_glyphs)
         parsed = schema.parse_design(sdesign)
@@ -280,7 +330,7 @@ class PreviewFonts:
         p = Preview(hb_font=hb.Font(hb.Face(buf.getvalue())), glyphs=font_glyphs,
                     not_built=not_built, missing_chars=missing_chars,
                     vertical_only=vertical_only, seconds=round(time.time() - t0, 3),
-                    drawn=drawn, key=key, font_bytes=buf.getvalue(), lacking=lacking)
+                    drawn=drawn, key=key, font_bytes=buf.getvalue(), lacking=lacking, copied=copied)
         self.cache[key] = p
         while len(self.cache) > self.KEEP:
             self.cache.popitem(last=False)

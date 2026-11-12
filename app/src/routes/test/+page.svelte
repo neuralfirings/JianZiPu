@@ -57,13 +57,13 @@
 
   $effect(() => { try { localStorage.setItem('jzp-test-words', text); } catch {} });
   $effect(() => {
-    const ws = words, d = app.design;
+    const ws = words, d = app.design, typed = app.typedWith;
     if (!d || view !== 'words') return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       if (composing) return;
       try {
-        const r = await api.words(d, ws);
+        const r = await api.words(d, ws, typed);
         if (r.ok) { result = r; err = null; } else err = r.error ?? 'preview failed';
       } catch (e) { err = (e as Error).message; }
     }, 150);

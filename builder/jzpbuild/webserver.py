@@ -20,7 +20,9 @@ API (all JSON):
   PUT  /api/design                 {design, base_hash} -> write (409 on conflict)
   POST /api/design/check           {design} -> errors/warnings/stats, no write
   POST /api/resolve                {design?, layout, choice, pinned?, center?} -> positions
-  POST /api/words                  {design?, words:[...]} -> per word: glyphs, layout, positions
+  POST /api/words                  {design?, words:[...], rows?, svgs?} -> per word: glyphs, layout, positions;
+                                   with `rows`, typed through those spellings (unsaved too) and new glyphs'
+                                   drawings in a preview font of the last build, so no Build is needed
   GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
   PUT  /api/glyphs                 {rows, base_hash, design?} -> rewrite components.csv (409 if it changed
                                    on disk, 400 with `errors` if a spelling clashes or is malformed)
@@ -639,6 +641,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     svg = svg_source(body)
     prev = typing_preview.FONTS.get(base, rows, design, svg)
     out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars, drawn=prev.drawn,
+               copied=prev.copied, base_font=config.SOURCE_FONT.exists(),
                roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
     words = word_list(body)
     if words:
@@ -655,6 +658,23 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         out["changed"] = [{"word": a["word"], "before": a["glyphs"], "after": b["glyphs"], "after_texts": b["texts"]}
                           for a, b in zip(before, after) if a["glyphs"] != b["glyphs"]]
     return out
+
+
+def words_typed_payload(body: dict, design: schema.Design, owner: str = "local") -> dict:
+    """/api/words with `rows`: the words typed through these spellings (and `svgs`, a draft's new
+    glyphs) in a preview font of the last build, so Build & test's live preview and the Layouts
+    word strip show new spellings and glyphs without a Build."""
+    base = _preview_base_font(owner)
+    words = word_list(body)
+    if base is None:
+        return words_payload(design, words, font=BUILD.font_for(owner))
+    raw = body.get("design") or json.loads(_read_design_text())
+    prev = typing_preview.FONTS.get(base, typing_preview.rows_from(body["rows"], raw), raw, svg_source(body))
+    shaped = typing_preview.shape(prev, words)
+    out = words_payload(design, words, runs=[s["glyphs"] for s in shaped])
+    for w, s in zip(out["words"], shaped):
+        w["texts"] = s["texts"]
+    return {**out, "drawn": prev.drawn, "copied": prev.copied}
 
 
 def glossary_payload(body: dict, owner: str = "local") -> dict:
@@ -960,6 +980,8 @@ class Handler(SimpleHTTPRequestHandler):
                                                   body.get("center", True)))
             if path == "/api/words":
                 design = _design_from(body)
+                if isinstance(body.get("rows"), list):          # the Builder's spellings, unsaved ones too
+                    return self._json(words_typed_payload(body, design, owner))
                 return self._json(words_payload(design, word_list(body), font=BUILD.font_for(owner)))
             if path == "/api/typing/preview":
                 return self._json(typing_payload(body, owner))

@@ -75,6 +75,8 @@ export type TypingPreview = {
   not_built?: string[]; missing_chars?: Record<string, string[]>; roundtrip?: RoundTrip[];
   /** Glyphs the last build hasn't got, drawn into the preview from their drawings (no Build needed). */
   drawn?: string[];
+  /** Chinese characters the last build lacks, copied in from the base font; `base_font`: the server has it. */
+  copied?: string[]; base_font?: boolean;
   words?: (WordPayload['words'][number] & { texts: string[] })[];
   changed?: { word: string; before: string[]; after: string[]; after_texts: string[] }[];
 };
@@ -141,7 +143,10 @@ export const api = {
     'POST', '/api/design/check', { design }),
   resolve: (design: Design, layout: string, choice: (number | number[] | null)[], pinned: Record<string, string>, center = true) =>
     call<ResolvePayload>('POST', '/api/resolve', { design, layout, choice, pinned, center }),
-  words: (design: Design, words: string[]) => call<WordPayload & { error?: string }>('POST', '/api/words', { design, words }),
+  /** `typed`: the spellings to type the words with (unsaved too) and new glyphs' drawings (app.typedWith),
+   *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
+  words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
+    call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
   glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string }[] }>('GET', '/api/glyphs'),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
