@@ -386,7 +386,7 @@
       <li><text>名十一</text> and <text>s10.1</text> → 10.1 hui (no string) <jzp>s10.1</jzp></li>
       <li><text>历七六</text> and <text>U76</text> → string 7, string 6 <jzp>U76</jzp> Here 76 is not converted into 7.6 since it's not preceded by a left hand glyph</li>
     </ul>
-    <p>For Chinese, you can also use 点 and 徽 to indicate decimals For example, <text>名七点九</text> gives <jzp>名七点九</jzp>.</p>
+    <p>For Chinese, you can also use 点 to indicate decimals. For example, <text>名七点九</text> gives <jzp>名七点九</jzp>. 徽 ends the hui number, like a comma: <text>名九徽半轮六</text> is the same as <text>名九，半轮六</text> (9 hui, then 半轮), and a decimal after 徽 is written with 分: <text>名十徽二分</text> gives <jzp>名十徽二分</jzp> (10.2). 弦 after a number marks it as a string: <text>名九七弦</text> is 9 hui, string 7, not 9.7.</p>
     <p>Here are some crazy examples:</p>
     <ul>
       <li><text>名十</text> gives <jzp>名十</jzp></li>
@@ -424,7 +424,7 @@
       <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
       <div class="text-entry-examples">
         <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五 名7.5 名十二 名十二二 名十二徽 ");''>中文</a>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五分 名7.5 名十二 名十二二 名十二徽 ");''>中文</a>
         <span> or </span>
         <a href="javascript:void(0)" onClick='fillIn(this, "s75 s7,5 s755 s7.5 s12 s122 s12.2 ")''>ASCII</a>
       </div>

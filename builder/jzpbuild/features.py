@@ -40,7 +40,13 @@ def hui_ch(n: int) -> str:
         return f"ch_{n}"
     return f"ch_10 ch_{n - 10}"
 
-PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad", "ch_hui"]
+# 。 点 點: a decimal point (十点二 = 10.2). 徽 isn't one: it ends the hui number (十徽 = 10, 名九徽半轮
+# = 9 then 半轮), and a decimal after it is written with 分 (十徽二分 = 10.2).
+PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad"]
+HUI_END = "ch_hui"          # 徽
+FEN = "ch_fen"              # 分
+# 弦 絃 after a number: it's a string (名九七弦 = hui 9, string 7, not 9.7)
+XIAN = "[ ch_xian ch_xian_trad ]"
 
 # The Builder's spelling preview generates GSUB from an unsaved design and unsaved
 # rows; it sets this for the duration of one call (per thread, so concurrent
@@ -187,6 +193,10 @@ def gen_s2j_lat_ch_period_liga() -> list[str]:
     for dd, target in decimals(DIGIT.__getitem__):
         parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
                  for tok, h in hui_sequence(hui_ascii)]
+        lines.append("  " + "  ".join(parts))
+    # 10徽2分 -> md_10.2
+    for d in range(1, 10):
+        parts = [f"sub {tok} {HUI_END} {DIGIT[d]} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ascii)]
         lines.append("  " + "  ".join(parts))
     lines.append("} s2j_lat_ch_period_liga;")
     return lines
@@ -355,6 +365,10 @@ def gen_c2j_char_deci_period_liga() -> list[str]:
         parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
                  for tok, h in hui_sequence(hui_ch)]
         lines.append("  " + "  ".join(parts))
+    # hui + 徽 + decimal + 分 (十徽二分 -> md_10.2)
+    for d in range(1, 10):
+        parts = [f"sub {tok} {HUI_END} {hui_ch(d)} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ch)]
+        lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_period_liga;")
     return lines
 
@@ -370,7 +384,10 @@ def gen_c2j_char_deci_liga_parts() -> list[str]:
     """
     # ch_10 is left out of parts 1/2 (last=9) and handled in parts 3/4 --
     # here it would shadow 十一/十二/十三.
+    decs = " ".join(dd for dd, _ in decimals(hui_ch))
     lines = ["lookup c2j_char_deci_liga_part1 {"]
+    # 名九七弦: 七 is a string (弦), not 9.7
+    lines += [f"  ignore sub @area_left {tok} [ {decs} ]' {XIAN};" for tok, _ in hui_sequence(hui_ch, last=9)]
     for dd, target in decimals(hui_ch):
         parts = [f"sub @area_left {tok} {dd}' by md_{h}.{target};"
                  for tok, h in hui_sequence(hui_ch, last=9)]
@@ -384,6 +401,9 @@ def gen_c2j_char_deci_liga_parts() -> list[str]:
     lines.append("} c2j_char_deci_liga_part2;")
 
     lines.append("lookup c2j_char_deci_liga_part3 {")
+    lines.append(f"  ignore sub @area_left ch_10 [ {decs} ]' {XIAN};")
+    # 十二徽: twelve (徽 ends it), not 10.2; hui_and_commas then takes the 徽
+    lines.append(f"  ignore sub @area_left ch_10 [ {decs} ]' {HUI_END};")
     for dd, target in decimals(hui_ch):
         lines.append(f"  sub @area_left ch_10 {dd}' by md_10.{target};")
     lines.append("} c2j_char_deci_liga_part3;")
@@ -451,6 +471,9 @@ def gen_char_deci_liga_parts() -> list[str]:
     """hui-glyph + string-glyph collapse (s7 5 -> s7.5) in Safari-safe steps."""
     md_hui = "md_{}".format
     lines = ["lookup char_deci_liga_part1 {"]
+    # s97弦 / 名九七弦: a number before 弦 is a string, not a decimal
+    singles = " ".join(f"md_{d}" for d in range(1, 10))
+    lines += [f"  ignore sub @area_left {tok} [ {singles} ]' {XIAN};" for tok, _ in hui_sequence(md_hui, wai="md_wai")]
     for d in range(1, 10):
         parts = [f"sub @area_left {tok} md_{d}' by md_{h}.{d};"
                  for tok, h in hui_sequence(md_hui, wai="md_wai")]
@@ -465,6 +488,16 @@ def gen_char_deci_liga_parts() -> list[str]:
     return lines
 
 
+def gen_string_marks(rows: list[GlyphRow]) -> list[str]:
+    """弦 (絃) after a string's number is consumed: 七弦 = string 7. Defined after the decimal merges,
+    which leave a number before 弦 alone (their ignore rules)."""
+    lines = ["lookup string_marks {"]
+    for x in ("ch_xian", "ch_xian_trad"):
+        lines.append("  " + " ".join(f"sub {g} {x} by {g};" for g in area_glyphs(rows, "string") if g.startswith("md_")))
+    lines.append("} string_marks;")
+    return lines
+
+
 def gen_hui_and_commas(rows: list[GlyphRow]) -> list[str]:
     """A comma after a hui glyph is consumed (s7,5 = hui 7 + string 5).
 
@@ -474,6 +507,8 @@ def gen_hui_and_commas(rows: list[GlyphRow]) -> list[str]:
     lines = ["lookup hui_and_commas {"]
     parts = [f"sub {g} comma by {g};" for g in hui_class_glyphs(rows)]
     lines.append("  " + " ".join(parts))
+    # 徽 ends the hui number as a comma does (十徽 = 10, 名九徽半轮六 = 名九，半轮六)
+    lines.append("  " + " ".join(f"sub {g} {HUI_END} by {g};" for g in hui_class_glyphs(rows)))
     lines += [
         "  # special case for :名九，半轮六 otherwise it would get s9.5 (wrong) instead of s9 (right)",
         "  sub comma md_banlun by md_banlun;",
@@ -579,6 +614,7 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         "",
         "  # numbers",
         "  lookup hui_and_commas;",
+        "  lookup string_marks; # 七弦",
         "  lookup char_deci_liga_part1;",
         "  lookup char_deci_liga_part2;",
         "",
@@ -634,7 +670,8 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_c2j_single(rows, c2g, "simplified", "c2j_char_single"),
         gen_c2j_single(rows, c2g, "traditional", "c2j_trad_single"), [""],
         gen_char_deci_liga_parts(),
-        gen_hui_and_commas(rows), [""],
+        gen_hui_and_commas(rows),
+        gen_string_marks(rows), [""],
         gen_auto_colon_insert(rows), [""],
         gen_liga_feature(digit_lookup=bool(digit_entries(rows)), bracket_lookup=bool(gen_c2j_bracket_symbols(rows))),
     ]

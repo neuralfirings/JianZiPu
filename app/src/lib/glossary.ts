@@ -203,7 +203,7 @@ const hasHan = (t: string) => /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\u
 /** How glyph `g` is written in a language: its spellings there, main first (a position decimal by its pattern). */
 function spellingsIn(t: T.Typing, g: string, zh: boolean): string[] {
   const m = /^md_(\d+)\.(\d)$/.exec(g);
-  if (m) return zh ? [`${CN[+m[1]]}点${CN[+m[2]]}`, `${CN[+m[1]]}徽${CN[+m[2]]}`] : [`${m[1]}.${m[2]}`];
+  if (m) return zh ? [`${CN[+m[1]]}点${CN[+m[2]]}`, `${CN[+m[1]]}徽${CN[+m[2]]}分`] : [`${m[1]}.${m[2]}`];
   const s = T.get(t, g);
   const own = zh ? [s.simplified, s.traditional] : [s.latin, s.latin_alt, s.common];
   const shown = zh ? [T.shown(t, g, 'simplified').value, T.shown(t, g, 'traditional').value] : [T.shown(t, g, 'latin').value, T.shown(t, g, 'latin_alt').value];

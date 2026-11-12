@@ -444,14 +444,18 @@ font) are the two columns the build actually reads; two more,
 - `type=load_bearing` — the `glyph_name` is referenced as a literal string
   constant somewhere in `features.py` or `edge_cases.fea` (e.g. `ch_1`
   through `ch_10` in `hui_ch()`, `ch_ban`/`ch_wai` for the special hui
-  values, `PERIOD_SUBS`, `ch_v`/`ch_cuo` in `edge_cases.fea`'s
-  `ch_dc_sub`). Renaming or removing one of these rows breaks the build
-  unless the matching Python/`.fea` literal is updated too — `notes` says
-  which file/function to also touch.
+  values, `PERIOD_SUBS` (。 点 點, decimal points), `HUI_END` (徽, which ends
+  a hui number: 十徽 = 10, 名九徽半轮 = 9 then 半轮), `FEN` (分, closing a
+  decimal after 徽: 十徽二分 = 10.2), `XIAN` (弦/絃, marking the number before
+  it as a string: 名九七弦 = hui 9, string 7), `ch_v`/`ch_cuo` in
+  `edge_cases.fea`'s `ch_dc_sub`). Renaming or removing one of these rows
+  breaks the build unless the matching Python/`.fea` literal is updated too —
+  `notes` says which file/function to also touch. The typing preview, which
+  starts from an earlier font, gives each of these characters its name there
+  first (`typing_preview._name_chars`), so a newly named one works before a
+  build.
 - `type=unreferenced` — kept for a future feature, not currently used by
-  anything (`弦`/`絃` `ch_xian`/`ch_xian_trad`: added to the font ahead of
-  a planned string-indicator feature described in `CHANGELOG.md`, but never
-  wired into `components.csv`).
+  anything (none today).
 
 Every other Chinese-spelled character (the vast majority — anything used in
 `components.csv`'s `simplified`/`traditional` columns with no row here) is

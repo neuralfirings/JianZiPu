@@ -471,3 +471,40 @@ def test_brackets_type_their_glyph():
     recs = [dict(r, simplified="【") if r["glyph_name"] == "md_jiu" else r for r in recs]
     p = tp.FONTS.get(config.SITE_FONT, tp.rows_from(recs, DESIGN), DESIGN)
     assert "md_jiu" in tp.shape(p, ["【"])[0]["glyphs"] and "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]
+
+
+# 徽 ends the hui number (a decimal after it takes 分), and 弦 marks a string
+HUI_AND_STRING = {
+    "名十二徽勾五": ["md_ming", "md_12", "lg_gou", "md_5"],          # s12k5
+    "名十徽二分勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],       # s10.2k5
+    "名十徽勾五": ["md_ming", "md_10", "lg_gou", "md_5"],
+    "名十点二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],          # 点 is still a decimal point
+    "名九徽半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],          # the same as 名九，半轮六
+    "名九，半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],
+    "名七徽六分挑五": ["md_ming", "md_7.6", "lg_tiao", "md_5"],
+    "名七徽六挑五": ["md_ming", "md_7", "md_6", "lg_tiao", "md_5"],     # no 分: 7, then string 6
+    "名九七弦": ["md_ming", "md_9", "md_7"],                          # string 7, not 9.7
+    "名九七": ["md_ming", "md_9.7"],
+}
+
+
+def test_hui_ends_the_number_and_xian_marks_a_string(built_font):
+    hb = pytest.importorskip("uharfbuzz")
+    font = hb.Font(hb.Face(hb.Blob.from_file_path(str(built_font))))
+    got = {}
+    for text in HUI_AND_STRING:
+        buf = hb.Buffer()
+        buf.add_str(text)
+        buf.guess_segment_properties()
+        hb.shape(font, buf, {})
+        got[text] = [font.glyph_to_string(i.codepoint) for i in buf.glyph_infos]
+    assert got == HUI_AND_STRING
+
+
+def test_the_rules_for_hui_and_xian_are_generated():
+    from jzpbuild import features
+    fea = "\n".join(features.gen_gsub())
+    assert "ch_hui" not in fea.split("@area_period_subs = [")[1].split("]")[0]       # 徽 isn't a decimal point
+    assert "sub ch_10 ch_hui ch_2 ch_fen by md_10.2;" in fea and "sub md_12 ch_hui by md_12;" in fea
+    assert "ignore sub @area_left ch_10 [ " in fea and "' ch_hui;" in fea          # 十二徽 stays twelve
+    assert "sub md_7 ch_xian by md_7;" in fea and "lookup string_marks;" in fea

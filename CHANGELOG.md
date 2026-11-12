@@ -13,6 +13,10 @@ same text becomes the GitHub release notes.
 ### Added
 - A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
 - Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). 【 】 typed in Chinese still become `[` `]` unless a glyph's Chinese spelling claims them, so a glyph spelled `[` answers to 【 too.
+- 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7.
+
+### Changed
+- 徽 typed in Chinese ends the hui number, the way a comma does: `名九徽半轮六` is `名九，半轮六` (9 hui, then 半轮) and `名十徽` is 10. A decimal after 徽 is written with 分: `名十徽二分` is 10.2 (`名十点二` still is too). Before, 徽 was a decimal point, so `名七徽六` gave 7.6; it now gives 7, then string 6.
 
 ## [3.200] - 2026-10-21
 

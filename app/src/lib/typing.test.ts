@@ -90,7 +90,7 @@ describe('decimals', () => {
     expect(isDecimal('md_7')).toBe(false);
   });
   it('spells their patterns', () => {
-    expect(decimalPatterns('md_7.6')).toEqual(['7.6', '7点6', '七点六', '七徽六']);
+    expect(decimalPatterns('md_7.6')).toEqual(['7.6', '7点6', '七点六', '七徽六分']);
     expect(decimalPatterns('md_12.blank')).toEqual(['12.']);
   });
 });
