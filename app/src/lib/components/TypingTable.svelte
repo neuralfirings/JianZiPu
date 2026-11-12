@@ -8,7 +8,7 @@
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.
   import { renaming } from '$lib/renaming.svelte';
-  import { describeUses, usesOf } from '$lib/glossary';
+  import { describeUses, leftOut, usesOf } from '$lib/glossary';
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
@@ -31,8 +31,7 @@
   /** glyph -> where the glossary shows it (Glyphs > Glossary); the Glossary column, read-only */
   let uses = $derived(usesOf(app.glossary, app.glossarySections));
   /** a glyph with spellings the glossary shows nowhere: the glossary check reports it */
-  const left = (g: string) => !uses[g] && !!app.glossarySections.length && !T.isEmpty(app.typing[g]) && !partnerOf[g]
-    && ['latin', 'latin_alt', 'common', 'simplified', 'traditional'].some((f) => T.get(app.typing, g)[f as T.SpellField]);
+  const left = (g: string) => leftOut(app.typing, g, uses, app.glossarySections.length > 0);
   const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
   let openDecimals = $state(false);
   let table: HTMLTableElement;
@@ -104,7 +103,7 @@
                   data-tip="Show it in Glyphs > Glossary">{line}</button>
               {:else}
                 {#if left(g)}<button class="use warn" onclick={(e) => { e.stopPropagation(); onglossary?.('', g); }}
-                  data-tip="Add it to a section in Glyphs > Glossary (99: Hidden in Glossary leaves it out on purpose)"><I.Warn size={12} /> not in the glossary</button>{/if}
+                  data-tip="Add it to a section in Glyphs > Glossary (a hidden one leaves it out on purpose)"><I.Warn size={12} /> not in the glossary</button>{/if}
               {/each}
             </td>
             {#if showAreas}<td class="small muted">{app.glyphs.find((r) => r.glyph === g)?.areas.map((a) => app.areaLabel(a)).join(', ')}</td>{/if}

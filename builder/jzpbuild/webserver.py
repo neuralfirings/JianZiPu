@@ -567,7 +567,8 @@ def glossary_sections() -> list[dict]:
     """The font page's glossary sections in page order, each with its rows (Glyphs > Glossary); none
     where the server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
-        return [{"id": k, "title": v.get("title", k), "kind": v.get("kind", "vertical"), "usage": v.get("usage"),
+        return [{"id": k, "title": v.get("title", k), "kind": "vertical" if v.get("kind") == "hidden" else v.get("kind", "vertical"),
+                 "hidden": glossary.is_hidden(v), "usage": v.get("usage"),
                  "description": v.get("description", ""),
                  "rows": [glossary.clean_row(r) for r in v.get("rows", [])]}
                 for k, v in glossary.load_sections().items()]

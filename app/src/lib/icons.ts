@@ -31,6 +31,9 @@ export { default as Grip } from '@lucide/svelte/icons/grip-vertical';
 export { default as EditRow } from '@lucide/svelte/icons/pencil-line';
 /** add or edit a description (Glyphs > Glossary) */
 export { default as Description } from '@lucide/svelte/icons/text-align-start';
+/** a glossary section shown on the page / hidden from it (its switch) */
+export { default as Shown } from '@lucide/svelte/icons/eye';
+export { default as Hidden } from '@lucide/svelte/icons/eye-off';
 /** show a glyph in the Glyphs screen's bottom panel */
 export { default as GlyphPanel } from '@lucide/svelte/icons/panel-bottom-open';
 export { default as Folded } from '@lucide/svelte/icons/chevron-right';

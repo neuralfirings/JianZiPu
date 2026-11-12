@@ -255,9 +255,12 @@ and the spellings in `components.csv`, so its spellings are the font's:
   changed example template is such a change: add its `<!-- glossary <id> -->`
   marker to `site/index.html` in the same pull request).
 - Every glyph with a spelling is in some section, on its own or in a word.
-  `4: Uncategorized` is for a glyph that doesn't fit a section yet;
-  `99: Hidden in Glossary` (`"kind": "hidden"`, no table and no marker on the
-  page) keeps a glyph off the page on purpose, so the check doesn't report it.
+  `4: Uncategorized` is for a glyph that doesn't fit a section yet. A subtitle
+  or a section title with `"hidden": true` (the Builder's eye switch) is left
+  off the page, a section title with everything under it, and its glyphs count
+  as left out on purpose, so the check doesn't report them (`99: Hidden in
+  Glossary` is a subtitle switched off; the old `"kind": "hidden"` still reads
+  as one).
   A word can go in any section: among example words it shows typed on its own
   after a colon, as in a vertical section.
 - A Change Request carries the glossary a section at a time: Review keeps or

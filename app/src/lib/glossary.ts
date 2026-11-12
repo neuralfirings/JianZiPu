@@ -11,10 +11,11 @@ export type WordRow = { word: string; glyphs: string[]; meaning?: string; typed?
 export type GRow = GlyphRow | WordRow;
 /** section id -> its rows, in page order */
 export type GlossaryRows = Record<string, GRow[]>;
-/** 'usage': an example word per row (no words); 'vertical': each typed on its own; 'hidden': not on the page. */
-export type SectionKind = 'usage' | 'vertical' | 'hidden';
-/** `usage`: a usage section's example for rows without their own, as [ASCII, 中文] templates. */
-export type Section = { id: string; title: string; kind: SectionKind; usage?: [string, string] | null };
+/** 'usage': an example word per row; 'vertical': each typed on its own after a colon. */
+export type SectionKind = 'usage' | 'vertical';
+/** `usage`: a usage section's example for rows without their own, as [ASCII, 中文] templates; `hidden`:
+ *  off the page, by its own switch or its section title's. */
+export type Section = { id: string; title: string; kind: SectionKind; usage?: [string, string] | null; hidden?: boolean };
 
 export const isWord = (r: GRow): r is WordRow => 'word' in r;
 /** A row's identity within its section: g:lg_gou, w:少息 */
@@ -85,7 +86,7 @@ export function usesOf(rows: GlossaryRows, sections: Section[]): Record<string, 
 
 /** "1c", "3e in 少息, 大息", "99 (hidden)": a glyph's uses, a section at a time. */
 export function describeUses(uses: Use[], sections: Section[]): string[] {
-  const hidden = new Set(sections.filter((s) => s.kind === 'hidden').map((s) => s.id));
+  const hidden = new Set(sections.filter((s) => s.hidden).map((s) => s.id));
   const by = new Map<string, Use[]>();
   for (const u of uses) (by.get(u.sid) ?? by.set(u.sid, []).get(u.sid)!).push(u);
   return [...by].map(([sid, us]) => {
@@ -237,9 +238,9 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
 // ---------------------------------------------------------------- section titles, subtitles, descriptions
 
 /** A section title ("1: Left Hand"): its short name in the page's contents, a description, its subtitles in order. */
-export type Group = { id: string; title: string; nav?: string; description?: string; sections: string[] };
-/** A subtitle's own settings (its rows are in GlossaryRows). */
-export type SectionMeta = { title: string; kind: SectionKind; usage?: [string, string] | null; description?: string };
+export type Group = { id: string; title: string; nav?: string; description?: string; hidden?: boolean; sections: string[] };
+/** A subtitle's own settings (its rows are in GlossaryRows); `hidden`: switched off, not on the page. */
+export type SectionMeta = { title: string; kind: SectionKind; usage?: [string, string] | null; description?: string; hidden?: boolean };
 /** The glossary's titles and descriptions: site/glossary.json without the rows. */
 export type GlossaryLayout = { groups: Group[]; sections: Record<string, SectionMeta> };
 export const emptyLayout = (): GlossaryLayout => ({ groups: [], sections: {} });
@@ -247,7 +248,8 @@ export const emptyLayout = (): GlossaryLayout => ({ groups: [], sections: {} });
 /** The subtitles in page order (by their section titles, then any no title holds), as Section. */
 export function sectionList(l: GlossaryLayout): (Section & { description?: string })[] {
   const ids = [...new Set([...l.groups.flatMap((g) => g.sections), ...Object.keys(l.sections)])].filter((id) => id in l.sections);
-  return ids.map((id) => ({ id, ...l.sections[id], usage: l.sections[id].usage ?? null }));
+  const off = new Set(l.groups.filter((g) => g.hidden).flatMap((g) => g.sections));
+  return ids.map((id) => ({ id, ...l.sections[id], usage: l.sections[id].usage ?? null, hidden: !!l.sections[id].hidden || off.has(id) }));
 }
 
 /** A layout from anywhere (a draft, the server), cleaned; undefined when it isn't one. */
@@ -259,12 +261,15 @@ export function cleanLayout(x: unknown): GlossaryLayout | undefined {
   const sections: Record<string, SectionMeta> = {};
   for (const [id, m] of Object.entries(o.sections as Record<string, Record<string, unknown>>)) {
     if (!m || typeof m !== 'object') continue;
-    const kind = (['usage', 'vertical', 'hidden'].includes(m.kind as string) ? m.kind : 'vertical') as SectionKind;
+    // the old kind 'hidden' is a vertical subtitle switched off
+    const kind = (m.kind === 'usage' ? 'usage' : 'vertical') as SectionKind, hidden = !!m.hidden || m.kind === 'hidden';
     const u = Array.isArray(m.usage) && m.usage.length === 2 ? (m.usage.map((v) => String(v ?? '')) as [string, string]) : null;
-    sections[id] = { title: str(m.title), kind, ...(kind === 'usage' ? { usage: u ?? ['{}', '{}'] } : {}), ...(str(m.description) ? { description: str(m.description) } : {}) };
+    sections[id] = { title: str(m.title), kind, ...(hidden ? { hidden: true } : {}), ...(kind === 'usage' ? { usage: u ?? ['{}', '{}'] } : {}),
+      ...(str(m.description) ? { description: str(m.description) } : {}) };
   }
   const groups = (o.groups as Record<string, unknown>[]).filter((g) => g && typeof g === 'object' && str(g.id)).map((g) => ({
     id: str(g.id), title: str(g.title), ...(str(g.nav) ? { nav: str(g.nav) } : {}), ...(str(g.description) ? { description: str(g.description) } : {}),
+    ...(g.hidden ? { hidden: true } : {}),
     sections: Array.isArray(g.sections) ? (g.sections as unknown[]).map(String).filter((s) => s in sections) : []
   }));
   return { groups, sections };
@@ -321,6 +326,7 @@ export function metaSummary(a: SectionMeta | undefined, b: SectionMeta | undefin
   if (a && !b) return [`subtitle deleted: ${a.title}`];
   if (!a || !b) return [];
   return [a.title !== b.title ? `title: ${b.title}` : '', a.kind !== b.kind ? `kind: ${b.kind}` : '',
+    !!a.hidden !== !!b.hidden ? (b.hidden ? 'hidden' : 'shown') : '',
     (a.description ?? '') !== (b.description ?? '') ? 'description' : '', JSON.stringify(a.usage ?? null) !== JSON.stringify(b.usage ?? null) ? 'example' : ''].filter(Boolean);
 }
 /** What changed in the section titles, in words. */
@@ -331,6 +337,7 @@ export function titlesSummary(a: Group[], b: Group[]): string[] {
     const o = ma.get(g.id);
     if (!o) { out.push(`new: ${g.title}`); continue; }
     if (o.title !== g.title) out.push(`renamed: ${o.title} → ${g.title}`);
+    if (!!o.hidden !== !!g.hidden) out.push(`${g.hidden ? 'hidden' : 'shown'}: ${g.title}`);
     if ((o.nav ?? '') !== (g.nav ?? '')) out.push(`short name of ${g.title}`);
     if ((o.description ?? '') !== (g.description ?? '')) out.push(`description of ${g.title}`);
     if (o.sections.join() !== g.sections.join()) out.push(`subtitles of ${g.title}`);
@@ -342,3 +349,18 @@ export function titlesSummary(a: Group[], b: Group[]): string[] {
 
 /** An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the page marks the glyph in it. */
 export const marksGlyph = (t: [string, string]) => t.some((x) => x.includes('{}') && x.replace(/<\/?r>/g, '').replace(/[:：]?\{\}/, '').trim() !== '');
+
+/** A glyph with spellings that no glossary row shows (its vertical form counts as its partner):
+ *  List view's "not in the glossary". `uses`: usesOf(); `any`: the glossary has sections at all. */
+export function leftOut(t: T.Typing, g: string, uses: Record<string, Use[]>, any: boolean): boolean {
+  return any && !uses[g] && !T.partners(t)[g] && !T.isEmpty(t[g])
+    && (['latin', 'latin_alt', 'common', 'simplified', 'traditional'] as T.SpellField[]).some((f) => T.get(t, g)[f]);
+}
+
+/** What List view's search box finds in the Glossary column: where the glyph is ("1c: own row", the
+ *  section's title, "in 少息"), or "not in the glossary". Lower-case. */
+export function glossarySearchText(t: T.Typing, g: string, uses: Record<string, Use[]>, sections: Section[]): string {
+  if (leftOut(t, g, uses, sections.length > 0)) return 'not in the glossary';
+  const us = uses[g] ?? [];
+  return [...describeUses(us, sections), ...us.map((u) => u.title)].join(' ').toLowerCase();
+}

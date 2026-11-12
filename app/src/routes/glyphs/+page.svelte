@@ -15,6 +15,7 @@
   import TypingCards from '$lib/components/TypingCards.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
   import GlossaryTable from '$lib/components/GlossaryTable.svelte';
+  import { glossarySearchText, usesOf } from '$lib/glossary';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
@@ -142,7 +143,11 @@
   let filterCounts = $derived(Object.fromEntries(FILTERS.map(([f]) => [f, all.filter((g) => matchFilter[f as Exclude<Filter, ''>](g)).length])));
 
   let needle = $derived(q.trim().toLowerCase());
-  const keep = (g: string) => (!filter || matchFilter[filter](g)) && (!needle || T.searchText(app.typing, g).includes(needle));
+  // the search finds a glyph by its name, spellings and pinyin, and by List view's Glossary column (1c, a
+  // section's title, "in 少息", "not in the glossary")
+  let glossaryUses = $derived(usesOf(app.glossary, app.glossarySections));
+  const keep = (g: string) => (!filter || matchFilter[filter](g)) && (!needle || T.searchText(app.typing, g).includes(needle)
+    || glossarySearchText(app.typing, g, glossaryUses, app.glossarySections).includes(needle));
 
   /** The glyphs of the current group (decimals separate, so they can fold). */
   let groupGlyphs = $derived.by(() => {

@@ -262,7 +262,7 @@ def test_the_check_passes_the_shipped_files():
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     secs = glossary.load_sections()
     assert [t["id"] for t in out["tables"]] == [sid for sid in glossary.section_order(secs, glossary.load_groups())
-                                                if secs[sid]["kind"] != "hidden"]
+                                                if not glossary.is_hidden(secs[sid])]
     assert all(t["html"] in text for t in out["tables"])                    # the tables the page has
 
 
@@ -364,7 +364,7 @@ def test_a_hidden_section_has_no_table_and_leaves_its_glyphs_out_on_purpose():
     r = rows("lg_gou,,,k,,勾,,gōu", "md_tc,,,tc,,,,", "md_left,,,lf,,左,,zuǒ")
     probs = glossary.missing(r, sec)
     assert not any("md_tc" in p for p in probs)                  # hidden on purpose: no complaint
-    assert any("md_left" in p and "99: Hidden in Glossary" in p for p in probs)   # in no section: reported, says how
+    assert any("md_left" in p and "switched off" in p for p in probs)   # in no section: reported, says how
     out = glossary.render(page("2a"), r, sec)                     # no marker for 99, and none needed
     assert "tc" not in out and glossary.section_rows("99", sec["99"], r) == []
     assert [sorted(ex) for _, ex in glossary.examples(out, r, sec)] == [sorted(["0k5", "散勾五"])]
@@ -373,7 +373,7 @@ def test_a_hidden_section_has_no_table_and_leaves_its_glyphs_out_on_purpose():
 def test_the_shipped_sections_include_uncategorized_and_hidden():
     secs = glossary.load_sections()
     assert {k: v for k, v in secs["4"].items() if k != "rows"} == {"title": "4: Uncategorized", "kind": "vertical"}
-    assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "kind": "hidden"}
+    assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "kind": "vertical", "hidden": True}
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert '<h4 id="glossary-uncategorized">4: Uncategorized</h4>' in text and "99: Hidden" not in text
 
@@ -464,3 +464,19 @@ def test_the_shipped_glossary_has_its_section_titles():
     assert glossary.missing_layout(glossary.load_sections(), groups) == []
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert "<!-- glossary all" in text and "<!-- glossary nav" in text and "<!-- glossary 1a" not in text
+
+
+def test_visibility_is_its_own_switch_on_subtitles_and_section_titles():
+    r = rows("lg_gou,,,k,,勾,,gōu", "md_qi,,,qi,,起,,qǐ", "md_x,,,zz,,,,")
+    sec = {"2a": usage("2a", g("lg_gou"), template=("0{}5", "散{}五")), "3b": {**vertical("3b", g("md_qi")), "hidden": True},
+           "3c": vertical("3c", g("md_x"))}
+    groups = [{"id": "right", "title": "2: Right", "sections": ["2a", "3b"]}, {"id": "other", "title": "3: Other", "hidden": True, "sections": ["3c"]}]
+    page_ = "<!-- glossary nav -->\n<!-- /glossary nav -->\n<!-- glossary all -->\n<!-- /glossary all -->"
+    out = glossary.render(page_, r, sec, groups)
+    assert "0<r>k</r>5" in out and ":qi" not in out and "zz" not in out          # a hidden subtitle, a hidden section title
+    assert "#glossary-other" not in out and "#glossary-right" in out
+    assert glossary.missing(r, sec) == [] and glossary.missing_layout(sec, groups) == []   # left out on purpose
+    # the Builder's switch: the old kind 'hidden' reads as vertical and off
+    out_secs, out_groups = glossary.with_layout({}, {"groups": [{"id": "x", "title": "X", "hidden": True, "sections": ["9"]}],
+                                                     "sections": {"9": {"title": "9", "kind": "hidden"}}})
+    assert out_secs["9"] == {"title": "9", "kind": "vertical", "hidden": True, "rows": []} and out_groups[0]["hidden"] is True

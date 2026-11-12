@@ -32,7 +32,7 @@
   const rowsOf = (sid: string) => app.glossary[sid] ?? [];
   const sec = (sid: string) => sections.find((s) => s.id === sid)!;
   const KIND: Record<Section['kind'], string> = {
-    usage: 'each glyph in an example word', vertical: 'each typed on its own, after a colon', hidden: 'not on the page'
+    usage: 'each glyph in an example word', vertical: 'each typed on its own, after a colon'
   };
 
   // ---------------------------------------------------------------- what a row shows
@@ -102,7 +102,15 @@
 
   let layout = $derived(app.glossaryLayout);
   /** Subtitles no section title holds: not on the page until they're put under one. */
-  let loose = $derived(sections.filter((x) => x.kind !== 'hidden' && !layout.groups.some((g) => g.sections.includes(x.id))));
+  let loose = $derived(sections.filter((x) => !x.hidden && !layout.groups.some((g) => g.sections.includes(x.id))));
+  /** Switch a section title or a subtitle on or off the page: one undo step. */
+  function toggleShown(kind: 'g' | 's', id: string) {
+    const o = kind === 'g' ? layout.groups.find((g) => g.id === id)! : layout.sections[id];
+    editLayout(`${o.hidden ? 'Show' : 'Hide'} ${o.title} ${o.hidden ? 'on' : 'from'} the page`, (l) => {
+      const x: { hidden?: boolean } = kind === 'g' ? l.groups.find((g) => g.id === id)! : l.sections[id];
+      if (x.hidden) delete x.hidden; else x.hidden = true;
+    });
+  }
   let titleEdit = $state<{ key: string; value: string; nav?: string } | null>(null);
   let descEdit = $state<{ key: string; value: string } | null>(null);
   let newSub = $state<Record<string, { title: string; kind: Section['kind'] }>>({});
@@ -559,7 +567,7 @@
     {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
     {#if !q.trim() || shown.length}
     {@const usage = s.kind === 'usage'}
-    <section class="sec" class:hidden={s.kind === 'hidden'} aria-labelledby="gs-{s.id}" data-sid={s.id}
+    <section class="sec" class:off={s.hidden} aria-labelledby="gs-{s.id}" data-sid={s.id}
       class:hd-before={headDrop?.kind === 's' && headDrop.id === s.id && headDrop.before} class:hd-after={headDrop?.kind === 's' && headDrop.id === s.id && !headDrop.before}
       class:lifted={headDrag?.kind === 's' && headDrag.id === s.id}>
       <h3 id="gs-{s.id}" data-drop={isFolded(s.id) ? 'end' : 'start'} data-sid={s.id} data-i={rows.length} class:gap={!!drag && isFolded(s.id) && drop?.sid === s.id} class:no={!okDrop && drop?.sid === s.id}>
@@ -570,6 +578,10 @@
         <span class="count">({entries(rows.length)})</span>
         {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
+          <button class="quiet ic" onclick={() => toggleShown('s', s.id)} aria-pressed={!layout.sections[s.id]?.hidden}
+            aria-label="{layout.sections[s.id]?.hidden ? 'Show' : 'Hide'} {s.title} on the page"
+            data-tip={layout.sections[s.id]?.hidden ? 'Hidden from the page: click to show it' : s.hidden ? 'Hidden with its section title' : 'On the page: click to hide it'}>
+            {#if layout.sections[s.id]?.hidden}<I.Hidden size={14} />{:else}<I.Shown size={14} />{/if}</button>
           <button class="quiet ic" onclick={() => (titleEdit = { key: `s:${s.id}`, value: s.title })} aria-label="Rename the subtitle {s.title}" data-tip="Rename the subtitle"><I.EditRow size={14} /></button>
           <button class="quiet ic" onclick={() => { descEdit = { key: `s:${s.id}`, value: s.description ?? '' }; folded = folded.filter((x) => x !== s.id); }} aria-label="Describe {s.title}" data-tip="{s.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
           <button class="quiet ic" onclick={() => deleteSub(s.id)} aria-label="Delete the subtitle {s.title}" data-tip={rows.length ? 'Delete the subtitle (move or remove its rows first)' : 'Delete the subtitle (Undo brings it back)'}><I.Close size={14} /></button>
@@ -736,7 +748,7 @@
   {#each layout.groups as g (g.id)}
     {@const subs = g.sections.map((id) => sections.find((x) => x.id === id)).filter((x) => !!x)}
     {#if !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
-    <section class="grp" aria-labelledby="gg-{g.id}" data-gid={g.id}
+    <section class="grp" aria-labelledby="gg-{g.id}" data-gid={g.id} class:off={g.hidden}
       class:hd-before={headDrop?.kind === 'g' && headDrop.id === g.id && headDrop.before} class:hd-after={headDrop?.kind === 'g' && headDrop.id === g.id && !headDrop.before}
       class:lifted={headDrag?.kind === 'g' && headDrag.id === g.id}>
       <h2 id="gg-{g.id}" data-gid={g.id} class:hd-in={headDrop?.kind === 's' && headDrop.gid === g.id && headDrop.id === ''}>
@@ -744,9 +756,13 @@
           aria-label="Drag the section title {g.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the section title · a finger: press and hold first'}><I.Grip size={14} /></button>
         <button class="quiet fold gfold" onclick={() => gfold(g.id)} aria-expanded={!groupFolded(g.id)} aria-controls="gc-{g.id}">
           {#if groupFolded(g.id)}<I.Folded size={18} />{:else}<I.Unfolded size={18} />{/if}<span class="gt" class:untitled={!g.title}>{g.title || 'Untitled section'}</span></button>
-        <span class="count" data-tip={[g.nav ? `“${g.nav}” in the page's contents` : '', !subs.some((x) => x.kind !== 'hidden') ? 'not on the page' : ''].filter(Boolean).join(' · ') || undefined}>({entries(subs.reduce((n, x) => n + rowsOf(x.id).length, 0))})</span>
+        <span class="count" data-tip={[g.nav ? `“${g.nav}” in the page's contents` : '', g.hidden || !subs.some((x) => !x.hidden) ? 'not on the page' : ''].filter(Boolean).join(' · ') || undefined}>({entries(subs.reduce((n, x) => n + rowsOf(x.id).length, 0))})</span>
         {#if JSON.stringify(savedLayout.groups.find((x) => x.id === g.id) ?? null) !== JSON.stringify(g)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
+          <button class="quiet ic" onclick={() => toggleShown('g', g.id)} aria-pressed={!g.hidden}
+            aria-label="{g.hidden ? 'Show' : 'Hide'} {g.title} on the page"
+            data-tip={g.hidden ? 'Hidden from the page, with all its subtitles: click to show it' : 'On the page: click to hide it and its subtitles'}>
+            {#if g.hidden}<I.Hidden size={14} />{:else}<I.Shown size={14} />{/if}</button>
           <button class="quiet ic" onclick={() => (titleEdit = { key: `g:${g.id}`, value: g.title, nav: g.nav ?? '' })} aria-label="Rename the section title {g.title}" data-tip="Rename the section title"><I.EditRow size={14} /></button>
           <button class="quiet ic" onclick={() => { descEdit = { key: `g:${g.id}`, value: g.description ?? '' }; gfolded = gfolded.filter((x) => x !== g.id); }} aria-label="Describe {g.title}" data-tip="{g.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
           <button class="quiet ic" onclick={() => deleteGroup(g.id)} aria-label="Delete the section title {g.title}" data-tip={g.sections.length ? 'Delete the section title (delete or move its subtitles first)' : 'Delete the section title (Undo brings it back)'}><I.Close size={14} /></button>
@@ -767,7 +783,6 @@
           <select value={f.kind} aria-label="How its table is laid out" onchange={(e) => (newSub = { ...newSub, [g.id]: { ...f, kind: (e.target as HTMLSelectElement).value as Section['kind'] } })}>
             <option value="vertical">each typed on its own, after a colon</option>
             <option value="usage">each glyph in an example word</option>
-            <option value="hidden">not on the page</option>
           </select>
           <button class="sm" onclick={() => { addSub(g.id); close(); }} disabled={!f.title.trim()}>Add subtitle</button>
           <button class="sm quiet" onclick={close}>Cancel</button>
@@ -826,7 +841,8 @@
   .intro { margin: 0; max-width: 760px; }
   .banner select { height: 26px; }
   .sec h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-  .sec.hidden h3 > span:first-child { color: var(--ink-muted); }
+  /* switched off: faded, so it reads as not on the page (its eye switch stays clear) */
+  .grp.off > :not(h2), .grp.off > h2 > :not(.hact), .sec.off > :not(h3), .sec.off > h3 > :not(.hact) { opacity: .45; }
   /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
   .scroll { overflow: visible; }
   table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: fixed; font-size: var(--t-small); }

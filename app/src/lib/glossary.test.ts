@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { byId, changedLayout, marksGlyph, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, changedLayout, cleanLayout, glossarySearchText, marksGlyph, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
 
 const g = (glyph: string, meaning?: string) => ({ glyph, ...(meaning ? { meaning } : {}) });
 const w = (word: string, ...glyphs: string[]) => ({ word, glyphs });
-const sections: Section[] = [{ id: '1a', title: '1a: A', kind: 'usage' }, { id: '3e', title: '3e: E', kind: 'vertical' }, { id: '99', title: '99: Hidden', kind: 'hidden' }];
+const sections: Section[] = [{ id: '1a', title: '1a: A', kind: 'usage' }, { id: '3e', title: '3e: E', kind: 'vertical' }, { id: '99', title: '99: Hidden', kind: 'vertical', hidden: true }];
 
 describe('the glossary rows', () => {
   it('moves a row within a section and to another, counting the gaps before the move', () => {
@@ -110,13 +110,29 @@ describe('section titles, subtitles and descriptions', () => {
   });
   it('orders subtitles by their section titles and names new ones', () => {
     const l = { groups: [{ id: 'b', title: 'B', sections: ['2a'] }, { id: 'a', title: 'A', sections: ['1a'] }],
-      sections: { '1a': { title: '1a', kind: 'usage' as const, usage: ['{}', '{}'] as [string, string] }, '2a': { title: '2a', kind: 'vertical' as const }, '99': { title: 'h', kind: 'hidden' as const } } };
+      sections: { '1a': { title: '1a', kind: 'usage' as const, usage: ['{}', '{}'] as [string, string] }, '2a': { title: '2a', kind: 'vertical' as const }, '99': { title: 'h', kind: 'vertical' as const, hidden: true } } };
     expect(sectionList(l).map((x) => x.id)).toEqual(['2a', '1a', '99']);
+    // visibility is its own switch; a hidden section title hides its subtitles; the old kind 'hidden' reads as one
+    expect(sectionList({ ...l, groups: [...l.groups, { id: 'h', title: 'H', hidden: true, sections: ['99'] }] }).map((x) => !!x.hidden)).toEqual([false, false, true]);
+    expect(sectionList({ groups: [{ id: 'x', title: 'X', hidden: true, sections: ['2a'] }], sections: { '2a': l.sections['2a'] } })[0].hidden).toBe(true);
+    expect(cleanLayout({ groups: [], sections: { o: { title: 'old', kind: 'hidden' } } })!.sections.o).toEqual({ title: 'old', kind: 'vertical', hidden: true });
     expect(newId('3f: Ornaments', ['3e'])).toBe('3f');
     expect(newId('3e: Again', ['3e'])).toBe('3e-again');
     expect(newId('五', ['s1'])).toBe('s2');
     const m = { ...l, groups: [{ ...l.groups[0], title: 'B!' }, l.groups[1]], sections: { ...l.sections, '2a': { ...l.sections['2a'], description: 'd' } } };
     expect(changedLayout(l, m)).toEqual(['2a', 'titles']);
     expect(titlesSummary(l.groups, m.groups)).toEqual(['renamed: B → B!']);
+  });
+});
+
+describe("List view's search in the Glossary column", () => {
+  it('finds where a glyph is, and a glyph left out', () => {
+    const sp = (o: Record<string, string>) => ({ ...empty(), ...o });
+    const t: Typing = { a: sp({ latin: 'k' }), b: sp({ latin: 'u' }), c: sp({ pinyin: 'x' }) };
+    const uses = usesOf({ '1a': [g('a')], '3e': [w('少息', 'a', 'x')] }, sections);
+    expect(glossarySearchText(t, 'a', uses, sections)).toContain('1a: own row');
+    expect(glossarySearchText(t, 'a', uses, sections)).toContain('3e: e');
+    expect(glossarySearchText(t, 'b', uses, sections)).toBe('not in the glossary');
+    expect(glossarySearchText(t, 'c', uses, sections)).toBe('');              // no spelling: nothing to show
   });
 });

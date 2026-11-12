@@ -33,7 +33,18 @@ from . import config
 # components.csv's columns (typing_preview.ROW_FIELDS); not imported from there, so the release
 # scope check can read the page with the standard library alone
 FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin")
-KINDS = ("usage", "vertical", "hidden")
+KINDS = ("usage", "vertical")     # a section's table: an example word per row, or each typed on its own
+
+
+def is_hidden(sec: dict) -> bool:
+    """Left off the page on purpose (its switch is off in the Builder): `"hidden": true`, or the old kind 'hidden'."""
+    return bool(sec.get("hidden")) or sec.get("kind") == "hidden"
+
+
+def effective(sections: dict[str, dict], groups: list[dict]) -> dict[str, dict]:
+    """`sections` with every subtitle under a hidden section title hidden too."""
+    off = {sid for g in groups if g.get("hidden") for sid in g.get("sections", [])}
+    return {sid: ({**sec, "hidden": True} if sid in off else sec) for sid, sec in sections.items()}
 
 BLOCK_RE = re.compile(r"(<!-- glossary (\S+)[^>]*-->)(.*?)(<!-- /glossary \2 -->)", re.S)
 INDENT = " " * 8
@@ -224,9 +235,12 @@ def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None 
         if not isinstance(m, dict):
             raise ValueError(f"subtitle {sid}: an object, please")
         kind = m.get("kind", "vertical")
+        hidden = bool(m.get("hidden")) or kind == "hidden"          # the old kind 'hidden': vertical, switched off
+        kind = "vertical" if kind == "hidden" else kind
         if kind not in KINDS:
             raise ValueError(f"subtitle {sid}: kind {kind!r} is none of {', '.join(KINDS)}")
-        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE, True), "kind": kind}
+        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE, True), "kind": kind,
+                **({"hidden": True} if hidden else {})}
         u = m.get("usage")
         if kind == "usage":
             if not (isinstance(u, list) and len(u) == 2 and all(isinstance(x, str) and len(x) <= MAX_USAGE for x in u)):
@@ -255,6 +269,8 @@ def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None 
             out["nav"] = nav
         if d := _text(g.get("description"), f"the section title {gid}'s description", MAX_DESCRIPTION):
             out["description"] = d
+        if g.get("hidden"):
+            out["hidden"] = True
         groups.append({**out, "sections": list(secs)})
     rows_by_section = rows_by_section or {}
     for sid in sections:
@@ -405,10 +421,10 @@ def _number_row(recs: list[dict]) -> Row:
 
 
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
-    if sec["kind"] == "hidden":           # 99: Hidden in Glossary: its glyphs are left out on purpose, no table
+    if is_hidden(sec):                    # switched off: its glyphs are left out on purpose, no table
         return []
     if sec["kind"] not in KINDS:
-        raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is none of 'usage', 'vertical' or 'hidden'.")
+        raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is none of 'usage' or 'vertical'.")
     out: list[Row] = []
     numbers: list[dict] = []
     for e in entries(sid, sec) + [None]:
@@ -475,7 +491,7 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
     for g, r in rows.items():
         if has_spelling(r) and g not in shown:
             problems.append(f"{g} ({r['simplified'] or spellings(r)[0]}) has spellings but no row in the glossary: "
-                            f"add it to a section in Glyphs > Glossary (99: Hidden in Glossary leaves it out on purpose).")
+                            f"add it to a section in Glyphs > Glossary (one switched off leaves it out on purpose).")
     return problems
 
 
@@ -490,7 +506,7 @@ def missing_layout(sections: dict[str, dict], groups: list[dict]) -> list[str]:
                 problems.append(f"site/glossary.json: {sid} is under two section titles, {held[sid]!r} and {g.get('title')!r}.")
             held.setdefault(sid, g.get("title") or g.get("id"))
     for sid, sec in sections.items():
-        if sid not in held and sec.get("kind") != "hidden":
+        if sid not in held and not is_hidden(sec):
             problems.append(f"{sec.get('title') or sid} isn't under a section title, so the page doesn't show it: "
                             f"put it under one in Glyphs > Glossary.")
     return problems
@@ -507,7 +523,7 @@ def page_html(sections: dict[str, dict], groups: list[dict], rows: dict[str, dic
     lines: list[str] = []
     count = start - 1
     for g in groups:
-        shown = [sid for sid in g.get("sections", []) if sid in sections and sections[sid].get("kind") != "hidden"]
+        shown = [] if g.get("hidden") else [sid for sid in g.get("sections", []) if sid in sections and not is_hidden(sections[sid])]
         if not shown:
             continue
         if lines:
@@ -529,7 +545,7 @@ def nav_html(sections: dict[str, dict], groups: list[dict]) -> str:
     """The contents' links to the section titles (each one's short `nav` name, else its title)."""
     out = []
     for g in groups:
-        if any(sid in sections and sections[sid].get("kind") != "hidden" for sid in g.get("sections", [])):
+        if not g.get("hidden") and any(sid in sections and not is_hidden(sections[sid]) for sid in g.get("sections", [])):
             out.append(f'{INDENT}<a class="sub" href="#glossary-{_esc(g.get("id", ""))}">{_esc(g.get("nav") or g.get("title", ""))}</a>')
     return "\n".join(out)
 
@@ -544,6 +560,7 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
         sections = load_sections()
         groups = load_groups() if groups is None else groups
     groups = one_group(sections) if groups is None else groups
+    sections = effective(sections, groups)
     seen = set()
     count = 0                         # rows numbered so far, in page order
 
@@ -565,7 +582,7 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
         return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
 
     out = BLOCK_RE.sub(sub, page)
-    if unused := [s for s in sections if s not in seen and sections[s]["kind"] != "hidden"]:
+    if unused := [s for s in sections if s not in seen and not is_hidden(sections[s])]:
         raise GlossaryError(f"site/index.html has no glossary marker for section(s) {', '.join(unused)}.")
     return out
 
@@ -592,6 +609,7 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     if sections is None:
         sections, groups = load_sections(), load_groups() if groups is None else groups
     groups = groups or []
+    sections = effective(sections, groups)
     out = []
     for sid, sec in sections.items():
         for r in section_rows(sid, sec, rows):
@@ -686,7 +704,8 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
     groups = load_groups() if groups is None else groups
     page = config.SITE_INDEX.read_text(encoding="utf-8")
     out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
-    order = [sid for sid in section_order(sections, groups) if sections[sid].get("kind") != "hidden"]
+    sections = effective(sections, groups)
+    order = [sid for sid in section_order(sections, groups) if not is_hidden(sections[sid])]
     try:
         out["problems"] = missing(rows, sections) + missing_layout(sections, groups)
         render(page, rows, sections, groups)          # the same errors a release would stop on
