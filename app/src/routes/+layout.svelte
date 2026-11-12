@@ -13,6 +13,7 @@
   import { beforeNavigate, goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
   import GlossaryCheck from '$lib/components/GlossaryCheck.svelte';
+  import { updateSummary } from '$lib/merge';
   import PilotDialogs from '$lib/components/PilotDialogs.svelte';
   import SignIn from '$lib/components/SignIn.svelte';
   import ContactDialog from '$lib/components/ContactDialog.svelte';
@@ -123,6 +124,8 @@
   let keyboard = $state(false);
   let visible = $state<number | null>(null);
   let tabsShown = $derived(phone.on && !gate && hosted.ready && !keyboard);
+  // hosted: what the font changed since the draft started that the draft doesn't have (the banner)
+  let updates = $derived(hosted.isHosted && app.fontMoved && !app.loading ? app.fontUpdate() : []);
   let saveBar = $derived(tabsShown && (app.dirty || (hosted.isHosted && (app.offline || app.saveRefused))));
   let counts = $derived(pill && hosted.isHosted ? app.draftCounts : null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -172,7 +175,7 @@
   <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
   <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
   <button onclick={() => (dialog = 'glossary')} title="The glossary on jianzipufont.com as it would be with your draft's changes, and what it would leave out">Check the glossary…</button>
-  <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `Set reference font to ${app.latestFont}…` : `Reference font: ${app.latestFont}`}</button>
+  <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `${app.bringLabel}…` : "Your draft has the font's latest updates"}</button>
   <button onclick={() => (feedback = true)}>Send feedback…</button>
   <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>
   <hr />
@@ -200,13 +203,13 @@
       {#if hosted.isHosted && hosted.user}
         <span class="pill-wrap">
           <button class="pill draft" onclick={(e) => { e.stopPropagation(); pill = !pill; }} title="Only you see your draft. The font itself doesn't change.">
-            <I.Draft size={14} />Your draft{#if app.newRelease && pilot.updateDismissed}<span class="moved"> · {app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
+            <I.Draft size={14} />Your draft{#if updates.length && pilot.updateDismissed}<span class="moved"> · {app.newRelease && app.main?.version ? `${app.main.version} is out` : 'font updated'}</span>{/if}
           </button>
           {#if pill}
             <div class="pop float" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && (pill = false)}>
               <strong>Your draft</strong>
               <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
-              <p class="muted">{#if app.draftBase}Reference font: {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
+              <p class="muted">{#if app.draftBase}Compared with {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
               {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
               <div class="row">
                 <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
@@ -320,13 +323,14 @@
     <div class="banner danger"><span class="ic"><I.Alert /></span> <b>Your draft isn't saved.</b> The server turned it down: {app.saveRefused}. Your changes are kept in this browser. If trying again doesn't work, export your draft so you have a copy, and send feedback.
       <button onclick={() => app.save()}>Try again</button> <button onclick={() => (pilot.dialog = 'export')}>Export my draft</button> <button onclick={() => (feedback = true)}>Send feedback</button></div>
   {/if}
-  {#if hosted.isHosted && app.newRelease && !pilot.updateDismissed && !app.loading}
+  {#if updates.length && !pilot.updateDismissed}
     <div class="banner info">
       <span class="ic"><I.Info /></span>
-      <span><b>{app.main?.version ? `JianZiPu ${app.main.version} is out.` : `The font was updated${app.main?.date ? ` on ${day(app.main.date)}` : ''}.`}</b> Your reference font is {app.referenceFont}.</span>
+      <span><b>{app.newRelease && app.main?.version ? `JianZiPu ${app.main.version} is out` : `The font was updated${app.main?.date ? ` on ${day(app.main.date)}` : ''}`}:</b>
+        {updateSummary(updates)}. Your draft doesn't have {app.newRelease && app.main?.version ? 'it' : 'them'} yet.</span>
       <span class="spacer"></span>
       <button onclick={() => dismissUpdate(hosted.user?.id, app.latestRelease)}>Not now</button>
-      <button class="primary" onclick={() => (pilot.dialog = 'update')}>Set reference font to {app.latestFont}…</button>
+      <button class="primary" onclick={() => (pilot.dialog = 'update')}>{app.newRelease && app.main?.version ? `Bring ${app.main.version} into my draft…` : 'Bring the updates into my draft…'}</button>
     </div>
   {/if}
   {#if app.draftRestored}

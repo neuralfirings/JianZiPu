@@ -254,7 +254,8 @@ describe('hosted draft', () => {
     await app.load();
     expect(app.fontMoved).toBe(true);
     expect(app.referenceFont).toMatch(/^the font of /);     // a draft from before versions: its date
-    expect(app.latestFont).toBe('3.200 (latest)');
+    expect(app.latestFont).toMatch(/^the font of .+ \(3\.200\)$/);
+    expect(app.bringLabel).toBe('Bring 3.200 into my draft');   // newer than a draft from before versions
     const items = app.fontUpdate();
     expect(items.map((i) => [i.id, i.conflict])).toEqual([['glyph:md_7', true], ['design:area:left', false]]);
     const r = await app.updateToFont(items, { 'glyph:md_7': false, 'design:area:left': true }, 'Update to the font of 18 Oct');
@@ -263,7 +264,7 @@ describe('hosted draft', () => {
     expect(app.svgs.md_7).toBe(SVG('M1 1h20v20z'));
     expect(app.fontMoved).toBe(false);
     expect(app.draftBase?.version.date).toBe('2026-10-18T10:00:00Z');
-    expect(app.referenceFont).toBe('3.200');
+    expect(app.referenceFont).toMatch(/^the font of .+ \(3\.200\)$/);
     app.undo();
     expect(app.fontMoved).toBe(true);
     expect(app.referenceFont).toMatch(/^the font of /);
@@ -275,19 +276,23 @@ describe('hosted draft', () => {
     await app.load();
     app.applyChanges('Glyph md_7', { svgWrites: { md_7: SVG('M1 1h20v20z') } });
     await app.save();
-    expect(app.referenceFont).toBe('3.200');
+    expect(app.referenceFont).toMatch(/^the font of .+ \(3\.200\)$/);
     // main's spellings file changed (a new column), still 3.200: no "3.200 is out"
     api.base.mockResolvedValue({ commit: 'def', version: '3.200', date: '2026-10-27T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
     await app.load();
     expect(app.fontMoved).toBe(true);
     expect(app.newRelease).toBe(false);
-    // both are "3.200": their dates tell them apart
-    expect(app.referenceFont).toBe(`3.200 as of ${new Date('2026-10-15T10:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short' })}`);
-    expect(app.latestFont).toBe(`3.200 as of ${new Date('2026-10-27T10:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short' })} (latest)`);
+    // both are 3.200: their dates tell them apart, and the button says updates, not a release
+    const d = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' });
+    expect(app.referenceFont).toBe(`the font of ${d('2026-10-15T10:00:00Z')} (3.200)`);
+    expect(app.latestFont).toBe(`the font of ${d('2026-10-27T10:00:00Z')} (3.200)`);
+    expect(app.bringLabel).toBe("Bring the font's updates into my draft");
+    expect(app.latestRelease).toBe('3.200 · 2026-10-27T10:00:00Z');
     // 3.300 is released
     api.base.mockResolvedValue({ commit: 'fed', version: '3.300', date: '2026-11-01T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
     await app.load();
     expect(app.newRelease).toBe(true);
-    expect(app.latestRelease).toBe('3.300');
+    expect(app.latestRelease).toBe('3.300 · 2026-11-01T10:00:00Z');
+    expect(app.bringLabel).toBe('Bring 3.300 into my draft');
   });
 });

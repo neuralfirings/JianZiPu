@@ -1,19 +1,19 @@
 <script lang="ts">
   // The hosted pilot's dialogs (docs/PILOT-UX.md): welcome note, Export / Discard my draft,
-  // "saved somewhere else", and Set reference font: the draft's changes, compared with the latest font.
+  // "saved somewhere else", and bringing the font's updates into the draft.
   import * as I from '$lib/icons';
   import { goto } from '$app/navigation';
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { dismissUpdate, downloadZip, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
+  import { day, dismissUpdate, downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
+  import { updateSummary } from '$lib/merge';
   import SvgText from './SvgText.svelte';
 
   const close = () => (pilot.dialog = null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   let counts = $derived(pilot.dialog === 'discard' || pilot.dialog === 'export' ? app.draftCounts : null);
-  const latest = $derived(app.latestName);    // "3.200", "3.200 as of 12 Nov" (files moved, same number), or "the font of 21 Oct"
-  const Latest = $derived(latest.charAt(0).toUpperCase() + latest.slice(1));
+  const latest = $derived(fontName(app.main));    // "3.200", or "the font of 21 Oct": where Discard starts again
 
   function exportZip() {
     downloadZip(app.bundle());
@@ -38,14 +38,16 @@
   let conflicts = $derived(items.filter((i) => i.conflict));
   let auto = $derived(items.filter((i) => !i.conflict));
   async function update() {
-    const label = `Set reference font to ${latest}`;
+    const label = app.bringLabel;
     close();
     const r = await app.updateToFont(items, keep, label);
     pilot.updateDismissed = true;
-    const parts = [...(r.came ? [`${plural(r.came, 'change')} from it came in`] : []), ...(r.kept ? [`you kept yours in ${plural(r.kept, 'place')} you both changed`] : [])];
+    const parts = [...(r.came ? [`${plural(r.came, 'change')} came in`] : []), ...(r.kept ? [`you kept yours in ${plural(r.kept, 'place')} you both changed`] : [])];
     const said = parts.join('; ');
-    pilot.say(`Your reference font is now ${latest}.${said ? ` ${said[0].toUpperCase()}${said.slice(1)}.` : ''}`, { undo: true });
+    pilot.say(`Your draft has the font's updates now.${said ? ` ${said[0].toUpperCase()}${said.slice(1)}.` : ''}`, { undo: true });
   }
+  // "the 21 Oct font your draft started from"
+  const started = $derived(`the ${app.draftBase?.version.date ? `${day(app.draftBase.version.date)} ` : ''}font your draft started from`);
   const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : `glyph ${i.key}`);
 </script>
 
@@ -85,14 +87,15 @@
           <button class="danger" onclick={discard}>Discard my draft</button>
         </div>
       {:else if pilot.dialog === 'update'}
-        <h3>Set your reference font to {app.latestFont}</h3>
-        <p>Your reference font is {app.referenceFont}: Your changes are what your draft does differently from it. Your changes stay yours, compared with {latest} from now on, so the ones {latest} already has leave the list.</p>
+        <h3>{app.newRelease && app.main?.version ? `Bring ${app.main.version} into your draft` : "Bring the font's updates into your draft"}</h3>
         {#if !items.length}
-          <p>Your draft already has everything {latest} changed.</p>
+          <p>Your draft already has everything the font changed since {started}.</p>
         {:else}
-          <p>{Latest} has {plural(items.length, 'change')} since {app.referenceFont}. {auto.length} {auto.length === 1 ? 'is' : 'are'} in things you didn't change: they come in on their own.
-            {#if conflicts.length}{conflicts.length} {conflicts.length === 1 ? 'is' : 'are'} in things you also changed: choose which to keep.{/if}</p>
+          <p>The font has {plural(items.length, 'change')} since {started}: {updateSummary(items)}.
+            {auto.length} {auto.length === 1 ? 'is' : 'are'} in things you didn't change: they come in on their own.
+            {#if conflicts.length}{conflicts.length} {conflicts.length === 1 ? 'is something' : 'are things'} you both changed: choose <b>Keep mine</b> or <b>Take the font's</b>.{/if}</p>
         {/if}
+        <p class="muted">Your own changes stay in your draft. From then on, Your changes lists what your draft does differently from the font as it is now.</p>
         {#if conflicts.length}
           <div class="conflicts">
             {#each conflicts as it (it.id)}
@@ -102,7 +105,7 @@
                   <div class="row pics">
                     <SvgText text={it.current} size={72} label="yours" />
                     <SvgText text={it.theirs} size={72} label="the font's new one" />
-                    <SvgText text={it.base} size={72} label={`in ${app.referenceFont}`} />
+                    <SvgText text={it.base} size={72} label="the font's old one" />
                   </div>
                 {:else if it.kind === 'spelling'}
                   <table class="cells"><tbody>
@@ -127,7 +130,7 @@
         <div class="row end">
           <button onclick={() => (pilot.dialog = 'export')}>Export my draft first</button>
           <button onclick={() => { dismissUpdate(hosted.user?.id, app.latestRelease); close(); }}>Not now</button>
-          <button class="primary" onclick={update}>Set reference font to {app.latestFont}</button>
+          <button class="primary" onclick={update}>{items.length ? 'Bring them in' : 'Done'}</button>
         </div>
       {/if}
     </div>

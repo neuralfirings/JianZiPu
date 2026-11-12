@@ -10,7 +10,7 @@ import { BundleError, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, typ
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
-import { day, fontName, pilot } from './pilot.svelte';
+import { day, fontOf, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import { isNetworkError } from './net';
 import * as T from './typing';
@@ -182,37 +182,32 @@ class DesignState {
   get extraGlyphs(): string[] {
     return Object.keys(this.svgs).filter((n) => !(n in this.mainSvgs));
   }
-  /** Hosted: the font the draft is compared with ("3.100", or "the font of 19 Oct" for an older
-   *  draft); Your changes are what differs from it. */
+  /** Hosted: the font the draft started from, which Your changes compare it with: "the font of
+   *  21 Oct (3.200)". The date tells it apart from a later font with the same release number. */
   get referenceFont(): string {
-    const v = this.draftBase?.version;
-    return fontName(v) + (this.sameVersionMoved && v?.date ? ` as of ${day(v.date)}` : '');
+    return fontOf(this.draftBase?.version);
   }
-  /** The font on the server now: "3.200", or "3.200 as of 12 Nov" when its files changed since
-   *  the draft's reference font without a new release, so the two don't read the same. */
-  get latestName(): string {
-    return fontName(this.main) + (this.sameVersionMoved && this.main?.date ? ` as of ${day(this.main.date)}` : '');
-  }
-  /** The font on the server now, as a reference font to move to: "3.200 (latest)". */
+  /** The font on the server now, the same way: "the font of 12 Nov (3.200)". */
   get latestFont(): string {
-    return this.main?.version ? `${this.latestName} (latest)` : 'the latest';
+    return fontOf(this.main);
   }
-  /** The font's files moved since the draft's reference font, under the same version number. */
-  get sameVersionMoved(): boolean {
-    const have = this.draftBase?.version.version;
-    return this.fontMoved && !!have && have === this.main?.version;
+  /** The update button: "Bring 3.300 into my draft" for a new release, else "Bring the font's
+   *  updates into my draft". */
+  get bringLabel(): string {
+    return this.newRelease && this.main?.version ? `Bring ${this.main.version} into my draft` : "Bring the font's updates into my draft";
   }
-  /** A newer release is out than the draft's reference font (hosted): the banner's case. The
-   *  font's files can also move without a release (a new CSV column, say); then only the More
-   *  menu offers to follow them. */
+  /** A newer release is out than the font the draft started from (hosted): the banner says
+   *  "JianZiPu 3.300 is out". The font's files can also move without a release (a new CSV column,
+   *  say); then the banner says "The font was updated on 12 Nov". */
   get newRelease(): boolean {
     if (!this.fontMoved) return false;
     const have = this.draftBase?.version.version, now = this.main?.version;
     return !have || !now || have !== now;
   }
-  /** The release the banner is about, for remembering a Not now ("3.300", or the files' date). */
+  /** The font the update banner is about, for remembering a Not now: its release and the date its
+   *  files last changed, so a later change under the same number shows the banner again. */
   get latestRelease(): string {
-    return this.main?.version ?? this.main?.date ?? '';
+    return [this.main?.version, this.main?.date].filter(Boolean).join(' · ');
   }
   /** The font has moved since the draft started (hosted). */
   get fontMoved(): boolean {

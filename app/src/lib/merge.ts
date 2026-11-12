@@ -126,7 +126,7 @@ export function designSummary(current: Design, file: Design): string[] {
   return designItems(current, file, current).map((i) => `${i.label}: ${i.summary.join(', ')}`);
 }
 
-/** "Set reference font" to the latest: the font's changes since the draft's base, as items to bring
+/** Bring the font's updates into a draft: the font's changes since the draft's base, as items to bring
  *  into the draft (theirs = the font now, current = the draft). Glyphs the draft never touched
  *  already show the font's outline, so only the draft's own glyphs can conflict. With
  *  `defaultKeep`, everything the draft didn't change comes in and conflicts keep the draft's. */
@@ -147,6 +147,42 @@ export function fontUpdateItems(base: Current, font: Current, mine: Current): It
     base: { design: base.design, typing: base.typing, svgs: baseSvgs }
   } as unknown as Bundle;
   return diffBundle(pseudo, mine);
+}
+
+const SPELLING_NOUN: Record<T.SpellField, string> = {
+  latin: 'Latin entries', latin_alt: 'Latin entries', simplified: 'Chinese spellings', traditional: 'Chinese spellings',
+  common: 'number or symbol spellings', vert_variant: 'vertical forms', pinyin: 'pinyin', glossary: 'glossary sections',
+  meaning: 'meanings'
+};
+
+/** What a font update brings, in a few words: "glossary sections for 79 glyphs, 2 glyph drawings
+ *  and 1 word type". The three biggest kinds, then "and more". */
+export function updateSummary(items: Item[]): string {
+  const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  const fields = new Map<string, Set<string>>();
+  let drawings = 0;
+  const design = new Map<string, number>();
+  for (const it of items) {
+    if (it.kind === 'glyph') drawings++;
+    else if (it.kind === 'spelling') {
+      for (const f of it.fields) {
+        const noun = SPELLING_NOUN[f.field];
+        if (!fields.has(noun)) fields.set(noun, new Set());
+        fields.get(noun)!.add(it.key);
+      }
+    } else {
+      const w = it.unit.type === 'layout' ? 'word type' : it.unit.type === 'area' ? 'area' : 'design setting';
+      design.set(w, (design.get(w) ?? 0) + 1);
+    }
+  }
+  const parts: [number, string][] = [
+    ...[...fields].map(([noun, gs]): [number, string] => [gs.size, `${noun} for ${n(gs.size, 'glyph')}`]),
+    ...(drawings ? [[drawings, n(drawings, 'glyph drawing')] as [number, string]] : []),
+    ...[...design].map(([w, k]): [number, string] => [k, n(k, w)])
+  ].sort((a, b) => b[0] - a[0]);
+  const words = parts.slice(0, 3).map((p) => p[1]);
+  if (parts.length > 3) words.push('more');
+  return words.length <= 1 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
 }
 
 // ---------------------------------------------------------------- applying

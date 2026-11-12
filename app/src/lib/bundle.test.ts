@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
-import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, usesOfGlyph, withChanges } from './merge';
+import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, updateSummary, usesOfGlyph, withChanges } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
 
@@ -198,6 +198,22 @@ describe('updating a draft to a newer font', () => {
     const font = { design: design(), typing: {}, svgs: { ...baseSvgs, md_7: SVG('M9 9h1v1z') } };
     const mine = { design: design(), typing: {}, svgs: { ...baseSvgs, md_7: SVG('M9 9h1v1z') } };
     expect(fontUpdateItems(base, font, mine)).toEqual([]);
+  });
+});
+
+describe('what a font update brings, in words', () => {
+  const sp = (key: string, ...fields: T.SpellField[]) =>
+    ({ id: `spelling:${key}`, kind: 'spelling', key, status: 'changed', conflict: false,
+       fields: fields.map((field) => ({ field, base: '', theirs: 'x', current: '', conflict: false })) }) as never;
+  const gl = (key: string) => ({ id: `glyph:${key}`, kind: 'glyph', key, status: 'changed', conflict: false }) as never;
+  const lay = (name: string) => ({ id: `design:layout:${name}`, kind: 'design', unit: { type: 'layout', name }, status: 'changed', conflict: false }) as never;
+  it('counts glyphs per kind of change, biggest first', () => {
+    expect(updateSummary([sp('md_1', 'glossary'), sp('md_2', 'glossary', 'pinyin'), gl('md_3')]))
+      .toBe('glossary sections for 2 glyphs, pinyin for 1 glyph and 1 glyph drawing');
+    expect(updateSummary([sp('md_1', 'latin', 'latin_alt')])).toBe('Latin entries for 1 glyph');
+    expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('b', 'meaning'), sp('c', 'simplified')]))
+      .toBe('2 word types, meanings for 1 glyph, Chinese spellings for 1 glyph and more');
+    expect(updateSummary([])).toBe('');
   });
 });
 
