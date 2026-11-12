@@ -1016,8 +1016,12 @@
   .grp.off > :not(h2), .grp.off > h2 > :not(.hact), .sec.off > :not(h3), .sec.off > h3 > :not(.hact) { opacity: .45; }
   /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
   .scroll { overflow: visible; }
-  table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: fixed; font-size: var(--t-small); }
-  .c-grip { width: 32px; } .c-a { width: 14%; } .c-z { width: 12%; } .c-p { width: 12%; } .c-in { width: 22%; } .c-out { width: 12%; } .c-act { width: 92px; }
+  /* automatic layout: a column's width is its minimum, and a cell that doesn't wrap widens it; Definition (100%)
+     takes what's left and wraps */
+  table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: auto; font-size: var(--t-small); }
+  .c-grip { width: 32px; } .c-a, .c-z, .c-p, .c-in, .c-out { width: 100px; } .c-m { width: 100%; } .c-act { width: 92px; }
+  td:nth-child(-n+4) { white-space: nowrap; }
+  th:nth-child(n+2):nth-child(-n+6) { min-width: 100px; }
   th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: var(--t-caption); color: var(--ink-muted); }
   /* clip, not hidden: a hidden cell is a scroller, and the wheel over it stopped scrolling the page */
   td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
