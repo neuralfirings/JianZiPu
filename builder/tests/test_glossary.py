@@ -489,3 +489,13 @@ def test_rows_can_sit_straight_under_a_section_title():
     assert out.index('<h4 id="glossary-one">') < out.index(":qi") < out.index('<label id="glossary-1a">')
     assert '<label id="glossary-x">' not in out and glossary.missing(r, sec) == []
     assert glossary.with_layout({}, {"groups": [{"id": "one", "title": "1", "sections": ["x"]}], "sections": {"x": {"title": "", "kind": "vertical"}}})[0]["x"]["title"] == ""
+
+
+def test_an_example_keeps_the_spelling_typed_for_the_glyph():
+    r = rows("lg_banlun,,,banlun,bl,半轮,,bàn lún", "md_ming,,,s,,名,,míng", "md_9,,9,,,九,,jiǔ", "md_7,,7,,,七,,qī")
+    sec = {"2c": usage("2c", {"glyph": "lg_banlun", "usage": ["s9<r>bl</r>7", "名九，{}七"]}, template=("{}", "{}")),
+           "3c": vertical("3c", {"glyph": "lg_banlun", "usage": [":<r>bl</r>", ":{}"]})}
+    out = glossary.render(page("2c", "3c"), r, sec)
+    assert out.count("<txs>s9<r>bl</r>7</txs>") == 1 and "<txs>名九，<r>半轮</r>七</txs>" in out   # once, not once per spelling
+    assert "<jzp>:bl</jzp>" in out                                  # the row on its own: nothing marked
+    assert glossary.marks_glyph(["s9<r>bl</r>7", ""]) and not glossary.marks_glyph([":<r>bl</r>", ":{}"])

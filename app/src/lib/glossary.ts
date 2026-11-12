@@ -215,7 +215,10 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     if (last && (typed.clusters?.[i - 1] ?? i - 1) === c) last.glyphs.push(g);
     else groups.push({ glyphs: [g], text: typed.texts[i] ?? '' });
   });
-  let source = '', other = '';
+  let source = '';
+  // the other line a piece at a time: its text, what it reads as when typed (`shown`, {} filled in), and
+  // whether it's a hui number, which a numeral or 半 right after it would turn into a decimal
+  const parts: { text: string; shown: string; num: boolean }[] = [];
   const missing: string[] = [];
   for (const gr of groups) {
     const gs = gr.glyphs.filter((g) => g !== 'blank_colon' && g !== 'blank_bar');
@@ -224,13 +227,29 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     const rest = spelled ? gr.text.slice(spelled.length) : gs.length ? '' : gr.text;
     // 十一 十二 十三 as a position: two numerals after a finger read as a decimal (名十二 is 名 10.2), 徽 keeps them whole
     const hui = (g: string) => (!zh && /^md_1[123]$/.test(g) && !/^[徽点點]/.test(punct(rest, zh)) ? '徽' : '');
-    if (glyph && gs.map(norm).includes(glyph)) { source += '{}' + esc(rest); other += '{}' + hui(gs[0]) + esc(punct(rest, zh)); continue; }
+    const num = gs.length === 1 && /^md_\d+$/.test(norm(gs[0]));
+    if (glyph && gs.map(norm).includes(glyph)) {
+      // the row's glyph: {} (its main spelling, and the page lists each spelling) unless another of its
+      // spellings was typed (bl for banlun), which is kept as typed, marked
+      const main = spellingsIn(t, gs[0], zh)[0];
+      source += (spelled && spelled !== main ? `<r>${esc(spelled)}</r>` : '{}') + esc(rest);
+      const sh = spellingsIn(t, gs[0], !zh)[0] ?? '';
+      parts.push({ text: '{}' + hui(gs[0]) + esc(punct(rest, zh)), shown: sh + hui(gs[0]) + punct(rest, zh), num });
+      continue;
+    }
     source += esc(gr.text);
-    if (!gs.length) { other += esc(punct(gr.text, zh)); continue; }
+    if (!gs.length) { parts.push({ text: esc(punct(gr.text, zh)), shown: punct(gr.text, zh), num: false }); continue; }
     const made = gs.map((g) => spellingsIn(t, g, !zh)[0]);
     if (made.some((x) => !x)) { missing.push(gr.text); continue; }
-    other += esc(made.join('') + (gs.length === 1 ? hui(gs[0]) : '') + punct(rest, zh));
+    const tx = made.join('') + (gs.length === 1 ? hui(gs[0]) : '') + punct(rest, zh);
+    parts.push({ text: esc(tx), shown: tx, num });
   }
+  // in Chinese, a hui number followed by a numeral or 半 reads as a decimal (名九半轮 is 名 9.5 轮): a comma keeps them apart
+  let other = '';
+  parts.forEach((p, i) => {
+    const next = parts[i + 1];
+    other += p.text + (!zh && p.num && next && /^[一二三四五六七八九十半]/.test(next.shown) && !/[，,徽点點]$/.test(p.shown) ? '，' : '');
+  });
   // the colon that starts vertical text is written : in Chinese too, as the page has it (:大息)
   return { source: zh ? source.replace(/：/g, ':') : source, other: missing.length ? null : other, zh, missing };
 }
@@ -348,7 +367,10 @@ export function titlesSummary(a: Group[], b: Group[]): string[] {
 }
 
 /** An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the page marks the glyph in it. */
-export const marksGlyph = (t: [string, string]) => t.some((x) => x.includes('{}') && x.replace(/<\/?r>/g, '').replace(/[:：]?\{\}/, '').trim() !== '');
+export const marksGlyph = (t: [string, string]) => t.some((x) => {
+  const bare = x.includes('{}') ? x : x.replace(/<r>[^<]*<\/r>/, '{}');       // a spelling written out (<r>bl</r>) is the glyph too
+  return bare.includes('{}') && bare.replace(/<\/?r>/g, '').replace(/[:：]?\{\}/, '').trim() !== '';
+});
 
 /** A glyph with spellings that no glossary row shows (its vertical form counts as its partner):
  *  List view's "not in the glossary". `uses`: usesOf(); `any`: the glossary has sections at all. */

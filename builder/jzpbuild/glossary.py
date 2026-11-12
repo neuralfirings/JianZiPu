@@ -359,8 +359,9 @@ def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, 
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
     ta, tz = own or sec["usage"]
     # the same example with each spelling: Chinese (traditional too) under Chinese, ASCII under ASCII
-    zs = [_fill(tz, c) for c in zh] if tz else []
-    as_ = [_fill(ta, s) for s in sp] if ta else []
+    # one example per spelling where {} stands for the glyph; one where a spelling was written out (s9<r>bl</r>7)
+    zs = list(dict.fromkeys(_fill(tz, c) for c in zh)) if tz else []
+    as_ = list(dict.fromkeys(_fill(ta, s) for s in sp)) if ta else []
     a = (as_ or zs)[0]
     usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
              + f"{INDENT}    ")
@@ -370,7 +371,10 @@ def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, 
 
 def marks_glyph(usage) -> bool:
     """An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the glyph is marked in it."""
-    return any("{}" in t and re.sub(r"[:：]?\{\}", "", re.sub(r"</?r>", "", t), count=1).strip() for t in usage)
+    def more(t: str) -> bool:      # the glyph ({} or a spelling written out, <r>bl</r>) and something besides
+        bare = re.sub(r"<r>[^<]*</r>", "{}", t) if "{}" not in t else t
+        return "{}" in bare and bool(re.sub(r"[:：]?\{\}", "", re.sub(r"</?r>", "", bare), count=1).strip())
+    return any(more(t) for t in usage)
 
 
 def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str]]:
@@ -378,7 +382,7 @@ def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str]]:
     (else the Chinese), and the spellings to type it with. {} is the glyph's spelling, marked red when
     the example has more in it than the glyph (:{}5), not when it's the row on its own (:{})."""
     ta, tz = e.usage
-    fill = _fill if marks_glyph(e.usage) else (lambda t, sp: t.replace("{}", _esc(sp)))
+    fill = _fill if marks_glyph(e.usage) else (lambda t, sp: re.sub(r"</?r>", "", t).replace("{}", _esc(sp)))
     a = fill(ta, sa) if ta else ""
     z = fill(tz, sz) if tz else ""
     return f"<jzp>{a or z}</jzp>", [_plain(x) for x in (a, z) if x]

@@ -69,6 +69,16 @@ describe("a row's example word", () => {
     const t12: Typing = { ...t, md_12: sp({ common: '12', simplified: '十二' }), md_5: sp({ common: '5', simplified: '五' }) };
     expect(usageFrom('s12k5', typed(['md_ming', 'md_12', 'lg_gou', 'md_5'], ['s', '12', 'k', '5']), 'md_12', t12)).toMatchObject({ other: '名{}徽勾五' });
     expect(usageFrom('s12k5', typed(['md_ming', 'md_12', 'lg_gou', 'md_5'], ['s', '12', 'k', '5']), 'lg_gou', t12)).toMatchObject({ other: '名十二徽{}五' });
+    // a hui number then 半 (or a numeral) reads as a decimal in Chinese: a comma keeps them apart; and the
+    // row's glyph keeps the spelling typed (bl, not banlun), marked
+    const tb: Typing = { ...t, lg_banlun: sp({ latin: 'banlun', latin_alt: 'bl', simplified: '半轮' }) };
+    expect(usageFrom('s9bl7', typed(['md_ming', 'md_9', 'lg_banlun', 'md_7'], ['s', '9', 'bl', '7']), 'lg_banlun', tb))
+      .toMatchObject({ source: 's9<r>bl</r>7', other: '名九，{}七' });
+    expect(usageFrom('s9banlun7', typed(['md_ming', 'md_9', 'lg_banlun', 'md_7'], ['s', '9', 'banlun', '7']), 'lg_banlun', tb))
+      .toMatchObject({ source: 's9{}7' });
+    expect(usageFrom('s9bl7', typed(['md_ming', 'md_9', 'lg_banlun', 'md_7'], ['s', '9', 'bl', '7']), 'md_ming', tb))
+      .toMatchObject({ other: '{}九，半轮七' });
+    expect(exampleText('s9<r>bl</r>7', 'banlun')).toBe('s9bl7');
     const p = usageFrom('5.4k3', typed(['md_5.4', 'lg_gou', 'md_3'], ['5.4', 'k', '3']), 'lg_gou', t);
     expect(p).toMatchObject({ other: '五点四{}三' });
   });
@@ -91,6 +101,8 @@ describe("a row's example word", () => {
     // the glyph is marked when the example has more in it than the glyph
     expect([[':{}5', ':{}五'], ['s9{}k3', ''], ['{}', '{}'], [':{}', ':{}'], [':vxi', ':大息']].map((u) => marksGlyph(u as [string, string])))
       .toEqual([true, true, false, false, false]);
+    expect(marksGlyph(['s9<r>bl</r>7', ''])).toBe(true);
+    expect(marksGlyph([':<r>bl</r>', ':{}'])).toBe(false);
   });
   it('fills a template as text and as marked HTML', () => {
     expect(exampleText('{}d7,7<r>|</r>06', 'C')).toBe('Cd7,7|06');
