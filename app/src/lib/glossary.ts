@@ -13,7 +13,7 @@ export type GRow = GlyphRow | WordRow;
 export type GlossaryRows = Record<string, GRow[]>;
 /** 'usage': an example word per row; 'vertical': each typed on its own after a colon. */
 export type SectionKind = 'usage' | 'vertical';
-/** `usage`: a usage section's example for rows without their own, as [ASCII, 中文] templates; `hidden`:
+/** `usage`: a usage section's default example, for rows without their own, as [ASCII, 中文] templates; `hidden`:
  *  off the page, by its own switch or its section title's. */
 export type Section = { id: string; title: string; kind: SectionKind; usage?: [string, string] | null; hidden?: boolean };
 
