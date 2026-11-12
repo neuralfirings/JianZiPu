@@ -6,6 +6,7 @@
   // What changes and Issues. View, group, filter and selection live in the URL. On a phone the
   // sidebar is two selects and the selected glyph's card covers the tiles until closed.
   import * as I from '$lib/icons';
+  import { untrack } from 'svelte';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
   import * as T from '$lib/typing';
@@ -40,6 +41,13 @@
   let inspH = $state<number | null>(kept.inspH ?? null);   // null: as tall as it needs, up to 48% of the window
   let inspOpen = $state(kept.inspOpen ?? true);
   let inspEl = $state<HTMLElement>();
+  // picking another glyph opens a closed glyph panel again (not the page load, not the same glyph)
+  let lastSel = untrack(() => selected);
+  $effect(() => {
+    const g = selected;
+    if (g && g !== lastSel) inspOpen = true;
+    lastSel = g;
+  });
   $effect(() => {
     const v = JSON.stringify({ sideW, sideOpen, inspH, inspOpen });
     try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private window: not kept */ }
