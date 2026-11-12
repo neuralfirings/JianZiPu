@@ -1,25 +1,25 @@
-/* JZP Font Builder design system (https://claude.ai/artifact/SNGE3ACTZxtP2PLRatJnv8): quiet grey
-   paper around loud glyphs. Token names follow the system's tokens.json; see CLAUDE.md "Design system". */
+/* JZP Font Builder design system (https://claude.ai/artifact/SNGE3ACTZxtP2PLRatJnv8): quiet pale rice
+   paper, calligraphy ink and one seal red around loud glyphs. Token names follow the system's tokens.json; see CLAUDE.md "Design system". */
 :root {
   /* paper */
-  --bg-app: #eeeeee; --bg-panel: #fafafa; --bg-canvas: #ffffff; --bg-field: #ffffff;
-  --bg-sunken: #e3e3e5; --bg-hover: #ececec; --bg-bar: #333333; --on-bar: #ffffff;
+  --bg-app: #eeeae5; --bg-panel: #f7f5f1; --bg-canvas: #fbfaf7; --bg-field: #fcfbf9;
+  --bg-sunken: #e3ded8; --bg-hover: #e8e3dd; --bg-bar: #2e2a27; --on-bar: #f7f5f1;
   /* ink */
-  --ink: #2a2a2a; --ink-muted: #595959; --ink-faint: #767676; --glyph: #121212;
-  --border: #c4c4c4; --border-strong: #858585; --hairline: #dcdcdc;
+  --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a; --glyph: #1c1916;
+  --border: #cdc7bf; --border-strong: #7c756e; --hairline: #ddd8d1;
   /* link, focus, selection */
   --link: #0a5cbf; --focus: var(--link); --sel-bg: #dce8fa; --sel-border: var(--link);
   /* seal: anchor, highlighted component, destructive actions; one stamp per view */
-  --accent: #a82222; --on-accent: #ffffff; --glyph-hi: var(--accent);
+  --accent: #a3352b; --on-accent: #ffffff; --glyph-hi: var(--accent);
   /* status: always with an icon and a word */
   --status-saved: #1b6b53; --status-saved-bg: #dff0ea;
   --status-draft: #8a5700; --status-draft-bg: #f8ebd0;
-  --status-danger: var(--accent); --status-danger-bg: #f6dfdd;
+  --status-danger: var(--accent); --status-danger-bg: #f5ddd6;
   --status-info: var(--link); --status-info-bg: #dce8fa;
   /* canvas overlays */
-  --ov-part: #3f6fd8; --ov-part-fill: #3f6fd81f; --ov-anchor: var(--accent); --ov-anchor-fill: #a822221a;
+  --ov-part: #3f6fd8; --ov-part-fill: #3f6fd81f; --ov-anchor: var(--accent); --ov-anchor-fill: #a3352b1a;
   --ov-active: var(--link); --ov-area: #b07d00; --ov-area-fill: #b07d0026; --ov-measure: #c4262e;
-  --ov-before: #d55e00; --ov-after: #0072b2; --ov-guide: #00000033; --ov-handle: #ffffff;
+  --ov-before: #d55e00; --ov-after: #0072b2; --ov-guide: #00000033; --ov-handle: #fcfbf9;
   /* part colours in the word canvas's "colour parts" view */
   --ov1: #2f5fa8; --ov2: #9a3fa8; --ov3: #1f8a74; --ov4: #b8860b;
   --shadow-float: 0 2px 8px #00000026; --shadow-modal: 0 12px 40px #00000033; --shadow-drag: 0 6px 18px #0000002e;
@@ -42,30 +42,30 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg-app: #151413; --bg-panel: #211f1e; --bg-canvas: #181716; --bg-field: #181716;
-    --bg-sunken: #2a2826; --bg-hover: #2a2827; --bg-bar: #0c0b0b; --on-bar: #e8e6e3;
-    --ink: #ecebe8; --ink-muted: #a8a5a0; --ink-faint: #85827d; --glyph: #f2f0ec;
-    --border: #3a3836; --border-strong: #7a7773; --hairline: #2e2c2b;
+    --bg-app: #171412; --bg-panel: #221e1b; --bg-canvas: #1a1715; --bg-field: #1a1715;
+    --bg-sunken: #2c2724; --bg-hover: #2c2724; --bg-bar: #0d0b0a; --on-bar: #eee8df;
+    --ink: #eee8df; --ink-muted: #aba298; --ink-faint: #877e74; --glyph: #f4efe7;
+    --border: #3d3632; --border-strong: #7d746b; --hairline: #312b27;
     --link: #7db3f5; --sel-bg: #1f3150; --accent: #e8796d; --on-accent: #1c0f0d;
     --status-saved: #5cc2a1; --status-saved-bg: #17332b; --status-draft: #e3a93f; --status-draft-bg: #3a2c10;
     --status-danger-bg: #3d1b18; --status-info-bg: #1f3150;
     --ov-part: #7ea2f0; --ov-part-fill: #7ea2f02e; --ov-anchor-fill: #e8796d26; --ov-area: #e0b341; --ov-area-fill: #e0b34130;
-    --ov-measure: #ff8a85; --ov-before: #ff9a4d; --ov-after: #5fb4ec; --ov-guide: #ffffff33; --ov-handle: #181716;
+    --ov-measure: #ff8a85; --ov-before: #ff9a4d; --ov-after: #5fb4ec; --ov-guide: #ffffff33; --ov-handle: #1a1715;
     --ov1: #8fb4f0; --ov2: #d79be2; --ov3: #6fd0b8; --ov4: #e8c060;
     --shadow-float: 0 2px 10px #00000099; --shadow-modal: 0 12px 40px #000000b3; --shadow-drag: 0 6px 18px #00000099;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg-app: #151413; --bg-panel: #211f1e; --bg-canvas: #181716; --bg-field: #181716;
-  --bg-sunken: #2a2826; --bg-hover: #2a2827; --bg-bar: #0c0b0b; --on-bar: #e8e6e3;
-  --ink: #ecebe8; --ink-muted: #a8a5a0; --ink-faint: #85827d; --glyph: #f2f0ec;
-  --border: #3a3836; --border-strong: #7a7773; --hairline: #2e2c2b;
+  --bg-app: #171412; --bg-panel: #221e1b; --bg-canvas: #1a1715; --bg-field: #1a1715;
+  --bg-sunken: #2c2724; --bg-hover: #2c2724; --bg-bar: #0d0b0a; --on-bar: #eee8df;
+  --ink: #eee8df; --ink-muted: #aba298; --ink-faint: #877e74; --glyph: #f4efe7;
+  --border: #3d3632; --border-strong: #7d746b; --hairline: #312b27;
   --link: #7db3f5; --sel-bg: #1f3150; --accent: #e8796d; --on-accent: #1c0f0d;
   --status-saved: #5cc2a1; --status-saved-bg: #17332b; --status-draft: #e3a93f; --status-draft-bg: #3a2c10;
   --status-danger-bg: #3d1b18; --status-info-bg: #1f3150;
   --ov-part: #7ea2f0; --ov-part-fill: #7ea2f02e; --ov-anchor-fill: #e8796d26; --ov-area: #e0b341; --ov-area-fill: #e0b34130;
-  --ov-measure: #ff8a85; --ov-before: #ff9a4d; --ov-after: #5fb4ec; --ov-guide: #ffffff33; --ov-handle: #181716;
+  --ov-measure: #ff8a85; --ov-before: #ff9a4d; --ov-after: #5fb4ec; --ov-guide: #ffffff33; --ov-handle: #1a1715;
   --ov1: #8fb4f0; --ov2: #d79be2; --ov3: #6fd0b8; --ov4: #e8c060;
   --shadow-float: 0 2px 10px #00000099; --shadow-modal: 0 12px 40px #000000b3; --shadow-drag: 0 6px 18px #00000099;
   color-scheme: dark;
