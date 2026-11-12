@@ -126,7 +126,6 @@ export function moveRow(rows: GlossaryRows, from: { sid: string; index: number }
 
 /** Why `r` can't go into section `sec` (null: it can). */
 export function refuse(rows: GlossaryRows, r: GRow, sec: Section, except?: number): string | null {
-  if (isWord(r) && sec.kind === 'usage') return `${sec.title} shows each glyph in an example word, so a word can't go there: put it in a vertical section.`;
   const k = rowKey(r);
   if ((rows[sec.id] ?? []).some((x, i) => i !== except && rowKey(x) === k)) return `${rowName(r)} is in ${sec.title} already.`;
   return null;

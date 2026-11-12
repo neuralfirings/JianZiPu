@@ -13,7 +13,7 @@
     "the Meaning column, which a section gets once one of its rows has a meaning. \"typed\" (optional) is what was typed to add or edit the row.",
     "Every glyph with spellings is in some section, on its own or in a word; 99: Hidden in Glossary leaves one out on purpose.",
     "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the section's example as [ASCII, 中文]; {} is the glyph's",
-    "spelling, marked red; <r>…</r> marks more. A row's own \"usage\" (the Builder's Example column) replaces it. Words don't go here.",
+    "spelling, marked red; <r>…</r> marks more. A row's own \"usage\" (the Builder's Example column) replaces it. A word in one is shown like a vertical row.",
     "kind 'vertical': each spelling after a colon, typed on its own (a row's own \"usage\" is shown instead). Consecutive numbers (md_1 to md_13) share one row.",
     "kind 'hidden': no table and no marker on the page."
   ],

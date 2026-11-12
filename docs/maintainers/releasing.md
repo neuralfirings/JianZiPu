@@ -258,7 +258,8 @@ and the spellings in `components.csv`, so its spellings are the font's:
   `4: Uncategorized` is for a glyph that doesn't fit a section yet;
   `99: Hidden in Glossary` (`"kind": "hidden"`, no table and no marker on the
   page) keeps a glyph off the page on purpose, so the check doesn't report it.
-  Words go in vertical sections only.
+  A word can go in any section: among example words it shows typed on its own
+  after a colon, as in a vertical section.
 - A Change Request carries the glossary a section at a time: Review keeps or
   skips a section whole, rows in the draft's order.
 - `cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the

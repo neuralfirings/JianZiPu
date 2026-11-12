@@ -19,8 +19,8 @@ describe('the glossary rows', () => {
     expect(rows['1a']).toHaveLength(3);                                                                       // not changed in place
     expect(moveRow(rows, { sid: '1a', index: 0 }, { sid: '4', index: 0 })['4']).toEqual([g('a')]);           // into an empty section
   });
-  it('refuses a word in an example-word section and a row twice in one section', () => {
-    expect(refuse({}, w('少息', 'a', 'b'), sections[0])).toMatch(/can't go there/);
+  it('refuses only a row twice in one section', () => {
+    expect(refuse({}, w('少息', 'a', 'b'), sections[0])).toBeNull();          // a word fits any section
     expect(refuse({ '3e': [g('a')] }, g('a'), sections[1])).toMatch(/already/);
     expect(refuse({ '3e': [g('a')] }, g('a'), sections[1], 0)).toBeNull();
     expect(refuse({ '3e': [g('a')] }, w('少息', 'a', 'b'), sections[1])).toBeNull();

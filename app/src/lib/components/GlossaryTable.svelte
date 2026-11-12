@@ -47,12 +47,12 @@
   const zhOf = (g: string) => { const s = T.get(app.typing, g); return [...new Set([s.simplified || T.shown(app.typing, g, 'simplified').value, s.traditional].filter(Boolean))]; };
   const pyOf = (g: string) => T.get(app.typing, g).pinyin || T.shown(app.typing, g, 'pinyin').value;
   function ascii(r: GRow, s: Section): string {
-    const pre = vertical(s) ? ':' : '';
+    const pre = vertical(s) || isWord(r) ? ':' : '';
     if (isWord(r)) return pre + r.glyphs.map((g) => asciiOf(g)[0] ?? '?').join('');
     return asciiOf(r.glyph).map((a) => pre + a).join(', ');
   }
   function chinese(r: GRow, s: Section): string {
-    const pre = vertical(s) ? ':' : '';
+    const pre = vertical(s) || isWord(r) ? ':' : '';
     if (isWord(r)) return pre + r.glyphs.map((g) => zhOf(g)[0] ?? '?').join('');
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
@@ -201,10 +201,10 @@
 
   // ---------------------------------------------------------------- Example: a row's example word
 
-  /** The example a row shows: its own, else in a usage section the section's, else (a vertical section)
-   *  the row typed on its own after a colon. */
+  /** The example a row shows: its own, else a glyph in a usage section the section's, else the row
+   *  typed on its own after a colon (a vertical section's row, and a word anywhere). */
   const templateOf = (r: GRow, s: Section): [string, string] =>
-    r.usage || (s.kind === 'usage' ? (isWord(r) ? null : s.usage) : verticalTemplate(app.typing, r)) || ['', ''];
+    r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r)) || ['', ''];
   /** What {} stands for in each language: the glyph's main spellings (a word has none: it's written out). */
   const spellsOf = (r: GRow): [string, string] => (isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph));
   /** The example as typed in the font (ASCII, else Chinese), to draw it. */
@@ -213,7 +213,7 @@
     return a ? exampleText(a, sa) : z ? exampleText(z, sz) : '';
   }
   /** Faded: a usage row showing its section's example, not one of its own. */
-  const shared = (r: GRow, s: Section) => s.kind === 'usage' && !r.usage;
+  const shared = (r: GRow, s: Section) => s.kind === 'usage' && !isWord(r) && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
   let drawn = $state<Record<string, WordPiece[]>>({});
   let drawKey = '';
@@ -591,7 +591,7 @@
                 <div class="ex">
                   {#if drawn[exampleOf(r, s)]}
                     <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
-                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={usage && !isWord(r) ? r.glyph : ''} {...(usage ? {} : { scale: 0.04 })} /></button>
+                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={usage && !isWord(r) ? r.glyph : ''} {...(usage && !isWord(r) ? {} : { scale: 0.04 })} /></button>
                   {/if}
                   <div class="lines">
                     {#each [1, 0] as k (k)}
@@ -605,7 +605,7 @@
                         <button class="line" class:zh={k === 1} class:mono={k === 0} disabled={usageBusy === key}
                           onclick={() => { usageNote = null; editing = `${key}:${k}`; }}
                           data-tip={shared(r, s) ? "The section's example: type this row's own" : 'Click to change it; the other line follows'}>
-                          {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], usage)}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
+                          {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], usage && !isWord(r))}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
                       {/if}
                     {/each}
                   </div>

@@ -416,11 +416,9 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
             numbers = []
         if e is None:
             break
-        if sec["kind"] == "usage":
-            if e.word:
-                raise GlossaryError(f"section {sid} has example words; a word ({e.word}) goes in a vertical section.")
+        if sec["kind"] == "usage" and not e.word:
             out.append(_usage_row(sec, e.glyph, rows[e.glyph], e.meaning, e.usage))
-        else:
+        else:                   # a vertical section's row, or a word anywhere: typed on its own after a colon
             out.append(_vertical_row(rows, e))
     return out
 
@@ -460,8 +458,6 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
             seen.add(key)
             if e.word and len(e.glyphs) < 2:
                 problems.append(f"glossary {sid}: the word {e.word} is one glyph; give the glyph its own row instead.")
-            if e.word and sec.get("kind") == "usage":
-                problems.append(f"glossary {sid}: the word {e.word} is in a section of example words; a word goes in a vertical section.")
             for g in e.glyphs:
                 if g not in rows:
                     problems.append(f"glossary {sid}: {e.name} uses {g}, which isn't a glyph in components.csv (renamed or deleted?).")

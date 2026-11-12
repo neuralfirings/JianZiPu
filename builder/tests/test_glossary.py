@@ -136,7 +136,7 @@ def test_missing_names_glyphs_with_no_row_and_rows_that_cant_be_shown():
     assert any(p.startswith("lg_gou") and "no row" in p and "Glyphs > Glossary" in p for p in problems)
     assert any("lg_tiao is in the section twice" in p for p in problems)
     assert any("uses lg_gone, which isn't a glyph" in p for p in problems)
-    assert any("挑挑 is in a section of example words" in p for p in problems)
+    assert not any("挑挑" in p for p in problems)                     # a word fits an example-word section too
     assert any("has no title" in p for p in glossary.missing({}, {"1d": {"title": " ", "kind": "usage"}}))
 
 
