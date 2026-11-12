@@ -31,6 +31,44 @@
   let group = $state(params.get('group') ?? 'all');
   let filter = $state<Filter>((params.get('f') as Filter) ?? '');
   let selected = $state<string | null>(params.get('g'));
+  // desktop: the sidebar's width (or folded away) and the glyph panel's height (or closed), kept in this browser
+  const LAYOUT_KEY = 'jzp-glyphs-layout';
+  const kept: { sideW?: number; sideOpen?: boolean; inspH?: number | null; inspOpen?: boolean } =
+    (() => { try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}'); } catch { return {}; } })();
+  let sideW = $state(kept.sideW ?? 220);
+  let sideOpen = $state(kept.sideOpen ?? true);
+  let inspH = $state<number | null>(kept.inspH ?? null);   // null: as tall as it needs, up to 48% of the window
+  let inspOpen = $state(kept.inspOpen ?? true);
+  let inspEl = $state<HTMLElement>();
+  $effect(() => {
+    const v = JSON.stringify({ sideW, sideOpen, inspH, inspOpen });
+    try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private window: not kept */ }
+  });
+  const SIDE = [150, 480] as const;
+  const clampH = (h: number) => Math.round(Math.min(window.innerHeight * 0.8, Math.max(110, h)));
+  /** Drag the sidebar's right edge or the glyph panel's top edge. */
+  function resize(e: PointerEvent, which: 'side' | 'insp') {
+    e.preventDefault();
+    const start = which === 'side' ? e.clientX : e.clientY;
+    const from = which === 'side' ? sideW : (inspEl?.getBoundingClientRect().height ?? 240);
+    const move = (m: PointerEvent) => {
+      if (which === 'side') sideW = Math.round(Math.min(SIDE[1], Math.max(SIDE[0], from + m.clientX - start)));
+      else inspH = clampH(from - (m.clientY - start));
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); document.body.classList.remove('resizing'); };
+    document.body.classList.add('resizing');
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  /** The same with the arrow keys, 16 px a press; Home puts it back. */
+  function resizeKey(e: KeyboardEvent, which: 'side' | 'insp') {
+    const d = { ArrowLeft: -16, ArrowRight: 16, ArrowUp: 16, ArrowDown: -16 }[e.key];
+    if (e.key === 'Home') { e.preventDefault(); if (which === 'side') sideW = 220; else inspH = null; return; }
+    if (d === undefined) return;
+    e.preventDefault();
+    if (which === 'side') sideW = Math.min(SIDE[1], Math.max(SIDE[0], sideW + d));
+    else inspH = clampH((inspH ?? inspEl?.getBoundingClientRect().height ?? 240) + d);
+  }
   let q = $state('');
   let newDialog = $state(false);
   let menu = $state(false);
@@ -168,6 +206,11 @@
 <div class="page">
   <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
   <div class="toolbar">
+    {#if !phone.on}
+      <button class="quiet side-toggle" onclick={() => (sideOpen = !sideOpen)} aria-pressed={!sideOpen}
+        aria-label={sideOpen ? 'Hide the sidebar' : 'Show the sidebar'} data-tip={sideOpen ? 'Hide the sidebar' : 'Show the sidebar'}>
+        {#if sideOpen}<I.SideHide />{:else}<I.SideShow />{/if}</button>
+    {/if}
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
@@ -218,8 +261,8 @@
   {#if typingCheck.error}<div class="banner warn"><span class="ic"><I.Warn /></span> Spelling check: {typingCheck.error}</div>{/if}
 
   <div class="body">
-    {#if !phone.on}
-    <aside class="groups">
+    {#if !phone.on && sideOpen}
+    <aside class="groups" style:width="{sideW}px">
       <button class:on={group === 'all'} onclick={() => (group = 'all')}><span>All</span><span class="muted">{all.length}</span></button>
       <div class="gh">Areas</div>
       {#each areaNames as a}
@@ -237,6 +280,9 @@
           onclick={() => (filter = filter === f ? '' : f)}><span>{label}</span><span class="muted">{filterCounts[f]}</span></button>
       {/each}
     </aside>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
+    <div class="vresize" role="separator" aria-orientation="vertical" aria-label="Resize the sidebar" tabindex="0"
+      data-tip="Drag to resize · arrow keys · Home resets" data-tip-side="right" onpointerdown={(e) => resize(e, 'side')} onkeydown={(e) => resizeKey(e, 'side')}></div>
     {/if}
 
     <section class="grid-wrap">
@@ -290,8 +336,20 @@
   {#if addTo}<AddGlyphsDialog area={addTo} onclose={() => (addTo = null)} />{/if}
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
-  {#if sel}
-    <section class="inspector" class:typing={view === 'typing'} class:card={phone.on}>
+  {#if sel && !phone.on && !inspOpen}
+    <div class="inspbar">
+      <span class="mono">{sel.glyph}</span>
+      <button class="sm" onclick={() => (inspOpen = true)}><I.PanelShow size={14} /> Show the glyph panel</button>
+    </div>
+  {:else if sel}
+    {#if !phone.on}
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
+      <div class="hresize" role="separator" aria-orientation="horizontal" aria-label="Resize the glyph panel" tabindex="0"
+        data-tip="Drag to resize · arrow keys · Home resets" onpointerdown={(e) => resize(e, 'insp')} onkeydown={(e) => resizeKey(e, 'insp')}></div>
+    {/if}
+    <section class="inspector" class:typing={view === 'typing'} class:card={phone.on} bind:this={inspEl}
+      style:height={!phone.on && inspH ? `${inspH}px` : null} style:max-height={!phone.on && inspH ? 'none' : null}>
+      {#if !phone.on}<button class="quiet close" onclick={() => (inspOpen = false)} aria-label="Close the glyph panel" data-tip="Close the glyph panel"><I.Close /></button>{/if}
       {#if phone.on}<div class="cardbar"><button class="quiet" onclick={() => (selected = null)}><I.Back /> All glyphs</button><span class="id">{sel.glyph}</span></div>{/if}
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' && !phone.on ? 84 : 120} /></div>
       <div class="facts col">
@@ -353,7 +411,7 @@
   .seg button.on { background: var(--sel-bg); color: var(--ink); }
   .banner { border-width: 0 0 1px; border-radius: 0; padding: var(--space-4) var(--space-6); font-size: var(--t-small); }
   .body { display: flex; flex: 1; min-height: 0; }
-  .groups { width: 220px; flex: none; border-right: 1px solid var(--border); padding: var(--space-4); display: flex; flex-direction: column; gap: 2px; overflow: auto; }
+  .groups { width: 220px; flex: none; position: relative; border-right: 1px solid var(--border); padding: var(--space-4); display: flex; flex-direction: column; gap: 2px; overflow: auto; }
   .groups button { display: flex; justify-content: space-between; border: 1px solid transparent; background: transparent; text-align: left; height: auto; min-height: 26px; gap: var(--space-4); font-weight: 400; }
   .groups button span:first-child { min-width: 0; }
   .groups button.sub { padding-left: 22px; font-size: var(--t-small); }
@@ -382,7 +440,15 @@
   .tile .sub { font-size: var(--t-caption); max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .empty { padding: var(--space-8); display: flex; flex-direction: column; align-items: center; gap: var(--space-5); }
   .ok { color: var(--status-saved); }
-  .inspector { display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-7); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); max-height: 48vh; overflow: auto; align-items: flex-start; }
+  .side-toggle { padding: 0 var(--space-2); }
+  .vresize { flex: none; width: 6px; margin-left: -3px; margin-right: -3px; cursor: col-resize; position: relative; z-index: 2; }
+  .hresize { height: 6px; margin-bottom: -3px; cursor: row-resize; position: relative; z-index: 2; }
+  .vresize, .hresize { touch-action: none; }
+  .vresize:hover, .vresize:focus-visible, .hresize:hover, .hresize:focus-visible { background: var(--sel-bg); outline: none; }
+  :global(body.resizing) { user-select: none; }
+  .inspector .close { position: absolute; top: var(--space-2); right: var(--space-3); padding: 0 var(--space-2); }
+  .inspbar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); font-size: var(--t-small); }
+  .inspector { position: relative; display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-7); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); max-height: 48vh; overflow: auto; align-items: flex-start; }
   .col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; flex: 1 1 260px; }
   .col.facts { flex: 1 1 300px; }
   .col.wide { flex: 2 1 380px; }
