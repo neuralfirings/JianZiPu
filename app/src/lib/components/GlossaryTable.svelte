@@ -668,7 +668,7 @@
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
         <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's default example, with this row's glyph in it, until you give the row its own." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's default example, with this row's glyph in it, until you give the row its own." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th class="out" title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -976,6 +976,7 @@
   .lnk { margin-left: var(--space-2); border: 0; background: transparent; padding: 0; height: auto; min-height: 24px; color: var(--link); font-size: inherit; cursor: pointer; }
   td.use { padding-top: var(--space-1); padding-bottom: var(--space-1); white-space: normal; }
   td.out { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  td.out, th.out { text-align: center; }
   .lines { display: flex; flex-direction: column; min-width: 0; }
   .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
   .line:hover:not(:disabled) { border-color: var(--border); }
