@@ -6,13 +6,13 @@
   import { hosted } from '$lib/hosted.svelte';
   import type { Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { dismissUpdate, downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
+  import { dismissUpdate, downloadZip, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
   import SvgText from './SvgText.svelte';
 
   const close = () => (pilot.dialog = null);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   let counts = $derived(pilot.dialog === 'discard' || pilot.dialog === 'export' ? app.draftCounts : null);
-  const latest = $derived(fontName(app.main));    // "3.200", or "the font of 21 Oct"
+  const latest = $derived(app.latestName);    // "3.200", "3.200 as of 12 Nov" (files moved, same number), or "the font of 21 Oct"
   const Latest = $derived(latest.charAt(0).toUpperCase() + latest.slice(1));
 
   function exportZip() {

@@ -281,6 +281,9 @@ describe('hosted draft', () => {
     await app.load();
     expect(app.fontMoved).toBe(true);
     expect(app.newRelease).toBe(false);
+    // both are "3.200": their dates tell them apart
+    expect(app.referenceFont).toBe(`3.200 as of ${new Date('2026-10-15T10:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short' })}`);
+    expect(app.latestFont).toBe(`3.200 as of ${new Date('2026-10-27T10:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short' })} (latest)`);
     // 3.300 is released
     api.base.mockResolvedValue({ commit: 'fed', version: '3.300', date: '2026-11-01T10:00:00Z', design_hash: 'd0', csv_hash: 'c1', svg_hashes: {} });
     await app.load();

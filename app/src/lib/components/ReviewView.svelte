@@ -171,7 +171,7 @@
       <h2>{mode === 'mine' ? 'Your changes' : mode === 'import' ? `Import ${name}` : mode === 'decide' ? 'The changes' : `${name}'s draft`}</h2>
       <p class="muted">
         saved {day(m.updated)} {hhmm(m.updated)}
-        {#if m.base.version || m.base.date}· reference font: {fontName(m.base)}{/if}
+        {#if m.base.version || m.base.date}· reference font: {fontName(m.base)}{#if m.base.version && m.base.date} as of {day(m.base.date)}{/if}{/if}
         {#if mode === 'owner' && app.main?.date}· your Builder is on {day(app.main.date)}{/if}
         {#if m.note}<br />“{m.note}”{/if}
       </p>

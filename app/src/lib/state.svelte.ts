@@ -185,11 +185,22 @@ class DesignState {
   /** Hosted: the font the draft is compared with ("3.100", or "the font of 19 Oct" for an older
    *  draft); Your changes are what differs from it. */
   get referenceFont(): string {
-    return fontName(this.draftBase?.version);
+    const v = this.draftBase?.version;
+    return fontName(v) + (this.sameVersionMoved && v?.date ? ` as of ${day(v.date)}` : '');
+  }
+  /** The font on the server now: "3.200", or "3.200 as of 12 Nov" when its files changed since
+   *  the draft's reference font without a new release, so the two don't read the same. */
+  get latestName(): string {
+    return fontName(this.main) + (this.sameVersionMoved && this.main?.date ? ` as of ${day(this.main.date)}` : '');
   }
   /** The font on the server now, as a reference font to move to: "3.200 (latest)". */
   get latestFont(): string {
-    return this.main?.version ? `${this.main.version} (latest)` : 'the latest';
+    return this.main?.version ? `${this.latestName} (latest)` : 'the latest';
+  }
+  /** The font's files moved since the draft's reference font, under the same version number. */
+  get sameVersionMoved(): boolean {
+    const have = this.draftBase?.version.version;
+    return this.fontMoved && !!have && have === this.main?.version;
   }
   /** A newer release is out than the draft's reference font (hosted): the banner's case. The
    *  font's files can also move without a release (a new CSV column, say); then only the More
