@@ -323,7 +323,7 @@ export class Tools {
         let target = p;
         if (e.modifiers.shift) { const t = p.subtract(d.start); target = Math.abs(t.x) > Math.abs(t.y) ? new paper.Point(p.x, d.start.y) : new paper.Point(d.start.x, p.y); }
         const delta = target.subtract(d.last);
-        if (d.kind === 'move') for (const it of this.selectedPaths) it.translate(delta);
+        if (d.kind === 'move') { for (const it of this.selectedPaths) it.translate(delta); this.box?.translate(delta); }   // the box goes with them
         else for (const s of this.selectedSegments) s.point = s.point.add(delta);
         d.last = target;
         break;

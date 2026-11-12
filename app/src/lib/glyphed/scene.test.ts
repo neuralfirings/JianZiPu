@@ -279,6 +279,8 @@ describe('select tool: the box round the picked shapes', () => {
     expect(tools.selectedPaths).toEqual([a, b]);
     m.down(ev(150, 150));                                   // between them, inside the box
     m.dragMove({ ...ev(160, 150), delta: new paper.Point(10, 0) });
+    const box = (tools as unknown as { box: paper.Group }).box;
+    expect(Math.round(box.bounds.center.x)).toBe(140);      // the box follows during the drag, not only on mouse-up
     m.up(ev(160, 150));
     expect([a.bounds.left, b.bounds.left]).toEqual([20, 210]);
     tools.destroy();
@@ -291,6 +293,7 @@ describe('select tool: the box round the picked shapes', () => {
     tools.doubleClick(new paper.Point(60, 60));
     expect(tools.editing).toBe(path);
     expect(paper.settings.handleSize).toBeGreaterThan(0);
+    expect(paper.settings.segmentSize).toBeGreaterThan(0);  // Paper's default (null) draws no point squares
     tools.clearSelection();
     expect(tools.editing).toBeNull();
     expect(paper.settings.handleSize).toBe(0);
