@@ -668,7 +668,7 @@
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
         <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the example the section's rows share, with this row's glyph in it, until you give the row its own." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -708,7 +708,7 @@
                       {:else}
                         <button class="line" class:zh={k === 1} class:mono={k === 0} disabled={usageBusy === key}
                           onclick={() => { usageNote = null; editing = `${key}:${k}`; }}
-                          data-tip={shared(r, s) ? "The section's example: type this row's own" : 'Click to change it; the other line follows'}>
+                          data-tip={shared(r, s) ? "Shared by the section's rows, with this glyph in it: click to give this row an example of its own" : 'Click to change it; the other line follows'}>
                           {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], marked(r, s))}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
                       {/if}
                     {/each}
