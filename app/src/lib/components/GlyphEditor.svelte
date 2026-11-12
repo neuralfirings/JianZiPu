@@ -292,7 +292,7 @@
       <div class="f"><span>Glyph</span><span>{ed.stats.paths} shape{ed.stats.paths === 1 ? '' : 's'} · {ed.stats.nodes} points</span></div>
       <div class="f"><span>Weight</span><span title="2 × area ÷ perimeter of the filled outline: right for long strokes, rough for blobs">≈ {ed.weightEstimate?.toFixed(0) ?? '—'} units <span class="muted">(reference {ed.referenceWeight})</span></span></div>
       <div class="row"><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.fitToBox()}>Fit to box</button><button class="sm" disabled={!ed.stats.paths} onclick={() => ed.center()}>Center</button></div>
-      <p class="muted small">Click a shape to see its points. Drag the fill to move it, a point to move the point.</p>
+      <p class="muted small">Click a shape to pick it: drag it to move it, its box's corners and edges to scale it (⇧ keeps the proportions), ⇧-click to add another. Double-click a shape to see its points.</p>
     {/if}
   {:else if id === 'compare'}
     <label><input type="checkbox" checked={ed.dot} onchange={(e) => ed.setDot((e.target as HTMLInputElement).checked)} /> Reference dot <span class="muted">(D) · drag it over a stroke</span></label>

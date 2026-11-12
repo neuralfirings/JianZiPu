@@ -30,7 +30,7 @@ const page = await ctx.newPage();
 // a build first, so the font-file shots have a font
 await page.goto(`${BASE}/test`);
 await page.waitForLoadState('networkidle');
-if (await page.getByText('No build yet').isVisible()) {
+if (await page.getByText('No build yet').first().isVisible()) {
   console.log('no build on the server yet: building…');
   await page.getByRole('button', { name: /build/i }).first().click();
   await page.getByText('last build ok').waitFor({ timeout: 180_000 });
