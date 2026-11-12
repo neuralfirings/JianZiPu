@@ -35,7 +35,8 @@
       if (first) out.push({ label: ':' + first, word: ':' + first, want: ['blank_colon', s.vert_variant] });
     }
     if (T.isDecimal(glyph)) for (const p of T.decimalPatterns(glyph)) out.push({ label: p, word: p, want: [glyph] });
-    return out;
+    // one check per word: 简体 and 繁體 can be the same (推出 / 推出), and the list is keyed by word
+    return out.filter((c, i) => out.findIndex((o) => o.word === c.word) === i);
   });
   let words = $derived([...checks.map((c) => c.word), ...free.split(/\s+/).filter(Boolean)]);
 
@@ -51,7 +52,7 @@
     }, 200);
   });
   let byWord = $derived(new Map((result?.words ?? []).map((w) => [w.word, w])));
-  let freeWords = $derived(free.split(/\s+/).filter(Boolean).map((w) => byWord.get(w)).filter(Boolean));
+  let freeWords = $derived([...new Set(free.split(/\s+/).filter(Boolean))].map((w) => byWord.get(w)).filter(Boolean));
   const same = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
   const name = (g: string) => app.charOf(g) || g;
 

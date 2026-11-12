@@ -73,7 +73,7 @@
     <a href="/test?words={encodeURIComponent(text)}" title="These words on Build & test, next to the built font">Build & test <I.Opens size={12} /></a>
   </div>
   <div class="words">
-    {#each result?.words ?? [] as w (w.word)}
+    {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
       {@const piece = w.pieces.find((p) => p.layout)}
       {@const pg = wordPage(w)}
       <svelte:element this={onpick ? 'button' : 'div'} role={onpick ? undefined : 'figure'} class="word" class:dim={!!glyph && !w.glyphs.includes(glyph)}

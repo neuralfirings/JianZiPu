@@ -264,7 +264,7 @@
   {#if err}<p class="error">{err}</p>{/if}
   {#if view === 'words'}
     <div class="words">
-      {#each result?.words ?? [] as w (w.word)}
+      {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
         {@const pg = wordPage(w)}
         {@const cellW = Math.round((pg[1] / 1000) * size)}
         <div class="word">
