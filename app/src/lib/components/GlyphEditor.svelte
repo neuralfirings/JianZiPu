@@ -59,7 +59,9 @@
   let typedAs = $derived(TY.TYPED.map((f) => TY.shown(app.typing, name, f).value).filter(Boolean).join(' · '));
   let areaName = $derived(isNew && area ? area : (Object.entries(app.design?.areas ?? {}).find(([, a]) => a.glyphs.includes(name))?.[0] ?? row?.areas[0] ?? null));
   let areaObj = $derived(areaName ? app.design?.areas[areaName] ?? null : null);
-  let sameArea = $derived((areaObj?.glyphs ?? []).filter((g) => g !== name && app.svgs[g]).slice(0, 8));
+  // the area's glyphs to compare with, 七 first where it's one of them
+  let sameArea = $derived((areaObj?.glyphs ?? []).filter((g) => g !== name && app.svgs[g])
+    .sort((a, b) => Number(b === 'md_7') - Number(a === 'md_7')).slice(0, 8));
   let ghostGlyphs = $derived(app.glyphs.filter((g) => g.svg && g.glyph !== name).map((g) => g.glyph));
   let sel = $derived(ed.selection);
   let canCombine = $derived(ed.preview?.kind === 'combine' || (sel.kind === 'shapes' && sel.n >= 2));
@@ -151,7 +153,7 @@
     if (mod) return;
     if (ed.trace) { if (e.key === 'Escape') ed.endTrace(); return; }
     switch (e.key) {
-      case 'Escape': if (popover) cancelPopover(); else if (ghostPick) ghostPick = null; else if (ed.drawing) ed.finishPen(); else ed.clearSelection(); return;
+      case 'Escape': if (popover) cancelPopover(); else if (ghostPick) ghostPick = null; else if (ed.drawing) ed.finishPen(); else if (ed.pointsOpen) ed.closePoints(); else ed.clearSelection(); return;
       case 'Enter': if (popover) applyPopover(); else if (ed.drawing) ed.finishPen(); return;
       case 'Delete': case 'Backspace': e.preventDefault(); ed.deleteSelection(); return;
       case 'ArrowLeft': e.preventDefault(); ed.nudge(e.shiftKey ? -10 : -1, 0); return;
@@ -340,7 +342,7 @@
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
     <button class="sm quiet" onclick={askRename} disabled={!!renameBlocked} data-tip={renameBlocked ?? 'Give this glyph another name, everywhere it is used'}>Rename…</button>
-    {#if areaName}<a class="chip" href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area (sets the box): open it on the Layouts screen">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
+
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
       {:else if ed.isNew && !ed.dirty}<span class="chip">new · not saved yet</span>
@@ -523,7 +525,6 @@
   .mono { font-family: var(--font-mono); }
   .char { font-size: var(--t-panel); }
   .chip.accent { text-decoration: none; }
-  a.chip { text-decoration: none; color: inherit; }
   .spacer { flex: 1; }
   .body { display: flex; flex: 1; min-height: 0; }
   .rail { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4) 6px; border-right: 1px solid var(--border); background: var(--bg-panel); }

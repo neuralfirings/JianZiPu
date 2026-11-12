@@ -202,3 +202,7 @@ export function barsCoincide(a: Seg, b: Seg, tol: number): boolean {
     ? Math.abs(a.y1 - b.y1) <= tol && a.x1 < b.x2 && b.x1 < a.x2
     : Math.abs(a.x1 - b.x1) <= tol && a.y1 < b.y2 && b.y1 < a.y2;
 }
+
+/** The glyph that stands for an area where one glyph has to (word previews, the editor's comparison):
+ *  七 (md_7) where the area has it, a middling hui and string, else its first glyph. */
+export const sampleGlyph = (glyphs: string[]): string | undefined => (glyphs.includes('md_7') ? 'md_7' : glyphs[0]);

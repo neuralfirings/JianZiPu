@@ -235,8 +235,8 @@ and the spellings in `components.csv`, so its spellings are the font's:
   `0{}5` / `散{}五` with `{}` the glyph, or a vertical table) and its **rows in
   page order**. A row is a glyph (`{"glyph": "lg_gou"}`) or a word written
   together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
-  `"meaning"` for the Meaning column (a section gets that column once one of
-  its rows has a meaning).
+  `"meaning"` for the Definition column (a section gets that column once one of
+  its rows has one).
 - A section with an example word per row (`"kind": "usage"`) has its example
   as `"usage": [ASCII, 中文]`, with `{}` where the row's glyph goes; a row's own
   `"usage"` replaces it for that row (the Builder's Example column, where you type
@@ -247,7 +247,7 @@ and the spellings in `components.csv`, so its spellings are the font's:
   Builder shows it again when the row is edited. A row without one opens with
   its ASCII spelling, or its Chinese when it has none.
 - The rows are edited in the Builder's Glyphs → **Glossary**: drag a row to
-  move it, + Add to put a glyph or a word in a section, a meaning and (in a
+  move it, + Add to put a glyph or a word in a section, a definition and (in a
   usage section) an example per row. The
   Builder writes the file one row per line, so a diff shows the rows that moved.
   It's a font file (`FONT_PATHS` in `jzpbuild/release.py`), so it changes through

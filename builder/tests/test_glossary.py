@@ -210,7 +210,7 @@ def test_hand_written_examples_are_split_at_sentences():
     assert ex == [["外", "13+", ":wai"], ["名九勾五", "s9k5", "s9k5"]]
 
 
-# ---------------------------------------------------------------- the Meaning column
+# ---------------------------------------------------------------- the Definition column
 
 def test_a_meaning_column_joins_only_a_section_that_has_one():
     r = rows("lg_gou,,,k,,勾,,gōu", "lg_tiao,,,u,,挑,,tiāo", "lg_lun,,,lun,,轮,,lún")
@@ -218,9 +218,9 @@ def test_a_meaning_column_joins_only_a_section_that_has_one():
            "2c": vertical("2c", g("lg_lun"))}
     out = glossary.render(page("2a", "2c"), r, sec)
     a, c = out.split("<!-- glossary 2c -->")
-    assert '<th width="22%">Meaning</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
+    assert '<th width="22%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
     assert '<td class="meaning"></td>' in a                                  # every row of the section gets the cell
-    assert "Meaning" not in c and '<th width="23%">ASCII</th>' in c          # 2c has none: the table stays as it was
+    assert "Definition" not in c and '<th width="23%">ASCII</th>' in c          # 2c has none: the table stays as it was
     assert glossary.render(out, r, sec) == out
 
 

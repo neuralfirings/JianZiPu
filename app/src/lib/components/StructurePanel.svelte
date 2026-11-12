@@ -9,6 +9,7 @@
   import { editor } from '$lib/editor.svelte';
   import { panels } from '$lib/panels.svelte';
   import { addArea, areaIdProblem } from '$lib/areas';
+  import { sampleGlyph } from '$lib/shape';
   import { slotIsSimple, elementNames, anchorNames, shapeElements, type ShapeElement } from '$lib/shape';
   import type { Layout, Slot } from '$lib/api';
   import Glyph from './Glyph.svelte';
@@ -32,7 +33,7 @@
     c[i] = layout.slots[i].repeat ? [0] : 0;
     return shapeElements(layout, c).filter((e) => e.slot === layout.slots[i].name);
   }
-  const glyphOf = (e: ShapeElement) => editor.pinned[e.name] ?? editor.pinByArea[e.area] ?? app.design!.areas[e.area]?.glyphs[0] ?? '';
+  const glyphOf = (e: ShapeElement) => editor.pinned[e.name] ?? editor.pinByArea[e.area] ?? sampleGlyph(app.design!.areas[e.area]?.glyphs ?? []) ?? '';
   const slotLabel = (s: Slot) => (slotIsSimple(s) ? areaLabel(parseElement(s.alternatives[0][0]).area) : s.name);
   const elLabel = (e: ShapeElement) => (e.el === e.area ? areaLabel(e.area) : `${areaLabel(e.area)} (${e.el})`);
   function altLabel(alt: string[]) {

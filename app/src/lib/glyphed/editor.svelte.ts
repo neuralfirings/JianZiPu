@@ -45,6 +45,8 @@ export class GlyphEditor {
   selection = $state<Selection>({ kind: 'none' });
   weightEstimate = $state<number | null>(null);
   drawing = $state(false);
+  /** A shape's points are open (a double-click on it); Esc closes them. */
+  pointsOpen = $state(false);
   grid = $state(false);
   // compare overlays
   dot = $state(false);
@@ -123,6 +125,9 @@ export class GlyphEditor {
     this.changeCount = s.changeCount;
     this.canUndo = s.canUndo; this.canRedo = s.canRedo; this.undoLabel = s.undoLabel;
     const st = s.stats;
+    if (t.editing && t.editing.parent !== s.glyph) t.setEditing(null);      // undone or deleted away
+    this.pointsOpen = !!t.editing;
+    t.drawBox();
     const segs = t.selectedSegments, sel = t.selectedPaths;
     this.stats = { paths: st.paths, nodes: st.nodes, outside: st.outside, open: st.open, specks: st.specks, selPaths: sel.length, selNodes: segs.length };
     if (segs.length) {
@@ -149,10 +154,11 @@ export class GlyphEditor {
   undo() { this.scene?.undo(); }
   redo() { this.scene?.redo(); }
   discard() { this.scene?.discard(); }
-  fit() { this.scene?.fit(); }
-  zoom100() { this.userViewed = true; this.scene?.setZoom(1); }
+  fit() { this.scene?.fit(); this.tools?.drawBox(); }
+  zoom100() { this.userViewed = true; this.scene?.setZoom(1); this.tools?.drawBox(); }
+  closePoints() { this.tools?.setEditing(null); }
   fitSelection() { this.userViewed = true; const b = ops.bounds(this.selection.kind === 'none' ? this.scene?.paths ?? [] : this.tools!.selectedPaths); if (b && this.scene) this.scene.fitRect(b); }
-  zoomBy(f: number) { this.userViewed = true; this.scene?.zoomAt(f); }
+  zoomBy(f: number) { this.userViewed = true; this.scene?.zoomAt(f); this.tools?.drawBox(); }
   setGrid(on: boolean) { this.grid = on; this.scene?.setGrid(on); }
   wheel(e: WheelEvent) {
     if (!this.scene) return;
@@ -162,6 +168,7 @@ export class GlyphEditor {
     if (e.ctrlKey || e.metaKey) this.scene.zoomAt(Math.exp(-e.deltaY * 0.01), new paper.Point(e.clientX - r.left, e.clientY - r.top));
     else this.scene.pan(-e.deltaX, -e.deltaY);
     this.zoom = this.scene.zoom;
+    this.tools?.drawBox();                     // its handles stay the same size on screen
   }
   doubleClick(e: MouseEvent) { if (this.scene && this.tools) this.tools.doubleClick(this.scene.toProject(e.clientX, e.clientY)); }
 

@@ -1,5 +1,7 @@
-// The editing tools on top of the scene. One pointer tool does shapes and
-// points alike (a selected shape shows its points); Pen draws, Pencil
+// The editing tools on top of the scene. The pointer picks shapes: a click selects one and draws a
+// box round the selection (drag inside it to move, its corners and edges to scale, ⇧ keeps the
+// proportions), ⇧-click adds or removes one; a double-click opens a shape's points (Esc, or a click
+// off it, closes them). Pen draws, Pencil
 // sketches, Rect/Ellipse stamp, Hand pans, Zoom zooms. One paper.Tool
 // dispatches on `mode`; keyboard shortcuts live in the Svelte component.
 import paper from 'paper';
@@ -20,7 +22,16 @@ type Drag =
   | { kind: 'pen'; moved: boolean; seg: paper.Segment; closing: boolean }
   | { kind: 'pencil'; moved: boolean; path: paper.Path }
   | { kind: 'shape'; moved: boolean; start: paper.Point; path: paper.Path | null; ellipse: boolean }
-  | { kind: 'zoom'; moved: boolean; start: paper.Point };
+  | { kind: 'zoom'; moved: boolean; start: paper.Point }
+  | { kind: 'scale'; moved: boolean; from: paper.Rectangle; anchor: paper.Point; hx: number; hy: number; sx: number; sy: number };
+
+/** The box's 8 handles, as which side each is on: -1 left/top, 0 middle, 1 right/bottom. */
+const HANDLES: [number, number][] = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
+const POINT_SIZE = 7;      // a point's square while a shape's points are open (px); 0 hides them otherwise
+
+/** Draw a picked shape's points (and curve handles) or only its outline. Paper's segmentSize must be a
+ *  number: its default, null, draws no point squares at all. */
+function showPoints(on: boolean) { paper.settings.handleSize = on ? POINT_SIZE : 0; paper.settings.segmentSize = on ? POINT_SIZE : 0; }
 
 export class Tools {
   scene: Scene;
@@ -35,6 +46,9 @@ export class Tools {
   private drag: Drag | null = null;
   private marquee: paper.Path | null = null;
   private penPreview: paper.Path | null = null;
+  /** The shape whose points are open (a double-click), or null: shapes are picked and boxed. */
+  editing: PathLike | null = null;
+  private box: paper.Group | null = null;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -45,6 +59,51 @@ export class Tools {
     this.tool.onMouseUp = (e: paper.ToolEvent) => this.up(e);
     this.tool.onMouseMove = (e: paper.ToolEvent) => this.move(e);
     this.tool.activate();
+    showPoints(false);                       // shapes show their outline when picked, not their points
+  }
+
+  /** Open a shape's points (null: close them and go back to picking shapes). */
+  setEditing(p: PathLike | null) {
+    this.editing = p;
+    showPoints(!!p);
+    if (p) { for (const q of this.scene.paths) q.selected = q === p; this.scene.selectOverlay(null); }
+    else this.clearPoints();
+    this.changed();
+  }
+  /** onChange, after redrawing the selection's box. */
+  changed() { this.drawBox(); this.onChange(); }
+
+  /** The selection's bounds, or null. */
+  private selBounds(): paper.Rectangle | null {
+    const sel = this.selectedPaths;
+    if (!sel.length) return null;
+    return sel.map((p) => p.bounds).reduce((a, b) => a.unite(b));
+  }
+  private handleAt(b: paper.Rectangle, [hx, hy]: [number, number]): paper.Point {
+    return new paper.Point(b.center.x + (hx * b.width) / 2, b.center.y + (hy * b.height) / 2);
+  }
+  /** The box round the picked shapes, with a square at each corner and edge (redrawn on every change and zoom). */
+  drawBox() {
+    this.box?.remove(); this.box = null;
+    const b = this.mode === 'select' && !this.editing ? this.selBounds() : null;
+    if (!b) return;
+    const z = paper.view.zoom, hs = 8 / z;
+    const g = new paper.Group({ parent: this.scene.ui });
+    new paper.Path.Rectangle({ parent: g, rectangle: b, strokeColor: this.scene.accent, strokeWidth: 1, strokeScaling: false });
+    for (const h of HANDLES) {
+      const c = this.handleAt(b, h);
+      new paper.Path.Rectangle({ parent: g, rectangle: new paper.Rectangle(c.subtract(hs / 2), new paper.Size(hs, hs)),
+        fillColor: 'white', strokeColor: this.scene.accent, strokeWidth: 1, strokeScaling: false });
+    }
+    this.box = g;
+    this.scene.glyph.activate();
+  }
+  /** The box handle under `p`, or null. */
+  private boxHandle(p: paper.Point): [number, number] | null {
+    const b = this.selBounds();
+    if (!b || this.editing) return null;
+    const tol = 7 / paper.view.zoom;
+    return HANDLES.find((h) => this.handleAt(b, h).getDistance(p) <= tol) ?? null;
   }
 
   // ---- selection
@@ -73,23 +132,25 @@ export class Tools {
     this.scene.selectOverlay(null);
     if (!add) for (const p of this.scene.paths) p.selected = false;
     for (const p of items) p.selected = true;
-    this.onChange();
+    this.changed();
   }
-  selectAll() { for (const p of this.scene.paths) p.selected = true; this.onChange(); }
-  clearSelection() { for (const p of this.scene.paths) p.selected = false; this.scene.selectOverlay(null); this.onChange(); }
+  selectAll() { for (const p of this.scene.paths) p.selected = true; this.changed(); }
+  clearSelection() { this.editing = null; showPoints(this.mode === 'pen'); for (const p of this.scene.paths) p.selected = false; this.scene.selectOverlay(null); this.changed(); }
   private clearPoints() { for (const s of this.selectedSegments) s.selected = false; }
 
   setMode(m: Mode) {
     if (m === this.mode) return;
     if (this.drawing) this.finishPen(false);
     this.mode = m;
+    // the pen adds and removes points on the picked shapes, so it shows them
+    showPoints(m === 'pen' || !!this.editing);
     this.penPreview?.remove(); this.penPreview = null;
-    this.onChange();
+    this.changed();
   }
   /** Space held: hand until released. */
   holdHand(on: boolean) {
-    if (on && this.mode !== 'hand') { this.before = this.mode; this.mode = 'hand'; this.onChange(); }
-    else if (!on && this.before) { this.mode = this.before; this.before = null; this.onChange(); }
+    if (on && this.mode !== 'hand') { this.before = this.mode; this.mode = 'hand'; this.changed(); }
+    else if (!on && this.before) { this.mode = this.before; this.before = null; this.changed(); }
   }
 
   /** `selected: true` = only the selected shapes, and only the handles of their selected points
@@ -121,42 +182,62 @@ export class Tools {
     }
   }
 
-  private downSelect(e: paper.ToolEvent) {
+  private downSelect(e: paper.ToolEvent): void {
     const p = e.point;
-    const alt = e.modifiers.alt || e.modifiers.option;
-    // 1. a handle of a selected point
-    let hit = this.hit(p, { handles: true, selected: true });
-    if (hit && (hit.type === 'handle-in' || hit.type === 'handle-out')) {
-      const seg = hit.segment;
-      this.drag = { kind: 'handle', moved: false, seg, which: hit.type === 'handle-in' ? 'handleIn' : 'handleOut', alone: alt, smooth: seg.isSmooth() };
+    const shift = e.modifiers.shift || !!native<MouseEvent>(e)?.shiftKey;
+    if (this.editing) {
+      if (this.editing.parent !== this.scene.glyph) { this.setEditing(null); return this.downSelect(e); }   // undone away
+      const alt = e.modifiers.alt || e.modifiers.option;
+      // 1. a handle of a selected point
+      let hit = this.hit(p, { handles: true, selected: true });
+      if (hit && (hit.type === 'handle-in' || hit.type === 'handle-out')) {
+        const seg = hit.segment;
+        this.drag = { kind: 'handle', moved: false, seg, which: hit.type === 'handle-in' ? 'handleIn' : 'handleOut', alone: alt, smooth: seg.isSmooth() };
+        return;
+      }
+      // 2. a point of the open shape
+      hit = this.hit(p, { segments: true, selected: true });
+      if (hit && hit.type === 'segment') {
+        const sg = hit.segment;
+        if (shift) sg.selected = !sg.selected;
+        else if (!sg.selected) { this.clearPoints(); sg.selected = true; }
+        this.drag = { kind: 'points', moved: false, last: p, start: p };
+        this.changed();
+        return;
+      }
+      // 3. the open shape itself: move it whole; empty: a marquee picks its points; another shape: close the points
+      hit = this.hit(p, { fill: true, stroke: true });
+      const item = hit ? this.top(hit.item) : null;
+      if (item === this.editing) { this.clearPoints(); this.drag = { kind: 'move', moved: false, last: p, start: p }; this.changed(); return; }
+      if (!item) { this.drag = { kind: 'marquee', moved: false, start: p, add: shift }; return; }
+      this.setEditing(null);
+    }
+    // the picked shapes' box: a corner or an edge scales them
+    const h = this.boxHandle(p);
+    if (h) {
+      const from = this.selBounds()!;
+      const anchor = this.handleAt(from, [-h[0], -h[1]] as [number, number]);
+      this.drag = { kind: 'scale', moved: false, from, anchor, hx: h[0], hy: h[1], sx: 1, sy: 1 };
       return;
     }
-    // 2. a point of a selected shape
-    hit = this.hit(p, { segments: true, selected: true });
-    if (hit && hit.type === 'segment') {
-      const s = hit.segment;
-      if (e.modifiers.shift) s.selected = !s.selected;
-      else if (!s.selected) { this.clearPoints(); s.selected = true; }
-      this.drag = { kind: 'points', moved: false, last: p, start: p };
-      this.onChange();
-      return;
-    }
-    // 3. a shape
-    hit = this.hit(p, { fill: true, stroke: true });
+    // a shape: pick it (⇧ adds or removes it) and drag them all
+    const hit = this.hit(p, { fill: true, stroke: true });
     const item = hit ? this.top(hit.item) : null;
     if (item) {
-      if (e.modifiers.shift) { item.selected = !item.selected; this.onChange(); }
+      if (shift) { item.selected = !item.selected; this.scene.selectOverlay(null); this.changed(); }
       else if (!item.selected) this.selectPaths([item]);
-      else this.clearPoints();
       this.drag = { kind: 'move', moved: false, last: p, start: p };
       return;
     }
-    // 4. the compare glyph (under the outline, so the outline stays editable where they overlap)
+    // inside the box, between shapes: drag them all
+    const b = this.selBounds();
+    if (b && !shift && b.contains(p)) { this.drag = { kind: 'move', moved: false, last: p, start: p }; return; }
+    // the compare glyph (under the outline, so the outline stays editable where they overlap)
     const ov = this.scene.overlayAt(p);
     if (ov) return this.grabOverlay(ov, e);
-    // 5. empty: marquee (shift adds)
-    if (!e.modifiers.shift) this.clearSelection();
-    this.drag = { kind: 'marquee', moved: false, start: p, add: e.modifiers.shift };
+    // empty: marquee (shift adds)
+    if (!shift) this.clearSelection();
+    this.drag = { kind: 'marquee', moved: false, start: p, add: shift };
   }
 
   /** Pick the dot or the compare glyph (⇧ adds to the picked ones) and start dragging them. */
@@ -168,7 +249,7 @@ export class Tools {
       this.scene.selectOverlay(o);
     }
     this.drag = { kind: 'overlay', moved: false, last: e.point, start: e.point };
-    this.onChange();
+    this.changed();
   }
 
   private downPen(e: paper.ToolEvent) {
@@ -191,7 +272,7 @@ export class Tools {
       const path = hit.segment.path as paper.Path;
       if (path.closed || path.segments.length > 2 || !(hit.segment === path.lastSegment || hit.segment === path.firstSegment)) {
         if (!path.closed && (hit.segment === path.lastSegment || hit.segment === path.firstSegment)) { /* continue the line below */ }
-        else { hit.segment.remove(); if (path.segments.length < 2) this.top(path)?.remove(); this.scene.commit('remove point'); this.onChange(); return; }
+        else { hit.segment.remove(); if (path.segments.length < 2) this.top(path)?.remove(); this.scene.commit('remove point'); this.changed(); return; }
       }
     }
     hit = this.hit(p, { curves: true, stroke: true, selected: true });
@@ -201,7 +282,7 @@ export class Tools {
       this.clearPoints();
       if (seg) seg.selected = true;
       this.scene.commit('add point');
-      this.onChange();
+      this.changed();
       return;
     }
     // start on an open path's end to continue it
@@ -247,6 +328,17 @@ export class Tools {
         d.last = target;
         break;
       }
+      case 'scale': {
+        const b = d.from;
+        // the scale along each axis the handle moves, from the side across from it; no flipping through
+        let sx = d.hx ? Math.max(0.01, ((p.x - d.anchor.x) * d.hx) / b.width) : 1;
+        let sy = d.hy ? Math.max(0.01, ((p.y - d.anchor.y) * d.hy) / b.height) : 1;
+        if (e.modifiers.shift || native<MouseEvent>(e)?.shiftKey) { const k = d.hx && d.hy ? Math.max(sx, sy) : d.hx ? sx : sy; sx = k; sy = k; }
+        for (const it of this.selectedPaths) it.scale(sx / d.sx, sy / d.sy, d.anchor);
+        d.sx = sx; d.sy = sy;
+        this.drawBox();
+        break;
+      }
       case 'handle': {
         const v = p.subtract(d.seg.point);
         const other = d.which === 'handleIn' ? 'handleOut' : 'handleIn';
@@ -282,9 +374,10 @@ export class Tools {
     if (!d) return;
     switch (d.kind) {
       case 'move': if (d.moved) this.scene.commit('move'); break;
+      case 'scale': if (d.moved) this.scene.commit('scale'); this.changed(); break;
       case 'points': if (d.moved) this.scene.commit('move point'); break;
       case 'handle': if (d.moved) this.scene.commit('adjust curve'); break;
-      case 'pen': if (d.closing) this.finishPen(true); else this.onChange(); break;
+      case 'pen': if (d.closing) this.finishPen(true); else this.changed(); break;
       case 'pencil': {
         if (d.path.segments.length < 2) { d.path.remove(); break; }
         d.path.simplify(2.5);
@@ -294,17 +387,18 @@ export class Tools {
       }
       case 'shape': if (d.path) { d.path.selected = true; this.scene.commit(d.ellipse ? 'ellipse' : 'rectangle'); } break;
       case 'zoom': this.scene.zoomAt(e.modifiers.alt || e.modifiers.option ? 1 / 1.5 : 1.5, paper.view.projectToView(d.start)); break;
-      case 'overlay': this.onChange(); break;
+      case 'overlay': this.changed(); break;
       case 'marquee': {
         this.marquee?.remove(); this.marquee = null;
-        if (!d.moved) break;
+        if (!d.moved) { if (this.editing) this.setEditing(null); break; }
         const r = new paper.Rectangle(d.start, e.point);
-        const sel = this.selectedPaths;
-        // inside a selected shape: pick its points; otherwise pick shapes
-        let picked = 0;
-        for (const p of sel) for (const s of (p instanceof paper.CompoundPath ? (p.children as paper.Path[]).flatMap((c) => c.segments) : p.segments)) if (r.contains(s.point)) { s.selected = true; picked++; }
-        if (!picked) this.selectPaths(this.scene.paths.filter((p) => r.intersects(p.bounds) || r.contains(p.bounds)), d.add);
-        this.onChange();
+        // a shape's points open: pick its points; otherwise pick shapes
+        if (this.editing) {
+          if (!d.add) this.clearPoints();
+          const ed = this.editing;
+          for (const s of (ed instanceof paper.CompoundPath ? (ed.children as paper.Path[]).flatMap((c) => c.segments) : ed.segments)) if (r.contains(s.point)) s.selected = true;
+        } else this.selectPaths(this.scene.paths.filter((p) => r.intersects(p.bounds) || r.contains(p.bounds)), d.add);
+        this.changed();
         break;
       }
     }
@@ -324,30 +418,36 @@ export class Tools {
     const d = this.drawing; if (!d) return;
     this.drawing = null;
     this.penPreview?.remove(); this.penPreview = null;
-    if (d.segments.length < 2) { d.remove(); this.onChange(); return; }
+    if (d.segments.length < 2) { d.remove(); this.changed(); return; }
     if (closed) d.closed = true;
     this.scene.commit(d.closed ? 'draw shape' : 'draw line');
-    this.onChange();
+    this.changed();
   }
   cancelPen() {
     const d = this.drawing; if (!d) return;
     this.drawing = null;
     this.penPreview?.remove(); this.penPreview = null;
     if (d.segments.length < 2) d.remove(); else this.scene.commit('draw line');
-    this.onChange();
+    this.changed();
   }
 
-  /** Double-click: a point toggles corner / smooth; a shape selects it. */
+  /** Double-click: on a shape, open its points; on an open shape's point, toggle corner / smooth. */
   doubleClick(point: paper.Point) {
     if (this.mode !== 'select') return;
-    const hit = this.hit(point, { segments: true, selected: true });
-    if (hit && hit.type === 'segment') {
-      const s = hit.segment;
-      if (s.handleIn.isZero() && s.handleOut.isZero()) s.smooth({ type: 'catmull-rom', factor: 0.5 });
-      else s.clearHandles();
-      this.scene.commit(s.hasHandles() ? 'smooth point' : 'corner point');
-      this.onChange();
+    if (this.editing) {
+      const hit = this.hit(point, { segments: true, selected: true });
+      if (hit && hit.type === 'segment') {
+        const s = hit.segment;
+        if (s.handleIn.isZero() && s.handleOut.isZero()) s.smooth({ type: 'catmull-rom', factor: 0.5 });
+        else s.clearHandles();
+        this.scene.commit(s.hasHandles() ? 'smooth point' : 'corner point');
+        this.changed();
+        return;
+      }
     }
+    const hit = this.hit(point, { fill: true, stroke: true });
+    const item = hit ? this.top(hit.item) : null;
+    if (item && item !== this.editing) this.setEditing(item);
   }
 
   /** Make the selected points corners, smooth, or free (handles kept, no longer linked). */
@@ -355,7 +455,7 @@ export class Tools {
     const segs = this.selectedSegments; if (!segs.length) return;
     for (const s of segs) { if (kind === 'corner') s.clearHandles(); else s.smooth({ type: 'catmull-rom', factor: 0.5 }); }
     this.scene.commit(kind === 'corner' ? 'corner points' : 'smooth points');
-    this.onChange();
+    this.changed();
   }
 
   deleteSelection() {
@@ -371,16 +471,16 @@ export class Tools {
       for (const p of sel) p.remove();
       this.scene.commit('delete');
     }
-    this.onChange();
+    this.changed();
   }
 
   nudge(dx: number, dy: number) {
-    if (this.scene.moveOverlays(dx, dy)) { this.onChange(); return; }   // overlays are never saved: no undo step
+    if (this.scene.moveOverlays(dx, dy)) { this.changed(); return; }   // overlays are never saved: no undo step
     const delta = new paper.Point(dx, dy);
     const segs = this.selectedSegments;
     if (segs.length) { for (const s of segs) s.point = s.point.add(delta); this.scene.commit('nudge point'); }
     else { const sel = this.selectedPaths; if (!sel.length) return; for (const p of sel) p.translate(delta); this.scene.commit('nudge'); }
-    this.onChange();
+    this.changed();
   }
 
   destroy() { this.tool.remove(); }

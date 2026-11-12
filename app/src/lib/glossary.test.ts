@@ -47,7 +47,7 @@ describe('the glossary rows', () => {
   });
   it('sums up what changed in a section', () => {
     expect(sectionSummary([g('a'), g('b'), g('c')], [g('c'), g('a', 'x'), w('少息', 'a', 'b')]))
-      .toEqual(['added 少息', 'removed b', 'moved c, a', 'meaning of a']);
+      .toEqual(['added 少息', 'removed b', 'moved c, a', 'definition of a']);
     expect(sectionSummary([g('a')], [{ glyph: 'a', usage: ['{}5', '{}五'] }])).toEqual(['example of a']);
   });
 });

@@ -13,6 +13,7 @@
   import { panels } from '$lib/panels.svelte';
   import { defaultChoice, shapeElements } from '$lib/shape';
   import { addArea, areaIdProblem, decimalGrid, deleteAreaProblems, splitMembers, usedIn } from '$lib/areas';
+  import { sampleGlyph } from '$lib/shape';
   import { searchText, decimalPatterns } from '$lib/typing';
   import Glyph from './Glyph.svelte';
   import WordCanvas from './WordCanvas.svelte';
@@ -112,7 +113,7 @@
         if (!a || !b || id !== miniSeq) continue;
         out.push({
           name: l.name, title: l.label ?? l.name,
-          now: els.map((e) => { const r = b.elements.find((x) => x.name === e.name); return { name: e.name, area: e.area, glyph: dd.areas[e.area]?.glyphs[0] ?? null, x: r?.x ?? null, y: r?.y ?? null, size: (r?.size ?? dd.areas[e.area].size) as [number, number] }; }),
+          now: els.map((e) => { const r = b.elements.find((x) => x.name === e.name); return { name: e.name, area: e.area, glyph: sampleGlyph(dd.areas[e.area]?.glyphs ?? []) ?? null, x: r?.x ?? null, y: r?.y ?? null, size: (r?.size ?? dd.areas[e.area].size) as [number, number] }; }),
           before: a.elements.filter((x) => x.x != null && x.y != null).map((x) => ({ x: x.x!, y: x.y!, size: x.size as [number, number] }))
         });
       }

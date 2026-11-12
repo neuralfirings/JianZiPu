@@ -113,7 +113,7 @@ class Row:
     pinyin: str
     usage: str                  # the last cell's HTML
     examples: list[list[str]]   # each example's spellings as plain text, to type in check_typing()
-    meaning: str = ""           # what the row means, escaped; a section with any gets a Meaning column
+    meaning: str = ""           # the row's definition, escaped; a section with any gets a Definition column
     glyphs: tuple[str, ...] = ()  # the glyph(s) the row is for
 
 
@@ -208,7 +208,7 @@ def clean_row(x) -> dict:
         raise ValueError("a glossary row is an object")
     meaning = str(x.get("meaning") or "").strip()
     if len(meaning) > MAX_MEANING:
-        raise ValueError(f"a meaning longer than {MAX_MEANING} characters")
+        raise ValueError(f"a definition longer than {MAX_MEANING} characters")
     if x.get("word") is not None:
         word = str(x["word"]).strip()
         gs = x.get("glyphs")
@@ -501,14 +501,14 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
     """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
-    A Meaning column joins it once any of its glyphs has a meaning in components.csv."""
+    A Definition column (the rows' "meaning") joins it once any of its rows has one."""
     cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
     body = section_rows(sid, sec, rows)
     meaning = any(r.meaning for r in body)
     widths = (16, 16, 16, 22, 24) if meaning else (23, 23, 23, 0, 25)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
     lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
-    lines += ([f'      <th width="{widths[3]}%">Meaning</th>'] if meaning else []) + [f'      <th width="{widths[4]}%">{last}</th>']
+    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else []) + [f'      <th width="{widths[4]}%">{last}</th>']
     lines += ["    </tr>", "  </thead>"]
     for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it

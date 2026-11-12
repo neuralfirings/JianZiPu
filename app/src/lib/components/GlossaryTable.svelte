@@ -117,7 +117,7 @@
   function setMeaning(sid: string, i: number, v: string) {
     const r = rowsOf(sid)[i], m = v.trim();
     if (!r || (r.meaning ?? '') === m) return;
-    edit(`${rowName(r)}: meaning in ${sid}`, (rows) => {
+    edit(`${rowName(r)}: definition in ${sid}`, (rows) => {
       const list = [...rows[sid]];
       const { meaning: _, ...rest } = list[i];
       list[i] = (m ? { ...rest, meaning: m } : rest) as GRow;
@@ -660,7 +660,7 @@
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
         <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-u" /><col class="c-m" /><col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "The example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "What the page shows for it, typed on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Example</th><th>Meaning</th><th></th></tr></thead>
+        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "The example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's example." : "What the page shows for it, typed on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Example</th><th>Definition</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -719,7 +719,7 @@
                 {/if}
                 {#if usageNote?.key === key}<span class="small note" class:bad={usageNote.level === 'error'} role="status">{#if usageNote.level === 'error'}<I.Problem size={12} />{:else}<I.Warn size={12} />{/if} {usageNote.text}</span>{/if}
               </td>
-              <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Meaning of {rowName(r)} in {s.id}" placeholder="what it means"
+              <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
                 onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
               <td class="act">
                 <button class="quiet ic" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]} in the glyph panel"

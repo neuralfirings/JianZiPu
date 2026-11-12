@@ -145,7 +145,7 @@ export function sectionSummary(base: GRow[], theirs: GRow[]): string[] {
   const usage = theirs.filter((r) => { const b = base[bk.indexOf(rowKey(r))]; return b && JSON.stringify(b.usage ?? null) !== JSON.stringify(r.usage ?? null); }).map(rowName);
   return [
     added.length ? `added ${added.join(', ')}` : '', removed.length ? `removed ${removed.join(', ')}` : '',
-    moved.length ? `moved ${moved.join(', ')}` : '', meaning.length ? `meaning of ${meaning.join(', ')}` : '',
+    moved.length ? `moved ${moved.join(', ')}` : '', meaning.length ? `definition of ${meaning.join(', ')}` : '',
     usage.length ? `example of ${usage.join(', ')}` : ''
   ].filter(Boolean);
 }

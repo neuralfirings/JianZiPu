@@ -110,7 +110,7 @@
         {/if}
         {#if res.tables?.length}
           <div class="search" role="search">
-            <input type="search" placeholder="Search  k · 勾 · gou · a meaning · chords" aria-label="Search the glossary"
+            <input type="search" placeholder="Search  k · 勾 · gou · a definition · chords" aria-label="Search the glossary"
               bind:value={q} autocomplete="off" spellcheck="false" />
             {#if q.trim() && shown !== null}<span class="muted" aria-live="polite">{shown ? `${shown} ${shown === 1 ? 'row' : 'rows'}` : 'No row matches. Try the pinyin without tones, or one character.'}</span>{/if}
           </div>
