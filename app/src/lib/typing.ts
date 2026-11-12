@@ -26,10 +26,10 @@ export const LABEL: Record<SpellField, string> = {
   meaning: 'Meaning'
 };
 export const HELP: Record<SpellField, string> = {
-  latin: 'What you type on an English keyboard: a one-letter shortcut (k) or the pinyin (lun). Letters and digits, starting with a letter.',
+  latin: 'What you type on an English keyboard: a one-letter shortcut (k) or the pinyin (lun). Letters, digits, [ and ], not starting with a digit. [ also answers to 【 typed in Chinese, ] to 】.',
   latin_alt: 'A second way to type it (bl for banlun, fy for fanyin).',
   common: 'Digits and symbols typed the same in any input mode (7, 13+, /). Built into the font\'s number rules; shown, not edited.',
-  simplified: 'The character(s) as typed with a simplified-Chinese input method.',
+  simplified: 'The character(s) as typed with a simplified-Chinese input method; Chinese punctuation such as 【 】 too.',
   traditional: 'The traditional form, only if it differs from 简体.',
   vert_variant: 'In vertical notation (after a colon) the font swaps this glyph for its centred version.',
   pinyin: 'Pinyin with tones, for search and labels. Not typed.',
@@ -38,9 +38,15 @@ export const HELP: Record<SpellField, string> = {
 };
 export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin', 'glossary', 'meaning'] as const;
 
-const LATIN_RE = /^[A-Za-z][A-Za-z0-9]*$/;
+// letters and digits, starting with a letter; [ and ] too (builder features.spell_latin), so 【 】 type through them
+const LATIN_RE = /^[A-Za-z[\]][A-Za-z0-9[\]]*$/;
 const HAN_RE = /^[㐀-鿿豈-﫿\u{20000}-\u{2ffff}]+$/u;
 const RESERVED = new Set(['点', '點', '徽', '。', '，']);
+// CJK punctuation a Chinese spelling may hold (【 】 《 》 「 」 、 ！ …), not the marks the font reads itself:
+// 。 (a position, with 点 / 徽) and ， ： ｜, which become , : | (builder typing_preview.CHINESE_RE)
+const NOT_SPELLABLE = ['。', '，', '：', '｜'];
+const PUNCT = '\u3001-\u3003\u3008-\u3011\u3014-\u301f\uff01-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff60';
+const CHINESE_RE = new RegExp(HAN_RE.source.replace(/\]\+\$$/, PUNCT + ']+$'), 'u');
 
 export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '', glossary: '', meaning: '' });
 export const isEmpty = (s: Spelling | undefined) => !s || FIELDS.every((f) => !s[f]);
@@ -109,10 +115,12 @@ function isPair(t: Typing, a: string, b: string) {
 function formatProblem(f: SpellField, v: string, known?: Set<string>): string | null {
   if (!v) return null;
   if (f === 'latin' || f === 'latin_alt') {
-    if (!LATIN_RE.test(v)) return /^\d/.test(v) ? 'start with a letter: a leading digit is read as a string or position number' : 'use only letters a–z, A–Z and digits';
+    if (!LATIN_RE.test(v)) return /^\d/.test(v) ? 'start with a letter: a leading digit is read as a string or position number' : 'use only letters a–z, A–Z, digits, [ and ]';
   } else if (f === 'simplified' || f === 'traditional') {
     if (RESERVED.has(v)) return 'alone it marks a position; it can\'t type a glyph';
-    if (!HAN_RE.test(v)) return 'Chinese characters only';
+    const bad = NOT_SPELLABLE.filter((c) => v.includes(c));
+    if (bad.length) return `${bad.join('、')} is read by the font itself (a position, a comma, the vertical colon or the chord bar), so a spelling can't hold it`;
+    if (!CHINESE_RE.test(v)) return 'Chinese characters and Chinese punctuation (【 】 《 》…) only';
   } else if (f === 'vert_variant' && known && !known.has(v)) {
     return `${v} doesn't exist`;
   }

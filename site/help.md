@@ -68,9 +68,9 @@ The **Tiles | List view** switch turns the screen into a table of every glyph's 
 *List view, showing the Left hand area: `s` types 名, `d` types 中.*
 
 - Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the faint, slanted suggestion made from the pinyin; until you take it, it isn't a spelling and typing it gives separate letters.
-- Latin Entry (Alt): A second way to type it (`bl`, `fy`).
+- Latin Entry (Alt): A second way to type it (`bl`, `fy`). Both Latin columns take letters, digits, `[` and `]`, not starting with a digit. A glyph spelled `[` also answers to 【 typed in Chinese (and `]` to 】), unless another glyph's Chinese spelling claims 【 itself.
 - Number/Symbol: Digits and symbols typed the same in any input mode (`7`, `13+`, `/`). Shown, not edited here.
-- 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.
+- 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体. Chinese punctuation such as 【 】 or 《 》 can be a spelling too, except the marks the font reads itself: 。 ， ： ｜ (and 点 徽 alone).
 - Vertical form: The glyph the font swaps in after a colon (the centred version).
 - PinYin: For search and labels only; never typed.
 - Glossary: Where the glyph has a row in the glossary on jianzipufont.com, by the section's title: pick one from the list, such as `1c: Left Hand Techniques`, or two separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui Number`). Empty when it only appears inside a word (带 in :带起). The page is rewritten from this at the next release; never typed. **More** → **Check the glossary…** shows the tables as a release would write them from these spellings(online, the font's with all of your draft's changes), unsaved changes included, with any glyph left out and any example that types another glyph. Its search box (like the one on the font page) shows the rows whose ASCII, Chinese, pinyin or meaning holds what you type, tone marks optional.
@@ -306,9 +306,10 @@ What the Builder's messages say, word for word, and what to do about each. Words
 
 - **“*k*” types 2 glyphs (*a, b*). A spelling can make only one glyph.**: A clash (under the cell: “already used by …”): two glyphs share a spelling, and Save waits until it's fixed. Give one of them another spelling. If one is the vertical form of the other, link them in **Vertical form** instead of repeating the spelling.
 - **“start with a letter: a leading digit is read as a string or position number”**: A Latin Entry must start with a letter; digits at the start mean strings and hui.
-- **“use only letters a–z, A–Z and digits”**: Latin entries take no spaces, accents or symbols; symbols go in Number/Symbol.
+- **“use only letters a–z, A–Z, digits, [ and ]”**: Latin entries take no spaces, accents or other symbols.
 - **“alone it marks a position; it can't type a glyph”**: 点, 點, 徽, 。 and ， on their own are kept for position numbers. In the Save is waiting list: “*x*” alone marks a position; it can't type a glyph.
-- **“Chinese characters only”**: The 简体 and 繁體 columns take only Chinese characters.
+- **“Chinese characters and Chinese punctuation (【 】 《 》…) only”**: The 简体 and 繁體 columns take Chinese characters and Chinese punctuation, not Latin letters, digits or spaces.
+- **“… is read by the font itself (a position, a comma, the vertical colon or the chord bar), so a spelling can't hold it”**: 。 ， ： ｜ already mean something when typed (。 a position like 点, ， a separator, ： the start of vertical text, ｜ a chord's divider), so a glyph can't take them as a spelling.
 - **“*name* doesn't exist” / “Vertical form *name* doesn't exist.”**: The Vertical form names a glyph with no drawing and no area. Make that glyph first, or fix the name.
 - **“no glossary section “*9z: …*” on the font page: pick a title from the list”**: A warning: the Glossary column names a section the font page doesn't have, or spells its title differently. Save still works, but the next release can't put the glyph in the glossary; pick the title from the list the cell offers.
 - **“The glossary can't be made, so a release would stop here.”**: From **Check the glossary…**: `site/glossary.json` and the spellings disagree, and the message after it says how. Usually a glyph in a section has no ASCII or Chinese spelling for its example, or `site/glossary.json` lists a glyph whose Glossary column doesn't name that section; fix the spelling or the column, then **Check again**.

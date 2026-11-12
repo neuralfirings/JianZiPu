@@ -72,8 +72,10 @@ def test_different_areas_alone_do_not_excuse_a_shared_spelling():
     ("latin", "4xi", "start with a letter"),
     ("latin", "ban-lun", "only letters"),
     ("latin_alt", "0.5", "start with a letter"),
-    ("simplified", "abc", "Chinese characters only"),
+    ("simplified", "abc", "Chinese characters and Chinese punctuation"),
     ("simplified", "点", "marks a position"),
+    ("simplified", "名：", "read by the font itself"),
+    ("traditional", "｜", "read by the font itself"),
 ])
 def test_malformed_spellings_are_errors(field, value, needle):
     errs = tp.issues([row("md_x", **{field: value})])["errors"]
@@ -438,3 +440,39 @@ def test_words_typed_through_unsaved_spellings_and_new_glyphs(monkeypatch):
     del body["svgs"]                                        # no drawing: the letters stay letters
     out = webserver.words_typed_payload(body, webserver._design_from(body))
     assert "md_wang" not in out["words"][0]["glyphs"] and "w" in out["words"][0]["glyphs"]
+
+
+# ---------------------------------------------------------------- [ ] and 【 】
+
+@pytest.mark.parametrize("field,value", [("latin", "["), ("latin", "]"), ("latin_alt", "[k"), ("simplified", "【"),
+                                         ("traditional", "【反】"), ("simplified", "《》")])
+def test_brackets_and_chinese_punctuation_are_spellings(field, value):
+    rows = tp.rows_from([{"glyph_name": "md_x", field: value}], DESIGN)
+    assert [e for e in tp.issues(rows, {"md_x"})["errors"] if e["glyph"] == "md_x"] == []
+
+
+def test_bracket_spellings_compile_and_type():
+    """[ in Latin types its glyph, and so does 【 (which becomes [ first); a glyph that claims 【
+    in Chinese takes it instead."""
+    pytest.importorskip("uharfbuzz")
+    from jzpbuild import features
+    rows = tp.rows_from(csv_records() + [{"glyph_name": "md_tang2", "latin": "["}], DESIGN)
+    fea = "\n".join(features.gen_gsub(rows, validate=False))
+    assert "sub bracketleft by md_tang2;" in fea and "sub ch_bracketleft by bracketleft;" in fea
+    assert fea.index("lookup c2j_bracket_symbols {") < fea.index("lookup l2j_liga {")
+    rows2 = tp.rows_from(csv_records() + [{"glyph_name": "md_tang2", "latin": "["}, {"glyph_name": "md_tang3", "simplified": "【"}], DESIGN)
+    fea2 = "\n".join(features.gen_gsub(rows2, validate=False))
+    assert "sub ch_bracketleft by bracketleft;" not in fea2 and "sub ch_bracketright by bracketright;" in fea2
+    assert "ch_bracketleft" not in fea2.split("lookup c2j_char_symbols {")[1].split("}")[0]
+
+
+
+def test_brackets_type_their_glyph():
+    pytest.importorskip("uharfbuzz")
+    recs = [dict(r, latin="[") if r["glyph_name"] == "md_placeholder" else r for r in csv_records()]
+    p = tp.FONTS.get(config.SITE_FONT, tp.rows_from(recs, DESIGN), DESIGN)
+    assert "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]
+    assert "md_placeholder" in tp.shape(p, ["【"])[0]["glyphs"]      # 【 is [ to the font
+    recs = [dict(r, simplified="【") if r["glyph_name"] == "md_jiu" else r for r in recs]
+    p = tp.FONTS.get(config.SITE_FONT, tp.rows_from(recs, DESIGN), DESIGN)
+    assert "md_jiu" in tp.shape(p, ["【"])[0]["glyphs"] and "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]

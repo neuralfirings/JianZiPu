@@ -44,9 +44,16 @@ from .positioning import schema
 ROW_FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt",
               "simplified", "traditional", "pinyin", "glossary", "meaning")   # pinyin, glossary, meaning: not typed (glossary.py)
 SPELLING_FIELDS = ("latin", "latin_alt", "simplified", "traditional")
-LATIN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+# letters and digits, starting with a letter (a leading digit reads as a string or position number);
+# [ and ] too (features.spell_latin: bracketleft / bracketright), so 【 】 type through them
+LATIN_RE = re.compile(r"^[A-Za-z\[\]][A-Za-z0-9\[\]]*$")
 HAN_RE = re.compile(r"^[㐀-鿿豈-﫿\U00020000-\U0002ffff]+$")
 RESERVED = {"点", "點", "徽", "。", "，"}
+# CJK punctuation a Chinese spelling may hold (【 】 《 》 「 」 、 ！ …), not the marks the font reads
+# itself: 。 (a position, with 点 / 徽), and ， ： ｜, which become , : | (features.gen_c2j_char_symbols)
+NOT_SPELLABLE = {"。", "，", "：", "｜"}
+PUNCT = "\u3001-\u3003\u3008-\u3011\u3014-\u301f\uff01-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff60"
+CHINESE_RE = re.compile("^[" + HAN_RE.pattern[2:-3] + PUNCT + "]+$")
 
 
 # ---------------------------------------------------------------- rows + checks
@@ -121,7 +128,7 @@ def issues(rows: list[GlyphRow], known: set | None = None) -> dict:
             v = getattr(r, f)
             if v and not LATIN_RE.match(v):
                 why = ("start with a letter: a leading digit is read as a string or position number"
-                       if v[0].isdigit() else "use only letters a–z, A–Z and digits")
+                       if v[0].isdigit() else "use only letters a–z, A–Z, digits, [ and ]")
                 errors.append({"kind": "invalid", "glyph": r.glyph_name, "field": f, "value": v,
                                "message": f"“{v}”: {why}."})
         for f in ("simplified", "traditional"):
@@ -129,9 +136,12 @@ def issues(rows: list[GlyphRow], known: set | None = None) -> dict:
             if v and v in RESERVED:
                 errors.append({"kind": "invalid", "glyph": r.glyph_name, "field": f, "value": v,
                                "message": f"“{v}” alone marks a position; it can't type a glyph."})
-            elif v and not HAN_RE.match(v):
-                errors.append({"kind": "invalid", "glyph": r.glyph_name, "field": f, "value": v,
-                               "message": f"“{v}”: Chinese characters only."})
+            elif v and (not CHINESE_RE.match(v) or NOT_SPELLABLE.intersection(v)):
+                bad = NOT_SPELLABLE.intersection(v)
+                why = (f"“{v}”: {'、'.join(sorted(bad))} is read by the font itself (a position, a comma, the vertical "
+                       "colon or the chord bar), so a spelling can't hold it." if bad else
+                       f"“{v}”: Chinese characters and Chinese punctuation (【 】 《 》…) only.")
+                errors.append({"kind": "invalid", "glyph": r.glyph_name, "field": f, "value": v, "message": why})
         if r.vert_variant and r.vert_variant not in names:
             errors.append({"kind": "invalid", "glyph": r.glyph_name, "field": "vert_variant",
                            "value": r.vert_variant, "message": f"Vertical form {r.vert_variant} doesn't exist."})

@@ -35,10 +35,17 @@ describe('issues', () => {
   });
   it.each([
     ['latin', '4xi', 'start with a letter'], ['latin', 'ban-lun', 'only letters'],
-    ['simplified', 'abc', 'Chinese characters only'], ['simplified', '点', 'marks a position']
+    ['simplified', 'abc', 'Chinese characters and Chinese punctuation'], ['simplified', '点', 'marks a position'],
+    ['simplified', '名：', 'read by the font itself'], ['traditional', '｜', 'read by the font itself'], ['latin', '4[', 'start with a letter']
   ] as const)('rejects %s = %s', (f, v, msg) => {
     const t = base(); t.lg_ti[f] = v;
     expect(issues(t)[0].message).toContain(msg);
+  });
+  it.each([
+    ['latin', '['], ['latin', ']'], ['latin_alt', '[k'], ['simplified', '【'], ['traditional', '【反】'], ['simplified', '《》'], ['simplified', '推出']
+  ] as const)('takes %s = %s', (f, v) => {
+    const t = base(); t.lg_ti[f] = v;
+    expect(issues(t)).toEqual([]);
   });
   it('checks vertical forms against the known glyphs', () => {
     const t = base(); t.lg_ti.vert_variant = 'md_nope';
