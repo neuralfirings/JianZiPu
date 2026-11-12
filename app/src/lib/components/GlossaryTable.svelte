@@ -419,7 +419,7 @@
               <td class="out">
                 {#if !usage && drawn[exampleOf(r, s)]}
                   <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
-                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark="" height={Math.min(120, 30 + 26 * glyphsOfRow(r).length)} /></button>
+                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark="" height={Math.min(144, 36 * glyphsOfRow(r).length)} /></button>
                 {:else}
                 {#each glyphsOfRow(r) as g, k (g + k)}<button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g}" data-tip="{g}: show it in the glyph panel"><Glyph name={g} size={24} /></button>{/each}
                 {/if}

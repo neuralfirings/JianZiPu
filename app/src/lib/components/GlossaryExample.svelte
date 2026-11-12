@@ -5,7 +5,9 @@
   import { app } from '$lib/state.svelte';
   import { parseSvg } from '$lib/svg';
   let { pieces, mark, height = 56 }: { pieces: WordPiece[]; mark: string; height?: number } = $props();
-  let els = $derived(pieces.flatMap((p) => p.elements).filter((e) => e.glyph));
+  // the blank control glyphs (the colon before a vertical word, the chord bar's space) draw nothing: leave
+  // them out of the size, or a vertical word sits under an empty gap
+  let els = $derived(pieces.flatMap((p) => p.elements).filter((e) => e.glyph && !app.control.includes(e.glyph)));
   let box = $derived.by(() => {
     if (!els.length) return null;
     const x0 = Math.min(...els.map((e) => e.x)), x1 = Math.max(...els.map((e) => e.x + e.size[0]));
