@@ -309,27 +309,30 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
 
 
 def check_typing(font: Path | None = None, page: str | None = None, rows: dict[str, dict] | None = None,
-                 design: dict | None = None, sections: dict[str, dict] | None = None) -> list[str]:
+                 design: dict | None = None, sections: dict[str, dict] | None = None, svg=None) -> list[str]:
     """Type every example through components.csv's spellings (or `rows`: the Builder's unsaved ones),
     compiled onto the released font (or `font`, a build) the way the Builder's Typing preview does, so
     a release's new spellings count before it's built, and return the examples whose spellings give
     different glyphs (a vertical form counts as its glyph), or letters the font didn't turn into a
-    glyph. Examples using a glyph the font doesn't have yet are skipped."""
-    return _typing(font, page, rows, design, sections)[0]
+    glyph. A glyph the font hasn't got is drawn in from its SVG (`svg(name)`, see typing_preview);
+    examples using one with no drawing either are skipped."""
+    return _typing(font, page, rows, design, sections, svg)[0]
 
 
-def _typing(font, page, rows, design, sections) -> tuple[list[str], list[str]]:
-    """check_typing(), and the glyphs it skipped because the font hasn't got them."""
+def _typing(font, page, rows, design, sections, svg=None, gpos=False):
+    """check_typing(), the glyphs it skipped because the font hasn't got them, and the preview font."""
     from . import typing_preview
     font = font or config.SITE_FONT
     design = json.loads(config.DESIGN_JSON.read_text(encoding="utf-8")) if design is None else design
     rows = load_rows() if rows is None else rows
     grows = typing_preview.rows_from(list(rows.values()), design)
-    prev = typing_preview.FONTS.get(font, grows, design)
+    prev = typing_preview.FONTS.get(font, grows, design, svg, gpos)
     skip = set(prev.not_built)
     horizontal = {r["vert_variant"]: g for g, r in rows.items() if r["vert_variant"]}
     problems = []
     for where, ex in examples(page, rows, sections, skip):
+        if prev.lacking and any(ch in prev.lacking for x in ex for ch in x):
+            continue                                   # a character only a Build adds: wait for it
         typed = typing_preview.shape(prev, ex)
         # the same glyph, written on its own after a colon or not (外, :wai)
         glyphs = [[horizontal.get(g, g) for g in t["glyphs"] if g != "blank_colon"] for t in typed]
@@ -340,7 +343,7 @@ def _typing(font, page, rows, design, sections) -> tuple[list[str], list[str]]:
         if len({json.dumps(g) for g in glyphs}) > 1 or leftover:
             detail = "; ".join(f"{w} -> {' '.join(g)}" for w, g in zip(ex, glyphs))
             problems.append(f"[{where}] {detail}" + (f" (not a glyph: {', '.join(leftover)})" if leftover else ""))
-    return problems, sorted(skip)
+    return problems, sorted(skip), prev
 
 
 def records(recs: list[dict]) -> dict[str, dict]:
@@ -353,10 +356,14 @@ def records(recs: list[dict]) -> dict[str, dict]:
     return out
 
 
-def check(rows: dict[str, dict], design: dict | None = None, font: Path | None = None) -> dict:
+def check(rows: dict[str, dict], design: dict | None = None, font: Path | None = None, svg=None) -> dict:
     """The Builder's "Check the glossary": with these spellings, what the font page's glossary
     would leave out or get wrong, and its tables as they would be written (each section's HTML,
-    numbered down the page). `font`: the build to type the examples with (default the released one)."""
+    numbered down the page). `font`: the build to type the examples with (default the released one);
+    `svg(name)`: the drawing of a glyph it hasn't got. The examples are typed in a preview font: `font`
+    plus those glyphs, these spellings and the design's positioning, which `font_key` names
+    (typing_preview.FONTS.by_key) so the Builder can draw the tables in it; `drawn` lists the glyphs
+    drawn in from their files."""
     sections = load_sections()
     page = config.SITE_INDEX.read_text(encoding="utf-8")
     out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
@@ -372,9 +379,12 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
             count += len(section_rows(sid, sec, rows))
     except GlossaryError as e:
         return {**out, "ok": False, "error": str(e)}
-    out["typing"], unbuilt = _typing(font, page, rows, design, sections)
-    # glyphs the glossary shows that the font hasn't got: their examples wait for a build
+    out["typing"], unbuilt, prev = _typing(font, page, rows, design, sections, svg, gpos=True)
+    # glyphs the glossary shows that have no drawing at all: their examples wait for one
     out["not_built"] = [g for g in unbuilt if g in rows and section_ids(rows[g])]
+    out["drawn"] = [g for g in prev.drawn if g in rows and section_ids(rows[g])]
+    out["missing_chars"] = sorted(prev.lacking)
+    out["font_key"] = prev.key
     return out
 
 

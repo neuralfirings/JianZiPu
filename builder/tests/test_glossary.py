@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from jzpbuild import config, glossary  # noqa: E402
+from jzpbuild import config, glossary, typing_preview  # noqa: E402
 from jzpbuild.glossary import GlossaryError  # noqa: E402
 
 FIELDS = glossary.FIELDS
@@ -212,6 +212,18 @@ def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
     assert any("9z: Nowhere" in p for p in out["problems"])
 
 
+SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/></svg>'
+
+
+def test_the_check_draws_a_new_glyph_in_from_its_drawing():
+    pytest.importorskip("uharfbuzz")
+    new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū", "glossary": "1c: Left Hand Techniques"}
+    out = glossary.check(glossary.records(shipped(md_foo=new)), svg=lambda n: SQUARE if n == "md_foo" else None)
+    assert out["ok"] and out["drawn"] == ["md_foo"] and out["not_built"] == [] and out["typing"] == []
+    assert out["missing_chars"] == ["出", "推"]         # characters only a Build adds: its examples wait
+    assert out["font_key"] and typing_preview.FONTS.by_key(out["font_key"]).font_bytes
+
+
 def test_the_check_reports_what_a_release_would_stop_on():
     out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc", "glossary": "1c: Left Hand Techniques"})))
     assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
@@ -268,5 +280,9 @@ def test_http_check_locally_and_online(monkeypatch):
         assert status == 200 and res["ok"] and res["not_built"] == ["md_foo"]
         assert any("<td>tc</td>" in t["html"] for t in res["tables"])
         assert font(res["font_url"]) and font("/api/glossary/font")
+        # the draft's drawing of it comes with the request: drawn in, typed, and the tables' font has it
+        status, res = post({"rows": shipped(md_foo=new), "svgs": {"md_foo": SQUARE}}, "tok-a")
+        assert status == 200 and res["drawn"] == ["md_foo"] and res["not_built"] == [] and res["typing"] == []
+        assert res["font_url"].startswith("/api/preview-fonts/") and font(res["font_url"])
     finally:
         srv.shutdown()

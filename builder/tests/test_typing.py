@@ -317,6 +317,32 @@ def test_a_glyph_missing_from_the_build_is_left_out(built_font):
     assert p.not_built == ["md_wang"]
 
 
+SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/></svg>'
+
+
+def test_a_new_glyph_is_drawn_in_from_its_drawing_without_a_build():
+    pytest.importorskip("uharfbuzz")
+    from fontTools.ttLib import TTFont
+    import io
+    font = config.SITE_FONT                     # the released font: md_wang isn't in it
+    design = json.loads(json.dumps(DESIGN))
+    design["areas"]["char"]["glyphs"].append("md_wang")
+    rows = tp.rows_from(csv_records() + [{"glyph_name": "md_wang", "latin": "wang"}], design)
+    plain = tp.FONTS.get(font, rows, design)
+    assert plain.not_built == ["md_wang"] and plain.drawn == []
+    p = tp.FONTS.get(font, rows, design, lambda n: SQUARE if n == "md_wang" else None)
+    assert p.drawn == ["md_wang"] and p.not_built == []
+    assert "md_wang" in tp.shape(p, ["wang"])[0]["glyphs"]
+    assert "GPOS" in TTFont(io.BytesIO(p.font_bytes))       # the build's positioning, kept
+    full = tp.FONTS.get(font, rows, design, lambda n: SQUARE if n == "md_wang" else None, gpos=True)
+    assert full.key != p.key and tp.FONTS.by_key(full.key) is full
+    t = TTFont(io.BytesIO(full.font_bytes))
+    assert "md_wang" in t.getGlyphOrder() and "md_wang" in t["cmap"].getBestCmap().values()
+    # a drawing the build couldn't read either stays out, reported like a glyph with none
+    bad = tp.FONTS.get(font, rows, design, lambda n: "<svg" if n == "md_wang" else None)
+    assert bad.not_built == ["md_wang"]
+
+
 # ---------------------------------------------------------------- HTTP
 
 @pytest.fixture

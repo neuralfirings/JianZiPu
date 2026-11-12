@@ -10,9 +10,13 @@ three questions without a Build:
 - `roundtrip()`: does every spelling, typed alone, give its own glyph?
 - `issues(rows)`: clashes and malformed spellings, which pause Save.
 
-Anything the last build doesn't contain (a glyph whose SVG was never built, a
+A glyph the last build doesn't have but whose drawing exists (`svg`: its SVG
+file, or a draft's) is drawn into the preview font from that file (about 0.06 s
+each), so a new glyph can be typed and checked without a Build; it is listed in
+`drawn`. Anything else the build doesn't contain (a glyph with no drawing, a
 Chinese character the font doesn't carry yet) is left out of the preview font
-and reported, never guessed.
+and reported, never guessed. With `gpos`, the positioning rules are compiled
+too (about 2 s), so the font can also draw words (Check the glossary).
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ import json
 import re
 import threading
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -141,9 +146,13 @@ class Preview:
     missing_chars: dict = field(default_factory=dict)  # glyph -> [values whose characters aren't in the font]
     vertical_only: set = field(default_factory=set)    # glyphs that get their colon untyped (shang = :shang)
     seconds: float = 0.0
+    drawn: list = field(default_factory=list)         # glyphs not in the build, drawn in from their SVGs
+    lacking: set = field(default_factory=set)         # the characters behind missing_chars: only a Build adds them
+    key: str = ""                                     # the cache key, to serve font_bytes by
+    font_bytes: bytes = b""                           # the compiled preview font
 
 
-def _shapeable(rows: list[GlyphRow], design: dict, font_glyphs: set) -> tuple[list[GlyphRow], dict, list, dict]:
+def _shapeable(rows: list[GlyphRow], design: dict, font_glyphs: set) -> tuple[list[GlyphRow], dict, list, dict, set]:
     """Drop what the font can't carry yet, so the generated rules compile."""
     rows = [copy.copy(r) for r in rows]
     not_built = sorted({r.glyph_name for r in rows if r.glyph_name not in font_glyphs})
@@ -153,20 +162,48 @@ def _shapeable(rows: list[GlyphRow], design: dict, font_glyphs: set) -> tuple[li
             r.vert_variant = ""
     c2g = resolve_char_to_glyph_name(rows)
     missing: dict[str, list[str]] = {}
+    lacking: set[str] = set()
     for r in rows:
         for f in ("simplified", "traditional"):
             v = getattr(r, f)
-            if v and any(c2g.get(ch) not in font_glyphs for ch in v):
+            gone = {ch for ch in v if c2g.get(ch) not in font_glyphs}
+            if gone:
                 missing.setdefault(r.glyph_name, []).append(v)
+                lacking |= gone
                 setattr(r, f, "")
     d = copy.deepcopy(design)
     for a in d.get("areas", {}).values():
         a["glyphs"] = [g for g in a.get("glyphs", []) if g in font_glyphs]
-    return rows, d, not_built, missing
+    return rows, d, not_built, missing, lacking
+
+
+def _draw_in(font: TTFont, names: list[str], svg: Callable[[str], str | None]) -> list[str]:
+    """Add the glyphs `names` the font hasn't got from their SVGs, as a build would (no advance,
+    lsb = xMin), each at the next free private-use code point; return the ones added."""
+    from . import glyphs
+    if not names:
+        return []
+    have = set(font.getGlyphOrder())
+    gs = font.getGlyphSet()
+    code = max([c for t in font["cmap"].tables for c in t.cmap] + [config.COMPONENT_GLYPHS_BASE]) + 1
+    added = []
+    for n in names:
+        text = None if n in have else svg(n)
+        if not text:
+            continue
+        try:
+            g = glyphs.svg_to_ttglyph(io.StringIO(text), gs)
+        except Exception:  # noqa: BLE001 -- a drawing the build couldn't read either: leave it out
+            continue
+        xmin = min((x for x, y in g.coordinates), default=0) if g.numberOfContours else 0
+        glyphs.add_glyph(font, n, g, advance=0, lsb=xmin, codepoint=code)
+        code += 1
+        added.append(n)
+    return added
 
 
 class PreviewFonts:
-    """A few compiled preview fonts, keyed by (base font, rows, design areas)."""
+    """A few compiled preview fonts, keyed by (base font, rows, design areas, drawn-in SVGs)."""
 
     KEEP = 6
 
@@ -175,49 +212,79 @@ class PreviewFonts:
         self.cache: OrderedDict[str, Preview] = OrderedDict()
         self._base: tuple[str, float, bytes] | None = None
 
+    def _glyph_names(self, path: Path) -> set:
+        """The base font's glyph names (cached with its bytes)."""
+        b = self._base_bytes(path)
+        if getattr(self, "_names_for", None) is not b:
+            self._names_for, self._names = b, set(TTFont(io.BytesIO(b)).getGlyphOrder())
+        return self._names
+
+    def by_key(self, key: str) -> Preview | None:
+        with self.lock:
+            return self.cache.get(key)
+
     def _base_bytes(self, path: Path) -> bytes:
         mtime = path.stat().st_mtime
         if not self._base or self._base[0] != str(path) or self._base[1] != mtime:
             self._base = (str(path), mtime, path.read_bytes())
         return self._base[2]
 
-    def get(self, base_font: Path, rows: list[GlyphRow], design: dict) -> Preview:
+    def get(self, base_font: Path, rows: list[GlyphRow], design: dict,
+            svg: Callable[[str], str | None] | None = None, gpos: bool = False) -> Preview:
+        """`svg(name)`: the SVG text of a glyph the font may not have, or None; `gpos`: compile the
+        positioning rules too (a font that draws words, not only types them)."""
         import time
 
         import uharfbuzz as hb
-        key = hashlib.sha256(json.dumps([
+        with self.lock:
+            return self._get(base_font, rows, design, svg, gpos, time, hb)
+
+    def _get(self, base_font, rows, design, svg, gpos, time, hb) -> Preview:
+        wanted = sorted({n for r in rows for n in (r.glyph_name, r.vert_variant) if n}
+                        | {g for a in design.get("areas", {}).values() for g in a.get("glyphs", [])})
+        missing = [n for n in wanted if n not in self._glyph_names(base_font)]
+        drawings = {n: t for n in missing if svg and (t := svg(n))}
+        key = hashlib.sha256(json.dumps([gpos, {n: hashlib.sha256(t.encode()).hexdigest() for n, t in drawings.items()},
             str(base_font), base_font.stat().st_mtime,
             [[r.glyph_name, r.vert_variant, r.common, r.latin, r.latin_alt, r.simplified, r.traditional,
               sorted(r.areas)] for r in rows],
             {n: a.get("glyphs", []) for n, a in design.get("areas", {}).items()},
             [l.get("slots") for l in design.get("layouts", [])],     # which glyphs are vertical-only
         ], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
-        with self.lock:
-            if key in self.cache:
-                self.cache.move_to_end(key)
-                return self.cache[key]
-            t0 = time.time()
-            font = TTFont(io.BytesIO(self._base_bytes(base_font)))
-            font_glyphs = set(font.getGlyphOrder())
-            srows, sdesign, not_built, missing = _shapeable(rows, design, font_glyphs)
-            token = features._DESIGN_OVERRIDE.set(schema.parse_design(sdesign))
-            try:
-                fea = "\n".join(features.gen_gsub(srows, validate=False)) + "\n"
-                vertical_only = set(features.vertical_only_glyphs())
-            finally:
-                features._DESIGN_OVERRIDE.reset(token)
-            if "GSUB" in font:
-                del font["GSUB"]
-            addOpenTypeFeaturesFromString(font, fea, tables=["GSUB"])
-            buf = io.BytesIO()
-            font.save(buf)
-            p = Preview(hb_font=hb.Font(hb.Face(buf.getvalue())), glyphs=font_glyphs,
-                        not_built=not_built, missing_chars=missing,
-                        vertical_only=vertical_only, seconds=round(time.time() - t0, 3))
-            self.cache[key] = p
-            while len(self.cache) > self.KEEP:
-                self.cache.popitem(last=False)
-            return p
+        if key in self.cache:
+            self.cache.move_to_end(key)
+            return self.cache[key]
+        t0 = time.time()
+        font = TTFont(io.BytesIO(self._base_bytes(base_font)))
+        drawn = _draw_in(font, sorted(drawings), drawings.get)
+        font_glyphs = set(font.getGlyphOrder())
+        srows, sdesign, not_built, missing_chars, lacking = _shapeable(rows, design, font_glyphs)
+        parsed = schema.parse_design(sdesign)
+        token = features._DESIGN_OVERRIDE.set(parsed)
+        try:
+            lines = features.gen_gsub(srows, validate=False)
+            vertical_only = set(features.vertical_only_glyphs())
+        finally:
+            features._DESIGN_OVERRIDE.reset(token)
+        tables = ["GSUB"]
+        if gpos:
+            from .positioning.emit import gen_gpos
+            lines = lines + [""] + gen_gpos(parsed).lines
+            tables.append("GPOS")
+        for t in tables:
+            if t in font:
+                del font[t]
+        addOpenTypeFeaturesFromString(font, "\n".join(lines) + "\n", tables=tables)
+        buf = io.BytesIO()
+        font.save(buf)
+        p = Preview(hb_font=hb.Font(hb.Face(buf.getvalue())), glyphs=font_glyphs,
+                    not_built=not_built, missing_chars=missing_chars,
+                    vertical_only=vertical_only, seconds=round(time.time() - t0, 3),
+                    drawn=drawn, key=key, font_bytes=buf.getvalue(), lacking=lacking)
+        self.cache[key] = p
+        while len(self.cache) > self.KEEP:
+            self.cache.popitem(last=False)
+        return p
 
 
 FONTS = PreviewFonts()

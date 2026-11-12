@@ -35,7 +35,7 @@ class TypingCheck {
     try {
       const dirty = app.typingDirty;
       const r = await api.typingPreview({
-        design: app.design, rows: T.toRecords(app.typing), roundtrip: true, svg_names: app.extraGlyphs,
+        design: app.design, rows: T.toRecords(app.typing), roundtrip: true, svg_names: app.extraGlyphs, svgs: app.extraSvgs,
         base_rows: dirty ? T.toRecords(app.savedTyping) : undefined,
         compare_words: dirty ? this.sampleWords : []
       });
@@ -58,7 +58,7 @@ class TypingCheck {
   warningsFor(g: string): string[] {
     const out = this.roundtrip.filter((r) => r.glyph === g).map((r) => r.message);
     for (const v of this.missing[g] ?? []) out.push(`${v}: not in the font yet. It arrives with the next Build.`);
-    if (this.notBuilt.includes(g)) out.push(`${g} isn't in the last build yet. Build to preview it.`);
+    if (this.notBuilt.includes(g)) out.push(`${g} has no drawing yet, so it can't be previewed. Draw it in the glyph editor.`);
     return out;
   }
   /** Everything wrong with one glyph's spellings, errors (Save waits) first. */

@@ -314,7 +314,7 @@
       <section id="trouble">
         <h2>When something looks wrong</h2>
         <dl class="panels">
-          <dt>A character shows in red</dt><dd>The font doesn't have it yet: a new glyph or spelling isn't in a build. <strong>Build font</strong> again. In Try it, red means "not in the font until the next build".</dd>
+          <dt>A character shows in red</dt><dd>The font doesn't have it yet: a new glyph or spelling isn't in a build. <strong>Build font</strong> again. Try it and Check the glossary don't need a Build for a new glyph (they draw it in from its drawing); there, red means a Chinese character the font doesn't have, which only a Build adds.</dd>
           <dt>The live preview and the font differ</dt><dd>The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.</dd>
           <dt><I.Warn class="inl badge-warn" aria-label="warning" /> under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.</dd>
           <dt>Save is waiting</dt><dd>A spelling clashes with another glyph's or isn't valid. <strong>Show them</strong> lists the cells to fix.</dd>
@@ -372,7 +372,8 @@
           <dt>“The glossary can't be made, so a release would stop here.”</dt><dd>From <strong>Check the glossary…</strong>: <code>site/glossary.json</code> and the spellings disagree, and the message after it says how. Usually a glyph in a section has no ASCII or Chinese spelling for its example, or <code>site/glossary.json</code> lists a glyph whose Glossary column doesn't name that section; fix the spelling or the column, then <strong>Check again</strong>.</dd>
           <dt>“joins <em>a</em> + <em>b</em>: typing <em>ab</em> gives this glyph instead of …”</dt><dd>A warning: the spelling is two other spellings run together, so typing it no longer gives those two. Save still works; change it unless that's what you want.</dd>
           <dt>Typing “<em>x</em>” gives <em>a + b</em>, not <em>glyph</em>.</dt><dd>Typed alone, the spelling makes something else, because a longer or earlier spelling catches it. Change this spelling or the one that catches it. Save still works.</dd>
-          <dt>“not in the font yet. It arrives with the next Build.” / “isn't in the last build yet. Build to preview it.”</dt><dd>The spelling or glyph is newer than the last build. <strong>Build font</strong> in <a href="/test">Build & test</a>.</dd>
+          <dt>“not in the font yet. It arrives with the next Build.”</dt><dd>The spelling uses a Chinese character the font doesn't have yet. Only a Build adds characters (from the base font): <strong>Build font</strong> in <a href="/test">Build & test</a>. A new glyph doesn't need one: previews draw it in from its drawing.</dd>
+          <dt>“<em>name</em> has no drawing yet, so it can't be previewed. Draw it in the glyph editor.”</dt><dd>The glyph has spellings but no drawing, so there's nothing to type it into. Draw it, or <strong>Replace…</strong> it with a file; once it has a drawing, Try it and Check the glossary use it without a Build.</dd>
           <dt>“Build the font once to preview spellings.”</dt><dd>Try it needs one build first: <strong>Build font</strong>.</dd>
           <dt>“Can't read <em>file</em>: no glyph_name column”</dt><dd>A spellings CSV needs a header row that includes <code>glyph_name</code>. <strong>Export spellings (CSV)</strong> gives a file of the right shape to start from.</dd>
         </dl>

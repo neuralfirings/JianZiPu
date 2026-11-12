@@ -37,7 +37,7 @@
       // (a column the draft is older than comes from the font, not as the draft's empty one)
       const merged = hosted.isHosted && app.mainDesign
         ? withChanges(app.bundle(), { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : null;
-      res = await api.glossaryCheck(T.toRecords(merged?.typing ?? app.typing), merged?.design ?? app.design);
+      res = await api.glossaryCheck(T.toRecords(merged?.typing ?? app.typing), merged?.design ?? app.design, app.extraSvgs);
       if (!res.ok && !res.error) err = 'The check failed.';
       // the font the examples were typed in: a new build since the last check replaces it
       try { family = (await loadFontFrom(res.font_url ?? GLOSSARY_FONT, 'glossary', 'build', `glossary${++runs}`)).family; } catch { family = null; }
@@ -70,7 +70,7 @@
           The glossary on jianzipufont.com as the next release would write it, from the spellings as they are now{app.typingDirty ? ', unsaved changes included' : ''}.
           Nothing is written: a release rewrites the page.
         {/if}
-        {#if res?.font}Examples are typed and drawn in {res.font === 'build' ? 'the last build' : 'the released font, since there is no build yet'}.{/if}
+        {#if res?.font}Examples are typed and drawn in {res.font === 'build' ? 'the last build' : 'the released font, since there is no build yet'}, with these spellings and any glyph drawn since. No Build needed.{/if}
       </p>
 
       {#if busy && !res}
@@ -94,7 +94,15 @@
         {/if}
         {#if res.not_built?.length}
           <div class="banner info"><span class="ic"><I.Info /></span>
-            <span><b>Not in the font yet:</b> <code>{res.not_built.join(', ')}</code>. Their rows show below; Build, then check again to type their examples.</span></div>
+            <span><b>No drawing yet:</b> <code>{res.not_built.join(', ')}</code>. Their rows show below; draw them in the glyph editor, then check again to type their examples.</span></div>
+        {/if}
+        {#if res.drawn?.length}
+          <div class="banner info"><span class="ic"><I.Info /></span>
+            <span><b>New since the last build:</b> <code>{res.drawn.join(', ')}</code>. Drawn in from {res.drawn.length === 1 ? 'its drawing' : 'their drawings'} for this check, so {res.drawn.length === 1 ? 'its examples are' : 'their examples are'} typed and shown below.</span></div>
+        {/if}
+        {#if res.missing_chars?.length}
+          <div class="banner info"><span class="ic"><I.Info /></span>
+            <span><b>Chinese characters not in the font yet:</b> {res.missing_chars.join(' ')}. Only a Build adds characters, from the base font; until then the examples that use them aren't checked.</span></div>
         {/if}
         {#if clean}
           <div class="banner saved"><span class="ic"><I.Check /></span>

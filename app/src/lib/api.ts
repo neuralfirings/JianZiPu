@@ -73,15 +73,18 @@ export type RoundTrip = { glyph: string; field: string; value: string; got: stri
 export type TypingPreview = {
   ok: boolean; error?: string; errors: TypingIssue[]; seconds?: number;
   not_built?: string[]; missing_chars?: Record<string, string[]>; roundtrip?: RoundTrip[];
+  /** Glyphs the last build hasn't got, drawn into the preview from their drawings (no Build needed). */
+  drawn?: string[];
   words?: (WordPayload['words'][number] & { texts: string[] })[];
   changed?: { word: string; before: string[]; after: string[]; after_texts: string[] }[];
 };
 /** Builder > More > Check the glossary. `problems`: glyphs left out, unknown sections; `typing`: examples whose
- *  spellings give different glyphs; `not_built`: glyphs the font hasn't got, whose examples wait for a build;
+ *  spellings give different glyphs; `not_built`: glyphs with no drawing yet, whose examples wait; `drawn`: glyphs
+ *  the last build hasn't got, drawn in from their files; `missing_chars`: Chinese characters only a Build adds;
  *  `tables`: each section's table as the next release writes it; `error`: what a release would stop on;
  *  `font_url`: the font the examples were typed with, to draw them in. */
 export type GlossaryCheck = {
-  ok: boolean; error?: string; problems?: string[]; typing?: string[]; not_built?: string[];
+  ok: boolean; error?: string; problems?: string[]; typing?: string[]; not_built?: string[]; drawn?: string[]; missing_chars?: string[];
   tables?: { id: string; title: string; html: string }[]; font?: 'build' | 'released'; font_url?: string;
 };
 /** The font the glossary check types with when it isn't one of this server's builds. */
@@ -144,11 +147,11 @@ export const api = {
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),
   /** Unsaved spellings compiled into the last build (GSUB only): typed words, round trip, words that change. */
-  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[] }) =>
+  typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[]; svgs?: Record<string, string> }) =>
     call<TypingPreview>('POST', '/api/typing/preview', body),
   /** The font page's glossary made from these (unsaved) spellings; the font it typed with is at `font_url`. */
-  glossaryCheck: (rows: Record<string, string>[], design?: Design) =>
-    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design }),
+  glossaryCheck: (rows: Record<string, string>[], design?: Design, svgs?: Record<string, string>) =>
+    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design, svgs }),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),

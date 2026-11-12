@@ -182,6 +182,10 @@ class DesignState {
   get extraGlyphs(): string[] {
     return Object.keys(this.svgs).filter((n) => !(n in this.mainSvgs));
   }
+  /** Their drawings, so a preview can draw them in when the last build hasn't got them. */
+  get extraSvgs(): Record<string, string> {
+    return Object.fromEntries(this.extraGlyphs.map((n) => [n, this.svgs[n]]));
+  }
   /** Hosted: the font the draft started from, which Your changes compare it with: "the font of
    *  21 Oct (3.200)". The date tells it apart from a later font with the same release number. */
   get referenceFont(): string {

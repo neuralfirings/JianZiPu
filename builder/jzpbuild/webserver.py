@@ -32,6 +32,8 @@ API (all JSON):
                                    build), its tables, and `font_url`, the font they were typed with
   GET  /api/glossary/font          the font that check types with when it isn't a build of this server's
                                    (locally the last build on disk, else the released one; hosted: main's)
+  GET  /api/preview-fonts/<key>.ttf a preview font the glossary check compiled (the last build plus new
+                                   glyphs drawn in from their SVGs, the unsaved spellings and positioning)
   GET  /api/svgs                   {name: svg text}
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
@@ -601,6 +603,22 @@ def base_payload() -> dict:
 
 
 
+def svg_source(body: dict):
+    """Where a preview finds the drawing of a glyph the last build hasn't got: `svgs` in the request
+    (a draft's own glyphs, hosted), else inputs/svg/<name>.svg on disk."""
+    sent = body.get("svgs") if isinstance(body.get("svgs"), dict) else {}
+
+    def get(name: str) -> str | None:
+        if isinstance(sent.get(name), str):
+            return sent[name]
+        try:
+            p = svg_path_for(name)
+        except ValueError:
+            return None
+        return p.read_text(encoding="utf-8") if p.exists() else None
+    return get
+
+
 def _preview_base_font(owner: str = "local") -> Path | None:
     p = BUILD.font_for(owner)
     return p if p.exists() else None
@@ -609,7 +627,8 @@ def _preview_base_font(owner: str = "local") -> Path | None:
 def typing_payload(body: dict, owner: str = "local") -> dict:
     """Unsaved spellings -> preview font -> typed words, the spelling round trip,
     clashes, and which sample words change against the saved spellings.
-    `svg_names`: glyphs a draft adds (not on disk), so their spellings aren't flagged unknown."""
+    `svg_names`: glyphs a draft adds (not on disk), so their spellings aren't flagged unknown;
+    `svgs`: their drawings, so the preview can draw them in when the last build hasn't got them."""
     design = body.get("design") or json.loads(_read_design_text())
     rows = typing_preview.rows_from(body.get("rows", []), design)
     known = typing_preview.known_glyphs(design) | set(body.get("svg_names") or [])
@@ -617,8 +636,9 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
     base = _preview_base_font(owner)
     if base is None:
         return {**out, "ok": False, "error": "Build the font once to preview spellings."}
-    prev = typing_preview.FONTS.get(base, rows, design)
-    out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars,
+    svg = svg_source(body)
+    prev = typing_preview.FONTS.get(base, rows, design, svg)
+    out.update(seconds=prev.seconds, not_built=prev.not_built, missing_chars=prev.missing_chars, drawn=prev.drawn,
                roundtrip=typing_preview.roundtrip(prev, rows) if body.get("roundtrip", True) else [])
     words = word_list(body)
     if words:
@@ -630,7 +650,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         out["words"] = laid
     compare = word_list(body, "compare_words")
     if compare and body.get("base_rows") is not None:
-        before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design), compare)
+        before = typing_preview.shape(typing_preview.FONTS.get(base, typing_preview.rows_from(body["base_rows"], design), design, svg), compare)
         after = typing_preview.shape(prev, compare)
         out["changed"] = [{"word": a["word"], "before": a["glyphs"], "after": b["glyphs"], "after_texts": b["texts"]}
                           for a, b in zip(before, after) if a["glyphs"] != b["glyphs"]]
@@ -651,9 +671,10 @@ def glossary_payload(body: dict, owner: str = "local") -> dict:
     # the rows as Save would write them: in the file's order (a section's unlisted rows follow it), new ones last
     clean = [typing_preview.clean_record(r) for r in recs if isinstance(r, dict)]
     text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
-    out = glossary.check(glossary.records(list(csv.DictReader(io.StringIO(text)))), design, font)
-    return {**out, "font": "released" if font == config.SITE_FONT else "build",
-            "font_url": BUILD.public(build)["url"] if build else "/api/glossary/font"}
+    out = glossary.check(glossary.records(list(csv.DictReader(io.StringIO(text)))), design, font, svg_source(body))
+    key = out.pop("font_key", None)
+    url = (f"/api/preview-fonts/{key}.ttf" if key else BUILD.public(build)["url"] if build else "/api/glossary/font")
+    return {**out, "font": "released" if font == config.SITE_FONT else "build", "font_url": url}
 
 
 def glossary_font(owner: str = "local") -> Path:
@@ -750,7 +771,9 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _font(self, path: Path, attachment: bool = False):
-        body = path.read_bytes()
+        return self._font_bytes(path.read_bytes(), attachment)
+
+    def _font_bytes(self, body: bytes, attachment: bool = False):
         self.send_response(200)
         self.send_header("Content-Type", "font/ttf")
         self.send_header("Content-Length", str(len(body)))
@@ -863,6 +886,12 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(SETTINGS.public())
             if path == "/api/base":
                 return self._json(base_payload())
+            m = re.match(r"^/api/preview-fonts/([0-9a-f]{64})\.ttf$", path)
+            if m:                                      # by its content hash: only who made it knows it
+                p = typing_preview.FONTS.by_key(m.group(1))
+                if not p or not p.font_bytes:
+                    return self._json({"ok": False, "error": "That preview font is gone: check again."}, 404)
+                return self._font_bytes(p.font_bytes)
             if path == "/api/glossary/font":            # hosted: main's, nobody's own
                 return self._font(glossary_font(MAIN if SETTINGS.hosted else "local"))
             if path == "/api/release/status":
