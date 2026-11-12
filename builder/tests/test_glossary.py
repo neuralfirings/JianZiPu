@@ -286,3 +286,34 @@ def test_http_check_locally_and_online(monkeypatch):
         assert res["font_url"].startswith("/api/preview-fonts/") and font(res["font_url"])
     finally:
         srv.shutdown()
+
+
+# ---------------------------------------------------------------- the default section (3x: Uncategorized)
+
+def test_a_glyph_left_out_goes_to_the_default_section():
+    sec = {"2a": {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"]},
+           "3e": {"title": "3e: related to expression", "kind": "vertical", "rows": [["md_da", "md_xi"]]},
+           "3x": {"title": "3x: Uncategorized", "kind": "vertical", "default": True}}
+    r = rows("lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand,",
+             "md_tc,,,tc,,推出,,tuīchū,,",              # spellings, no section: Uncategorized
+             "md_da,,,da,,大,,dà,,", "md_xi,,,xi,,息,,xī,,",   # inside a word: shown already
+             "md_blank,,,,,,,,,",                        # nothing to type: no row
+             "md_typo,,,ty,,错,,cuò,9z: Nowhere,")      # a section that isn't there: still a problem
+    d = glossary.defaulted(r, sec)
+    assert d["md_tc"]["glossary"] == "3x: Uncategorized" and r["md_tc"]["glossary"] == ""
+    assert d["md_da"]["glossary"] == "" and d["md_blank"]["glossary"] == "" and d["md_typo"]["glossary"] == "9z: Nowhere"
+    probs = glossary.missing(r, sec)
+    assert not any("md_tc" in p for p in probs) and any("9z: Nowhere" in p for p in probs)
+    out = glossary.render(page("2a", "3e", "3x"), r, sec)
+    assert ":tc" in out.split("<!-- glossary 3x -->")[1]
+
+
+def test_without_a_default_a_glyph_left_out_is_still_reported():
+    sec = {"2a": {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"]}}
+    r = rows("lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand,", "md_tc,,,tc,,推出,,tuīchū,,")
+    assert any("md_tc" in p for p in glossary.missing(r, sec))
+
+
+def test_the_shipped_default_is_uncategorized():
+    secs = glossary.load_sections()
+    assert [s["title"] for s in secs.values() if s.get("default")] == ["3x: Uncategorized"]

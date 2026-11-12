@@ -147,7 +147,7 @@ export const api = {
    *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
   words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
     call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string }[] }>('GET', '/api/glyphs'),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; default?: boolean }[] }>('GET', '/api/glyphs'),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),

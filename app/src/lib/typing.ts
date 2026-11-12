@@ -33,7 +33,7 @@ export const HELP: Record<SpellField, string> = {
   traditional: 'The traditional form, only if it differs from 简体.',
   vert_variant: 'In vertical notation (after a colon) the font swaps this glyph for its centred version.',
   pinyin: 'Pinyin with tones, for search and labels. Not typed.',
-  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph, by title (1c: Left Hand Techniques); two separated by “; ”. Empty: no row of its own. Not typed.',
+  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph, by title (1c: Left Hand Techniques); two separated by “; ”. Empty: it goes in 3x: Uncategorized, unless a word on the font page shows it. Not typed.',
   meaning: 'What the glyph means or asks the player to do, in a few plain words (pluck the string inward with the middle finger). Shown in the glossary on jianzipufont.com. Not typed.'
 };
 export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin', 'glossary', 'meaning'] as const;
