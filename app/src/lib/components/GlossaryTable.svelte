@@ -413,6 +413,97 @@
     }, 30);
   }
   const scroller = () => root?.closest<HTMLElement>('.grid-wrap') ?? null;
+  const entries = (n: number) => `${n} ${n === 1 ? 'entry' : 'entries'}`;
+
+  // ---------------------------------------------------------------- dragging section titles and subtitles
+
+  /** A section title ('g') or a subtitle ('s') being moved, and where it would land: before or after
+   *  another of its kind, or (a subtitle) at the top of a section title (`id` ''). */
+  let headDrag = $state<{ kind: 'g' | 's'; id: string; name: string; x: number; y: number } | null>(null);
+  let headDrop = $state<{ kind: 'g' | 's'; id: string; before: boolean; gid?: string } | null>(null);
+
+  function headTarget(kind: 'g' | 's', x: number, y: number): typeof headDrop {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return headDrop;
+    if (kind === 'g') {
+      const g = el.closest<HTMLElement>('section.grp[data-gid]');
+      if (!g) return headDrop;
+      const r = g.getBoundingClientRect();
+      return { kind, id: g.dataset.gid!, before: y < r.top + Math.min(r.height / 2, 60) };
+    }
+    const sec = el.closest<HTMLElement>('section.sec[data-sid]');
+    if (sec) {
+      const gid = sec.closest<HTMLElement>('section.grp[data-gid]')?.dataset.gid;
+      if (!gid) return headDrop;
+      const r = sec.getBoundingClientRect();
+      return { kind, id: sec.dataset.sid!, gid, before: y < r.top + Math.min(r.height / 2, 30) };
+    }
+    const h2 = el.closest<HTMLElement>('h2[data-gid]');
+    if (h2) return { kind, id: '', gid: h2.dataset.gid!, before: true };
+    return headDrop;
+  }
+
+  function grabHead(e: PointerEvent, kind: 'g' | 's', id: string) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const name = kind === 'g' ? layout.groups.find((g) => g.id === id)?.title ?? id : layout.sections[id]?.title ?? id;
+    const begin = () => { headDrag = { kind, id, name, x: e.clientX, y: e.clientY }; headDrop = null; };
+    const hold = e.pointerType === 'mouse' ? null : new Hold({ onlift: begin, ontap: () => {} });
+    if (hold) hold.down(e.clientX, e.clientY); else begin();
+    const mv = (ev: PointerEvent) => {
+      if (hold && !hold.move(ev.clientX, ev.clientY)) return;
+      if (!headDrag) return;
+      ev.preventDefault();
+      headDrag = { ...headDrag, x: ev.clientX, y: ev.clientY };
+      lastY = ev.clientY;
+      headDrop = headTarget(kind, ev.clientX, ev.clientY);
+    };
+    const finish = (apply: boolean) => {
+      if (hold) hold.up();
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('keydown', esc);
+      if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+      const d = headDrag, t = headDrop;
+      headDrag = null; headDrop = null;
+      if (apply && d && t) moveHead(d.kind, d.id, t);
+    };
+    const up = () => finish(true);
+    const cancel = () => finish(false);
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') cancel(); };
+    window.addEventListener('pointermove', mv, { passive: false });
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('keydown', esc);
+    scrollTimer = setInterval(() => {
+      const box = scroller();
+      if (!headDrag || !box) return;
+      const r = box.getBoundingClientRect(), edge = 48;
+      const dy = lastY < r.top + edge ? -14 : lastY > r.bottom - edge ? 14 : 0;
+      if (dy) { box.scrollTop += dy; headDrop = headTarget(kind, headDrag.x, headDrag.y); }
+    }, 30);
+  }
+
+  /** Move a section title among the others, or a subtitle within its section title or to another. */
+  function moveHead(kind: 'g' | 's', id: string, t: NonNullable<typeof headDrop>) {
+    if (t.id === id) return;
+    if (kind === 'g') {
+      const from = layout.groups.findIndex((g) => g.id === id);
+      let to = layout.groups.findIndex((g) => g.id === t.id) + (t.before ? 0 : 1);
+      if (to === from || to === from + 1) return;
+      if (to > from) to--;
+      editLayout(`Move the section title ${layout.groups[from].title}`, (l) => { const [g] = l.groups.splice(from, 1); l.groups.splice(to, 0, g); });
+      return;
+    }
+    const gTo = t.gid!;
+    editLayout(`Move the subtitle ${layout.sections[id].title}`, (l) => {
+      for (const g of l.groups) g.sections = g.sections.filter((x) => x !== id);
+      const target = l.groups.find((g) => g.id === gTo)!;
+      const at = t.id === '' ? 0 : target.sections.indexOf(t.id) + (t.before ? 0 : 1);
+      target.sections.splice(Math.max(0, at), 0, id);
+    });
+  }
 
   /** The gap under the pointer: before the row it's over (upper half) or after it (lower half);
    *  over a section's add line or folded title: at its end; over an open section's title: at its top. */
@@ -437,11 +528,15 @@
     {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
     {#if !q.trim() || shown.length}
     {@const usage = s.kind === 'usage'}
-    <section class="sec" class:hidden={s.kind === 'hidden'} aria-labelledby="gs-{s.id}">
+    <section class="sec" class:hidden={s.kind === 'hidden'} aria-labelledby="gs-{s.id}" data-sid={s.id}
+      class:hd-before={headDrop?.kind === 's' && headDrop.id === s.id && headDrop.before} class:hd-after={headDrop?.kind === 's' && headDrop.id === s.id && !headDrop.before}
+      class:lifted={headDrag?.kind === 's' && headDrag.id === s.id}>
       <h3 id="gs-{s.id}" data-drop={isFolded(s.id) ? 'end' : 'start'} data-sid={s.id} data-i={rows.length} class:gap={!!drag && isFolded(s.id) && drop?.sid === s.id} class:no={!okDrop && drop?.sid === s.id}>
-        <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}">
+        <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 's', s.id)} disabled={!!q.trim()}
+          aria-label="Drag the subtitle {s.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the subtitle · a finger: press and hold first'}><I.Grip size={14} /></button>
+        <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}" data-tip={KIND[s.kind]}>
           {#if isFolded(s.id)}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}<span>{s.title}</span></button>
-        <span class="muted small">· {rows.length} row{rows.length === 1 ? '' : 's'} · {KIND[s.kind]}</span>
+        <span class="count">({entries(rows.length)})</span>
         {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
           <button class="quiet ic" onclick={() => (titleEdit = { key: `s:${s.id}`, value: s.title })} aria-label="Rename the subtitle {s.title}" data-tip="Rename the subtitle"><I.EditRow size={14} /></button>
@@ -570,7 +665,7 @@
   {#if layoutNote?.key === key}<p class="small bad" role="status"><I.Problem size={12} /> {layoutNote.text}</p>{/if}
 {/snippet}
 
-<div class="gloss" bind:this={root} class:dragging={!!drag}>
+<div class="gloss" bind:this={root} class:dragging={!!drag || !!headDrag}>
   <p class="muted small intro">
     The font page's glossary, a section at a time, in page order. A row is one glyph, or a word written together (:少息);
     its ASCII, 中文 and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
@@ -595,11 +690,14 @@
   {#each layout.groups as g (g.id)}
     {@const subs = g.sections.map((id) => sections.find((x) => x.id === id)).filter((x) => !!x)}
     {#if !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
-    <section class="grp" aria-labelledby="gg-{g.id}">
-      <h2 id="gg-{g.id}">
+    <section class="grp" aria-labelledby="gg-{g.id}" data-gid={g.id}
+      class:hd-before={headDrop?.kind === 'g' && headDrop.id === g.id && headDrop.before} class:hd-after={headDrop?.kind === 'g' && headDrop.id === g.id && !headDrop.before}
+      class:lifted={headDrag?.kind === 'g' && headDrag.id === g.id}>
+      <h2 id="gg-{g.id}" data-gid={g.id} class:hd-in={headDrop?.kind === 's' && headDrop.gid === g.id && headDrop.id === ''}>
+        <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 'g', g.id)} disabled={!!q.trim()}
+          aria-label="Drag the section title {g.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the section title · a finger: press and hold first'}><I.Grip size={14} /></button>
         <span class="gt" class:untitled={!g.title}>{g.title || 'Untitled section'}</span>
-        {#if g.nav}<span class="muted small">· “{g.nav}” in the contents</span>{/if}
-        {#if !subs.some((x) => x.kind !== 'hidden')}<span class="muted small">· not on the page</span>{/if}
+        <span class="count" data-tip={[g.nav ? `“${g.nav}” in the page's contents` : '', !subs.some((x) => x.kind !== 'hidden') ? 'not on the page' : ''].filter(Boolean).join(' · ') || undefined}>({entries(subs.reduce((n, x) => n + rowsOf(x.id).length, 0))})</span>
         {#if JSON.stringify(savedLayout.groups.find((x) => x.id === g.id) ?? null) !== JSON.stringify(g)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
           <button class="quiet ic" onclick={() => (titleEdit = { key: `g:${g.id}`, value: g.title, nav: g.nav ?? '' })} aria-label="Rename the section title {g.title}" data-tip="Rename the section title"><I.EditRow size={14} /></button>
@@ -650,6 +748,10 @@
   {#if q.trim() && !sections.some((s) => rowsOf(s.id).some((r) => matches(r, s)))}<p class="muted small">No row matches.</p>{/if}
 </div>
 
+{#if headDrag}
+  <div class="ghost" style:left="{headDrag.x + 12}px" style:top="{headDrag.y - 12}px" aria-hidden="true">{headDrag.name}</div>
+  <div class="sr" role="status">Moving {headDrag.name}</div>
+{/if}
 {#if drag}
   <div class="ghost" style:left="{drag.x + 12}px" style:top="{drag.y - 12}px" aria-hidden="true">{drag.name}</div>
   <div class="sr" role="status">Moving {drag.name}{drop ? ` to ${drop.sid}, place ${drop.index + 1}` : ''}</div>
@@ -660,7 +762,7 @@
   .gloss.dragging { user-select: none; cursor: grabbing; }
   .intro { margin: 0; max-width: 760px; }
   .banner select { height: 26px; }
-  .sec h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: var(--t-label); font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .sec h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
   .sec.hidden h3 > span:first-child { color: var(--ink-muted); }
   /* a computer has the width for the table; a phone scrolls it sideways (a scroller here also caught the wheel, and the page stopped scrolling) */
   .scroll { overflow: visible; }
@@ -724,7 +826,15 @@
   }
   .grp { display: flex; flex-direction: column; gap: var(--space-4); padding-top: var(--space-2); }
   .grp + .grp { border-top: 1px solid var(--border); padding-top: var(--space-5); }
-  .grp h2 { margin: 0; font-family: var(--font-display); font-size: var(--t-title, 20px); font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  /* 26 px and 18 px as asked: between the type scale's steps (--t-heading 22, --t-title 32; --t-panel 16) */
+  .grp h2 { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .count { font-family: var(--font-serif); font-size: var(--t-small); font-weight: 400; color: var(--ink-muted); }
+  .hg { width: 24px; min-height: 24px; height: 24px; padding: 0; cursor: grab; touch-action: none; color: var(--ink-muted); }
+  .hg:disabled { cursor: default; opacity: .4; }
+  section.lifted { opacity: .4; }
+  section.hd-before { box-shadow: 0 -2px 0 var(--link); }
+  section.hd-after { box-shadow: 0 2px 0 var(--link); }
+  h2.hd-in { box-shadow: inset 0 -2px 0 var(--link); }
   .gt.untitled { color: var(--ink-muted); font-style: italic; }
   .hact { display: inline-flex; gap: 2px; margin-left: var(--space-1); }
   .hact .ic { width: 24px; min-height: 24px; height: 24px; padding: 0; }
