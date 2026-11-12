@@ -275,3 +275,30 @@ describe('undoing one change (Your changes)', () => {
     expect(revertRule(layout([rel('b', 25)]), before, 'y|a|left||').relationships).toEqual([rel('a', 10), rel('b', 25)]);
   });
 });
+
+describe('glossary words in a draft', () => {
+  const w = (word: string, glossary = '3e: E', meaning = '') => ({ word, glyphs: 'md_a md_b', glossary, glossary_order: '1', meaning });
+  const mk = (words: ReturnType<typeof w>[] | undefined, baseWords: ReturnType<typeof w>[] | undefined) => makeBundle({
+    design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base, words, baseWords
+  });
+  it('carries them through JSON and the zip, and an old draft has none', () => {
+    const b = mk([w('少息', '3e: E', 'rest'), w('大息')], [w('大息')]);
+    expect(isEmptyBundle(b)).toBe(false);
+    expect(fromJson(toJson(b)).words).toEqual(b.words);
+    expect(fromZip(toZip(b)).words).toEqual(b.words);
+    expect(fromZip(toZip(b)).base.words).toEqual([w('大息')]);
+    const old = mk(undefined, undefined);
+    expect(old.words).toBeUndefined();
+    expect(isEmptyBundle(old)).toBe(true);
+    expect(diffBundle(old, { design: design(), typing: {}, svgs: baseSvgs, words: [w('大息')] })).toEqual([]);
+  });
+  it('reviews a word whole: added, edited, deleted, and a conflict', () => {
+    const b = mk([w('少息'), w('大息', '3e: E', 'rest')], [w('大息'), w('小息')]);
+    const cur = { design: design(), typing: {}, svgs: baseSvgs, words: [w('大息', '3e: E', 'pause'), w('小息')] };
+    const items = diffBundle(b, cur).filter((i) => i.kind === 'word');
+    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['大息', 'changed', true], ['小息', 'deleted', false], ['少息', 'added', false]]);
+    const m = applyMerge(items, { 'word:大息': true, 'word:少息': true, 'word:小息': true }, cur);
+    expect(m.words).toEqual([w('大息', '3e: E', 'rest'), w('少息')]);
+    expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).words).toBeUndefined();   // left out: untouched
+  });
+});

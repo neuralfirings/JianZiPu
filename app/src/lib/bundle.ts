@@ -7,6 +7,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Design } from './api';
 import { sanitizeSvg } from './svg';
 import * as T from './typing';
+import { changedWords, cleanWord, wordsFromCsv, wordsToCsv, type Words } from './glossaryWords';
 
 export const BUNDLE_FORMAT = 1;
 /** Same rule as the server's SVG_NAME (webserver.py). */
@@ -31,7 +32,9 @@ export type Bundle = {
   typing: T.Typing;
   /** Added and changed glyphs only. */
   svgs: SvgMap;
-  base: { design: Design; typing: T.Typing; svgs: SvgMap };
+  /** The glossary's words (words.csv); a draft from before words has none: it takes the font's. */
+  words?: Words;
+  base: { design: Design; typing: T.Typing; svgs: SvgMap; words?: Words };
 };
 
 /** Which glyph files differ between the base set and the current set. */
@@ -50,6 +53,7 @@ const norm = (t: string) => t.replace(/\s+$/, '');
 export function makeBundle(o: {
   design: Design; typing: T.Typing; svgs: SvgMap;
   baseDesign: Design; baseTyping: T.Typing; baseSvgs: SvgMap; base: BaseVersion;
+  words?: Words; baseWords?: Words;
   author?: Manifest['author']; note?: string; now?: Date;
 }): Bundle {
   const d = diffSvgs(o.baseSvgs, o.svgs);
@@ -62,7 +66,9 @@ export function makeBundle(o: {
     design: clone(o.design),
     typing: clone(o.typing),
     svgs: pick(o.svgs, [...d.added, ...d.changed]),
-    base: { design: clone(o.baseDesign), typing: clone(o.baseTyping), svgs: pick(o.baseSvgs, [...d.changed, ...d.deleted]) }
+    ...(o.words ? { words: clone(o.words) } : {}),
+    base: { design: clone(o.baseDesign), typing: clone(o.baseTyping), svgs: pick(o.baseSvgs, [...d.changed, ...d.deleted]),
+      ...(o.baseWords ? { words: clone(o.baseWords) } : {}) }
   };
 }
 
@@ -77,7 +83,8 @@ export function isEmptyBundle(b: Bundle): boolean {
   const s = b.manifest.svgs;
   return !s.added.length && !s.changed.length && !s.deleted.length
     && JSON.stringify(b.design) === JSON.stringify(b.base.design)
-    && T.changedGlyphs(b.base.typing, b.typing).length === 0;
+    && T.changedGlyphs(b.base.typing, b.typing).length === 0
+    && (!b.words || changedWords(b.base.words ?? b.words, b.words).length === 0);
 }
 
 // ---------------------------------------------------------------- checks
@@ -101,7 +108,12 @@ export function validate(x: unknown): Bundle {
   for (const n of [...m.svgs.added, ...m.svgs.changed]) {
     if (typeof b.svgs[n] !== 'string') throw new BundleError(`The draft lists ${n} but has no file for it.`);
   }
-  return { ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } };
+  const words = (w: unknown) => (Array.isArray(w) ? (w as Words).map(cleanWord).filter((x) => x.word) : undefined);
+  const out: Bundle = { ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } };
+  const w = words(b.words), bw = words(b.base.words);
+  if (w) out.words = w; else delete out.words;
+  if (bw) out.base.words = bw;
+  return out;
 }
 
 /** Glyph files from someone else are inlined in the page: keep only plain shapes (svg.ts).
@@ -136,6 +148,8 @@ export function toZip(b: Bundle): Uint8Array {
     'base/design.json': strToU8(JSON.stringify(b.base.design, null, 2) + '\n'),
     'base/components.csv': strToU8(T.toCsv(b.base.typing))
   };
+  if (b.words) files['words.csv'] = strToU8(wordsToCsv(b.words));
+  if (b.base.words) files['base/words.csv'] = strToU8(wordsToCsv(b.base.words));
   for (const [n, t] of Object.entries(b.svgs)) files[`svg/${n}.svg`] = strToU8(t);
   for (const [n, t] of Object.entries(b.base.svgs)) files[`base/svg/${n}.svg`] = strToU8(t);
   return zipSync(files, { level: 6 });
@@ -157,7 +171,9 @@ export function fromZip(bytes: Uint8Array): Bundle {
     design: json('design.json'),
     typing: T.fromCsv(text('components.csv') ?? ''),
     svgs: svgsUnder('svg/'),
-    base: { design: json('base/design.json'), typing: T.fromCsv(text('base/components.csv') ?? ''), svgs: svgsUnder('base/svg/') }
+    ...(text('words.csv') != null ? { words: wordsFromCsv(text('words.csv')!) } : {}),
+    base: { design: json('base/design.json'), typing: T.fromCsv(text('base/components.csv') ?? ''), svgs: svgsUnder('base/svg/'),
+      ...(text('base/words.csv') != null ? { words: wordsFromCsv(text('base/words.csv')!) } : {}) }
   });
 }
 

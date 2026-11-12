@@ -35,8 +35,8 @@
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
   let current = $derived.by(() => {
-    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs };
-    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs) };
+    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs, words: app.words };
+    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs), words: bundle.base.words ?? app.mainWords };
   });
   let items = $derived(diffBundle(bundle, current));
   // true = take the draft's, false = keep what the Builder has, undefined = conflict not picked yet
@@ -68,7 +68,8 @@
   let sections = $derived([
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
-    { title: 'Design', items: shown.filter((i) => i.kind === 'design') }
+    { title: 'Design', items: shown.filter((i) => i.kind === 'design') },
+    { title: 'Glossary words', items: shown.filter((i) => i.kind === 'word') }
   ]);
 
   function setAll(v: boolean) { picks = Object.fromEntries(items.map((i) => [i.id, v])); }
@@ -132,7 +133,7 @@
       if (sp) these = [it, sp];
     }
     asking = null;
-    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs });
+    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs, words: app.words });
     if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
     app.applyChanges(`Undo: ${nameOf(it)}`, m);
     pilot.say(`${nameOf(it)} is back the way the font has it.`, { undo: true });
@@ -260,6 +261,15 @@
                 {/each}
               </tbody>
             </table>
+          {:else if it.kind === 'word'}
+            <table class="cells">
+              <thead><tr><th></th><th>before</th><th>{readOnly ? 'yours' : 'draft'}</th>{#if it.conflict && !readOnly}<th>your Builder now</th>{/if}</tr></thead>
+              <tbody>
+                {#each ['glyphs', 'glossary', 'glossary_order', 'meaning'] as const as f}
+                  <tr><th>{f.replace('_', ' ')}</th><td>{it.base?.[f] || '—'}</td><td class="new">{it.theirs?.[f] || '—'}</td>{#if it.conflict && !readOnly}<td>{it.current?.[f] || '—'}</td>{/if}</tr>
+                {/each}
+              </tbody>
+            </table>
           {:else}
             <div class="more">
               <button class="link" onclick={() => (open = { ...open, [it.id + ':w']: !open[it.id + ':w'] })}>{open[it.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
@@ -323,7 +333,7 @@
           {#each done as it (it.id)}
             {@const r = released[it.id]}
             <li>
-              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : `Glyph · ${it.key}`}</b>
+              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : it.kind === 'word' ? `Word · ${it.key}` : `Glyph · ${it.key}`}</b>
               <span class="tag {it.status}">{it.status}</span>
               {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
               <span class="spacer"></span>

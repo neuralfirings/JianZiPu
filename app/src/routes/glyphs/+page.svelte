@@ -14,6 +14,8 @@
   import TypingTable, { type Section } from '$lib/components/TypingTable.svelte';
   import TypingCards from '$lib/components/TypingCards.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
+  import WordsTable from '$lib/components/WordsTable.svelte';
+  import { renumber } from '$lib/glossaryWords';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
@@ -23,11 +25,14 @@
   import { DEFAULT_WEIGHT } from '$lib/glyphed/editor.svelte';
   import { phone } from '$lib/phone.svelte';
 
-  type View = 'tiles' | 'typing';
+  type View = 'tiles' | 'typing' | 'words';
   type Filter = '' | 'attention' | 'clashes' | 'nospell' | 'pairs' | 'unsaved';
   const params = page.url.searchParams;
   const storedView = (() => { try { return localStorage.getItem('jzp-glyphs-view'); } catch { return null; } })();
-  let view = $state<View>((params.get('view') ?? storedView) === 'typing' ? 'typing' : 'tiles');
+  const asView = (v: string | null): View => (v === 'typing' || v === 'words' ? v : 'tiles');
+  let view = $state<View>(asView(params.get('view') ?? storedView));
+  /** Glyphs > Words: the word a List view row's "in words" link opened */
+  let wordShown = $state<string | null>(null);
   let group = $state(params.get('group') ?? 'all');
   let filter = $state<Filter>((params.get('f') as Filter) ?? '');
   let selected = $state<string | null>(params.get('g'));
@@ -42,6 +47,12 @@
   // row; a link with ?g= opens it with that glyph
   let inspOpen = $state(!!params.get('g') && (kept.inspOpen ?? true));
   let inspEl = $state<HTMLElement>();
+  /** ⋯ > Renumber the glossary order: every section's rows 1, 2, 3… as they show now, one undo step. */
+  function renumberAll() {
+    const r = renumber(app.typing, app.words, app.csvOrder);
+    app.applyChanges('Renumber the glossary order', { typing: r.typing, words: r.words });
+    say('Every glossary section is numbered 1, 2, 3… in the order it shows now.', true);
+  }
   /** Click on a glyph's drawing: select it and show it in the glyph panel. */
   function showGlyph(g: string) { selected = g; inspOpen = true; }
   $effect(() => {
@@ -93,7 +104,7 @@
   $effect(() => {
     const u = new URL(page.url);
     const set = (k: string, v: string | null) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
-    set('view', view === 'typing' ? 'typing' : null);
+    set('view', view === 'tiles' ? null : view);
     set('group', group === 'all' ? null : group);
     set('f', filter || null);
     set('g', selected);
@@ -214,6 +225,7 @@
     <span class="seg" role="tablist">
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
       <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>List view</button>
+      <button role="tab" class:on={view === 'words'} aria-selected={view === 'words'} onclick={() => (view = 'words')}>Words</button>
     </span>
     {#if view === 'typing' && !phone.on}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
@@ -243,6 +255,7 @@
         <div class="menu" role="menu" tabindex="-1" onmouseleave={() => (menu = false)}>
           <button onclick={() => { menu = false; fileInput.click(); }}>Import spellings (CSV)…</button>
           <button onclick={() => { menu = false; exportCsv(); }}>Export spellings (CSV)</button>
+          <button onclick={() => { menu = false; renumberAll(); }} title="Each glossary section's rows get 1, 2, 3… in the order they show now">Renumber the glossary order</button>
         </div>
       {/if}
     </span>
@@ -290,6 +303,9 @@
     {/if}
 
     <section class="grid-wrap">
+      {#if view === 'words'}
+        <WordsTable highlight={wordShown} {q} />
+      {:else}
       {#if d.areas[group]}
         {@const ar = d.areas[group]}
         {@const uses = usedIn(d, group)}
@@ -329,7 +345,9 @@
       {:else if phone.on}
         <TypingCards {sections} {selected} onselect={showGlyph} />
       {:else}
-        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} onopen={showGlyph} flat={searching} {showAreas} onnotice={say} />
+        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} onopen={showGlyph} flat={searching} {showAreas} onnotice={say}
+          onword={(w) => { wordShown = w; view = 'words'; }} />
+      {/if}
       {/if}
     </section>
   </div>

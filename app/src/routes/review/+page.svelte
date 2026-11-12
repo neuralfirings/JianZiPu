@@ -102,7 +102,7 @@
         const got = await loadDraftOf(hosted.client!, r.uid).catch(() => null);
         if (!got) continue;
         const b = got.bundle;
-        r.changes = diffBundle(b, { design: app.design!, typing: app.typing, svgs: app.svgs }).length;
+        r.changes = diffBundle(b, { design: app.design!, typing: app.typing, svgs: app.svgs, words: app.words }).length;
         r.behind = b.manifest.base.design_hash !== app.diskHash || b.manifest.base.csv_hash !== app.csvHash;
         r.based = b.manifest.base.date ?? null;
       }

@@ -212,7 +212,7 @@
               <strong>Your draft</strong>
               <p>Only you see it. Your builds use it. The font itself doesn't change.</p>
               <p class="muted">{#if app.draftBase}Compared with {app.referenceFont}{/if}{#if app.lastSaved} · last saved {hhmm(app.lastSaved)}{/if}</p>
-              {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}</p>{/if}
+              {#if counts}<p>Your changes: {plural(counts.glyphs, 'glyph')} · {plural(counts.spellings, 'spelling')} · {plural(counts.design, 'design item')}{#if counts.words} · {plural(counts.words, 'glossary word')}{/if}</p>{/if}
               <div class="row">
                 <button class="sm" onclick={() => { pill = false; goto('/review?mine'); }}>See my changes</button>
                 <button class="sm" onclick={() => { pill = false; goto('/requests'); }}>Change Requests{app.requests.length ? ` · ${app.requests.length}` : ''}</button>

@@ -1,12 +1,13 @@
 // Three-way merge of a draft into the current font: base (what the draft started from),
 // theirs (the draft), current (the font as it is now). Each change is one reviewable item:
-// a glyph file, one glyph's spellings, or one unit of design.json (an area, a word type, the
-// page center, the stroke weight, the sample sets). An item conflicts when the current font
+// a glyph file, one glyph's spellings, one unit of design.json (an area, a word type, the
+// page center, the stroke weight, the sample sets), or one of the glossary's words (whole). An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
 import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
+import { changedWords, cleanWord, type GWord, type Words } from './glossaryWords';
 
 export type Status = 'added' | 'changed' | 'deleted';
 type Base = { id: string; status: Status; conflict: boolean };
@@ -18,8 +19,10 @@ export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
 };
-export type Item = GlyphItem | SpellingItem | DesignItem;
-export type Current = { design: Design; typing: T.Typing; svgs: SvgMap };
+/** One of the glossary's words (words.csv), kept or skipped whole. */
+export type WordItem = Base & { kind: 'word'; key: string; base?: GWord; theirs?: GWord; current?: GWord };
+export type Item = GlyphItem | SpellingItem | DesignItem | WordItem;
+export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; words?: Words };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
@@ -28,7 +31,20 @@ const status = (base: unknown, theirs: unknown): Status => (base === undefined ?
 /** Every change the draft makes, compared with the current font. Changes the current font
  *  already has are left out. */
 export function diffBundle(b: Bundle, cur: Current): Item[] {
-  return [...glyphItems(b, cur), ...spellingItems(b, cur), ...designItems(b.base.design, b.design, cur.design)];
+  return [...glyphItems(b, cur), ...spellingItems(b, cur), ...designItems(b.base.design, b.design, cur.design),
+    ...(b.words ? wordItems(b.base.words ?? [], b.words, cur.words ?? []) : [])];
+}
+
+/** The words the draft adds, edits or deletes (a draft from before words has none to give). */
+function wordItems(base: Words, theirs: Words, current: Words): WordItem[] {
+  const find = (ws: Words, k: string) => { const w = ws.find((x) => x.word === k); return w ? cleanWord(w) : undefined; };
+  const out: WordItem[] = [];
+  for (const k of changedWords(base, theirs)) {
+    const b = find(base, k), t = find(theirs, k), c = find(current, k);
+    if (same(t, c)) continue;
+    out.push({ id: `word:${k}`, kind: 'word', key: k, status: status(b, t), base: b, theirs: t, current: c, conflict: !same(c, b) });
+  }
+  return out;
 }
 
 function glyphItems(b: Bundle, cur: Current): GlyphItem[] {
@@ -144,7 +160,8 @@ export function fontUpdateItems(base: Current, font: Current, mine: Current): It
   }
   const pseudo = {
     manifest: { svgs: { added, changed, deleted } }, design: font.design, typing: font.typing, svgs: fontSvgs,
-    base: { design: base.design, typing: base.typing, svgs: baseSvgs }
+    ...(font.words ? { words: font.words } : {}),
+    base: { design: base.design, typing: base.typing, svgs: baseSvgs, ...(base.words ? { words: base.words } : {}) }
   } as unknown as Bundle;
   return diffBundle(pseudo, mine);
 }
@@ -160,10 +177,11 @@ const SPELLING_NOUN: Record<T.SpellField, string> = {
 export function updateSummary(items: Item[]): string {
   const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
   const fields = new Map<string, Set<string>>();
-  let drawings = 0;
+  let drawings = 0, wordCount = 0;
   const design = new Map<string, number>();
   for (const it of items) {
     if (it.kind === 'glyph') drawings++;
+    else if (it.kind === 'word') wordCount++;
     else if (it.kind === 'spelling') {
       for (const f of it.fields) {
         const noun = SPELLING_NOUN[f.field];
@@ -178,6 +196,7 @@ export function updateSummary(items: Item[]): string {
   const parts: [number, string][] = [
     ...[...fields].map(([noun, gs]): [number, string] => [gs.size, `${noun} for ${n(gs.size, 'glyph')}`]),
     ...(drawings ? [[drawings, n(drawings, 'glyph drawing')] as [number, string]] : []),
+    ...(wordCount ? [[wordCount, n(wordCount, 'glossary word')] as [number, string]] : []),
     ...[...design].map(([w, k]): [number, string] => [k, n(k, w)])
   ].sort((a, b) => b[0] - a[0]);
   const words = parts.slice(0, 3).map((p) => p[1]);
@@ -187,17 +206,25 @@ export function updateSummary(items: Item[]): string {
 
 // ---------------------------------------------------------------- applying
 
-export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; applied: Item[] };
+/** `words`: only when `cur` had them, so a caller that leaves them out can't empty the list. */
+export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; words?: Words; applied: Item[] };
 
 /** Apply the kept items (`keep[id] === true`) to the current font. */
 export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Current): Merged {
   const design: Design = JSON.parse(JSON.stringify(cur.design));
   const typing: T.Typing = JSON.parse(JSON.stringify(cur.typing));
   const svgWrites: SvgMap = {}, svgDeletes: string[] = [], applied: Item[] = [];
+  let words: Words = JSON.parse(JSON.stringify(cur.words ?? []));
+  const hasWords = cur.words !== undefined;
   for (const it of items) {
     if (!keep[it.id]) continue;
     applied.push(it);
-    if (it.kind === 'glyph') {
+    if (it.kind === 'word') {
+      const i = words.findIndex((w) => w.word === it.key);
+      if (!it.theirs) { if (i >= 0) words = words.filter((_, j) => j !== i); }
+      else if (i >= 0) words[i] = { ...it.theirs };
+      else words.push({ ...it.theirs });
+    } else if (it.kind === 'glyph') {
       if (it.theirs == null) svgDeletes.push(it.key);
       else svgWrites[it.key] = it.theirs;
     } else if (it.kind === 'spelling') {
@@ -207,7 +234,7 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
       else typing[it.key] = s;
     } else setUnit(design, it.unit, it.theirs);
   }
-  return { design, typing, svgWrites, svgDeletes, applied };
+  return { design, typing, svgWrites, svgDeletes, ...(hasWords ? { words } : {}), applied };
 }
 
 function setUnit(d: Design, u: DesignUnit, v: unknown) {

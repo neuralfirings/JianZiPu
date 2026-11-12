@@ -48,7 +48,7 @@
   }
   // "the 21 Oct font your draft started from"
   const started = $derived(`the ${app.draftBase?.version.date ? `${day(app.draftBase.version.date)} ` : ''}font your draft started from`);
-  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : `glyph ${i.key}`);
+  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : i.kind === 'word' ? `the glossary word ${i.key}` : `glyph ${i.key}`);
 </script>
 
 {#if pilot.dialog}
@@ -110,6 +110,10 @@
                 {:else if it.kind === 'spelling'}
                   <table class="cells"><tbody>
                     {#each it.fields.filter((f) => f.conflict) as f}<tr><th>{f.field}</th><td>yours: {f.current || '—'}</td><td>the font's: {f.theirs || '—'}</td></tr>{/each}
+                  </tbody></table>
+                {:else if it.kind === 'word'}
+                  <table class="cells"><tbody>
+                    {#each ['glyphs', 'glossary', 'glossary_order', 'meaning'] as const as f}<tr><th>{f.replace('_', ' ')}</th><td>yours: {it.current?.[f] || '—'}</td><td>the font's: {it.theirs?.[f] || '—'}</td></tr>{/each}
                   </tbody></table>
                 {:else}
                   <p class="muted small">{it.summary.join(' · ')}</p>
