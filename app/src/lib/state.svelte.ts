@@ -13,6 +13,7 @@ import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
 import { day, fontOf, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import { isNetworkError } from './net';
+import { renameIn, renameProblem, type RenameImpact } from './rename';
 import * as T from './typing';
 
 const DRAFT_KEY = 'jzp-builder-draft';
@@ -444,6 +445,45 @@ class DesignState {
     this.paused = null;
     this.persistDraft();
     this.recheck();
+  }
+
+  /** Why `from` can't be renamed (to `to`, when given), or null. Online only a glyph the draft
+   *  added: renaming one the font has would read as one glyph deleted and another added. */
+  renameRefusal(from: string, to?: string): string | null {
+    if (hosted.isHosted && from in this.mainSvgs) return "Online you can rename only glyphs your draft added. The font's own glyphs are renamed on the Builder on your own computer.";
+    for (const id of [`glyph:${from}`, `spelling:${from}`]) if (this.lockOf(id)) return this.lockMessage(id);
+    if (to === undefined) return null;
+    return renameProblem(from, to, new Set([...this.known, ...Object.keys(this.typing), ...Object.keys(this.svgs)]));
+  }
+  /** What renaming `from` would change, for the confirmation (rename.ts). */
+  renameImpact(from: string): RenameImpact & { drawing: boolean } {
+    const d = this.design ?? { areas: {}, layouts: [], center: {} } as unknown as Design;
+    return { ...renameIn(d, this.typing, from, `${from}\u0000`).impact, drawing: from in this.svgs };
+  }
+  /** Rename a glyph everywhere it's used, as one undo step: its drawing, its spellings row, other
+   *  glyphs' Vertical form links, its areas and the spacing rules that name it. The drawing moves
+   *  when you Save (online: into the draft). Returns why not, or null when done. */
+  renameGlyph(from: string, to: string): string | null {
+    if (!this.design) return 'Nothing loaded yet.';
+    const n = to.trim();
+    const why = this.renameRefusal(from, n);
+    if (why) return why;
+    const r = renameIn(this.design, this.typing, from, n);
+    const svg = this.svgs[from];
+    this.applyChanges(`Rename ${from} to ${n}`, {
+      design: r.design, typing: r.typing,
+      ...(svg != null ? { svgWrites: { [n]: svg }, svgDeletes: [from] } : {})
+    });
+    return null;
+  }
+  /** The glyph editor wrote this drawing itself (on your own computer): it's saved, so no change
+   *  waiting for Save (a rename, a Review Apply) may write an older one over it. */
+  noteSvgSaved(name: string, text: string) {
+    this.savedSvgs = { ...this.savedSvgs, [name]: text };
+    if (name in this.pendingSvgs) {
+      const { [name]: _, ...rest } = this.pendingSvgs;
+      this.setPending(rest);
+    } else this.svgs = { ...this.svgs, [name]: text };
   }
 
   /** `withBase`: the step also changes the draft's reference font (Set reference font). */

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The Typing view on a phone: one card per glyph with its spellings and anything wrong with
+  // The List view on a phone: one card per glyph with its spellings and anything wrong with
   // them, the same fields as the table (T.FIELDS). Look only; a tap opens the glyph's card, where
   // its spellings are edited. Paste and CSV need the table, on a computer.
   import * as I from '$lib/icons';

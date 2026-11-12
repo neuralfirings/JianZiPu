@@ -296,3 +296,37 @@ describe('hosted draft', () => {
     expect(app.bringLabel).toBe('Bring 3.300 into my draft');
   });
 });
+
+describe('renaming a glyph', () => {
+  it('renames it everywhere in one undo step; the file moves on Save', async () => {
+    await app.load();
+    app.setSpelling('md_7', 'latin', 'qi');
+    expect(app.renameGlyph('md_7', 'md_ming')).toBe('md_ming already exists.');
+    expect(app.renameGlyph('md_7', 'md_qi')).toBeNull();
+    expect(app.svgs.md_qi).toBe(disk.md_7);
+    expect(app.svgs.md_7).toBeUndefined();
+    expect(app.typing.md_qi.latin).toBe('qi');
+    expect(app.pendingSvgs).toEqual({ md_qi: disk.md_7, md_7: null });
+    app.undo();
+    expect(app.svgs.md_7).toBe(disk.md_7);
+    expect(app.typing.md_7.latin).toBe('qi');
+    expect(app.pendingSvgs).toEqual({});
+  });
+  it('online: only a glyph the draft added', async () => {
+    hosted.isHosted = true;
+    await app.load();
+    expect(app.renameRefusal('md_ming')).toMatch(/only glyphs your draft added/);
+    app.applyChanges('Glyph md_new', { svgWrites: { md_new: SVG('M2 2h5v5z') } });
+    expect(app.renameRefusal('md_new')).toBeNull();
+    expect(app.renameGlyph('md_new', 'md_newer')).toBeNull();
+    expect(app.extraGlyphs).toEqual(['md_newer']);
+  });
+  it('a drawing the editor saved itself is not overwritten by an older one waiting for Save', async () => {
+    await app.load();
+    app.renameGlyph('md_7', 'md_qi');
+    app.noteSvgSaved('md_qi', SVG('M9 9h1v1z'));
+    expect(app.pendingSvgs).toEqual({ md_7: null });
+    expect(app.svgs.md_qi).toBe(SVG('M9 9h1v1z'));
+  });
+});
+

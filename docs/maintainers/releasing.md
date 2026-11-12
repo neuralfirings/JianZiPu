@@ -228,7 +228,7 @@ so the rule holds without anyone having to remember it.
 The glossary on the font page ("6. Glossary") is made from `components.csv`,
 so its spellings are the font's:
 
-- A glyph's **Glossary** column (Glyphs → Typing) names the section(s) where
+- A glyph's **Glossary** column (Glyphs → List view) names the section(s) where
   it has a row of its own, by title: `1c: Left Hand Techniques`, or two
   separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui
   Number`). The cell offers the titles to pick from. Leave it empty for a

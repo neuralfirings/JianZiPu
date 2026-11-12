@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  // The Typing view: one row per glyph, spellings edited in place like a spreadsheet.
+  // The List view (Glyphs): one row per glyph, spellings edited in place like a spreadsheet.
   // Enter saves and moves down, Tab moves right, Esc puts the old value back; a pasted range
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.

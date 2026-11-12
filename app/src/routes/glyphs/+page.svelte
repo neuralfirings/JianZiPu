@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Glyphs: every glyph, as Tiles (drawings) or Typing (a spelling table, components.csv).
+  // Glyphs: every glyph, as Tiles (drawings) or List view (a spelling table, components.csv).
   // The sidebar groups by design.json area (a glyph in several areas is in each); the 130
   // position decimals fold inside 徽 position. The bottom panel shows what the view doesn't:
-  // in Tiles it edits the spellings; in Typing the row is the editor, so it shows Try it,
+  // in Tiles it edits the spellings; in List view the row is the editor, so it shows Try it,
   // What changes and Issues. View, group, filter and selection live in the URL. On a phone the
   // sidebar is two selects and the selected glyph's card covers the tiles until closed.
   import * as I from '$lib/icons';
@@ -164,7 +164,6 @@
 </script>
 
 <datalist id="jzp-glyph-names">{#each all.filter((g) => !T.isDecimal(g)) as g}<option value={g}></option>{/each}</datalist>
-<datalist id="jzp-glossary-sections">{#each app.glossarySections as s}<option value={s.title}></option>{/each}</datalist>
 
 <div class="page">
   <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
@@ -172,7 +171,7 @@
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
-      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>Typing</button>
+      <button role="tab" class:on={view === 'typing'} aria-selected={view === 'typing'} onclick={() => (view = 'typing')}>List view</button>
     </span>
     {#if view === 'typing' && !phone.on}<label class="small"><input type="checkbox" bind:checked={showAreas} /> Areas column</label>{/if}
     {#if typingCheck.busy}<span class="muted small">checking spellings…</span>{/if}
@@ -398,7 +397,7 @@
   .menu button:hover { background: var(--bg-hover); }
   .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; font-size: var(--t-small); display: flex; gap: var(--space-4); align-items: center; }
 
-  /* a phone: search, Tiles | Typing and the two selects wrap; the tiles fill the width; the card covers them */
+  /* a phone: search, Tiles | List view and the two selects wrap; the tiles fill the width; the card covers them */
   .picks { display: flex; gap: var(--space-3); flex: 1 1 100%; min-width: 0; }
   .picks select { flex: 1 1 0; min-width: 0; }
   @media (max-width: 759.98px) {

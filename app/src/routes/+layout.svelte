@@ -427,7 +427,7 @@
     <div class="toast" role="status" onmouseenter={holdToast} onmouseleave={releaseToast} onfocusin={holdToast} onfocusout={releaseToast}>
       <span>{pilot.toast.text}</span>
       {#if pilot.toast.copy}<button onclick={() => copyMessage(pilot.toast!.copy!)}>Copy commit message</button>{/if}
-      {#if pilot.toast.undo}<button onclick={() => { app.undo(); pilot.toast = null; }}>Undo</button>{/if}
+      {#if pilot.toast.undo}<button onclick={() => { const t = pilot.toast; app.undo(); pilot.toast = null; t?.onundo?.(); }}>Undo</button>{/if}
       <button class="x" onclick={() => (pilot.toast = null)} aria-label="Close"><I.Close /></button>
     </div>
   {/if}

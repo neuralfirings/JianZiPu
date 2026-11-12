@@ -103,7 +103,7 @@
             <tr><td><code>#</code> <code>+</code></td><td><code>#</code> starts a new word without a space; <code>+</code> adds an advance between words.</td></tr>
           </tbody>
         </table>
-        <p>The exact keys for each part are its spellings, listed and edited in <a href="/glyphs?view=typing">Glyphs → Typing</a>. The <strong>Sample set…</strong> menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).</p>
+        <p>The exact keys for each part are its spellings, listed and edited in <a href="/glyphs?view=typing">Glyphs → List view</a>. The <strong>Sample set…</strong> menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -122,8 +122,8 @@
         <p>Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for <strong>Edit outline</strong>, <strong>Replace…</strong> and <strong>Trace…</strong>, its spellings, and <strong>Try it</strong>, which types each spelling and any word you enter through the unsaved spellings, live.</p>
 
         <h3>Typing: spellings</h3>
-        <p>The <strong>Tiles | Typing</strong> switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:</p>
-        <figure><a href="/help/typing.jpg" target="_blank"><img src="/help/typing.jpg" alt="The Typing table for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin" width="1280" height="800" loading="lazy" /></a><figcaption>Typing, showing the Left hand area: <code>s</code> types 名, <code>d</code> types 中.</figcaption></figure>
+        <p>The <strong>Tiles | List view</strong> switch turns the screen into a table of every glyph's spellings. Each column is one way to type the glyph:</p>
+        <figure><a href="/help/typing.jpg" target="_blank"><img src="/help/typing.jpg" alt="The List view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin" width="1280" height="800" loading="lazy" /></a><figcaption>List view, showing the Left hand area: <code>s</code> types 名, <code>d</code> types 中.</figcaption></figure>
         <table class="ref">
           <tbody>
             <tr><th>Latin Entry</th><td>What you type on an English keyboard: a one-letter shortcut (<code>k</code>) or the pinyin (<code>lun</code>). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.</td></tr>
@@ -143,7 +143,7 @@
           <li>Each spelling is checked as you type. Two glyphs can't share a spelling (except a glyph and its own vertical form): a <span class="pill danger"><I.Problem size={14} />clash</span> holds Save until it's fixed. A spelling that types something else gets a warning, but Save still works.</li>
           <li>The <strong>Typing</strong> filters in the sidebar (Needs attention, Clashes, No spellings yet, Vertical pairs, Unsaved) narrow the table to what needs work.</li>
         </ul>
-        <p>On a phone, Typing is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.</p>
+        <p>On a phone, List view is a list of cards, one per glyph: its spellings and anything wrong with them. Tap a card to edit its spellings on the glyph's card. Pasting a range and the CSV import and export need the table, on a computer.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -165,6 +165,7 @@
         {@render panelList(EDITOR_HELP)}
         <h3>Saving a glyph</h3>
         <p>The editor has its own <strong>Save glyph</strong> (<kbd>⌘S</kbd>) and its own undo. Edits that aren't saved yet are kept in the browser, and leaving asks whether to save or discard them. {#if online}Online, saving puts the glyph into your draft.{/if} {#if local}On your own computer, saving writes <code>builder/inputs/svg/&lt;name&gt;.svg</code> at once; if the file changed on disk meanwhile, you're asked which version to keep.{/if} A new glyph joins its area on its first save. The font picks up the new drawing at the next <strong>Build font</strong>.</p>
+        <p><strong>Rename…</strong>, next to the glyph's name, gives it another name. The name is the glyph's ID, so the new one goes everywhere the old one was used: its drawing, its spellings, other glyphs' Vertical form, its areas and the spacing rules that name it. A box lists what changes before you confirm, and it's one step: Undo (or <strong>Undo</strong> on the note that follows) takes all of it back. {#if online}Online you can rename only glyphs your draft added; the font's own glyphs are renamed on the Builder on your own computer.{/if} {#if local}On your own computer the drawing's file moves when you Save. <code>site/glossary.json</code> names a few glyphs by name: if it lists the glyph, change it there too (Check the glossary points it out).{/if} Save or discard your edits to the drawing first.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -213,7 +214,7 @@
         <ul>
           <li>Edits to the design and the spellings stay in the browser until you <strong>Save</strong> (<kbd>⌘S</kbd>). The header shows <span class="pill draft"><I.Unsaved size={14} />unsaved</span> with a count; click it to see the list or <strong>Discard all</strong>.</li>
           <li><I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> in the header (<kbd>⌘Z</kbd>, <kbd>⇧⌘Z</kbd>) undo and redo whole steps, such as one rule change or one paste. Hover them to see which step.</li>
-          <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a>.</li>
+          <li>Save waits while a spelling clashes, and says which ones; fix them in <a href="/glyphs?view=typing&f=attention">Glyphs → List view</a>.</li>
           <li>Unsaved work survives a reload: the Builder offers to restore it.</li>
           <li>On a phone, the header is one row (the screen's name, its status, <I.Undo class="inl" aria-label="Undo" /> <I.Redo class="inl" aria-label="Redo" /> on Glyphs and Layouts, and <I.More class="inl" aria-label="More" />), the screens are tabs at the bottom, and <strong>Save</strong> sits in a bar above the tabs while something is unsaved.</li>
           {#if online}
@@ -234,7 +235,7 @@
           <li>Your draft starts from the font as it is that day, and <strong>Your changes</strong> are what your draft does differently from that font. The <span class="pill draft"><I.Draft size={14} />Your draft</span> pill in the header shows which font that is (“compared with the font of 21 Oct (3.200)”) and how much you've changed. <strong>See my changes</strong> lists the changes item by item.</li>
           <li>On that list, <strong>Undo this change</strong> puts one item back the way the font has it: a glyph, a glyph's spellings, an area or a word type. For a word type, <strong>Show the spacing rules</strong> lists each rule you changed, and each has its own Undo. Every undo is one step you can take back with <I.Undo class="inl" aria-label="Undo" />. To throw everything away at once, use <I.More class="inl" aria-label="More" /> → <strong>Discard my draft…</strong>.</li>
           <li>To share your work, <I.More class="inl" aria-label="More" /> → <strong>Export my draft (.zip)…</strong> and send the file. <strong>Import a draft (.zip)…</strong> opens one again.</li>
-          <li>When the font changes after your draft started, a banner says what changed: “JianZiPu 3.300 is out: …” for a new release, or “The font was updated on 12 Nov: glossary sections for 79 glyphs” when it changed without a new number. Your draft doesn't have those changes until you bring them in: <strong>Bring the updates into my draft…</strong> (or <I.More class="inl" aria-label="More" /> → <strong>Bring the font's updates into my draft…</strong>). Changes to things you didn't touch come in on their own; where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>. Your own changes stay, and from then on Your changes compares your draft with the font as it is now. <strong>Not now</strong> hides the banner until the font changes again. Until you bring them in, a column added after your draft started (Glossary, say) shows empty in your Typing view.</li>
+          <li>When the font changes after your draft started, a banner says what changed: “JianZiPu 3.300 is out: …” for a new release, or “The font was updated on 12 Nov: glossary sections for 79 glyphs” when it changed without a new number. Your draft doesn't have those changes until you bring them in: <strong>Bring the updates into my draft…</strong> (or <I.More class="inl" aria-label="More" /> → <strong>Bring the font's updates into my draft…</strong>). Changes to things you didn't touch come in on their own; where you both changed the same thing you pick <strong>Keep mine</strong> or <strong>Take the font's</strong>. Your own changes stay, and from then on Your changes compares your draft with the font as it is now. <strong>Not now</strong> hides the banner until the font changes again. Until you bring them in, a column added after your draft started (Glossary, say) shows empty in your List view.</li>
           <li><strong>Feedback</strong> in the header goes to the font's maintainer. Confusing, broken or lovely, it's all useful.</li>
         </ul>
       </section>
@@ -289,7 +290,7 @@
             <tr><th colspan="2">Everywhere</th></tr>
             <tr><td><kbd>⌘S</kbd></td><td>Save</td></tr>
             <tr><td><kbd>⌘Z</kbd> / <kbd>⇧⌘Z</kbd></td><td>Undo / redo (not while typing in a field)</td></tr>
-            <tr><th colspan="2">Glyphs → Typing</th></tr>
+            <tr><th colspan="2">Glyphs → List view</th></tr>
             <tr><td><kbd>Enter</kbd> / <kbd>⇧Enter</kbd></td><td>Keep the cell, move down / up</td></tr>
             <tr><td><kbd>Tab</kbd></td><td>Next cell; accepts a suggestion in an empty Latin Entry</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Put the old value back</td></tr>
@@ -352,7 +353,7 @@
 
         <h3 id="messages-saving">Saving</h3>
         <dl class="panels messages">
-          <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
+          <dt>“Save is waiting”</dt><dd>Some spellings would stop the font from building; the dialog lists them. <strong>Show them</strong> opens <a href="/glyphs?view=typing&f=attention">Glyphs → List view</a> at the cells to fix, or <strong>Undo last change</strong>. Your changes are kept meanwhile.</dd>
           <dt>“design.json changed on disk” / “components.csv changed on disk”</dt><dd>On your own computer: the file changed since you opened it (a git pull, another tab, an editor). <strong>Export mine first</strong>, then <strong>Reload from disk</strong>; or <strong>Overwrite</strong> if yours should win.</dd>
           <dt>“Not saved: …”</dt><dd>On your own computer: the server couldn't write a file; the reason follows (“Not saved: <em>name</em>.svg: …” for a glyph file). Your changes are still here. Fix the cause, then <strong>Try again</strong>. “Not saved: can't reach the web server” means the server stopped: start it again (below) and press <strong>Try again</strong>.</dd>
           <dt>“Can't reach the web server. Run: cd builder && python3 -m jzpbuild.webserver”</dt><dd>On your own computer: the Builder's server isn't running. Start it with that command and reload.</dd>
@@ -410,7 +411,7 @@
 
         <h3 id="messages-build">Build & test</h3>
         <dl class="panels messages">
-          <dt>“ValidationError: input validation failed”</dt><dd>The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in <a href="/glyphs?view=typing&f=attention">Glyphs → Typing</a> and build again.</dd>
+          <dt>“ValidationError: input validation failed”</dt><dd>The lines under it name the problem; usually a spelling claimed by two glyphs (“latin spelling 'k' is claimed by multiple glyphs”). Fix it in <a href="/glyphs?view=typing&f=attention">Glyphs → List view</a> and build again.</dd>
           <dt>“FeatureLibError: The following glyph names are referenced but are missing from the glyph set”</dt><dd>A spelling names a glyph that has no drawing, or a vertical form is missing. Draw or import that glyph, or remove its spellings.</dd>
           <dt>“FileNotFoundError: … src_font/TW-Kai-98.ttf”</dt><dd>The base font is missing. On your own computer, copy <code>TW-Kai-98.ttf</code> into <code>builder/src_font/</code> (it isn't in git). Online, the server couldn't fetch it: send <strong>Feedback</strong>.</dd>
           <dt>“a build is already running” / “Another font is being built right now; try again in a minute.” / “You just built a font; try again in <em>n</em> seconds.”</dt><dd>Builds run one at a time, with a short pause between yours online. Wait, then <strong>Build font</strong> again.</dd>

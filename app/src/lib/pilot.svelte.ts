@@ -13,10 +13,11 @@ class Pilot {
   /** The font-updated banner was dismissed (once per sign-in). */
   updateDismissed = $state(false);
   /** A one-line note after an action ("Saved lg_gou to your draft…"), with an optional Undo. */
-  toast = $state<{ text: string; undo?: boolean; copy?: string } | null>(null);
+  toast = $state<{ text: string; undo?: boolean; copy?: string; onundo?: () => void } | null>(null);
   review = $state<{ bundle: Bundle; source: ReviewSource } | null>(null);
 
-  say(text: string, o: { undo?: boolean; copy?: string } = {}) {
+  /** `onundo`: what else the toast's Undo does (a rename goes back to the old name's page). */
+  say(text: string, o: { undo?: boolean; copy?: string; onundo?: () => void } = {}) {
     this.toast = { text, ...o };
   }
 }
