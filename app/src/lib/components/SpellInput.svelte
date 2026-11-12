@@ -48,6 +48,24 @@
   }
   // ---- the Glossary picker
   let open = $state(false);
+  let pickBtn = $state<HTMLButtonElement>();
+  /** Where the menu goes: under the cell, or over it when there's more room above, never past the
+   *  window's edge (it scrolls instead). Fixed to the window, so a panel's edge doesn't cut it off. */
+  let place = $state('');
+  function reposition() {
+    const r = pickBtn?.getBoundingClientRect();
+    if (!r || r.bottom < 0 || r.top > window.innerHeight) { open = false; return; }   // scrolled out of sight
+    const below = window.innerHeight - r.bottom - 8, above = r.top - 8;
+    const down = below >= 220 || below >= above;
+    const h = Math.max(120, Math.min(360, down ? below : above));
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - 320 - 8));
+    place = `left:${left}px;max-height:${h}px;` + (down ? `top:${r.bottom + 2}px` : `bottom:${window.innerHeight - r.top + 2}px`);
+  }
+  function openClose() {
+    if (open) { open = false; return; }
+    open = true;
+    reposition();
+  }
   let picker = $state<HTMLElement>();
   let chosen = $derived(own.split(';').map((x) => x.trim()).filter(Boolean));
   let sections = $derived(app.glossarySections.map((s) => s.title));
@@ -62,9 +80,16 @@
     if (!open) return;
     const away = (e: PointerEvent) => { if (picker && !picker.contains(e.target as Node)) open = false; };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') open = false; };
+    // the page scrolled or resized under it: follow the cell (closed once the cell is out of sight)
+    const shut = (e: Event) => { if (!picker?.contains(e.target as Node)) reposition(); };
+    window.addEventListener('scroll', shut, true);
+    window.addEventListener('resize', shut);
     window.addEventListener('pointerdown', away, true);
     window.addEventListener('keydown', esc);
-    return () => { window.removeEventListener('pointerdown', away, true); window.removeEventListener('keydown', esc); };
+    return () => {
+      window.removeEventListener('pointerdown', away, true); window.removeEventListener('keydown', esc);
+      window.removeEventListener('scroll', shut, true); window.removeEventListener('resize', shut);
+    };
   });
 
   function onpaste(e: ClipboardEvent) {
@@ -78,14 +103,14 @@
     <span class="ro" title={T.HELP.common}>{own}</span>
   {:else if field === 'glossary'}
     <span class="gp" bind:this={picker}>
-      <button type="button" class="pick" class:changed class:warn={unknown.length > 0} disabled={locked} aria-haspopup="listbox" aria-expanded={open}
-        data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined} title={locked ? undefined : T.HELP.glossary}
-        onclick={() => (open = !open)}>
+      <button type="button" class="pick" bind:this={pickBtn} class:changed class:warn={unknown.length > 0} disabled={locked} aria-haspopup="listbox" aria-expanded={open}
+        data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined} title={locked || open ? undefined : T.HELP.glossary}
+        onclick={openClose}>
         <span class="val">{#if chosen.length}{chosen.join('; ')}{:else}<span class="muted">none</span>{/if}</span>
         <I.Unfolded size={12} />
       </button>
       {#if open}
-        <div class="float menu" role="listbox" aria-multiselectable="true" aria-label="Glossary sections">
+        <div class="float menu" style={place} role="listbox" aria-multiselectable="true" aria-label="Glossary sections">
           <button type="button" role="option" aria-selected={!chosen.length} onclick={() => { app.setSpelling(glyph, 'glossary', ''); open = false; }}>
             <span class="tick">{#if !chosen.length}<I.Check size={14} />{/if}</span>None (no row of its own)</button>
           {#each sections as s (s)}
@@ -139,7 +164,7 @@
   .pick .val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pick.changed { background: color-mix(in srgb, var(--status-draft) 14%, transparent); }
   .pick.warn { border-color: var(--status-draft); }
-  .menu { position: absolute; left: 0; top: 100%; z-index: 30; margin-top: 2px; min-width: 280px; max-height: 320px; overflow: auto; display: flex; flex-direction: column; padding: var(--space-1); }
+  .menu { position: fixed; z-index: 60; min-width: 280px; max-width: 320px; overflow: auto; display: flex; flex-direction: column; padding: var(--space-1); }
   .menu button { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-2); border: 0; background: transparent; text-align: left; padding: var(--space-1) var(--space-2); white-space: nowrap; font-size: var(--t-small); }
   .menu button:hover { background: var(--sel-bg); }
   .menu .tick { width: 14px; display: inline-flex; }

@@ -16,9 +16,11 @@
   import SpellInput from './SpellInput.svelte';
 
   let {
-    sections, selected, onselect, flat = false, showAreas = false, onnotice
+    sections, selected, onselect, onopen, flat = false, showAreas = false, onnotice
   }: {
     sections: Section[]; selected: string | null; onselect: (g: string) => void;
+    /** a click on the row's drawing: show the glyph in the glyph panel */
+    onopen?: (g: string) => void;
     flat?: boolean; showAreas?: boolean; onnotice?: (text: string, undo?: boolean) => void;
   } = $props();
 
@@ -79,7 +81,7 @@
           {@const partner = partnerOf[g]}
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
             <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
-            <td class="gl"><span class="ga"><Glyph name={g} size={26} /></span><button class="gn" data-tip="Rename {g}"
+            <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><button class="gn" data-tip="Rename {g}"
               onclick={() => renaming.ask(g, { done: (_f, to) => onselect(to), undone: (f) => onselect(f) })}>{g}</button></td>
             {#each COLS as f}
               <td data-f={f}>
@@ -95,7 +97,7 @@
         {#each s.glyphs as g (g)}
           <tr data-g={g} class="ro" class:on={selected === g} onclick={() => onselect(g)}>
             <td class="st"></td>
-            <td class="gl"><span class="ga"><Glyph name={g} size={26} /></span><span class="gn">{g}</span></td>
+            <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gn">{g}</span></td>
             <td colspan={COLS.length} class="small muted">{T.decimalPatterns(g).join(' · ')}</td>
             {#if showAreas}<td></td>{/if}
             {#if flat}<td></td>{/if}
@@ -122,7 +124,8 @@
   .st.err { color: var(--status-danger); }
   .st.warn { color: var(--status-draft); }
   .gl { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; }
+  .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
+  .ga:hover { border-color: var(--sel-border); background: var(--sel-bg); }
   .gn { font-family: var(--font-mono); font-size: var(--t-caption); border: 0; background: transparent; padding: 0; height: auto; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
   button.gn:hover { text-decoration-color: var(--link); color: var(--link); }
   .issue { color: var(--ink-muted); max-width: 280px; }

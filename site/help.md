@@ -58,7 +58,7 @@ On a phone, two menus above the tiles pick the area and a spelling filter, and t
 
 Below the tiles, the inspector shows the selected glyph: its areas, its file, buttons for **Edit outline**, **Replace…** and **Trace…**, its spellings, and **Try it**, which types each spelling and any word you enter through the unsaved spellings, live.
 
-On a computer, drag the sidebar's right edge or the glyph panel's top edge to resize them (or focus the edge and use the arrow keys; Home puts it back). **Fold the sidebar away** on the sidebar's edge folds it away; **Show the sidebar** on the thin strip left behind brings it back. **Close** on the glyph panel closes it to a slim bar at the bottom: **Show the glyph panel**, or picking another glyph, opens it again. The Builder remembers the sizes in this browser.
+On a computer, drag the sidebar's right edge or the glyph panel's top edge to resize them (or focus the edge and use the arrow keys; Home puts it back). **Fold the sidebar away** on the sidebar's edge folds it away; **Show the sidebar** on the thin strip left behind brings it back. The glyph panel opens when you click a glyph's drawing: a tile, or the drawing at the start of a List view row (selecting a row to edit its spellings leaves it as it is). **Close** closes it. The Builder remembers the sizes in this browser.
 
 ### Typing: spellings
 

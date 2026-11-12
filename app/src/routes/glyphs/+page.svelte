@@ -6,7 +6,6 @@
   // What changes and Issues. View, group, filter and selection live in the URL. On a phone the
   // sidebar is two selects and the selected glyph's card covers the tiles until closed.
   import * as I from '$lib/icons';
-  import { untrack } from 'svelte';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
   import * as T from '$lib/typing';
@@ -39,15 +38,12 @@
   let sideW = $state(kept.sideW ?? 220);
   let sideOpen = $state(kept.sideOpen ?? true);
   let inspH = $state<number | null>(kept.inspH ?? null);   // null: as tall as it needs, up to 48% of the window
-  let inspOpen = $state(kept.inspOpen ?? true);
+  // the glyph panel opens when you click a glyph's drawing (a tile, a row's drawing), never on selecting a
+  // row; a link with ?g= opens it with that glyph
+  let inspOpen = $state(!!params.get('g') && (kept.inspOpen ?? true));
   let inspEl = $state<HTMLElement>();
-  // picking another glyph opens a closed glyph panel again (not the page load, not the same glyph)
-  let lastSel = untrack(() => selected);
-  $effect(() => {
-    const g = selected;
-    if (g && g !== lastSel) inspOpen = true;
-    lastSel = g;
-  });
+  /** Click on a glyph's drawing: select it and show it in the glyph panel. */
+  function showGlyph(g: string) { selected = g; inspOpen = true; }
   $effect(() => {
     const v = JSON.stringify({ sideW, sideOpen, inspH, inspOpen });
     try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private window: not kept */ }
@@ -317,7 +313,7 @@
           {#each tiles as g (g)}
             {@const fs = T.firstSpelling(app.typing, g)}
             <div class="tile" class:on={selected === g} class:unassigned={!areasOf[g]?.length} role="button" tabindex="0"
-              onclick={() => (selected = g)} ondblclick={() => goto(editUrl(g))}
+              onclick={() => showGlyph(g)} ondblclick={() => goto(editUrl(g))}
               onkeydown={(e) => { if (e.key === 'Enter') goto(editUrl(g)); }}>
               {#if errGlyphs.has(g)}<span class="mark e"><I.Problem size={14} /></span>{:else if warnGlyphs.has(g)}<span class="mark"><I.Warn size={14} /></span>{/if}
               <div class="art"><Glyph name={g} size={72} /></div>
@@ -331,9 +327,9 @@
           {/if}
         </div>
       {:else if phone.on}
-        <TypingCards {sections} {selected} onselect={(g) => (selected = g)} />
+        <TypingCards {sections} {selected} onselect={showGlyph} />
       {:else}
-        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} flat={searching} {showAreas} onnotice={say} />
+        <TypingTable {sections} {selected} onselect={(g) => (selected = g)} onopen={showGlyph} flat={searching} {showAreas} onnotice={say} />
       {/if}
     </section>
   </div>
@@ -344,12 +340,7 @@
   {#if addTo}<AddGlyphsDialog area={addTo} onclose={() => (addTo = null)} />{/if}
   {#if newDialog}<NewGlyphDialog onclose={() => (newDialog = false)} initialArea={sel?.areas[0] ?? (areaNames.includes(group) ? group : '')} />{/if}
 
-  {#if sel && !phone.on && !inspOpen}
-    <div class="inspbar">
-      <span class="mono">{sel.glyph}</span>
-      <button class="sm" onclick={() => (inspOpen = true)}><I.PanelShow size={14} /> Show the glyph panel</button>
-    </div>
-  {:else if sel}
+  {#if sel && (phone.on || inspOpen)}
     {#if !phone.on}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
       <div class="hresize" role="separator" aria-orientation="horizontal" aria-label="Resize the glyph panel" tabindex="0"
@@ -458,7 +449,6 @@
   .vresize:hover, .vresize:focus-visible, .hresize:hover, .hresize:focus-visible { background: var(--sel-bg); outline: none; }
   :global(body.resizing) { user-select: none; }
   .inspector .close { position: absolute; top: var(--space-2); right: var(--space-3); padding: 0 var(--space-2); }
-  .inspbar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); font-size: var(--t-small); }
   .inspector { position: relative; display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-7); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border); background: var(--bg-panel); max-height: 48vh; overflow: auto; align-items: flex-start; }
   .col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; flex: 1 1 260px; }
   .col.facts { flex: 1 1 300px; }
