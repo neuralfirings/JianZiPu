@@ -139,8 +139,17 @@
     } else edit(from.sid === to.sid ? `Move ${rowName(r)} in ${from.sid}` : `Move ${rowName(r)} to ${to.sid}`, (rows) => moveRow(rows, from, to));
     if (from.sid !== to.sid) onnotice?.(`Moved ${rowName(r)} to ${sec(to.sid).title || 'under its section title'}.`, true);
   }
+  /** A definition box as tall as its text, wrapping in its column (`use:grow={value}`: refits when the value changes). */
+  function grow(el: HTMLTextAreaElement, _value?: string) {
+    const fit = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight + 2}px`; };
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    el.addEventListener('input', fit);
+    fit();
+    return { update: () => queueMicrotask(fit), destroy: () => { ro.disconnect(); el.removeEventListener('input', fit); } };
+  }
   function setMeaning(sid: string, i: number, v: string) {
-    const r = rowsOf(sid)[i], m = v.trim();
+    const r = rowsOf(sid)[i], m = v.replace(/\s*\n\s*/g, ' ').trim();
     if (!r || (r.meaning ?? '') === m) return;
     edit(`${rowName(r)}: definition in ${sid}`, (rows) => {
       const list = [...rows[sid]];
@@ -784,8 +793,9 @@
                     <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) ? marks(r) : []} scale={0.04} /></button>
                 {/if}
               </td>
-              <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
-                onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
+              <td class="def"><textarea class="meaning" rows="1" use:grow={r.meaning ?? ''} value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
+                onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
+                onchange={(e) => setMeaning(s.id, i, (e.target as HTMLTextAreaElement).value)}></textarea></td>
               <td class="act">
                 <button class="quiet ic" data-picks onclick={(e) => openGlyph(r, key, e)}
                   aria-label={isWord(r) ? `Choose a glyph of ${rowName(r)} to show in the glyph panel` : `Show ${glyphsOfRow(r)[0]} in the glyph panel`}
@@ -1030,6 +1040,8 @@
   .zh { font-family: var(--font-serif); font-size: 15px; }
   .mono { font-family: var(--font-mono); }
   .meaning { width: 100%; height: 26px; border-color: transparent; background: transparent; }
+  textarea.meaning { display: block; min-height: 26px; resize: none; overflow: hidden; padding: 3px var(--space-2); font: inherit; line-height: 1.4; white-space: pre-wrap; }
+  td.def { padding-top: var(--space-1); padding-bottom: var(--space-1); }
   .meaning:hover { border-color: var(--border); }
   .meaning:focus { border-color: var(--link); background: var(--bg-field); }
   .act { white-space: nowrap; text-align: right; }
