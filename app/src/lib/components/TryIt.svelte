@@ -55,6 +55,16 @@
   let freeWords = $derived([...new Set(free.split(/\s+/).filter(Boolean))].map((w) => byWord.get(w)).filter(Boolean));
   const same = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
   const name = (g: string) => app.charOf(g) || g;
+  /** The font adds the colon itself before a glyph only a vertical word can hold (tang types :尚). */
+  const autoColon = (got: string[], want: string[]) => want[0] !== 'blank_colon' && want.some((g) => app.verticalOnly.has(g)) && same(got, ['blank_colon', ...want]);
+  const ok = (got: string[], want: string[]) => same(got, want) || autoColon(got, want);
+  const glyphWords = (gs: string[]) => gs.map((g) => (g === 'blank_colon' ? 'the colon' : g === '.notdef' ? 'a character not in the font' : name(g) === g ? g : `${name(g)} (${g})`)).join(' + ');
+  /** The tile's tooltip: what typing it gives, and why when that isn't the glyph alone. */
+  function tip(c: { label: string; want: string[] }, got: string[]): string {
+    if (same(got, c.want)) return `${c.label} types ${glyphWords(got)}`;
+    if (autoColon(got, c.want)) return `${c.label} types ${glyphWords(got)}: only a vertical word can hold ${glyphWords(c.want)}, so the font adds the colon itself`;
+    return `${c.label} types ${glyphWords(got)}, not ${glyphWords(c.want)}: check the spellings for a clash or a typo`;
+  }
 
   let errors = $derived(app.typingErrors.filter((e) => (e.kind === 'clash' ? e.glyphs.includes(glyph) : e.glyph === glyph)));
   let warnings = $derived(typingCheck.warningsFor(glyph));
@@ -76,9 +86,9 @@
   <div class="checks">
     {#each checks as c (c.word)}
       {@const w = byWord.get(c.word)}
-      <div class="chk" class:ok={w && same(w.glyphs, c.want)} class:bad={w && !same(w.glyphs, c.want)} title={w && !same(w.glyphs, c.want) ? `gives ${w.glyphs.join(' + ')}` : ''}>
+      <div class="chk" class:ok={w && ok(w.glyphs, c.want)} class:bad={w && !ok(w.glyphs, c.want)} data-tip={w ? tip(c, w.glyphs) : null}>
         {#if w}{@render out(w.glyphs, w.texts)}{:else}<span class="muted">…</span>{/if}
-        <small class="mono">{c.label} {#if w}{#if same(w.glyphs, c.want)}<I.Check size={12} />{:else}<I.Warn size={12} />{/if}{/if}</small>
+        <small class="mono">{c.label} {#if w}{#if ok(w.glyphs, c.want)}<I.Check size={12} />{:else}<I.Warn size={12} />{/if}{/if}</small>
       </div>
     {:else}
       <span class="muted small">No spellings yet: type one and it previews here at once.</span>

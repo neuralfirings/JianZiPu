@@ -15,7 +15,7 @@
   import TypingCards from '$lib/components/TypingCards.svelte';
   import TypingFields from '$lib/components/TypingFields.svelte';
   import GlossaryTable from '$lib/components/GlossaryTable.svelte';
-  import { glossarySearchText, usesOf } from '$lib/glossary';
+  import { describeUses, glossarySearchText, leftOut, usesOf } from '$lib/glossary';
   import TryIt from '$lib/components/TryIt.svelte';
   import GlyphFacts from '$lib/components/GlyphFacts.svelte';
   import AddGlyphsDialog from '$lib/components/AddGlyphsDialog.svelte';
@@ -33,6 +33,7 @@
   let view = $state<View>(asView(params.get('view') ?? storedView));
   /** Glyphs > Glossary: the glyph a List view row's Glossary column opened, in that section ('' = in none) */
   let glossaryShown = $state<{ sid: string; glyph: string } | null>(null);
+  function showInGlossary(sid: string, glyph: string) { glossaryShown = { sid, glyph }; q = ''; view = 'glossary'; }
   let group = $state(params.get('group') ?? 'all');
   let filter = $state<Filter>((params.get('f') as Filter) ?? '');
   let selected = $state<string | null>(params.get('g'));
@@ -146,6 +147,8 @@
   // the search finds a glyph by its name, spellings and pinyin, and by List view's Glossary column (1c, a
   // section's title, "in 少息", "not in the glossary")
   let glossaryUses = $derived(usesOf(app.glossary, app.glossarySections));
+  /** Where the glossary shows the glyph in the panel (read-only: the Glossary tab changes it). */
+  let selUses = $derived(selected ? glossaryUses[selected] ?? [] : []);
   const keep = (g: string) => (!filter || matchFilter[filter](g)) && (!needle || T.searchText(app.typing, g).includes(needle)
     || glossarySearchText(app.typing, g, glossaryUses, app.glossarySections).includes(needle));
 
@@ -345,7 +348,7 @@
         <TypingCards {sections} {selected} onselect={showGlyph} />
       {:else}
         <TypingTable {sections} {selected} onselect={(g) => (selected = g)} onopen={showGlyph} flat={searching} {showAreas} onnotice={say}
-          onglossary={(sid, g) => { glossaryShown = { sid, glyph: g }; q = ''; view = 'glossary'; }} />
+          onglossary={showInGlossary} />
       {/if}
       {/if}
     </section>
@@ -384,11 +387,21 @@
         </div>
         {/if}
       </div>
-      {#if view === 'tiles' || phone.on}
-        <div class="col">
-          <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
-          <TypingFields glyph={sel.glyph} />
+      <div class="col">
+        <div class="colh">Typing {#if partnerOf[sel.glyph] || T.get(app.typing, sel.glyph).vert_variant}<span class="muted">· <I.Pair size={14} /> vertical pair</span>{/if}</div>
+        <TypingFields glyph={sel.glyph} />
+        <div class="colh gl">Glossary</div>
+        <div class="uses">
+          {#each describeUses(selUses, app.glossarySections) as line, i (line)}
+            <button class="use" onclick={() => showInGlossary(selUses.map((u) => u.sid).filter((x, j, a) => a.indexOf(x) === j)[i], sel.glyph)}
+              data-tip="Show it in Glyphs > Glossary">{line}</button>
+          {:else}
+            <span class="small" class:warn={leftOut(app.typing, sel.glyph, glossaryUses, app.glossarySections.length > 0)}>{leftOut(app.typing, sel.glyph, glossaryUses, app.glossarySections.length > 0) ? 'Not in the glossary yet: the glossary check will ask for it' : 'Not in the glossary'}</span>
+          {/each}
         </div>
+        <p class="muted small">Where it appears is changed in the <button class="link" onclick={() => (view = 'glossary')}>Glossary</button> tab.</p>
+      </div>
+      {#if view === 'tiles' || phone.on}
         <div class="col">
           <div class="colh">Try it <span class="muted">· live, saved or not</span></div>
           <TryIt glyph={sel.glyph} />
@@ -472,6 +485,12 @@
   .col.wide { flex: 2 1 380px; }
   .facts .row { flex-wrap: wrap; }
   .colh { font-size: var(--t-caption); color: var(--ink-muted); border-bottom: 1px dashed var(--border); padding-bottom: 2px; margin-bottom: 2px; }
+  .colh.gl { margin-top: var(--space-3); }
+  .uses { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+  .uses .use { height: auto; padding: 0; border: 0; background: transparent; color: var(--link); font-size: var(--t-small); text-align: left; cursor: pointer; }
+  .uses .use:hover { text-decoration: underline; }
+  .uses .warn { color: var(--status-draft); }
+  button.link { height: auto; padding: 0; border: 0; background: transparent; color: var(--link); font: inherit; cursor: pointer; text-decoration: underline; }
   .big { padding: var(--space-4); background: var(--bg-field); border: 1px solid var(--border); border-radius: var(--radius-md); }
   .small { font-size: var(--t-caption); }
   .warn { color: var(--status-draft); }
