@@ -107,6 +107,10 @@
   let descEdit = $state<{ key: string; value: string } | null>(null);
   let newSub = $state<Record<string, { title: string; kind: Section['kind'] }>>({});
   let newGroup = $state('');
+  /** The one add box showing: `row:<subtitle>`, `sub:<section title>` or `group`; the rest are a + button. */
+  let opened = $state<string | null>(null);
+  const open = (key: string) => { opened = key; addNote = null; };
+  const close = () => { opened = null; };
   let layoutNote = $state<{ key: string; text: string } | null>(null);
   const taken = () => [...layout.groups.map((g) => g.id), ...Object.keys(layout.sections)];
 
@@ -620,10 +624,16 @@
             <td colspan="6">
               {#if !rows.length}<span class="muted small empty">No rows yet{drag ? ': drop here' : ''}.</span>{/if}
               <span class="add">
-                <input type="text" bind:value={adding[s.id]} placeholder={s.kind === 'usage' ? 'Add a glyph: k, 勾 or lg_gou' : 'Add a glyph or a word: 勾, :shaoxi'}
-                  aria-label="Add to {s.title}" spellcheck="false"
-                  onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void add(s.id); } }} />
-                <button class="sm" onclick={() => add(s.id)} disabled={busy === s.id || !adding[s.id]?.trim()}>{#if busy === s.id}<I.Working size={14} />{:else}<I.Plus size={14} />{/if} Add</button>
+                {#if opened === `row:${s.id}`}
+                  <!-- svelte-ignore a11y_autofocus -->
+                  <input type="text" bind:value={adding[s.id]} placeholder={s.kind === 'usage' ? 'A glyph: k, 勾 or lg_gou' : 'A glyph or a word: 勾, :shaoxi'}
+                    aria-label="Add to {s.title}" spellcheck="false" autofocus
+                    onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void add(s.id); } else if (e.key === 'Escape') close(); }} />
+                  <button class="sm" onclick={() => add(s.id)} disabled={busy === s.id || !adding[s.id]?.trim()}>{#if busy === s.id}<I.Working size={14} />{/if} Add</button>
+                  <button class="sm quiet" onclick={close}>Done</button>
+                {:else}
+                  <button class="sm quiet" onclick={() => open(`row:${s.id}`)}><I.Plus size={14} /> Add</button>
+                {/if}
                 {#if addNote?.sid === s.id}<span class="small" class:bad={addNote.level === 'error'} role="status">{#if addNote.level === 'error'}<I.Problem size={12} />{:else}<I.Check size={12} />{/if} {addNote.text}</span>{/if}
               </span>
             </td>
@@ -710,15 +720,21 @@
       {#if !q.trim()}
         {@const f = newSub[g.id] ?? { title: '', kind: 'vertical' }}
         <div class="addsub">
-          <input type="text" value={f.title} placeholder="New subtitle, e.g. 3f: Ornaments" aria-label="New subtitle under {g.title}"
+          {#if opened === `sub:${g.id}`}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input type="text" value={f.title} placeholder="Its title, e.g. 3f: Ornaments" aria-label="New subtitle under {g.title}" autofocus
             oninput={(e) => (newSub = { ...newSub, [g.id]: { ...f, title: (e.target as HTMLInputElement).value } })}
-            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSub(g.id); } }} />
+            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSub(g.id); } else if (e.key === 'Escape') close(); }} />
           <select value={f.kind} aria-label="How its table is laid out" onchange={(e) => (newSub = { ...newSub, [g.id]: { ...f, kind: (e.target as HTMLSelectElement).value as Section['kind'] } })}>
             <option value="vertical">each typed on its own, after a colon</option>
             <option value="usage">each glyph in an example word</option>
             <option value="hidden">not on the page</option>
           </select>
-          <button class="sm" onclick={() => addSub(g.id)} disabled={!f.title.trim()}><I.Plus size={14} /> Add subtitle</button>
+          <button class="sm" onclick={() => { addSub(g.id); close(); }} disabled={!f.title.trim()}>Add subtitle</button>
+          <button class="sm quiet" onclick={close}>Cancel</button>
+          {:else}
+          <button class="sm quiet" onclick={() => open(`sub:${g.id}`)}><I.Plus size={14} /> Add subtitle</button>
+          {/if}
         </div>
       {/if}
     </section>
@@ -740,9 +756,15 @@
   {/if}
   {#if sections.length && !q.trim()}
     <div class="addgrp">
-      <input type="text" bind:value={newGroup} placeholder="New section title, e.g. 5: Ornaments" aria-label="New section title"
-        onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } }} />
-      <button onclick={addGroup} disabled={!newGroup.trim()}><I.Plus size={14} /> Add section title</button>
+      {#if opened === 'group'}
+        <!-- svelte-ignore a11y_autofocus -->
+        <input type="text" bind:value={newGroup} placeholder="Its title, e.g. 5: Ornaments" aria-label="New section title" autofocus
+          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); close(); } else if (e.key === 'Escape') close(); }} />
+        <button onclick={() => { addGroup(); close(); }} disabled={!newGroup.trim()}>Add section title</button>
+        <button class="quiet" onclick={close}>Cancel</button>
+      {:else}
+        <button class="quiet" onclick={() => open('group')}><I.Plus size={14} /> Add section title</button>
+      {/if}
     </div>
   {/if}
   {#if q.trim() && !sections.some((s) => rowsOf(s.id).some((r) => matches(r, s)))}<p class="muted small">No row matches.</p>{/if}
