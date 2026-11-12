@@ -137,7 +137,6 @@ def test_missing_names_glyphs_with_no_row_and_rows_that_cant_be_shown():
     assert any("lg_tiao is in the section twice" in p for p in problems)
     assert any("uses lg_gone, which isn't a glyph" in p for p in problems)
     assert not any("挑挑" in p for p in problems)                     # a word fits an example-word section too
-    assert any("has no title" in p for p in glossary.missing({}, {"1d": {"title": " ", "kind": "usage"}}))
 
 
 def test_a_glyph_can_have_a_row_in_two_sections():
@@ -480,3 +479,13 @@ def test_visibility_is_its_own_switch_on_subtitles_and_section_titles():
     out_secs, out_groups = glossary.with_layout({}, {"groups": [{"id": "x", "title": "X", "hidden": True, "sections": ["9"]}],
                                                      "sections": {"9": {"title": "9", "kind": "hidden"}}})
     assert out_secs["9"] == {"title": "9", "kind": "vertical", "hidden": True, "rows": []} and out_groups[0]["hidden"] is True
+
+
+def test_rows_can_sit_straight_under_a_section_title():
+    r = rows("lg_gou,,,k,,勾,,gōu", "md_qi,,,qi,,起,,qǐ")
+    sec = {"x": {**vertical("x", g("md_qi")), "title": ""}, "1a": {**usage("1a", g("lg_gou"), template=("0{}5", "散{}五")), "title": "1a: Sub"}}
+    groups = [{"id": "one", "title": "1: Title", "sections": ["x", "1a"]}]
+    out = glossary.render("<!-- glossary all -->\n<!-- /glossary all -->", r, sec, groups)
+    assert out.index('<h4 id="glossary-one">') < out.index(":qi") < out.index('<label id="glossary-1a">')
+    assert '<label id="glossary-x">' not in out and glossary.missing(r, sec) == []
+    assert glossary.with_layout({}, {"groups": [{"id": "one", "title": "1", "sections": ["x"]}], "sections": {"x": {"title": "", "kind": "vertical"}}})[0]["x"]["title"] == ""

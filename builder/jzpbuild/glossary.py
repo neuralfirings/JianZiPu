@@ -239,7 +239,8 @@ def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None 
         kind = "vertical" if kind == "hidden" else kind
         if kind not in KINDS:
             raise ValueError(f"subtitle {sid}: kind {kind!r} is none of {', '.join(KINDS)}")
-        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE, True), "kind": kind,
+        # no title: rows straight under the section title, before its subtitles
+        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE), "kind": kind,
                 **({"hidden": True} if hidden else {})}
         u = m.get("usage")
         if kind == "usage":
@@ -471,8 +472,6 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
     problems = []
     shown: set[str] = set()
     for sid, sec in sections.items():
-        if not sec.get("title", "").strip():
-            problems.append(f"site/glossary.json: section {sid} has no title.")
         seen: set[str] = set()
         for e in entries(sid, sec):
             key = "word " + e.word if e.word else e.glyph
@@ -533,7 +532,7 @@ def page_html(sections: dict[str, dict], groups: list[dict], rows: dict[str, dic
         lines += _desc(g.get("description", ""), "glossary-desc")
         for sid in shown:
             sec = sections[sid]
-            if sec.get("title", "").strip() != g.get("title", "").strip():
+            if sec.get("title", "").strip() and sec["title"].strip() != g.get("title", "").strip():
                 lines.append(f'<label id="glossary-{_esc(sid)}">{_esc(sec.get("title", ""))}</label>')
             lines += _desc(sec.get("description", ""), "glossary-subdesc")
             lines += [l[len(INDENT):] if l.startswith(INDENT) else l for l in table_html(sid, sec, rows, count + 1).split("\n")]
@@ -712,7 +711,7 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
         count = 0
         for sid in order:
             sec = sections[sid]
-            out["tables"].append({"id": sid, "title": sec.get("title", sid),
+            out["tables"].append({"id": sid, "title": sec.get("title") or next((g.get("title") for g in groups if sid in g.get("sections", [])), sid),
                                   "html": table_html(sid, sec, rows, count + 1)})
             count += len(section_rows(sid, sec, rows))
     except GlossaryError as e:

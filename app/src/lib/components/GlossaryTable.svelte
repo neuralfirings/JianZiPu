@@ -71,9 +71,26 @@
   function edit(label: string, fn: (rows: Record<string, GRow[]>) => Record<string, GRow[]>) {
     app.editGlossary(label, fn);
   }
+  /** A section title's rows without a subtitle: the first untitled subtitle under it. */
+  /** The section title a dragged row is over (its rows without a subtitle take it). */
+  let dropTitle = $state<string | null>(null);
+  const untitledOf = (gid: string) => layout.groups.find((g) => g.id === gid)?.sections.find((id) => !layout.sections[id]?.title.trim());
   function move(from: { sid: string; index: number }, to: { sid: string; index: number }) {
     const r = rowsOf(from.sid)[from.index];
     if (!r) return;
+    if (to.sid.startsWith('new:')) {                 // straight under a section title: a subtitle without a title, first
+      const gid = to.sid.slice(4), src = sec(from.sid), id = newId('', taken());
+      const g = layout.groups.find((x) => x.id === gid)!;
+      app.editGlossaryLayout(`Move ${rowName(r)} under ${g.title}`, (l, rows) => {
+        l.sections[id] = { title: '', kind: src.kind, ...(src.kind === 'usage' ? { usage: src.usage ?? ['{}', '{}'] } : {}) };
+        l.groups.find((x) => x.id === gid)!.sections.unshift(id);
+        rows[from.sid] = rows[from.sid].filter((_, j) => j !== from.index);
+        rows[id] = [r];
+        return { layout: l, rows };
+      });
+      onnotice?.(`Moved ${rowName(r)} under ${g.title}, with no subtitle.`, true);
+      return;
+    }
     if (from.sid === to.sid && (to.index === from.index || to.index === from.index + 1)) return;
     if (from.sid !== to.sid) {
       const why = refuse(app.glossary, r, sec(to.sid));
@@ -129,13 +146,14 @@
     if (!titleEdit) return;
     const { key, value, nav } = titleEdit, v = value.trim();
     titleEdit = null;
-    if (!v) { layoutNote = { key, text: 'A title can\'t be empty.' }; return; }
     const [kind, id] = [key.slice(0, 1), key.slice(2)];
+    // a subtitle may have none: its rows sit straight under the section title
+    if (!v && kind === 'g') { layoutNote = { key, text: 'A section title can\'t be empty.' }; return; }
     if (kind === 'g') {
       const g = layout.groups.find((x) => x.id === id)!;
       if (g.title === v && (g.nav ?? '') === (nav ?? '').trim()) return;
       editLayout(`Section title: ${v}`, (l) => { const x = l.groups.find((y) => y.id === id)!; x.title = v; if (nav?.trim()) x.nav = nav.trim(); else delete x.nav; });
-    } else if (layout.sections[id].title !== v) editLayout(`Subtitle: ${v}`, (l) => { l.sections[id].title = v; });
+    } else if (layout.sections[id].title !== v) editLayout(v ? `Subtitle: ${v}` : 'No subtitle', (l) => { l.sections[id].title = v; });
   }
   function saveDesc() {
     if (!descEdit) return;
@@ -549,15 +567,20 @@
   function targetAt(x: number, y: number): { sid: string; index: number } | null {
     const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop]');
     if (!el) return drop;
+    dropTitle = el.dataset.drop === 'group' ? el.dataset.gid! : null;
     const sid = el.dataset.sid!, i = Number(el.dataset.i);
     if (el.dataset.drop === 'end') return { sid, index: rowsOf(sid).length };
     if (el.dataset.drop === 'start') return { sid, index: 0 };
+    if (el.dataset.drop === 'group') {               // a section title: its rows without a subtitle, made if need be
+      const u = untitledOf(el.dataset.gid!);
+      return u ? { sid: u, index: rowsOf(u).length } : { sid: `new:${el.dataset.gid}`, index: 0 };
+    }
     const r = el.getBoundingClientRect();
     return { sid, index: y < r.top + r.height / 2 ? i : i + 1 };
   }
   const gapBefore = (sid: string, i: number) => !!drag && drop?.sid === sid && drop.index === i;
   const okDrop = $derived.by(() => {
-    if (!drag || !drop || drop.sid === drag.sid) return true;
+    if (!drag || !drop || drop.sid === drag.sid || drop.sid.startsWith('new:')) return true;
     return !refuse(app.glossary, rowsOf(drag.sid)[drag.index], sec(drop.sid));
   });
 </script>
@@ -574,7 +597,7 @@
         <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 's', s.id)} disabled={!!q.trim()}
           aria-label="Drag the subtitle {s.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the subtitle · a finger: press and hold first'}><I.Grip size={14} /></button>
         <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}" data-tip={KIND[s.kind]}>
-          {#if isFolded(s.id)}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}<span>{s.title}</span></button>
+          {#if isFolded(s.id)}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}{#if s.title}<span>{s.title}</span>{:else}<span class="untitled">No subtitle</span>{/if}</button>
         <span class="count">({entries(rows.length)})</span>
         {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
@@ -693,11 +716,13 @@
   {#if titleEdit?.key === key}
     <div class="tedit">
       <!-- svelte-ignore a11y_autofocus -->
-      <input type="text" bind:value={titleEdit.value} autofocus aria-label="Title"
-        onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} />
+      <label class="fld"><span>Title</span>
+        <input type="text" bind:value={titleEdit.value} autofocus placeholder={key.startsWith('s:') ? 'None: its rows sit under the section title' : ''}
+          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} /></label>
       {#if key.startsWith('g:')}
-        <input type="text" class="nav" bind:value={titleEdit.nav} placeholder="Short name in the contents (optional)" aria-label="Short name in the page's contents"
-          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} />
+        <label class="fld"><span>Name in the page's contents</span>
+          <input type="text" class="nav" bind:value={titleEdit.nav} placeholder="optional, e.g. Left hand"
+            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} /></label>
       {/if}
       <button class="sm" onclick={saveTitle}>Done</button>
       <button class="sm quiet" onclick={() => (titleEdit = null)}>Cancel</button>
@@ -751,7 +776,8 @@
     <section class="grp" aria-labelledby="gg-{g.id}" data-gid={g.id} class:off={g.hidden}
       class:hd-before={headDrop?.kind === 'g' && headDrop.id === g.id && headDrop.before} class:hd-after={headDrop?.kind === 'g' && headDrop.id === g.id && !headDrop.before}
       class:lifted={headDrag?.kind === 'g' && headDrag.id === g.id}>
-      <h2 id="gg-{g.id}" data-gid={g.id} class:hd-in={headDrop?.kind === 's' && headDrop.gid === g.id && headDrop.id === ''}>
+      <h2 id="gg-{g.id}" data-gid={g.id} data-drop="group" class:hd-in={(headDrop?.kind === 's' && headDrop.gid === g.id && headDrop.id === '')
+        || (!!drag && dropTitle === g.id)}>
         <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 'g', g.id)} disabled={!!q.trim()}
           aria-label="Drag the section title {g.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the section title · a finger: press and hold first'}><I.Grip size={14} /></button>
         <button class="quiet fold gfold" onclick={() => gfold(g.id)} aria-expanded={!groupFolded(g.id)} aria-controls="gc-{g.id}">
@@ -927,6 +953,8 @@
   .desc :global(text), .dprev :global(text) { font-family: var(--font-mono); background: var(--bg-sunken); padding: 0 3px; border-radius: 3px; }
   .tedit, .addsub, .addgrp, .adopt { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
   .tedit input { width: 360px; height: 28px; } .tedit input.nav { width: 240px; }
+  .fld { display: inline-flex; flex-direction: column; gap: 2px; font-size: var(--t-caption); color: var(--ink-muted); font-family: var(--font-serif); font-weight: 400; }
+  .sec h3 .untitled { color: var(--ink-muted); font-style: italic; font-weight: 400; }
   .dedit { display: flex; flex-direction: column; gap: var(--space-2); max-width: 760px; }
   .dedit textarea { width: 100%; font-family: var(--font-mono); font-size: var(--t-small); }
   .dprev { border-left: 2px solid var(--border); padding-left: var(--space-3); font-size: var(--t-small); }
