@@ -54,3 +54,8 @@ export function renameIn(design: Design, typing: T.Typing, from: string, to: str
   const impact: RenameImpact = { spellings: from in typing, areas: [...new Set(areas)], rules, vertical };
   return { design: next, typing: t, impact };
 }
+
+/** A glyph name from a file's name (New glyph → Several SVG files): md_san.svg gives md_san, and
+ *  anything a glyph name can't hold becomes _ ("lg gou (2).svg" gives lg_gou_2_). */
+export const nameFromFile = (file: string) =>
+  file.replace(/\.svg$/i, '').trim().replace(/[^A-Za-z0-9_.-]+/g, '_').replace(/^[^A-Za-z0-9]+/, '').replace(/\.+$/, '').slice(0, 64) || 'glyph';

@@ -42,6 +42,7 @@ export { default as Warn } from '@lucide/svelte/icons/triangle-alert';
 export { default as Alert } from '@lucide/svelte/icons/circle-alert';
 export { default as Unsaved } from '@lucide/svelte/icons/circle-dot';
 export { default as Working } from '@lucide/svelte/icons/loader-circle';
+export { default as Upload } from '@lucide/svelte/icons/upload';         // drop files here
 export { default as Info } from '@lucide/svelte/icons/info';
 export { default as Draft } from '@lucide/svelte/icons/circle-dashed';
 export { default as Current } from '@lucide/svelte/icons/circle-dot';     // the one in use: font, rule row

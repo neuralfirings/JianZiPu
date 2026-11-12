@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
-import { renameIn, renameProblem } from './rename';
+import { nameFromFile, renameIn, renameProblem } from './rename';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -35,5 +35,12 @@ describe('renaming a glyph', () => {
     expect(r.typing.md_san.vert_variant).toBe('md_tuichu');
     expect(r.impact).toEqual({ spellings: true, areas: ['char', 'left'], rules: 1, vertical: ['md_san'] });
     expect(r.design.layouts[0].name).toBe('standard');                        // names that aren't glyphs stay
+  });
+  it('names a glyph after its file', () => {
+    expect(nameFromFile('md_san.svg')).toBe('md_san');
+    expect(nameFromFile('lg gou (2).SVG')).toBe('lg_gou_2_');
+    expect(nameFromFile('_推出.svg')).toBe('glyph');
+    expect(nameFromFile('md_9..svg')).toBe('md_9');
+    expect(renameProblem('', nameFromFile('lg gou (2).svg'), [])).toBeNull();
   });
 });

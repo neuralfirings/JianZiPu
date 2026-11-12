@@ -476,6 +476,22 @@ class DesignState {
     });
     return null;
   }
+  /** New glyphs from drawings (New glyph → Several SVG files), as one undo step: each file, and
+   *  each name in `area` when one is given. The files are written when you Save (online: into the
+   *  draft). Names are checked by the dialog (rename.ts renameProblem). */
+  addGlyphs(items: { name: string; svg: string }[], area: string | null) {
+    if (!this.design || !items.length) return;
+    const names = items.map((i) => i.name);
+    let design: Design | undefined;
+    if (area && this.design.areas[area]) {
+      design = clone(this.design);
+      const a = design.areas[area];
+      a.glyphs = [...a.glyphs, ...names.filter((n) => !a.glyphs.includes(n))];
+    }
+    this.applyChanges(`Add ${items.length} glyph${items.length === 1 ? '' : 's'}`, {
+      ...(design ? { design } : {}), svgWrites: Object.fromEntries(items.map((i) => [i.name, i.svg]))
+    });
+  }
   /** The glyph editor wrote this drawing itself (on your own computer): it's saved, so no change
    *  waiting for Save (a rename, a Review Apply) may write an older one over it. */
   noteSvgSaved(name: string, text: string) {

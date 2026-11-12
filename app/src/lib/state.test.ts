@@ -330,3 +330,16 @@ describe('renaming a glyph', () => {
   });
 });
 
+describe('adding several glyphs from files', () => {
+  it('adds the files and joins the area in one undo step', async () => {
+    await app.load();
+    app.addGlyphs([{ name: 'md_a', svg: SVG('M0 0h5v5z') }, { name: 'md_b', svg: SVG('M1 1h5v5z') }], 'left');
+    expect(app.design!.areas.left.glyphs).toEqual(['md_ming', 'md_a', 'md_b']);
+    expect(Object.keys(app.pendingSvgs)).toEqual(['md_a', 'md_b']);
+    expect(app.svgs.md_b).toBe(SVG('M1 1h5v5z'));
+    app.undo();
+    expect(app.design!.areas.left.glyphs).toEqual(['md_ming']);
+    expect(app.svgs.md_a).toBeUndefined();
+  });
+});
+

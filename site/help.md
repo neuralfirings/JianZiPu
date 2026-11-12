@@ -50,7 +50,7 @@ The exact keys for each part are its spellings, listed and edited in [Glyphs →
 ### Finding and adding
 
 - **Search** finds a glyph by spelling, character, pinyin, name or decimal: `k`, `勾`, `gou`, `lg_gou` and `7.6` all work.
-- **+ New glyph** opens a new drawing: give it a name (such as `md_9`), pick its area, and start blank, from an SVG file, or from an image to trace.
+- **+ New glyph** opens a new drawing: give it a name (such as `md_9`), pick its area, and start blank, from an SVG file, or from an image to trace. **Several SVG files** adds many at once: drop the files on the dialog (or choose them), and each becomes a glyph named after its file, in the area you picked. Each file is checked the way the build reads it, and the list says which to fix (a name already taken, a file with nothing to draw) before **Add**. It's one step Undo takes back; the files are written when you Save (online, into your draft).
 - With an area picked, **+ Add glyphs** puts existing drawings into it. One glyph can be in several areas.
 - Click a tile to select it; double-click it (or press Enter, or its **Edit** pill) to open the [glyph editor](https://jianzipufont.com/help/#editor).
 

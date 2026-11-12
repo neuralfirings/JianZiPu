@@ -114,7 +114,7 @@
         <h3>Finding and adding</h3>
         <ul>
           <li><strong>Search</strong> finds a glyph by spelling, character, pinyin, name or decimal: <code>k</code>, <code>勾</code>, <code>gou</code>, <code>lg_gou</code> and <code>7.6</code> all work.</li>
-          <li><strong>+ New glyph</strong> opens a new drawing: give it a name (such as <code>md_9</code>), pick its area, and start blank, from an SVG file, or from an image to trace.</li>
+          <li><strong>+ New glyph</strong> opens a new drawing: give it a name (such as <code>md_9</code>), pick its area, and start blank, from an SVG file, or from an image to trace. <strong>Several SVG files</strong> adds many at once: drop the files on the dialog (or choose them), and each becomes a glyph named after its file, in the area you picked. Each file is checked the way the build reads it, and the list says which to fix (a name already taken, a file with nothing to draw) before <strong>Add</strong>. It's one step Undo takes back; the files are written when you Save (online, into your draft).</li>
           <li>With an area picked, <strong>+ Add glyphs</strong> puts existing drawings into it. One glyph can be in several areas.</li>
           <li>Click a tile to select it; double-click it (or press Enter, or its <strong>Edit</strong> pill) to open the <a href="#editor">glyph editor</a>.</li>
         </ul>
