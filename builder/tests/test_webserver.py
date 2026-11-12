@@ -340,3 +340,22 @@ def test_hosted_server_puts_the_pr_icon_in_the_page(tmp_path, monkeypatch):
         assert "favicon.ico" in page("builder.jianzipufont.com")
     finally:
         srv.shutdown()
+
+
+# ---------------------------------------------------------------- the glossary's words (words.csv)
+
+def test_words_are_listed_and_saved_with_a_hash(tmp_path, monkeypatch):
+    f = tmp_path / "words.csv"
+    f.write_text("word,glyphs,glossary,glossary_order,meaning\n少息,md_shao md_xi,3e: E,2,\n", encoding="utf-8")
+    monkeypatch.setattr(config, "WORDS_CSV", f)
+    p = webserver.glyphs_payload()
+    assert p["words"] == [{"word": "少息", "glyphs": "md_shao md_xi", "glossary": "3e: E", "glossary_order": "2", "meaning": ""}]
+    new = p["words"] + [{"word": "大息", "glyphs": "md_da md_xi", "glossary": "3e: E", "glossary_order": "1", "meaning": "rest"}]
+    r = webserver.write_words(new, p["words_hash"])
+    assert r["ok"] and r["words"] == 2 and "大息,md_da md_xi,3e: E,1,rest" in f.read_text(encoding="utf-8")
+    with pytest.raises(webserver.CsvConflict):
+        webserver.write_words(new, p["words_hash"])               # the file moved on since that hash
+    with pytest.raises(ValueError, match="twice"):
+        webserver.write_words(new + [new[0]], r["hash"])
+    f.unlink()
+    assert webserver.glyphs_payload()["words"] == []                # no file: no words

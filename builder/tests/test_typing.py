@@ -239,7 +239,7 @@ def test_the_glossary_column_is_kept_and_never_clashes(csv_copy):
             r["glossary"] = "2a: Basic Right Hand; 3b: Related to Notes"   # the same sections twice: no clash
     webserver.write_glyph_rows(rows, payload["hash"])
     text = csv_copy.read_text(encoding="utf-8")
-    assert text.splitlines()[0].endswith(",pinyin,glossary,meaning")
+    assert text.splitlines()[0].endswith(",pinyin,glossary,glossary_order,meaning")
     assert "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand; 3b: Related to Notes," in text
 
 

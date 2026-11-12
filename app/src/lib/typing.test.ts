@@ -116,7 +116,7 @@ describe('records and CSV', () => {
   it('round-trips through CSV, in the given order, quoting commas', () => {
     const t = base(); t.lg_ti.pinyin = 'a, b';
     const text = toCsv(t, ['md_san', 'lg_gou']);
-    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary,meaning');
+    expect(text.split('\n')[0]).toBe('glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary,glossary_order,meaning');
     expect(text.split('\n')[1].startsWith('md_san,')).toBe(true);
     expect(text).toContain('"a, b"');
     const back = fromCsv(text);

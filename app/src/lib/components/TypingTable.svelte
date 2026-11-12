@@ -25,7 +25,7 @@
   } = $props();
 
   const COLS = T.FIELDS;   // the phone's TypingCards show the same fields
-  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'meaning'];
+  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'glossary_order', 'meaning'];
   let openDecimals = $state(false);
   let table: HTMLTableElement;
 
@@ -120,6 +120,7 @@
   td[data-f] { min-width: 70px; }
   td[data-f='pinyin'] { min-width: 90px; }
   td[data-f='meaning'] { min-width: 200px; }
+  td[data-f='glossary_order'] { min-width: 60px; width: 70px; }
   .st { width: 18px; text-align: center; }
   .st.err { color: var(--status-danger); }
   .st.warn { color: var(--status-draft); }

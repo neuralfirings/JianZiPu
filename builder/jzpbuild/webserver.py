@@ -23,7 +23,9 @@ API (all JSON):
   POST /api/words                  {design?, words:[...], rows?, svgs?} -> per word: glyphs, layout, positions;
                                    with `rows`, typed through those spellings (unsaved too) and new glyphs'
                                    drawings in a preview font of the last build, so no Build is needed
-  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence
+  GET  /api/glyphs                 catalog rows (components.csv) + areas + svg presence, and the glossary's words
+                                   (words.csv) with their own hash
+  PUT  /api/glossary/words         {words, base_hash} -> rewrite words.csv (409 if it changed on disk)
   PUT  /api/glyphs                 {rows, base_hash, design?} -> rewrite components.csv (409 if it changed
                                    on disk, 400 with `errors` if a spelling clashes or is malformed)
   POST /api/typing/preview         {design?, rows, words?, base_rows?, compare_words?} -> unsaved spellings
@@ -548,7 +550,8 @@ def glyphs_payload() -> dict:
                         **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
             "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
-            "glossary_sections": glossary_sections()}
+            "glossary_sections": glossary_sections(),
+            "words": [clean_word(w) for w in read_words()], "words_hash": _hash(_read_words_text())}
 
 
 def glossary_sections() -> list[dict]:
@@ -577,6 +580,48 @@ def write_glyph_rows(rows: list[dict], base_hash: str | None = None, design: dic
     config.COMPONENTS_CSV.write_text(text, encoding="utf-8")
     data.cache_clear_all()
     return {"ok": True, "rows": len(recs), "hash": _hash(text)}
+
+
+def _read_words_text() -> str:
+    return config.WORDS_CSV.read_text(encoding="utf-8") if config.WORDS_CSV.exists() else ""
+
+
+def read_words() -> list[dict]:
+    """inputs/words.csv's records (the glossary's words), [] when there is none."""
+    return list(csv.DictReader(io.StringIO(_read_words_text())))
+
+
+def clean_word(w: dict) -> dict:
+    return {k: str(w.get(k) or "").strip() for k in glossary.WORD_FIELDS}
+
+
+def words_to_csv(words: list[dict]) -> str:
+    """words.csv text, in the given order; a word with no text is dropped."""
+    buf = io.StringIO()
+    out = csv.DictWriter(buf, fieldnames=glossary.WORD_FIELDS, lineterminator="\n")
+    out.writeheader()
+    for w in (clean_word(w) for w in words):
+        if w["word"]:
+            out.writerow(w)
+    return buf.getvalue()
+
+
+def write_words(words: list[dict], base_hash: str | None = None) -> dict:
+    """Rewrite inputs/words.csv from the app's words (Glyphs > Words). Refuses when the file changed
+    on disk since `base_hash`, or when a word is there twice."""
+    current = _read_words_text()
+    if base_hash is not None and base_hash != _hash(current):
+        raise CsvConflict("words.csv changed on disk since it was loaded")
+    seen, twice = set(), []
+    for w in (clean_word(w) for w in words):
+        if w["word"] in seen:
+            twice.append(w["word"])
+        seen.add(w["word"])
+    if twice:
+        raise ValueError(f"the word {twice[0]} is in the list twice")
+    text = words_to_csv(words)
+    config.WORDS_CSV.write_text(text, encoding="utf-8")
+    return {"ok": True, "words": len(seen - {""}), "hash": _hash(text)}
 
 
 def rows_to_csv(rows: list[dict], order_from: str) -> str:
@@ -691,7 +736,10 @@ def glossary_payload(body: dict, owner: str = "local") -> dict:
     # the rows as Save would write them: in the file's order (a section's unlisted rows follow it), new ones last
     clean = [typing_preview.clean_record(r) for r in recs if isinstance(r, dict)]
     text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
-    out = glossary.check(glossary.records(list(csv.DictReader(io.StringIO(text)))), design, font, svg_source(body))
+    # the glossary's words: the Builder's (unsaved too), else words.csv
+    words = body.get("words") if isinstance(body.get("words"), list) else read_words()
+    rows = glossary.records(list(csv.DictReader(io.StringIO(text))), [w for w in words if isinstance(w, dict)][:MAX_ROWS])
+    out = glossary.check(rows, design, font, svg_source(body))
     key = out.pop("font_key", None)
     url = (f"/api/preview-fonts/{key}.ttf" if key else BUILD.public(build)["url"] if build else "/api/glossary/font")
     return {**out, "font": "released" if font == config.SITE_FONT else "build", "font_url": url}
@@ -1023,6 +1071,15 @@ class Handler(SimpleHTTPRequestHandler):
                 config.DESIGN_JSON.write_text(text, encoding="utf-8")
                 data.cache_clear_all()
                 return self._json({"ok": True, **{k: v for k, v in _design_payload(body["design"], text).items() if k != "design"}})
+            if path == "/api/glossary/words":
+                if not isinstance(body.get("words"), list) or len(body["words"]) > MAX_ROWS:
+                    return self._json({"ok": False, "error": "words: a list of words, please."}, 400)
+                try:
+                    return self._json(write_words(body["words"], body.get("base_hash")))
+                except CsvConflict as err:
+                    return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_words_text())}, 409)
+                except ValueError as err:
+                    return self._json({"ok": False, "error": str(err)}, 400)
             if path == "/api/glyphs":
                 try:
                     return self._json(write_glyph_rows(body["rows"], body.get("base_hash"), body.get("design")))

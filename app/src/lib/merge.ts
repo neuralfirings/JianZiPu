@@ -151,7 +151,7 @@ export function fontUpdateItems(base: Current, font: Current, mine: Current): It
 
 const SPELLING_NOUN: Record<T.SpellField, string> = {
   latin: 'Latin entries', latin_alt: 'Latin entries', simplified: 'Chinese spellings', traditional: 'Chinese spellings',
-  common: 'number or symbol spellings', vert_variant: 'vertical forms', pinyin: 'pinyin', glossary: 'glossary sections',
+  common: 'number or symbol spellings', vert_variant: 'vertical forms', pinyin: 'pinyin', glossary: 'glossary sections', glossary_order: 'glossary order',
   meaning: 'meanings'
 };
 

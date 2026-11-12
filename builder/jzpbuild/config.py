@@ -25,6 +25,7 @@ BUILDER_DIR = Path(__file__).resolve().parent.parent   # this pipeline's directo
 INPUTS_DIR = BUILDER_DIR / "inputs"                        # glyphs.py, genfea.py, build.py
 
 COMPONENTS_CSV = INPUTS_DIR / "components.csv"               # data.py
+WORDS_CSV = INPUTS_DIR / "words.csv"                         # glossary.py: the glossary's words (:长吟), not typed
 GLYPH_RENAME_CSV = INPUTS_DIR / "glyphRename.csv"            # data.py
 EDGE_CASES_FEA = INPUTS_DIR / "edge_cases.fea"                # features.py
 

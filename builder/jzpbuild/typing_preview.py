@@ -42,7 +42,7 @@ from .data import GlyphRow, resolve_char_to_glyph_name
 from .positioning import schema
 
 ROW_FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt",
-              "simplified", "traditional", "pinyin", "glossary", "meaning")   # pinyin, glossary, meaning: not typed (glossary.py)
+              "simplified", "traditional", "pinyin", "glossary", "glossary_order", "meaning")   # the last four: not typed (glossary.py)
 SPELLING_FIELDS = ("latin", "latin_alt", "simplified", "traditional")
 # letters and digits, starting with a letter (a leading digit reads as a string or position number);
 # [ and ] too (features.spell_latin: bracketleft / bracketright), so 【 】 type through them

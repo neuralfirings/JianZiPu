@@ -5,6 +5,7 @@ on the page (lessons included) types the glyphs it shows.
 Run:  cd builder && python3 -m pytest tests/test_glossary.py
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -18,12 +19,19 @@ from jzpbuild.glossary import GlossaryError  # noqa: E402
 FIELDS = glossary.FIELDS
 
 
-def rows(*recs: str) -> dict[str, dict]:
-    """'lg_gou,,,k,,勾,,gōu,2a' -> the row dict load_rows() makes."""
+# the columns as the fixtures write them: glossary_order comes after them, as `order`
+LINE = [f for f in FIELDS if f != "glossary_order"]
+
+
+def rows(*recs: str, order: dict[str, str] | None = None, words: list[dict] | None = None) -> dict[str, dict]:
+    """'lg_gou,,,k,,勾,,gōu,2a' -> the row dict load_rows() makes; `order`: glossary_order by glyph;
+    `words`: words.csv records."""
     out = {}
     for line in recs:
-        r = dict(zip(FIELDS, line.split(",")))
+        r = dict(zip(LINE, line.split(",")))
         out[r["glyph_name"]] = {f: r.get(f, "") for f in FIELDS}
+        out[r["glyph_name"]]["glossary_order"] = (order or {}).get(r["glyph_name"], "")
+    out.update(glossary.word_rows(words or []))
     return out
 
 
@@ -97,13 +105,15 @@ def test_spellings_are_escaped():
 
 def test_vertical_rows_words_partners_and_numbers():
     r = rows("md_san,md_san2,0,,,散,,sàn,3c: Numbers", "md_san2,,,san,,,,,", "md_1,,1,,,一,,yī,3c: Numbers",
-             "md_2,,2,,,二,,èr,3c: Numbers", "md_dai,,,dai,,带,,dài,", "md_qi,,,qi,,起,,qǐ,3c: Numbers")
-    sec = {"3c": {"title": "3c: Numbers", "kind": "vertical", "rows": ["md_1", "md_2", "md_san", ["md_dai", "md_qi"]]}}
+             "md_2,,2,,,二,,èr,3c: Numbers", "md_dai,,,dai,,带,,dài,", "md_qi,,,qi,,起,,qǐ,3c: Numbers",
+             order={"md_1": "1", "md_2": "2", "md_san": "3"},
+             words=[{"word": "带起", "glyphs": "md_dai md_qi", "glossary": "3c: Numbers", "glossary_order": "4"}])
+    sec = {"3c": {"title": "3c: Numbers", "kind": "vertical"}}
     out = glossary.render(page("3c"), r, sec)
     assert "<td>:1..:2</td>" in out and "<td>:一..:二</td>" in out
     assert "<td><span class=\"nw\">:0</span>, <span class=\"nw\">:san</span></td>" in out and "<td>:散</td>" in out and "<td>sàn</td>" in out
     assert "<td>:daiqi</td>" in out and "<jzp>:带起</jzp>" in out and "<td>dài qǐ</td>" in out
-    assert out.index(":daiqi") < out.index("<td>:qi</td>")     # glyphs rows leaves out come after
+    assert out.index(":daiqi") < out.index("<td>:qi</td>")     # rows without an order number come last
     assert glossary.missing(r, sec) == []                        # md_san2 by its partner, md_dai in a word
 
 
@@ -130,8 +140,9 @@ def test_the_column_names_sections_by_title():
 
 def test_the_files_must_agree():
     r = rows("lg_gou,,,k,,勾,,gōu,")
-    with pytest.raises(GlossaryError, match="add 2a there"):
-        glossary.render(page("2a"), r, {"2a": {"kind": "usage", "usage": ["{}", "{}"], "rows": ["lg_gou"]}})
+    w = rows("lg_gou,,,k,,勾,,gōu,", words=[{"word": "勾勾", "glyphs": "lg_gou md_nope", "glossary": "2a: X"}])
+    with pytest.raises(GlossaryError, match="uses md_nope, which has no row"):
+        glossary.render(page("2a"), w, {"2a": {"title": "2a: X", "kind": "vertical"}})
     with pytest.raises(GlossaryError, match="no glossary marker"):
         glossary.render(page(), r, {"2a": {"kind": "usage", "usage": ["{}", "{}"]}})
     with pytest.raises(GlossaryError, match="doesn't define"):
@@ -192,9 +203,15 @@ def shipped(**extra) -> list[dict]:
     return recs + [{"glyph_name": g, **r} for g, r in extra.items()]
 
 
+def shipped_words() -> list[dict]:
+    import csv
+    with open(config.WORDS_CSV, newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+
 def test_the_check_passes_the_shipped_files():
     pytest.importorskip("uharfbuzz")
-    out = glossary.check(glossary.records(shipped()))
+    out = glossary.check(glossary.records(shipped(), shipped_words()))
     assert out["ok"] and out["problems"] == [] and out["typing"] == [] and out["not_built"] == []
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert [t["id"] for t in out["tables"]] == [m.group(2) for m in glossary.BLOCK_RE.finditer(text)]
@@ -205,7 +222,7 @@ def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
     pytest.importorskip("uharfbuzz")
     new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū", "glossary": "1c: Left Hand Techniques",
            "meaning": "Push the string out"}
-    out = glossary.check(glossary.records(shipped(md_foo=new, md_bar={"latin": "zz", "glossary": "9z: Nowhere"})))
+    out = glossary.check(glossary.records(shipped(md_foo=new, md_bar={"latin": "zz", "glossary": "9z: Nowhere"}), shipped_words()))
     t = next(t for t in out["tables"] if t["id"] == "1c")
     assert "<td>tc</td>" in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
     assert out["not_built"] == ["md_bar", "md_foo"] and out["typing"] == []   # not a false alarm: Build, then check
@@ -218,22 +235,22 @@ SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d=
 def test_the_check_draws_a_new_glyph_in_from_its_drawing():
     pytest.importorskip("uharfbuzz")
     new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū", "glossary": "1c: Left Hand Techniques"}
-    out = glossary.check(glossary.records(shipped(md_foo=new)), svg=lambda n: SQUARE if n == "md_foo" else None)
+    out = glossary.check(glossary.records(shipped(md_foo=new), shipped_words()), svg=lambda n: SQUARE if n == "md_foo" else None)
     assert out["ok"] and out["drawn"] == ["md_foo"] and out["not_built"] == [] and out["typing"] == []
     assert out["missing_chars"] == ["出", "推"]         # characters only a Build adds: its examples wait
     assert out["font_key"] and typing_preview.FONTS.by_key(out["font_key"]).font_bytes
 
 
 def test_the_check_reports_what_a_release_would_stop_on():
-    out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc", "glossary": "1c: Left Hand Techniques"})))
+    out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc", "glossary": "1c: Left Hand Techniques"}), shipped_words()))
     assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
 
 
 def test_the_check_reports_a_glyph_whose_glossary_column_is_empty():
-    # a draft older than the Glossary column: glossary.json lists the glyph, the row doesn't name the section
+    # a draft older than the Glossary column: the glyph has spellings and no section, so it's left out
     recs = [{**r, "glossary": ""} if r["glyph_name"] == "mod_chuo" else r for r in shipped()]
-    out = glossary.check(glossary.records(recs))
-    assert not out["ok"] and "lists mod_chuo" in out["error"]
+    out = glossary.check(glossary.records(recs, shipped_words()))
+    assert out["ok"] and any(p.startswith("mod_chuo") and "no row in the glossary" in p for p in out["problems"])
 
 
 def test_http_check_locally_and_online(monkeypatch):
@@ -309,3 +326,38 @@ def test_the_shipped_sections_include_uncategorized_and_hidden():
     assert secs["99"] == {"title": "99: Hidden in Glossary", "kind": "hidden"}
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert "<!-- glossary 4" in text and "<!-- glossary 99" not in text
+
+
+# ---------------------------------------------------------------- glossary order and words
+
+def test_glossary_order_sorts_a_section():
+    sec = {"3c": {"title": "3c: N", "kind": "vertical"}, "3d": {"title": "3d: M", "kind": "vertical"}}
+    r = rows("md_a,,,ka,,甲,,,3c: N", "md_b,,,kb,,乙,,,3c: N", "md_c,,,kc,,丙,,,3c: N; 3d: M", "md_d,,,kd,,丁,,,3c: N",
+             "md_e,,,ke,,戊,,,3c: N", order={"md_a": "2", "md_b": "0.5", "md_c": "2; 1", "md_e": "x"},
+             words=[{"word": "甲乙", "glyphs": "md_a md_b", "glossary": "3c: N", "glossary_order": "1.5"}])
+    got = [e if isinstance(e, str) else "+".join(e) for e in glossary.entries("3c", sec["3c"], r)]
+    # 0.5, 1.5, then 2 twice (alphabetically: ka before kc), then no number in file order (md_d, md_e)
+    assert got == ["md_b", "md_a+md_b", "md_a", "md_c", "md_d", "md_e"]
+    assert glossary.entries("3d", sec["3d"], r) == ["md_c"]          # md_c's second number, 1, in 3d
+    probs = glossary.order_problems(r)
+    assert probs == ["md_e: glossary order 'x' isn't a number (1, 2.5, or one per section: 3; 12)."]
+    r["md_a"]["glossary_order"] = "1; 2"
+    assert "has 2 numbers for 1 glossary section(s)" in glossary.order_problems(r)[0]
+
+
+def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
+    sec = {"3e": {"title": "3e: E", "kind": "vertical"}}
+    r = rows("md_shao,,,shao,,少,,shǎo,", "md_xi,,,xi,,息,,xī,",
+             words=[{"word": "少息", "glyphs": "md_shao md_xi", "glossary": "3e: E", "glossary_order": "1", "meaning": "a short rest"}])
+    out = glossary.render(page("3e"), r, sec)
+    assert "<td>:shaoxi</td>" in out and '<td class="meaning">a short rest</td>' in out
+    assert glossary.missing(r, sec) == []                             # 少 and 息 are shown in the word
+
+
+def test_the_shipped_words_and_orders_keep_the_page():
+    rows_ = glossary.load_rows()
+    assert sum(1 for k in rows_ if k.startswith(glossary.WORD)) == 15
+    assert "rows" not in json.dumps(glossary.load_sections())
+    text = config.SITE_INDEX.read_text(encoding="utf-8")
+    assert glossary.render(text) == text
+
