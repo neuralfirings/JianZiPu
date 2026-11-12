@@ -218,9 +218,9 @@ def test_a_meaning_column_joins_only_a_section_that_has_one():
            "2c": vertical("2c", g("lg_lun"))}
     out = glossary.render(page("2a", "2c"), r, sec)
     a, c = out.split("<!-- glossary 2c -->")
-    assert '<th width="22%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
+    assert '<th width="19%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
     assert '<td class="meaning"></td>' in a                                  # every row of the section gets the cell
-    assert "Definition" not in c and '<th width="23%">ASCII</th>' in c          # 2c has none: the table stays as it was
+    assert "Definition" not in c and '<th width="17%">ASCII</th>' in c          # 2c has none: no Definition column
     assert glossary.render(out, r, sec) == out
 
 
@@ -287,7 +287,8 @@ def test_the_check_draws_a_new_glyph_in_from_its_drawing():
     out = glossary.check(glossary.records(shipped(md_foo=new)), svg=lambda n: SQUARE if n == "md_foo" else None,
                          sections=with_rows(**{"1c": [g("md_foo")]}))
     assert out["ok"] and out["drawn"] == ["md_foo"] and out["not_built"] == [] and out["typing"] == []
-    assert out["missing_chars"] == ["出", "推"]         # characters only a Build adds: its examples wait
+    # characters only a Build adds: its examples wait; with the base font here, the preview copies them in
+    assert out["missing_chars"] == ([] if config.SOURCE_FONT.exists() else ["出", "推"])
     assert out["font_key"] and typing_preview.FONTS.by_key(out["font_key"]).font_bytes
 
 
@@ -517,3 +518,13 @@ def test_a_glyph_the_font_sets_vertically_by_itself_needs_no_colon():
     assert "<td>shang</td>" in on and "<td>上</td>" in on and "<jzp>上</jzp>" in on
     assert '<span class="nw">:0</span>, <span class="nw">san</span>' in on            # 0 still needs its colon; san doesn't
     assert "<td>daiqi</td>" in on                                                   # a word holding one: no colon either
+
+
+def test_input_and_output_columns_in_both_kinds_of_section():
+    r = rows("lg_gou,,,k,,勾,,gōu", "md_da,,,v,,大,,dà", "md_xi,,,xi,,息,,xī")
+    a = glossary.render(page("2a"), r, {"2a": usage("2a", g("lg_gou"), template=("0{}5", "散{}五"))})
+    assert "<th width=\"22%\">Input</th>" in a and "<th width=\"21%\">Output</th>" in a and "Usage</th>" not in a
+    # the drawing on its own in Output; what to type for it in Input, Chinese then ASCII
+    assert "<td><jzp>0<r>k</r>5</jzp></td>" in a and "<txs>散<r>勾</r>五</txs>" in a
+    v = glossary.render(page("3e"), r, {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"]})})
+    assert "<txs>:大息</txs>" in v and "<txs>:vxi</txs>" in v and "<td><jzp>:大息</jzp></td>" in v

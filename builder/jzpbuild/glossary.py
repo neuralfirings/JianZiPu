@@ -26,7 +26,7 @@ import html
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import config
@@ -111,10 +111,11 @@ class Row:
     ascii: str
     chinese: str
     pinyin: str
-    usage: str                  # the last cell's HTML
+    usage: str                  # the Output cell's HTML: the example drawn in the font
     examples: list[list[str]]   # each example's spellings as plain text, to type in check_typing()
     meaning: str = ""           # the row's definition, escaped; a section with any gets a Definition column
     glyphs: tuple[str, ...] = ()  # the glyph(s) the row is for
+    typed: list[str] = field(default_factory=list)  # the Input cell: what to type for the Output, one HTML line each
 
 
 @dataclass
@@ -409,10 +410,8 @@ def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, 
     zs = list(dict.fromkeys(_fill(tz, c) for c in zh)) if tz else []
     as_ = list(dict.fromkeys(_fill(ta, s) for s in sp)) if ta else []
     a = (as_ or zs)[0]
-    usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
-             + f"{INDENT}    ")
-    return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), usage,
-               [[_plain(x) for x in zs + as_]], _esc(meaning), (g,))
+    return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), f"<jzp>{a}</jzp>",
+               [[_plain(x) for x in zs + as_]], _esc(meaning), (g,), zs + as_)
 
 
 def marks_glyph(usage) -> bool:
@@ -423,15 +422,17 @@ def marks_glyph(usage) -> bool:
     return any(more(t) for t in usage)
 
 
-def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str]]:
+def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str], list[str]]:
     """A vertical row's own example (the Builder's Example column): its Output, drawn from the ASCII
-    (else the Chinese), and the spellings to type it with. {} is the glyph's spelling, marked red when
-    the example has more in it than the glyph (:{}5), not when it's the row on its own (:{})."""
+    (else the Chinese), its Input lines (Chinese, then ASCII), and those as plain text to type.
+    {} is the glyph's spelling, marked red when the example has more in it than the glyph (:{}5),
+    not when it's the row on its own (:{})."""
     ta, tz = e.usage
     fill = _fill if marks_glyph(e.usage) else (lambda t, sp: re.sub(r"</?r>", "", t).replace("{}", _esc(sp)))
     a = fill(ta, sa) if ta else ""
     z = fill(tz, sz) if tz else ""
-    return f"<jzp>{a or z}</jzp>", [_plain(x) for x in (a, z) if x]
+    lines = [x for x in (z, a) if x]
+    return f"<jzp>{a or z}</jzp>", lines, [_plain(x) for x in (a, z) if x]
 
 
 def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
@@ -441,12 +442,12 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
             raise GlossaryError(f"every glyph of the word {e.word} ({' + '.join(e.glyphs)}) needs an ASCII and a Chinese spelling.")
         a = _colon(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
         z = _colon(*e.glyphs) + "".join(r["simplified"] for r in recs)
-        out, examples = f"<jzp>{_esc(z)}</jzp>", [[a, z]]
+        out, typed, examples = f"<jzp>{_esc(z)}</jzp>", [_esc(z), _esc(a)], [[a, z]]
         if e.usage:
-            out, own = _own_example(e, "", "")
+            out, typed, own = _own_example(e, "", "")
             examples.append(own)
         return Row(_esc(a), _esc(z), _esc(" ".join(r["pinyin"] for r in recs if r["pinyin"])),
-                   out, examples, _esc(e.meaning), glyphs=e.glyphs)
+                   out, examples, _esc(e.meaning), e.glyphs, typed)
     g = e.glyph
     rec, other = rows[g], _partner(rows, g)
     v = rec["vert_variant"]
@@ -457,11 +458,12 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
     examples = [[s] + zhs for s in sp] or ([zhs] if zhs else [])
     out = f"<jzp>{_esc(zh or (sp[0] if sp else ''))}</jzp>"
+    typed = [_esc(x) for x in zhs + sp]
     if e.usage:
-        out, own = _own_example(e, sp[0].lstrip(":") if sp else "", zh.lstrip(":"))
+        out, typed, own = _own_example(e, sp[0].lstrip(":") if sp else "", zh.lstrip(":"))
         examples.append(own)
     return Row(_list(sp) if sp else "", _list(zhs) if zhs else "", _esc(py),
-               out, examples, _esc(e.meaning), (g,))
+               out, examples, _esc(e.meaning), (g,), typed)
 
 
 def _number_row(recs: list[dict]) -> Row:
@@ -469,8 +471,9 @@ def _number_row(recs: list[dict]) -> Row:
     a = f":{first['common']}..:{last['common']}"
     z = f":{first['simplified']}..:{last['simplified']}"
     usage = " ".join(f"<jzp>:{_esc(r['simplified'])}</jzp>" for r in (first, last))
+    typed = [_esc(f":{first[k]} :{last[k]}") for k in ("simplified", "common")]
     return Row(_esc(a), _esc(z), "", usage,
-               [[f":{r['common']}", f":{r['simplified']}"] for r in recs], glyphs=tuple(r["glyph_name"] for r in recs))
+               [[f":{r['common']}", f":{r['simplified']}"] for r in recs], glyphs=tuple(r["glyph_name"] for r in recs), typed=typed)
 
 
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
@@ -502,21 +505,30 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
     """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
     A Definition column (the rows' "meaning") joins it once any of its rows has one."""
-    cls, last = ("table table-sm", "Usage") if sec["kind"] == "usage" else ("table", "Output")
+    cls = "table table-sm" if sec["kind"] == "usage" else "table"
     body = section_rows(sid, sec, rows)
     meaning = any(r.meaning for r in body)
-    widths = (16, 16, 16, 22, 24) if meaning else (23, 23, 23, 0, 25)
+    widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
     lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
-    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else []) + [f'      <th width="{widths[4]}%">{last}</th>']
+    lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
+    lines += [f'      <th width="{widths[4]}%">Input</th>', f'      <th width="{widths[5]}%">Output</th>']
     lines += ["    </tr>", "  </thead>"]
     for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
         lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
                   f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
-                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), f"    <td>{r.usage}</td>", "  </tr>"]
+                  *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []),
+                  f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>", "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
+
+
+def _typed_cell(lines: list[str]) -> str:
+    """The Input cell: each way to type the Output on a line of its own (Chinese, then ASCII)."""
+    if not lines:
+        return ""
+    return "\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in lines) + f"{INDENT}    "
 
 
 def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:

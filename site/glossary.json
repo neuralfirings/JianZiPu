@@ -12,7 +12,7 @@
     "its ASCII, 中文 and 拼音 come from the glyphs' spellings in builder/inputs/components.csv. \"meaning\" (optional) fills",
     "the Definition column, which a section gets once one of its rows has one. \"typed\" (optional) is what was typed to add or edit the row.",
     "Every glyph with spellings is in some section, on its own or in a word; a hidden one leaves it out on purpose.",
-    "kind 'usage': ASCII | 中文 | 拼音 | an example word. `usage` is the section's example as [ASCII, 中文]; {} is the glyph's",
+    "kind 'usage': ASCII | 中文 | 拼音 | Input | Output, an example word and how to type it. `usage` is the section's example as [ASCII, 中文]; {} is the glyph's",
     "spelling, marked red; <r>…</r> marks more. A row's own \"usage\" (the Builder's Example column) replaces it. A word in one is shown like a vertical row.",
     "kind 'vertical': each spelling after a colon, typed on its own (a row's own \"usage\" is shown instead). Consecutive numbers (md_1 to md_13) share one row.",
     "\"hidden\": true on a subtitle or a section title (the Builder's eye switch) leaves it off the page; its glyphs count as left out on purpose."
