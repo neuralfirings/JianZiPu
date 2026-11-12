@@ -96,8 +96,16 @@
       const why = refuse(app.glossary, r, sec(to.sid));
       if (why) { onnotice?.(why); return; }
     }
-    edit(from.sid === to.sid ? `Move ${rowName(r)} in ${from.sid}` : `Move ${rowName(r)} to ${to.sid}`, (rows) => moveRow(rows, from, to));
-    if (from.sid !== to.sid) onnotice?.(`Moved ${rowName(r)} to ${sec(to.sid).title}.`, true);
+    // the last entry out of the rows straight under a section title: that block goes too
+    if (from.sid !== to.sid && !layout.sections[from.sid]?.title.trim() && rowsOf(from.sid).length === 1) {
+      app.editGlossaryLayout(`Move ${rowName(r)} to ${to.sid}`, (l, rows) => {
+        const out = moveRow(rows, from, to);
+        delete out[from.sid]; delete l.sections[from.sid];
+        for (const g of l.groups) g.sections = g.sections.filter((x) => x !== from.sid);
+        return { layout: l, rows: out };
+      });
+    } else edit(from.sid === to.sid ? `Move ${rowName(r)} in ${from.sid}` : `Move ${rowName(r)} to ${to.sid}`, (rows) => moveRow(rows, from, to));
+    if (from.sid !== to.sid) onnotice?.(`Moved ${rowName(r)} to ${sec(to.sid).title || 'under its section title'}.`, true);
   }
   function setMeaning(sid: string, i: number, v: string) {
     const r = rowsOf(sid)[i], m = v.trim();
@@ -111,8 +119,14 @@
   }
   function remove(sid: string, i: number) {
     const r = rowsOf(sid)[i];
-    edit(`Remove ${rowName(r)} from ${sid}`, (rows) => ({ ...rows, [sid]: rows[sid].filter((_, j) => j !== i) }));
-    onnotice?.(`Removed ${rowName(r)} from ${sec(sid).title}.`, true);
+    if (!layout.sections[sid]?.title.trim() && rowsOf(sid).length === 1) {   // the last entry straight under a section title
+      app.editGlossaryLayout(`Remove ${rowName(r)}`, (l, rows) => {
+        delete rows[sid]; delete l.sections[sid];
+        for (const g of l.groups) g.sections = g.sections.filter((x) => x !== sid);
+        return { layout: l, rows };
+      });
+    } else edit(`Remove ${rowName(r)} from ${sid}`, (rows) => ({ ...rows, [sid]: rows[sid].filter((_, j) => j !== i) }));
+    onnotice?.(`Removed ${rowName(r)}${sec(sid)?.title ? ` from ${sec(sid).title}` : ''}.`, true);
   }
 
   // ---------------------------------------------------------------- section titles and subtitles
@@ -404,6 +418,28 @@
     finally { busy = null; }
   }
 
+  /** An entry straight under a section title (its rows without a subtitle, made first): the kind
+   *  of its first subtitle, so it reads like its neighbours. */
+  async function addToGroup(gid: string) {
+    const key = `grp:${gid}`;
+    busy = key; addNote = null;
+    try {
+      const r = await resolve(adding[key] ?? '');
+      if ('error' in r) { addNote = { sid: key, level: 'error', text: r.error }; return; }
+      const g = layout.groups.find((x) => x.id === gid)!, near = g.sections.map((id) => sections.find((x) => x.id === id)).find((x) => x && x.title);
+      const kind = near?.kind ?? 'vertical', id = newId('', taken()), typed = (adding[key] ?? '').trim();
+      app.editGlossaryLayout(`Add ${rowName(r)} under ${g.title}`, (l, rows) => {
+        l.sections[id] = { title: '', kind, ...(kind === 'usage' ? { usage: near?.usage ?? ['{}', '{}'] } : {}) };
+        l.groups.find((x) => x.id === gid)!.sections.unshift(id);
+        rows[id] = [{ ...r, typed }];
+        return { layout: l, rows };
+      });
+      adding[key] = '';
+      opened = `row:${id}`;                                   // carry on adding in its own box
+    } catch (e) { addNote = { sid: key, level: 'error', text: (e as Error).message }; }
+    finally { busy = null; }
+  }
+
   // a glyph from List view's "not in the glossary": which section to put it in
   let target = $state('');
   function addFocused() {
@@ -590,9 +626,11 @@
     {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
     {#if !q.trim() || shown.length}
     {@const usage = s.kind === 'usage'}
-    <section class="sec" class:off={s.hidden} aria-labelledby="gs-{s.id}" data-sid={s.id}
+    {@const plain = !s.title.trim()}
+    <section class="sec" class:plain class:off={s.hidden} aria-labelledby="gs-{s.id}" data-sid={s.id}
       class:hd-before={headDrop?.kind === 's' && headDrop.id === s.id && headDrop.before} class:hd-after={headDrop?.kind === 's' && headDrop.id === s.id && !headDrop.before}
       class:lifted={headDrag?.kind === 's' && headDrag.id === s.id}>
+      {#if !plain}
       <h3 id="gs-{s.id}" data-drop={isFolded(s.id) ? 'end' : 'start'} data-sid={s.id} data-i={rows.length} class:gap={!!drag && isFolded(s.id) && drop?.sid === s.id} class:no={!okDrop && drop?.sid === s.id}>
         <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 's', s.id)} disabled={!!q.trim()}
           aria-label="Drag the subtitle {s.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the subtitle · a finger: press and hold first'}><I.Grip size={14} /></button>
@@ -610,7 +648,8 @@
           <button class="quiet ic" onclick={() => deleteSub(s.id)} aria-label="Delete the subtitle {s.title}" data-tip={rows.length ? 'Delete the subtitle (move or remove its rows first)' : 'Delete the subtitle (Undo brings it back)'}><I.Close size={14} /></button>
         </span></h3>
       {@render editors(`s:${s.id}`, s.description ?? '', 'glossary-subdesc', isFolded(s.id))}
-      {#if !isFolded(s.id)}
+      {/if}
+      {#if plain || !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
         <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-u" /><col class="c-m" /><col class="c-act" /></colgroup>
@@ -686,19 +725,18 @@
           {/each}
           <tr class="addrow" data-drop="end" data-sid={s.id} data-i={rows.length} class:gap-before={gapBefore(s.id, rows.length) && !rows.length}
             class:no={!okDrop && drop?.sid === s.id}>
-            <td></td>
-            <td colspan="6">
-              {#if !rows.length}<span class="muted small empty">No rows yet{drag ? ': drop here' : ''}.</span>{/if}
+            <td colspan="7" class="addcell">
+              {#if !rows.length}<span class="muted small empty">No entries yet{drag ? ': drop here' : ''}.</span>{/if}
               <span class="add">
                 {#if opened === `row:${s.id}`}
                   <!-- svelte-ignore a11y_autofocus -->
                   <input type="text" bind:value={adding[s.id]} placeholder={s.kind === 'usage' ? 'A glyph: k, 勾 or lg_gou' : 'A glyph or a word: 勾, :shaoxi'}
                     aria-label="Add to {s.title}" spellcheck="false" autofocus
                     onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void add(s.id); } else if (e.key === 'Escape') close(); }} />
-                  <button class="sm" onclick={() => add(s.id)} disabled={busy === s.id || !adding[s.id]?.trim()}>{#if busy === s.id}<I.Working size={14} />{/if} Add</button>
+                  <button class="sm" onclick={() => add(s.id)} disabled={busy === s.id || !adding[s.id]?.trim()}>{#if busy === s.id}<I.Working size={14} />{/if} Add an entry</button>
                   <button class="sm quiet" onclick={close}>Done</button>
                 {:else}
-                  <button class="sm quiet" onclick={() => open(`row:${s.id}`)}><I.Plus size={14} /> Add</button>
+                  <button class="sm quiet" onclick={() => open(`row:${s.id}`)}><I.Plus size={14} /> Add an entry</button>
                 {/if}
                 {#if addNote?.sid === s.id}<span class="small" class:bad={addNote.level === 'error'} role="status">{#if addNote.level === 'error'}<I.Problem size={12} />{:else}<I.Check size={12} />{/if} {addNote.text}</span>{/if}
               </span>
@@ -797,6 +835,23 @@
       {@render editors(`g:${g.id}`, g.description ?? '', 'glossary-desc', groupFolded(g.id))}
       {#if !groupFolded(g.id)}
       <div class="gbody" id="gc-{g.id}">
+      {#if !untitledOf(g.id) && !q.trim()}
+        {#if drag}
+          <div class="gdrop" data-drop="group" data-gid={g.id} class:on={dropTitle === g.id}>Drop here to put it straight under {g.title || 'the section title'}, before its subtitles</div>
+        {/if}
+        <div class="add gadd">
+          {#if opened === `grp:${g.id}`}
+            <!-- svelte-ignore a11y_autofocus -->
+            <input type="text" bind:value={adding[`grp:${g.id}`]} placeholder="A glyph or a word: 勾, :shaoxi" aria-label="Add an entry under {g.title}" spellcheck="false" autofocus
+              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addToGroup(g.id); } else if (e.key === 'Escape') close(); }} />
+            <button class="sm" onclick={() => addToGroup(g.id)} disabled={busy === `grp:${g.id}` || !adding[`grp:${g.id}`]?.trim()}>{#if busy === `grp:${g.id}`}<I.Working size={14} />{/if} Add an entry</button>
+            <button class="sm quiet" onclick={close}>Done</button>
+          {:else}
+            <button class="sm quiet" onclick={() => open(`grp:${g.id}`)} data-tip="An entry straight under the section title, before its subtitles"><I.Plus size={14} /> Add an entry</button>
+          {/if}
+          {#if addNote?.sid === `grp:${g.id}`}<span class="small" class:bad={addNote.level === 'error'} role="status"><I.Problem size={12} /> {addNote.text}</span>{/if}
+        </div>
+      {/if}
       {#each subs as s (s.id)}{@render subtitle(s)}{/each}
       {#if !q.trim()}
         {@const f = newSub[g.id] ?? { title: '', kind: 'vertical' }}
@@ -916,6 +971,10 @@
   .note { display: block; color: var(--status-draft); white-space: normal; }
   .note.bad { color: var(--status-danger); }
   .addrow td { border-bottom: 0; padding-top: var(--space-2); }
+  td.addcell { padding-left: 0; }
+  .gadd { padding: 0; }
+  .gdrop { border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); font-size: var(--t-small); color: var(--ink-muted); }
+  .gdrop.on { border-color: var(--link); color: var(--link); background: var(--sel-bg); }
   .add { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
   .add input { width: 260px; height: 26px; font-family: var(--font-mono); }
   .empty { margin-right: var(--space-3); }
