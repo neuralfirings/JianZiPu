@@ -11,7 +11,7 @@
   import { app } from '$lib/state.svelte';
   import { Hold } from '$lib/hold';
   import * as T from '$lib/typing';
-  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
+  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
 
@@ -212,6 +212,9 @@
     const [a, z] = templateOf(r, s), [sa, sz] = spellsOf(r);
     return a ? exampleText(a, sa) : z ? exampleText(z, sz) : '';
   }
+  /** The row's glyph in red: in a usage section, or an example with more in it than the row itself
+   *  (s9k3 for 名, 0k5 for 散; not :san or :vxi). */
+  const marked = (r: GRow, s: Section) => !isWord(r) && (s.kind === 'usage' || marksGlyph(templateOf(r, s)));
   /** Faded: a usage row showing its section's example, not one of its own. */
   const shared = (r: GRow, s: Section) => s.kind === 'usage' && !isWord(r) && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
@@ -240,15 +243,17 @@
   let usageNote = $state<{ key: string; level: 'error' | 'warn'; text: string } | null>(null);
   let usageBusy = $state<string | null>(null);
 
-  /** The example, typed in one language: the other is made from the glyphs' spellings and typed back
-   *  to check it gives the same glyphs. Empty: the row's own example goes, and it shows the default again. */
-  async function setUsage(sid: string, i: number, value: string, zh: boolean) {
+  /** The example, typed in either language on either line (what was typed decides which it is): the
+   *  other is made from the glyphs' spellings and typed back to check it gives the same glyphs. Empty:
+   *  the row's own example goes, and it shows the default again. `line`: the line clicked (1: 中文). */
+  async function setUsage(sid: string, i: number, value: string, line: boolean) {
+    const zh0 = line;
     editing = null;
     const r = rowsOf(sid)[i], s = sec(sid), key = `${sid}:${i}`;
     if (!r || !app.design) return;
     const cur = templateOf(r, s), [sa, sz] = spellsOf(r);
     const text = value.trim();
-    if (text === exampleText(cur[zh ? 1 : 0], zh ? sz : sa)) return;
+    if (text === exampleText(cur[zh0 ? 1 : 0], zh0 ? sz : sa)) return;
     usageNote = null;
     const put = (u: [string, string] | null) => edit(u ? `${rowName(r)}: example in ${sid}` : `${rowName(r)}: the default example in ${sid}`, (rows) => {
       const list = [...rows[sid]];
@@ -263,6 +268,7 @@
       if (!typed?.texts) { usageNote = { key, level: 'error', text: "It couldn't be typed: is the Builder's server running?" }; return; }
       const u = usageFrom(text, typed, isWord(r) ? r.glyphs : r.glyph, app.typing);
       if ('error' in u) { usageNote = { key, level: 'error', text: u.error }; return; }
+      const zh = u.zh;                       // the language typed, whichever line it was typed on
       const otherLang = zh ? 'ASCII' : 'Chinese';
       let other = u.other;
       if (other === null) {
@@ -591,7 +597,7 @@
                 <div class="ex">
                   {#if drawn[exampleOf(r, s)]}
                     <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
-                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={usage && !isWord(r) ? r.glyph : ''} {...(usage && !isWord(r) ? {} : { scale: 0.04 })} /></button>
+                      <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} {...(marked(r, s) ? {} : { scale: 0.04 })} /></button>
                   {/if}
                   <div class="lines">
                     {#each [1, 0] as k (k)}
@@ -605,7 +611,7 @@
                         <button class="line" class:zh={k === 1} class:mono={k === 0} disabled={usageBusy === key}
                           onclick={() => { usageNote = null; editing = `${key}:${k}`; }}
                           data-tip={shared(r, s) ? "The section's example: type this row's own" : 'Click to change it; the other line follows'}>
-                          {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], usage && !isWord(r))}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
+                          {#if tpl[k]}{@html exampleHtml(tpl[k], sp[k], marked(r, s))}{:else}<span class="muted">{k ? '中文' : 'ASCII'} example</span>{/if}</button>
                       {/if}
                     {/each}
                   </div>

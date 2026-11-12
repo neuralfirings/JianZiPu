@@ -171,7 +171,7 @@ def test_a_vertical_row_can_have_an_example_of_its_own():
     sec = {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"], "usage": [":vxi7", ":大息七"]},
                           {"glyph": "md_san", "usage": [":{}5", ":{}五"]})}
     out = glossary.render(page("3e"), r, sec)
-    assert "<td><jzp>:vxi7</jzp></td>" in out and "<td><jzp>:05</jzp></td>" in out and "<r>" not in out   # nothing marked
+    assert "<td><jzp>:vxi7</jzp></td>" in out and "<td><jzp>:<r>0</r>5</jzp></td>" in out   # the glyph marked in a longer example
     ex = [e for _, e in glossary.examples(out, r, sec)]
     assert [":vxi7", ":大息七"] in ex and [":05", ":散五"] in ex and [":daxi", ":大息"] not in ex
 

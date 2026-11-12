@@ -337,3 +337,6 @@ export function titlesSummary(a: Group[], b: Group[]): string[] {
   if (!out.length && a.map((g) => g.id).join() !== b.map((g) => g.id).join()) out.push('order');
   return out;
 }
+
+/** An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the page marks the glyph in it. */
+export const marksGlyph = (t: [string, string]) => t.some((x) => x.includes('{}') && x.replace(/<\/?r>/g, '').replace(/[:：]?\{\}/, '').trim() !== '');

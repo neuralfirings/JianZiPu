@@ -351,12 +351,19 @@ def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, 
                [[_plain(x) for x in zs + as_]], _esc(meaning), (g,))
 
 
+def marks_glyph(usage) -> bool:
+    """An example with more in it than the row's glyph alone (s9{}k3, :{}5; not {} or :{}): the glyph is marked in it."""
+    return any("{}" in t and re.sub(r"[:：]?\{\}", "", re.sub(r"</?r>", "", t), count=1).strip() for t in usage)
+
+
 def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str]]:
     """A vertical row's own example (the Builder's Example column): its Output, drawn from the ASCII
-    (else the Chinese), nothing marked, and the spellings to type it with. {} is the glyph's spelling."""
+    (else the Chinese), and the spellings to type it with. {} is the glyph's spelling, marked red when
+    the example has more in it than the glyph (:{}5), not when it's the row on its own (:{})."""
     ta, tz = e.usage
-    a = ta.replace("{}", _esc(sa)) if ta else ""
-    z = tz.replace("{}", _esc(sz)) if tz else ""
+    fill = _fill if marks_glyph(e.usage) else (lambda t, sp: t.replace("{}", _esc(sp)))
+    a = fill(ta, sa) if ta else ""
+    z = fill(tz, sz) if tz else ""
     return f"<jzp>{a or z}</jzp>", [_plain(x) for x in (a, z) if x]
 
 

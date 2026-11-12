@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byId, changedLayout, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, changedLayout, marksGlyph, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -84,6 +84,9 @@ describe("a row's example word", () => {
     expect(verticalTemplate(tv, { word: '大息', glyphs: ['md_da', 'md_xi'] })).toEqual([':vxi', ':大息']);
     expect(verticalTemplate(tv, { glyph: 'md_san' })).toEqual([':{}', ':{}']);
     expect(exampleHtml(':{}<r>|</r>', 'san', false)).toBe(':san|');
+    // the glyph is marked when the example has more in it than the glyph
+    expect([[':{}5', ':{}五'], ['s9{}k3', ''], ['{}', '{}'], [':{}', ':{}'], [':vxi', ':大息']].map((u) => marksGlyph(u as [string, string])))
+      .toEqual([true, true, false, false, false]);
   });
   it('fills a template as text and as marked HTML', () => {
     expect(exampleText('{}d7,7<r>|</r>06', 'C')).toBe('Cd7,7|06');
