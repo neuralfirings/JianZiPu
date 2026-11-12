@@ -381,7 +381,7 @@
       let other = u.other;
       if (other === null) {
         other = cur[zh ? 0 : 1];
-        usageNote = { key, level: 'warn', text: `${u.missing.join(', ')} has no ${otherLang} spelling, so the ${otherLang} stays as it was: click it to change it.` };
+        usageNote = { key, level: 'warn', text: `The ${otherLang} example can't be made automatically, since ${u.missing.join(', ')} has no ${otherLang} spelling yet: click it to type it yourself.` };
       }
       put(zh ? [other, u.source] : [u.source, other]);
     } catch (e) { usageNote = { key, level: 'error', text: (e as Error).message }; }
@@ -777,7 +777,7 @@
                   <button class="ga vert" data-picks onclick={(e) => openGlyph(r, `${key}:out`, e)} aria-label={isWord(r) ? `Choose a glyph of ${rowName(r)} to show` : `Show ${glyphsOfRow(r)[0]}`}
                     aria-haspopup={isWord(r) ? 'menu' : undefined} aria-expanded={isWord(r) ? picking?.key === `${key}:out` : undefined}
                     data-tip={picking?.key === `${key}:out` ? null : `${exampleOf(r, s)} as the font sets it · click: ${isWord(r) ? 'choose a glyph to show' : glyphsOfRow(r)[0]} in the glyph panel`}>
-                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} {...(marked(r, s) ? {} : { scale: 0.04 })} /></button>
+                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} scale={0.04} /></button>
                 {/if}
               </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"

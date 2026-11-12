@@ -231,6 +231,8 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
   const parts: { text: string; shown: string; num: boolean }[] = [];
   const missing: string[] = [];
   for (const gr of groups) {
+    // a space between words (s9k3 tc): the same in both languages
+    if (gr.text && !gr.text.trim()) { source += gr.text; parts.push({ text: gr.text, shown: gr.text, num: false }); continue; }
     const gs = gr.glyphs.filter((g) => g !== 'blank_colon' && g !== 'blank_bar');
     // the glyph's spelling the text starts with, and what's left (a comma the font swallowed: 7, → md_7)
     const spelled = gs.length === 1 ? spellingsIn(t, gs[0], zh).find((sp) => gr.text.startsWith(sp)) ?? '' : '';

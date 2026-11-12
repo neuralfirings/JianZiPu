@@ -62,6 +62,11 @@ describe("a row's example word", () => {
     const r = usageFrom('s9k3', typed(['md_ming', 'md_9', 'lg_gou', 'md_3'], ['s', '9', 'k', '3']), 'lg_gou', t);
     expect(r).toEqual({ source: 's9{}3', other: '名九{}三', zh: false, missing: [] });
   });
+  it('keeps the space between the words of an example in context', () => {
+    const tt: Typing = { ...t, md_tc: sp({ latin: 'tc', simplified: '推出' }) };
+    expect(usageFrom('名九勾三 推出', typed(['md_ming', 'md_9', 'lg_gou', 'md_3', 'space', 'md_tc'], ['名', '九', '勾', '三', ' ', '推出']), 'md_tc', tt))
+      .toEqual({ source: '名九勾三 {}', other: 's9k3 {}', zh: true, missing: [] });
+  });
   it('makes the ASCII from Chinese, commas and the chord bar included', () => {
     const r = usageFrom('撮中七，七｜散六', typed(['xl_cuo', 'md_zhong', 'md_7', 'md_7', 'blank_bar', 'md_san', 'md_6'], ['撮', '中', '七，', '七', '｜', '散', '六']), 'xl_cuo', t);
     expect(r).toEqual({ source: '{}中七，七｜散六', other: '{}d7,7|06', zh: true, missing: [] });
