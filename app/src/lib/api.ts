@@ -148,7 +148,7 @@ export const api = {
    *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
   words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
     call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; kind?: SectionKind; rows?: GRow[] }[]; glossary_hash?: string }>('GET', '/api/glyphs'),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; kind?: SectionKind; usage?: [string, string] | null; rows?: GRow[] }[]; glossary_hash?: string }>('GET', '/api/glyphs'),
   /** Write the glossary's rows into site/glossary.json (local mode), hash-checked like the spellings. */
   saveGlossary: (rows: GlossaryRows, base_hash: string) =>
     call<{ ok: boolean; hash?: string; error?: string; conflict?: boolean }>('PUT', '/api/glossary', { rows, base_hash }),

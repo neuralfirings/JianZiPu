@@ -367,7 +367,8 @@ def shape(p: Preview, words: list[str]) -> list[dict]:
         starts = sorted({i.cluster for i in infos})
         text_of = {s: w[s:(starts[k + 1] if k + 1 < len(starts) else len(w))] for k, s in enumerate(starts)}
         glyphs = [p.hb_font.glyph_to_string(i.codepoint) for i in infos]
-        out.append({"word": w, "glyphs": glyphs, "texts": [text_of.get(i.cluster, "") for i in infos]})
+        out.append({"word": w, "glyphs": glyphs, "texts": [text_of.get(i.cluster, "") for i in infos],
+                    "clusters": [i.cluster for i in infos]})
     return out
 
 

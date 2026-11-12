@@ -38,6 +38,7 @@ KINDS = ("usage", "vertical", "hidden")
 BLOCK_RE = re.compile(r"(<!-- glossary (\S+)[^>]*-->)(.*?)(<!-- /glossary \2 -->)", re.S)
 INDENT = " " * 8
 MAX_MEANING = 300
+MAX_USAGE = 200
 MAX_WORD_GLYPHS = 12
 
 
@@ -62,6 +63,7 @@ class Entry:
     glyphs: tuple[str, ...]
     word: str = ""              # the word's text (少息); "" for a glyph's row
     meaning: str = ""
+    usage: tuple[str, str] | None = None   # its own example word as [ASCII, 中文] templates (a usage section)
 
     @property
     def glyph(self) -> str:
@@ -107,7 +109,18 @@ def clean_row(x) -> dict:
         out = {"glyph": x["glyph"].strip()}
     else:
         raise ValueError("a glossary row names a glyph or a word")
-    return {**out, **({"meaning": meaning} if meaning else {})}
+    usage = x.get("usage")
+    if usage is not None:
+        if not (isinstance(usage, list) and len(usage) == 2 and all(isinstance(u, str) for u in usage)):
+            raise ValueError("a row's usage is its example as [ASCII, 中文]")
+        usage = [u.strip() for u in usage]
+        if any(len(u) > MAX_USAGE for u in usage):
+            raise ValueError(f"an example longer than {MAX_USAGE} characters")
+    typed = str(x.get("typed") or "").strip()
+    if len(typed) > MAX_USAGE:
+        raise ValueError(f"an entry longer than {MAX_USAGE} characters")
+    return {**out, **({"meaning": meaning} if meaning else {}), **({"usage": usage} if usage and any(usage) else {}),
+            **({"typed": typed} if typed else {})}
 
 
 def with_rows(sections: dict[str, dict], rows_by_section: dict) -> dict[str, dict]:
@@ -133,7 +146,7 @@ def entries(sid: str, sec: dict, rows: dict[str, dict] | None = None) -> list[En
         if "word" in r:
             out.append(Entry(tuple(r["glyphs"]), r["word"], r.get("meaning", "")))
         else:
-            out.append(Entry((r["glyph"],), "", r.get("meaning", "")))
+            out.append(Entry((r["glyph"],), "", r.get("meaning", ""), tuple(r["usage"]) if "usage" in r else None))
     return out
 
 
@@ -187,14 +200,16 @@ def chinese(rec: dict) -> list[str]:
     return [c for i, c in enumerate((rec["simplified"], rec["traditional"])) if c and c not in (rec["simplified"], rec["traditional"])[:i]]
 
 
-def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "") -> Row:
+def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, str] | None = None) -> Row:
+    """`own`: the row's own example ([ASCII, 中文] templates, either may be empty), else the section's."""
     sp, zh = spellings(rec), chinese(rec)
     if not sp or not rec["simplified"]:
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
-    ta, tz = sec.get("examples", {}).get(g, sec["usage"])
-    a, z = _fill(ta, sp[0]), _fill(tz, rec["simplified"])
-    # the same example with each other spelling: Chinese (traditional) under Chinese, ASCII under ASCII
-    zs, as_ = [z] + [_fill(tz, c) for c in zh[1:]], [a] + [_fill(ta, s) for s in sp[1:]]
+    ta, tz = own or sec["usage"]
+    # the same example with each spelling: Chinese (traditional too) under Chinese, ASCII under ASCII
+    zs = [_fill(tz, c) for c in zh] if tz else []
+    as_ = [_fill(ta, s) for s in sp] if ta else []
+    a = (as_ or zs)[0]
     usage = (f"\n{INDENT}      <jzp>{a}</jzp>\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in zs + as_)
              + f"{INDENT}    ")
     return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), usage,
@@ -253,7 +268,7 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
         if sec["kind"] == "usage":
             if e.word:
                 raise GlossaryError(f"section {sid} has example words; a word ({e.word}) goes in a vertical section.")
-            out.append(_usage_row(sec, e.glyph, rows[e.glyph], e.meaning))
+            out.append(_usage_row(sec, e.glyph, rows[e.glyph], e.meaning, e.usage))
         else:
             out.append(_vertical_row(rows, e))
     return out

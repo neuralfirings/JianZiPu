@@ -558,7 +558,7 @@ def glossary_sections() -> list[dict]:
     """The font page's glossary sections in page order, each with its rows (Glyphs > Glossary); none
     where the server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
-        return [{"id": k, "title": v.get("title", k), "kind": v.get("kind", "vertical"),
+        return [{"id": k, "title": v.get("title", k), "kind": v.get("kind", "vertical"), "usage": v.get("usage"),
                  "rows": [glossary.clean_row(r) for r in v.get("rows", [])]}
                 for k, v in glossary.load_sections().items()]
     except (OSError, ValueError, KeyError):
@@ -677,7 +677,7 @@ def typing_payload(body: dict, owner: str = "local") -> dict:
         sd = schema.parse_design(design)
         laid = words_payload(sd, words, runs=[s["glyphs"] for s in shaped])["words"]
         for w, s in zip(laid, shaped):
-            w["texts"] = s["texts"]
+            w["texts"], w["clusters"] = s["texts"], s["clusters"]
         out["words"] = laid
     compare = word_list(body, "compare_words")
     if compare and body.get("base_rows") is not None:
@@ -701,7 +701,7 @@ def words_typed_payload(body: dict, design: schema.Design, owner: str = "local")
     shaped = typing_preview.shape(prev, words)
     out = words_payload(design, words, runs=[s["glyphs"] for s in shaped])
     for w, s in zip(out["words"], shaped):
-        w["texts"] = s["texts"]
+        w["texts"], w["clusters"] = s["texts"], s["clusters"]
     return {**out, "drawn": prev.drawn, "copied": prev.copied}
 
 

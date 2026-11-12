@@ -85,7 +85,7 @@ def test_the_scope_check_needs_only_the_standard_library():
 
 def test_usage_rows_fill_the_template_with_the_glyphs_spellings():
     r = rows("lg_gou,,,k,,勾,,gōu", "lg_li,,,U,,历,,lì")
-    sec = {"2a": usage("2a", g("lg_gou"), g("lg_li"), template=("0{}5", "散{}五"), examples={"lg_li": ["0{}65", "散{}六五"]})}
+    sec = {"2a": usage("2a", g("lg_gou"), {"glyph": "lg_li", "usage": ["0{}65", "散{}六五"]}, template=("0{}5", "散{}五"))}
     out = glossary.render(page("2a"), r, sec)
     assert "<td>k</td>" in out and "<td>勾</td>" in out and "<td>gōu</td>" in out
     assert "<jzp>0<r>k</r>5</jzp>" in out and "<txs>散<r>勾</r>五</txs>" in out
@@ -158,11 +158,22 @@ def test_the_files_must_agree():
         glossary.render(page("2a"), r, {})
 
 
+def test_a_row_with_one_language_of_example_still_makes_its_row():
+    r = rows("lg_gou,,,k,,勾,,gōu")
+    out = glossary.render(page("2a"), r, {"2a": usage("2a", {"glyph": "lg_gou", "usage": ["0{}5", ""]})})
+    assert "<jzp>0<r>k</r>5</jzp>" in out and "<txs>散" not in out
+    out = glossary.render(page("2a"), r, {"2a": usage("2a", {"glyph": "lg_gou", "usage": ["", "散{}五"]})})
+    assert "<jzp>散<r>勾</r>五</jzp>" in out
+
+
 def test_rows_from_the_builder_are_checked():
     secs = {"2a": usage("2a")}
     assert glossary.with_rows(secs, {"2a": [{"glyph": " lg_gou ", "meaning": ""}]})["2a"]["rows"] == [{"glyph": "lg_gou"}]
     assert secs["2a"]["rows"] == []                                  # a copy: the loaded sections stay
-    for bad in ({"9z": []}, {"2a": [{"nope": 1}]}, {"2a": [{"word": "x", "glyphs": "a b"}]}, {"2a": "x"}, []):
+    assert glossary.with_rows(secs, {"2a": [{"glyph": "a", "usage": ["", ""]}]})["2a"]["rows"] == [{"glyph": "a"}]
+    assert glossary.with_rows(secs, {"2a": [{"glyph": "a", "typed": " k "}]})["2a"]["rows"] == [{"glyph": "a", "typed": "k"}]
+    for bad in ({"9z": []}, {"2a": [{"nope": 1}]}, {"2a": [{"word": "x", "glyphs": "a b"}]}, {"2a": "x"}, [],
+                {"2a": [{"glyph": "a", "usage": "s9k3"}]}):
         with pytest.raises(ValueError):
             glossary.with_rows(secs, bad)
 

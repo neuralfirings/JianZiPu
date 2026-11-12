@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { byId, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, exampleHtml, exampleText, usageFrom, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+
+import type { Typing } from './typing';
+import { empty } from './typing';
 
 const g = (glyph: string, meaning?: string) => ({ glyph, ...(meaning ? { meaning } : {}) });
 const w = (word: string, ...glyphs: string[]) => ({ word, glyphs });
@@ -37,11 +40,41 @@ describe('the glossary rows', () => {
   it('cleans rows from a draft and tells sections apart', () => {
     expect(cleanRows({ '1a': [{ glyph: ' a ', meaning: '' }, { nope: 1 }, { word: 'x', glyphs: [] }], '3e': 'no' })).toEqual({ '1a': [g('a')] });
     expect(cleanRows([])).toBeUndefined();
+    expect(cleanRows({ '3e': [{ word: '少息', glyphs: ['a', 'b'], typed: ' :shaoxi ' }, { glyph: 'k', typed: '' }] })).toEqual({ '3e': [{ word: '少息', glyphs: ['a', 'b'], typed: ':shaoxi' }, g('k')] });
+    expect(cleanRows({ '1a': [{ glyph: 'a', usage: [' s9{} ', ''] }, { glyph: 'b', usage: ['', ''] }] })).toEqual({ '1a': [{ glyph: 'a', usage: ['s9{}', ''] }, g('b')] });
     expect(changedSections({ '1a': [g('a')], '3e': [] }, { '1a': [g('a')], '99': [g('b')] })).toEqual(['99']);
     expect(['99', '3x', '1a', '4', '1d-v', '1d'].sort(byId)).toEqual(['1a', '1d', '1d-v', '3x', '4', '99']);
   });
   it('sums up what changed in a section', () => {
     expect(sectionSummary([g('a'), g('b'), g('c')], [g('c'), g('a', 'x'), w('少息', 'a', 'b')]))
       .toEqual(['added 少息', 'removed b', 'moved c, a', 'meaning of a']);
+    expect(sectionSummary([g('a')], [{ glyph: 'a', usage: ['{}5', '{}五'] }])).toEqual(['example of a']);
+  });
+});
+
+describe("a row's example word", () => {
+  const sp = (o: Record<string, string>) => ({ ...empty(), ...o });
+  const t: Typing = { md_ming: sp({ latin: 's', simplified: '名' }), md_9: sp({ common: '9', simplified: '九' }), lg_gou: sp({ latin: 'k', simplified: '勾' }),
+    md_3: sp({ common: '3', simplified: '三' }), md_7: sp({ common: '7', simplified: '七' }), md_zhong: sp({ latin: 'd', simplified: '中' }),
+    md_san: sp({ common: '0', simplified: '散' }), md_6: sp({ common: '6', simplified: '六' }), xl_cuo: sp({ latin: 'C', simplified: '撮' }), md_x: sp({ latin: 'zz' }) };
+  const typed = (glyphs: string[], texts: string[]) => ({ glyphs, texts, clusters: texts.map((_, i) => i) });
+  it('makes the Chinese from ASCII, the row glyph as {}', () => {
+    const r = usageFrom('s9k3', typed(['md_ming', 'md_9', 'lg_gou', 'md_3'], ['s', '9', 'k', '3']), 'lg_gou', t);
+    expect(r).toEqual({ source: 's9{}3', other: '名九{}三', zh: false, missing: [] });
+  });
+  it('makes the ASCII from Chinese, commas and the chord bar included', () => {
+    const r = usageFrom('撮中七，七｜散六', typed(['xl_cuo', 'md_zhong', 'md_7', 'md_7', 'blank_bar', 'md_san', 'md_6'], ['撮', '中', '七，', '七', '｜', '散', '六']), 'xl_cuo', t);
+    expect(r).toEqual({ source: '{}中七，七｜散六', other: '{}d7,7|06', zh: true, missing: [] });
+    const p = usageFrom('5.4k3', typed(['md_5.4', 'lg_gou', 'md_3'], ['5.4', 'k', '3']), 'lg_gou', t);
+    expect(p).toMatchObject({ other: '五点四{}三' });
+  });
+  it("says which part has no spelling in the other language, and refuses an example without the row's glyph", () => {
+    expect(usageFrom('zzk', typed(['md_x', 'lg_gou'], ['zz', 'k']), 'lg_gou', t)).toMatchObject({ other: null, missing: ['zz'] });
+    expect(usageFrom('s9', typed(['md_ming', 'md_9'], ['s', '9']), 'lg_gou', t)).toMatchObject({ error: expect.stringMatching(/doesn't type lg_gou \(勾\)/) });
+  });
+  it('fills a template as text and as marked HTML', () => {
+    expect(exampleText('{}d7,7<r>|</r>06', 'C')).toBe('Cd7,7|06');
+    expect(exampleHtml('s9{}k3', '&gt;')).toBe('s9<span class="r">&amp;gt;</span>k3');
+    expect(exampleHtml('{}d7<r>|</r>0', 'C')).toBe('<span class="r">C</span>d7<span class="r">|</span>0');
   });
 });

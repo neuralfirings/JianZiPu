@@ -272,7 +272,7 @@ class DesignState {
       this.csvHash = g.hash;
       this.csvOrder = g.order;
       this.control = g.control;
-      this.glossarySections = (g.glossary_sections ?? []).map((s) => ({ id: s.id, title: s.title, kind: s.kind ?? 'vertical' }));
+      this.glossarySections = (g.glossary_sections ?? []).map((s) => ({ id: s.id, title: s.title, kind: s.kind ?? 'vertical', usage: s.usage ?? null }));
       this.mainSvgs = svgs;
       this.mainDesign = d.design;
       this.mainTyping = typing;

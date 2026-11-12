@@ -235,8 +235,16 @@ and the spellings in `components.csv`, so its spellings are the font's:
   together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
   `"meaning"` for the Meaning column (a section gets that column once one of
   its rows has a meaning).
+- A section with an example word per row (`"kind": "usage"`) has its example
+  as `"usage": [ASCII, 中文]`, with `{}` where the row's glyph goes; a row's own
+  `"usage"` replaces it for that row (the Builder's Usage column, where you type
+  the example in one language and the other is made from the spellings).
+- `"typed"` keeps what was typed to add or edit a row (`:shaoxi`, `勾`); the
+  Builder shows it again when the row is edited. A row without one opens with
+  its ASCII spelling, or its Chinese when it has none.
 - The rows are edited in the Builder's Glyphs → **Glossary**: drag a row to
-  move it, + Add to put a glyph or a word in a section, a meaning per row. The
+  move it, + Add to put a glyph or a word in a section, a meaning and (in a
+  usage section) an example per row. The
   Builder writes the file one row per line, so a diff shows the rows that moved.
   It's a font file (`FONT_PATHS` in `jzpbuild/release.py`), so it changes through
   a release, or a pull request with the `font-files` label (a new section or a
