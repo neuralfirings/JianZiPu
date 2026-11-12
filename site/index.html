@@ -332,7 +332,7 @@
       <small class="font-version-top" id="font-version-top"></small>
 
       <div class="alert alert-secondary jzp-example-container">
-        <small>Type here to preview. Press space after each character.</small>
+        <small>Type here to preview. Press space after each character, or type # before it.</small>
         <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
         <div class="text-entry-examples">
           <span>See example in </span>
@@ -368,20 +368,20 @@
   <div class="container">
     <h3 id="how-to-type">How to type</h3>
     <ul class="rules">
-      <li id="basic-layout">Type each character the way you read it, in 中文 or ASCII, and press <strong>space</strong> after it: <text>名九勾五 中七挑三</text> or <text>s9k5 d7u3</text> → <jzp>s9k5 d7u3</jzp></li>
+      <li id="basic-layout">Type each character the way you read it, in 中文 or ASCII. A character has no width of its own, so press <strong>space</strong> after it: <text>名九勾五 中七挑三</text> or <text>s9k5 d7u3</text> → <jzp>s9k5 d7u3</jzp>. Or type <strong>#</strong> before it: <text>#名九勾五#中七挑三</text> or <text>#s9k5#d7u3</text> → <jzp>#s9k5#d7u3</jzp></li>
       <li id="numbers">Hui and strings are numbers, and .5 shows as 半: <text>中<r>八五</r>勾五</text> or <text>d<r>8.5</r>k5</text> → <jzp>d<r>8.5</r>k5</jzp></li>
       <li>A comma keeps a hui and a string apart: <text>名七<r>，</r>六</text> or <text>s7<r>,</r>6</text> → <jzp>s7,6</jzp></li>
       <li id="chords">A chord puts <text>|</text> between its left and right sides. <text><r>撮</r>大九，六<r>｜</r>散三</text> or <text><r>C</r>v9,6<r>|</r>03</text> → <jzp><r>C</r>v9,6<r>|</r>03</jzp></li>
-      <li id="vertical">A word written down the side starts with a colon. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp></li>
     </ul>
 
     <details class="more" id="modifiers">
-      <summary>More rules: open strings, 外, modifiers and numbers</summary>
+      <summary>More rules: open strings, 外, modifiers, words down the side and numbers</summary>
       <ul>
         <li>An open string is 散 or 0. <text><r>散</r>勾三</text> or <text><r>0</r>k3</text> → <jzp><r>0</r>k3</jzp></li>
         <li>Past the 13th hui is 外 or 13+. <text>名<r>外</r>挑六</text> or <text>s<r>13+</r>u6</text> → <jzp>s<r>13+</r>u6</jzp></li>
         <li>泛音 goes first. <text><r>泛音</r>名九挑六</text> or <text><r>fy</r>s9u6</text> → <jzp><r>fy</r>s9u6</jzp></li>
         <li>急 &gt;, 绰 / and 注 \ go after the hui. <text>名九<r>绰</r>勾六</text> or <text>s9<r>/</r>k6</text> → <jzp>s9<r>/</r>k6</jzp></li>
+        <li id="vertical">Words written down the side (上, 下, 泛起…) start with a colon. Chinese is safest here, as some pinyin spellings are alike. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp>. From the next font version the colon is optional.</li>
         <li><text>名七六</text> or <text>s76</text> → <jzp>s76</jzp> 7.6 hui, no string.</li>
         <li><text>名七六六</text> or <text>s766</text> → <jzp>s766</jzp> 7.6 hui, string 6.</li>
         <li><text>历七六</text> or <text>U76</text> → <jzp>U76</jzp> strings 7 and 6: digits only make a decimal right after a left-hand finger.</li>
