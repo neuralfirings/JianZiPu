@@ -342,20 +342,26 @@ def test_hosted_server_puts_the_pr_icon_in_the_page(tmp_path, monkeypatch):
         srv.shutdown()
 
 
-# ---------------------------------------------------------------- the glossary's words (words.csv)
+# ---------------------------------------------------------------- the glossary's rows (site/glossary.json)
 
-def test_words_are_listed_and_saved_with_a_hash(tmp_path, monkeypatch):
-    f = tmp_path / "words.csv"
-    f.write_text("word,glyphs,glossary,glossary_order,meaning\n少息,md_shao md_xi,3e: E,2,\n", encoding="utf-8")
-    monkeypatch.setattr(config, "WORDS_CSV", f)
+def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatch):
+    f = tmp_path / "glossary.json"
+    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
     p = webserver.glyphs_payload()
-    assert p["words"] == [{"word": "少息", "glyphs": "md_shao md_xi", "glossary": "3e: E", "glossary_order": "2", "meaning": ""}]
-    new = p["words"] + [{"word": "大息", "glyphs": "md_da md_xi", "glossary": "3e: E", "glossary_order": "1", "meaning": "rest"}]
-    r = webserver.write_words(new, p["words_hash"])
-    assert r["ok"] and r["words"] == 2 and "大息,md_da md_xi,3e: E,1,rest" in f.read_text(encoding="utf-8")
+    secs = {s["id"]: s for s in p["glossary_sections"]}
+    assert secs["1a"]["title"] == "1a: Left Hand Finger" and secs["1a"]["kind"] == "usage"
+    assert secs["1a"]["rows"][0] == {"glyph": "md_ming"}
+    assert {"word": "少息", "glyphs": ["md_shao", "md_xi"]} in secs["3e"]["rows"]
+    rows = {"3e": [{"word": "大息", "glyphs": ["md_da", "md_xi"], "meaning": "rest"}], "1a": secs["1a"]["rows"][::-1]}
+    r = webserver.write_glossary(rows, p["glossary_hash"])
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    assert r["ok"] and doc["sections"]["3e"]["rows"] == rows["3e"] and doc["sections"]["1a"]["rows"][-1] == {"glyph": "md_ming"}
+    assert doc["sections"]["1a"]["usage"] == ["{}9k3", "{}九勾三"] and doc["about"]       # the rest of the file stays
+    assert doc["sections"]["2a"]["rows"] == secs["2a"]["rows"]                             # sections not sent stay
     with pytest.raises(webserver.CsvConflict):
-        webserver.write_words(new, p["words_hash"])               # the file moved on since that hash
-    with pytest.raises(ValueError, match="twice"):
-        webserver.write_words(new + [new[0]], r["hash"])
-    f.unlink()
-    assert webserver.glyphs_payload()["words"] == []                # no file: no words
+        webserver.write_glossary(rows, p["glossary_hash"])        # the file moved on since that hash
+    with pytest.raises(ValueError, match="no section 9z"):
+        webserver.write_glossary({"9z": []}, r["hash"])
+    with pytest.raises(ValueError):
+        webserver.write_glossary({"3e": [{"glyph": ""}]}, r["hash"])

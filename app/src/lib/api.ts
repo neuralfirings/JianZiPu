@@ -1,5 +1,5 @@
 // Thin client for the Python web server (python3 -m jzpbuild.webserver).
-import type { GWord } from './glossaryWords';
+import type { GlossaryRows, GRow, SectionKind } from './glossary';
 export type Design = {
   version: 2;
   center: { x: number; y: number };
@@ -148,10 +148,10 @@ export const api = {
    *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
   words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
     call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string }[]; words?: GWord[]; words_hash?: string }>('GET', '/api/glyphs'),
-  /** Write words.csv (local mode), hash-checked like the spellings. */
-  saveWords: (words: GWord[], base_hash: string) =>
-    call<{ ok: boolean; hash?: string; error?: string; conflict?: boolean }>('PUT', '/api/glossary/words', { words, base_hash }),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; kind?: SectionKind; rows?: GRow[] }[]; glossary_hash?: string }>('GET', '/api/glyphs'),
+  /** Write the glossary's rows into site/glossary.json (local mode), hash-checked like the spellings. */
+  saveGlossary: (rows: GlossaryRows, base_hash: string) =>
+    call<{ ok: boolean; hash?: string; error?: string; conflict?: boolean }>('PUT', '/api/glossary', { rows, base_hash }),
   /** Rewrite components.csv. 409 `conflict` if it changed on disk since `base_hash`; 400 `errors` on a clash. */
   saveGlyphs: (rows: Record<string, string>[], base_hash: string, design?: Design) =>
     call<{ ok: boolean; rows?: number; hash?: string; error?: string; conflict?: boolean; errors?: TypingIssue[] }>('PUT', '/api/glyphs', { rows, base_hash, design }),
@@ -159,8 +159,8 @@ export const api = {
   typingPreview: (body: { design?: Design; rows: Record<string, string>[]; words?: string[]; base_rows?: Record<string, string>[]; compare_words?: string[]; roundtrip?: boolean; svg_names?: string[]; svgs?: Record<string, string> }) =>
     call<TypingPreview>('POST', '/api/typing/preview', body),
   /** The font page's glossary made from these (unsaved) spellings; the font it typed with is at `font_url`. */
-  glossaryCheck: (rows: Record<string, string>[], design?: Design, svgs?: Record<string, string>, words?: GWord[]) =>
-    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design, svgs, words }),
+  glossaryCheck: (rows: Record<string, string>[], design?: Design, svgs?: Record<string, string>, glossary?: GlossaryRows) =>
+    call<GlossaryCheck>('POST', '/api/glossary/check', { rows, design, svgs, glossary }),
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),

@@ -20,6 +20,7 @@ const SCREENS = [
   ['/glyphs?view=tiles&group=right', 'phone'],
   ['/glyphs?view=tiles&group=right&g=lg_gou', 'phone'],    // a glyph's card, with its spellings to edit
   ['/glyphs?view=typing&group=left', 'phone'],             // Typing as cards
+  ['/glyphs?view=glossary', 'phone'],                     // the glossary, a section at a time
   ['/layouts', 'phone'],
   ['/test?view=words', 'phone'],
   ['/test?view=text', 'phone'],

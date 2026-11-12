@@ -41,7 +41,9 @@ the tester's guide. In short:
 3. **Review** a request. You see:
    - at the top: who sent it, their notes, and how they want to be credited;
    - then each change, before and after: glyphs drawn over each other,
-     spellings side by side, and design changes with sample words and the JSON.
+     spellings side by side, design changes with sample words and the JSON, and
+     glossary sections with their rows before and after (a section is kept or
+     skipped whole, in the draft's order).
 4. Choose **Keep** or **Skip** for each change, or **Keep all**. A new glyph
    and its spellings go together.
 5. If you like, write a reply. The tester sees it on Your Change Requests and in

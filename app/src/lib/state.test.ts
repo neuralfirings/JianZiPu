@@ -344,24 +344,27 @@ describe('adding several glyphs from files', () => {
 });
 
 
-describe('the glossary words', () => {
-  const w = (word: string, meaning = '') => ({ word, glyphs: 'md_ming md_7', glossary: '3e: E', glossary_order: '1', meaning });
-  it('edits are undo steps and Save writes words.csv (local)', async () => {
-    api.glyphs.mockResolvedValue({ fields: [], glyphs: [{ glyph: 'md_ming', svg: true, areas: ['left'], latin: 'ming' }, { glyph: 'md_7', svg: true, areas: [] }], control: [], order: ['md_ming'], hash: 'c0', words: [w('名七')], words_hash: 'w0' });
-    (api as unknown as { saveWords: unknown }).saveWords = vi.fn(async () => ({ ok: true, hash: 'w1' }));
+describe('the glossary', () => {
+  const sections = [{ id: '1a', title: '1a: Left Hand Finger', kind: 'usage', rows: [{ glyph: 'md_ming' }] },
+    { id: '3e', title: '3e: E', kind: 'vertical', rows: [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] }];
+  it('edits are undo steps, Save writes site/glossary.json (local), and a rename follows into it', async () => {
+    api.glyphs.mockResolvedValue({ fields: [], glyphs: [{ glyph: 'md_ming', svg: true, areas: ['left'], latin: 'ming' }, { glyph: 'md_7', svg: true, areas: [] }], control: [], order: ['md_ming'], hash: 'c0', glossary_sections: sections, glossary_hash: 'g0' });
+    (api as unknown as { saveGlossary: unknown }).saveGlossary = vi.fn(async () => ({ ok: true, hash: 'g1' }));
     await app.load();
-    expect(app.words).toEqual([w('名七')]);
-    app.editWords('meaning', (ws) => ws.map((x) => ({ ...x, meaning: 'seven' })));
-    expect(app.wordsDirty).toBe(true);
+    expect(app.glossary).toEqual({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] });
+    expect(app.glossarySections.map((s) => s.kind)).toEqual(['usage', 'vertical']);
+    app.editGlossary('meaning', (rows) => ({ ...rows, '3e': [{ ...rows['3e'][0], meaning: 'seven' }] }));
+    expect(app.glossaryDirty).toBe(true);
     app.undo();
-    expect(app.words[0].meaning).toBe('');
+    expect(app.glossary['3e'][0].meaning).toBeUndefined();
     app.redo();
     expect(await app.save()).toBe(true);
-    expect((api as unknown as { saveWords: ReturnType<typeof vi.fn> }).saveWords).toHaveBeenCalledWith([w('名七', 'seven')], 'w0');
-    expect(app.wordsDirty).toBe(false);
-    expect(app.wordsHash).toBe('w1');
-    // a rename follows into the words
+    expect((api as unknown as { saveGlossary: ReturnType<typeof vi.fn> }).saveGlossary)
+      .toHaveBeenCalledWith({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'], meaning: 'seven' }] }, 'g0');
+    expect(app.glossaryDirty).toBe(false);
+    expect(app.glossaryHash).toBe('g1');
+    expect(app.renameImpact('md_ming').glossary).toEqual(['1a', '3e']);
     expect(app.renameGlyph('md_7', 'md_qi')).toBeNull();
-    expect(app.words[0].glyphs).toBe('md_ming md_qi');
+    expect(app.glossary['3e'][0]).toMatchObject({ glyphs: ['md_ming', 'md_qi'] });
   });
 });

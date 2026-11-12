@@ -8,7 +8,7 @@
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.
   import { renaming } from '$lib/renaming.svelte';
-  import { wordsOfGlyphs } from '$lib/glossaryWords';
+  import { describeUses, usesOf } from '$lib/glossary';
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
@@ -17,20 +17,23 @@
   import SpellInput from './SpellInput.svelte';
 
   let {
-    sections, selected, onselect, onopen, onword, flat = false, showAreas = false, onnotice
+    sections, selected, onselect, onopen, onglossary, flat = false, showAreas = false, onnotice
   }: {
     sections: Section[]; selected: string | null; onselect: (g: string) => void;
     /** a click on the row's drawing: show the glyph in the glyph panel */
     onopen?: (g: string) => void;
-    /** a click on "in words: …": show that word in Glyphs > Words */
-    onword?: (word: string) => void;
+    /** a click on the Glossary column: show the glyph's row in that section in Glyphs > Glossary */
+    onglossary?: (sid: string, glyph: string) => void;
     flat?: boolean; showAreas?: boolean; onnotice?: (text: string, undo?: boolean) => void;
   } = $props();
 
   const COLS = T.FIELDS;
-  /** glyph -> the glossary words it's in, shown faded under its name (defined in Glyphs > Words) */
-  let inWords = $derived(wordsOfGlyphs(app.words));   // the phone's TypingCards show the same fields
-  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'glossary_order', 'meaning'];
+  /** glyph -> where the glossary shows it (Glyphs > Glossary); the Glossary column, read-only */
+  let uses = $derived(usesOf(app.glossary, app.glossarySections));
+  /** a glyph with spellings the glossary shows nowhere: the glossary check reports it */
+  const left = (g: string) => !uses[g] && !!app.glossarySections.length && !T.isEmpty(app.typing[g]) && !partnerOf[g]
+    && ['latin', 'latin_alt', 'common', 'simplified', 'traditional'].some((f) => T.get(app.typing, g)[f as T.SpellField]);
+  const PASTE: T.SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
   let openDecimals = $state(false);
   let table: HTMLTableElement;
 
@@ -69,6 +72,7 @@
     <tr>
       <th class="st"></th><th>Glyph Name</th>
       {#each COLS as f}<th title={T.HELP[f]}>{T.LABEL[f]}</th>{/each}
+      <th title="Where the font page's glossary shows the glyph: its own row in a section, or in a word. Edited in Glyphs > Glossary.">Glossary</th>
       {#if showAreas}<th>Areas</th>{/if}
       {#if flat}<th>Issue</th>{/if}
     </tr>
@@ -76,7 +80,7 @@
   {#each sections as s (s.key)}
     <tbody>
       {#if !flat}
-        <tr class="grp"><td colspan={COLS.length + 2 + (showAreas ? 1 : 0)}>
+        <tr class="grp"><td colspan={COLS.length + 3 + (showAreas ? 1 : 0)}>
           <strong>{s.title}</strong> <span class="muted">{s.sub ?? ''} · {s.glyphs.length}</span>
           {#if s.decimals}<button class="lnk" onclick={() => (openDecimals = !openDecimals)}>{#if openDecimals}<I.Unfolded size={12} /> hide{:else}<I.Folded size={12} /> show{/if}</button> <span class="muted">typed by pattern, nothing to fill</span>{/if}
         </td></tr>
@@ -87,15 +91,22 @@
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
             <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
             <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gnw"><button class="gn" data-tip="Rename {g}"
-              onclick={() => renaming.ask(g, { done: (_f, to) => onselect(to), undone: (f) => onselect(f) })}>{g}</button>
-              {#if inWords[g]}<button class="inw" onclick={(e) => { e.stopPropagation(); onword?.(inWords[g][0]); }}
-                data-tip="Words are edited in Glyphs > Words">in words: {inWords[g].join(', ')}</button>{/if}</span></td>
+              onclick={() => renaming.ask(g, { done: (_f, to) => onselect(to), undone: (f) => onselect(f) })}>{g}</button></span></td>
             {#each COLS as f}
               <td data-f={f}>
                 {#if f === 'vert_variant' && partner}<span class="muted small" title="This is the vertical form of {partner}: typed after a colon"><I.PartnerOf size={12} /> of {partner}</span>
                 {:else}<SpellInput glyph={g} field={f} cell onenter={(dir) => move(g, f, dir)} onpastegrid={(grid) => paste(g, f, grid)} />{/if}
               </td>
             {/each}
+            <td class="gu">
+              {#each describeUses(uses[g] ?? [], app.glossarySections) as line, i (line)}
+                <button class="use" onclick={(e) => { e.stopPropagation(); onglossary?.(uses[g].map((u) => u.sid).filter((x, j, a) => a.indexOf(x) === j)[i], g); }}
+                  data-tip="Show it in Glyphs > Glossary">{line}</button>
+              {:else}
+                {#if left(g)}<button class="use warn" onclick={(e) => { e.stopPropagation(); onglossary?.('', g); }}
+                  data-tip="Add it to a section in Glyphs > Glossary (99: Hidden in Glossary leaves it out on purpose)"><I.Warn size={12} /> not in the glossary</button>{/if}
+              {/each}
+            </td>
             {#if showAreas}<td class="small muted">{app.glyphs.find((r) => r.glyph === g)?.areas.map((a) => app.areaLabel(a)).join(', ')}</td>{/if}
             {#if flat}<td class="small issue">{issueText(g)}</td>{/if}
           </tr>
@@ -105,7 +116,7 @@
           <tr data-g={g} class="ro" class:on={selected === g} onclick={() => onselect(g)}>
             <td class="st"></td>
             <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gn">{g}</span></td>
-            <td colspan={COLS.length} class="small muted">{T.decimalPatterns(g).join(' · ')}</td>
+            <td colspan={COLS.length + 1} class="small muted">{T.decimalPatterns(g).join(' · ')}</td>
             {#if showAreas}<td></td>{/if}
             {#if flat}<td></td>{/if}
           </tr>
@@ -126,8 +137,6 @@
   tr.ro td { color: var(--ink-muted); }
   td[data-f] { min-width: 70px; }
   td[data-f='pinyin'] { min-width: 90px; }
-  td[data-f='meaning'] { min-width: 200px; }
-  td[data-f='glossary_order'] { min-width: 60px; width: 70px; }
   .st { width: 18px; text-align: center; }
   .st.err { color: var(--status-danger); }
   .st.warn { color: var(--status-draft); }
@@ -135,8 +144,10 @@
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
   .ga:hover { border-color: var(--sel-border); background: var(--sel-bg); }
   .gnw { display: inline-flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-  .inw { border: 0; background: transparent; padding: 0; height: auto; font-family: var(--font-serif); font-size: var(--t-caption); color: var(--ink-faint); cursor: pointer; white-space: nowrap; }
-  .inw:hover { color: var(--link); }
+  .gu { min-width: 150px; }
+  .use { display: block; border: 0; background: transparent; padding: 0; min-height: 24px; height: auto; text-align: left; font-family: var(--font-serif); font-size: var(--t-caption); color: var(--ink-muted); cursor: pointer; white-space: nowrap; }
+  .use:hover { color: var(--link); }
+  .use.warn { color: var(--status-draft); }
   .gn { font-family: var(--font-mono); font-size: var(--t-caption); border: 0; background: transparent; padding: 0; height: auto; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
   button.gn:hover { text-decoration-color: var(--link); color: var(--link); }
   .issue { color: var(--ink-muted); max-width: 280px; }

@@ -45,9 +45,8 @@
         {#if impact.areas.length}<li>its place in {impact.areas.map((a) => app.areaLabel(a)).join(', ')}</li>{/if}
         {#if impact.rules}<li>{impact.rules} spacing rule{impact.rules === 1 ? '' : 's'} that name it</li>{/if}
         {#if impact.vertical.length}<li>the Vertical form of {impact.vertical.join(', ')}</li>{/if}
-        {#if impact.words.length}<li>the glossary word{impact.words.length === 1 ? '' : 's'} {impact.words.join(', ')}</li>{/if}
+        {#if impact.glossary.length}<li>its row{impact.glossary.length === 1 ? '' : 's'} in glossary section{impact.glossary.length === 1 ? '' : 's'} {impact.glossary.join(', ')}</li>{/if}
       </ul>
-      {#if !hosted.isHosted}<p class="small muted">If <span class="mono">site/glossary.json</span> lists it by name, change it there too: Check the glossary will point it out.</p>{/if}
       <p class="small muted">It's one step: Undo takes all of it back.</p>
       <div class="row end"><button onclick={() => renaming.close()}>Cancel</button><button class="primary" onclick={rename} disabled={!!problem}>Rename</button></div>
     {/if}

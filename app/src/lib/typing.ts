@@ -6,27 +6,18 @@
 export type Spelling = {
   vert_variant: string; common: string; latin: string; latin_alt: string;
   simplified: string; traditional: string; pinyin: string;
-  /** The glossary section(s) on the font page with a row for this glyph, by title
-   *  ("1c: Left Hand Techniques"; two separated by "; "). Not typed. */
-  glossary: string;
-  /** Where its row goes in its glossary section: a number (decimals allowed; one per section, "3; 12",
-   *  when it has two). Rows sort by it, ties alphabetically. Not typed. */
-  glossary_order: string;
-  /** What the glyph means, in a few plain words: the glossary's Meaning column. Not typed. */
-  meaning: string;
 };
 export type SpellField = keyof Spelling;
 /** glyph name -> spelling. Glyph Name is the ID (it is the SVG file name). */
 export type Typing = Record<string, Spelling>;
 
-export const FIELDS: SpellField[] = ['latin', 'latin_alt', 'common', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'glossary_order', 'meaning'];
+export const FIELDS: SpellField[] = ['latin', 'latin_alt', 'common', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
 /** Fields people type to get the glyph (Number/Symbol is built into the number rules). */
 export const TYPED: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional'];
-export const EDITABLE: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin', 'glossary', 'glossary_order', 'meaning'];
+export const EDITABLE: SpellField[] = ['latin', 'latin_alt', 'simplified', 'traditional', 'vert_variant', 'pinyin'];
 export const LABEL: Record<SpellField, string> = {
   latin: 'Latin Entry', latin_alt: 'Latin Entry (Alt)', common: 'Number/Symbol',
-  simplified: '简体', traditional: '繁體', vert_variant: 'Vertical form', pinyin: 'PinYin', glossary: 'Glossary',
-  glossary_order: 'Glossary order', meaning: 'Meaning'
+  simplified: '简体', traditional: '繁體', vert_variant: 'Vertical form', pinyin: 'PinYin'
 };
 export const HELP: Record<SpellField, string> = {
   latin: 'What you type on an English keyboard: a one-letter shortcut (k) or the pinyin (lun). Letters, digits, [ and ], not starting with a digit. [ also answers to 【 typed in Chinese, ] to 】.',
@@ -35,12 +26,9 @@ export const HELP: Record<SpellField, string> = {
   simplified: 'The character(s) as typed with a simplified-Chinese input method; Chinese punctuation such as 【 】 too.',
   traditional: 'The traditional form, only if it differs from 简体.',
   vert_variant: 'In vertical notation (after a colon) the font swaps this glyph for its centred version.',
-  pinyin: 'Pinyin with tones, for search and labels. Not typed.',
-  glossary: 'The glossary section(s) on jianzipufont.com with a row for this glyph, by title (1c: Left Hand Techniques); two separated by “; ”. Empty: no row of its own (a glyph with spellings is then reported as left out; 99: Hidden in Glossary leaves it out on purpose). Not typed.',
-  glossary_order: 'Where its row goes in its glossary section: a number, decimals allowed (2.5 goes between 2 and 3); one per section, 3; 12, when it has two. Ties sort alphabetically; rows without one come last. Renumber (in the menu) makes them 1, 2, 3… Not typed.',
-  meaning: 'What the glyph means or asks the player to do, in a few plain words (pluck the string inward with the middle finger). Shown in the glossary on jianzipufont.com. Not typed.'
+  pinyin: 'Pinyin with tones, for search and labels. Not typed.'
 };
-export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin', 'glossary', 'glossary_order', 'meaning'] as const;
+export const CSV_FIELDS = ['glyph_name', 'vert_variant', 'common', 'latin', 'latin_alt', 'simplified', 'traditional', 'pinyin'] as const;
 
 // letters and digits, starting with a letter; [ and ] too (builder features.spell_latin), so 【 】 type through them
 const LATIN_RE = /^[A-Za-z[\]][A-Za-z0-9[\]]*$/;
@@ -52,7 +40,7 @@ const NOT_SPELLABLE = ['。', '，', '：', '｜'];
 const PUNCT = '\u3001-\u3003\u3008-\u3011\u3014-\u301f\uff01-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff60';
 const CHINESE_RE = new RegExp(HAN_RE.source.replace(/\]\+\$$/, PUNCT + ']+$'), 'u');
 
-export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '', glossary: '', glossary_order: '', meaning: '' });
+export const empty = (): Spelling => ({ vert_variant: '', common: '', latin: '', latin_alt: '', simplified: '', traditional: '', pinyin: '' });
 export const isEmpty = (s: Spelling | undefined) => !s || FIELDS.every((f) => !s[f]);
 export const get = (t: Typing, g: string): Spelling => t[g] ?? empty();
 
@@ -79,7 +67,7 @@ export function partners(t: Typing): Record<string, string> {
 /** A spelling for display, falling back to the partner's for a vertical form. */
 export function shown(t: Typing, g: string, f: SpellField): { value: string; inherited: string | null } {
   const own = get(t, g)[f];
-  if (own || f === 'vert_variant' || f === 'common' || f === 'glossary' || f === 'glossary_order' || f === 'meaning') return { value: own, inherited: null };
+  if (own || f === 'vert_variant' || f === 'common') return { value: own, inherited: null };
   const p = partners(t)[g];
   return p && t[p]?.[f] ? { value: t[p][f], inherited: p } : { value: '', inherited: null };
 }
@@ -156,17 +144,10 @@ export function issues(t: Typing, known?: Set<string>): Issue[] {
 }
 
 export type CellNote = { level: 'free' | 'error' | 'shared' | 'joins' | 'warn'; text: string };
-/** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level).
- *  `sections`: the glossary's section titles, when the server knows them. */
-export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string,
-  sections?: string[]): CellNote | null {
+/** The line under a cell while typing `value` into glyph `g`'s field `f` (SpellInput adds the icon for its level). */
+export function cellNote(t: Typing, g: string, f: SpellField, value: string, known?: Set<string>, char?: (g: string) => string): CellNote | null {
   const v = value.trim();
-  if (!v || f === 'pinyin' || f === 'meaning') return null;
-  if (f === 'glossary_order') return orderNote(v, get(t, g).glossary);
-  if (f === 'glossary') {
-    const unknown = sections?.length ? v.split(';').map((x) => x.trim()).filter((x) => x && !sections.includes(x)) : [];
-    return unknown.length ? { level: 'warn', text: `no glossary section “${unknown.join('”, “')}” on the font page: pick a title from the list` } : null;
-  }
+  if (!v || f === 'pinyin') return null;
   const p = formatProblem(f, v, known);
   if (p) return { level: 'error', text: p };
   const space = spaceOf(f);
@@ -206,15 +187,6 @@ export function fromCatalog(rows: { glyph: string; [k: string]: unknown }[]): Ty
     if (!isEmpty(s)) t[r.glyph] = s;
   }
   return t;
-}
-
-/** A Glossary order that won't sort: not a number, or numbers that don't match the sections. */
-export function orderNote(v: string, glossary: string): CellNote | null {
-  const parts = v.split(';').map((x) => x.trim());
-  if (parts.some((p) => !/^-?\d+(\.\d+)?$/.test(p))) return { level: 'error', text: 'a number, like 3 or 2.5 (one per section: 3; 12)' };
-  const n = glossary.split(';').map((x) => x.trim()).filter(Boolean).length;
-  if (parts.length > 1 && parts.length !== n) return { level: 'warn', text: `${parts.length} numbers for ${n} glossary section${n === 1 ? '' : 's'}: give one, or one per section` };
-  return null;
 }
 
 // ---------------------------------------------------------------- CSV
@@ -279,7 +251,6 @@ export const pinyinToLatin = (p: string) => p.normalize('NFD').replace(/[̀-ͯ]/
 export function searchText(t: Typing, g: string): string {
   const parts = [g];
   for (const f of FIELDS) {
-    if (f === 'glossary') continue;
     const v = shown(t, g, f).value;
     if (v) parts.push(v, ...(f === 'pinyin' ? [pinyinToLatin(v), v.replace(/\s+/g, '')] : []));
   }

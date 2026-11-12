@@ -423,14 +423,10 @@ Columns:
   trigger this glyph, one column per script variant. Multi-character
   spellings (e.g. `半轮` for 半轮) become multi-glyph ligature rules;
   single-character ones become single substitution rules.
-- `pinyin`, `glossary`, `glossary_order`, `meaning` — never typed and never clash-checked.
-  `pinyin` is reference only; `glossary` names the section(s) of the font
-  page's glossary with a row for the glyph, by title; `glossary_order` where in
-  the section (a number, one per section when it has two); `meaning` says in a few
-  plain words what the glyph means, for the glossary's Meaning column (a
-  section's table gets that column once any of its glyphs has one). The
-  tables are written by `jzpbuild/glossary.py`; the Builder's More → Check the
-  glossary… shows them from unsaved spellings before a release.
+- `pinyin` — reference only: never typed and never clash-checked. Where the
+  font page's glossary shows a glyph is `site/glossary.json` (see `docs/maintainers/releasing.md`,
+  "The glossary"), edited in the Builder's Glyphs → Glossary; an older CSV's
+  `glossary`, `glossary_order` and `meaning` columns are ignored.
 
 A blank cell means "not applicable," not "unset" — e.g. chord glyphs
 (`xl_cuo` etc.) have no `latin`/`latin_alt`, only `common`.

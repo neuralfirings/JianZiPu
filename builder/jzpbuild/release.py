@@ -33,14 +33,15 @@ REPO = config.BUILDER_DIR.parent
 PREFIX = "release/"
 # What a release changes, and the only paths a release branch may touch (repo-relative; a trailing
 # slash is a folder). Code branches may touch none of them.
-FONT_PATHS = ("builder/inputs/", "builder/VERSION", "site/JianZiPu.ttf", "site/version.json")
+FONT_PATHS = ("builder/inputs/", "builder/VERSION", "site/JianZiPu.ttf", "site/version.json", "site/glossary.json")
 # open to every branch: a release writes its section, a code change queues a line under Unreleased
 SHARED_PATHS = ("CHANGELOG.md",)
 # also allowed on a release branch (the classic-positioning golden, if a release refreshes it)
 RELEASE_EXTRA = ("builder/tests/JianZiPu.ttf",)
-# the font page, whose glossary tables a release regenerates from components.csv (glossary.py):
+# the font page, whose glossary tables a release regenerates from site/glossary.json and components.csv (glossary.py):
 # allowed on a release branch when nothing else in it changed
 GLOSSARY_PAGE = "site/index.html"
+GLOSSARY_FILE = "site/glossary.json"     # its sections and rows (a font file, edited in Glyphs > Glossary)
 VERSION_RE = re.compile(r"\d+\.\d{3}")
 
 
@@ -171,15 +172,15 @@ def _check_scope(repo: Path, branch: str):
 
 
 def regenerate_glossary(repo: Path = REPO) -> bool:
-    """Rewrite the font page's glossary tables from components.csv; True when they changed."""
+    """Rewrite the font page's glossary tables from site/glossary.json and components.csv; True when they changed."""
     from . import glossary
-    page, sections = repo / GLOSSARY_PAGE, repo / "site" / "glossary.json"
+    page, sections = repo / GLOSSARY_PAGE, repo / GLOSSARY_FILE
     if not (page.exists() and sections.exists()):
         return False
     try:
         return glossary.write(page, repo / "builder" / "inputs" / "components.csv", sections)
     except glossary.GlossaryError as e:
-        raise ReleaseError(f"The glossary on the font page can't be made from components.csv: {e}") from e
+        raise ReleaseError(f"The glossary on the font page can't be made from site/glossary.json and components.csv: {e}") from e
 
 
 def queued_notes(release: str | None = None, repo: Path = REPO) -> dict:
@@ -280,9 +281,9 @@ def candidate(notes: str, message: str = "", repo: Path = REPO, log: Log = print
     parse_version(version)
     _check_scope(repo, branch)
     if regenerate_glossary(repo):
-        log("updated the glossary on the font page from components.csv")
+        log("updated the glossary on the font page")
     tests(log)
-    git("add", "--", "builder/inputs", *([GLOSSARY_PAGE] if (repo / GLOSSARY_PAGE).exists() else []), repo=repo)
+    git("add", "--", "builder/inputs", *[p for p in (GLOSSARY_PAGE, GLOSSARY_FILE) if (repo / p).exists()], repo=repo)
     if git("diff", "--cached", "--name-only", repo=repo):
         git("commit", "-m", message.strip() or f"{version}: design changes for the release", repo=repo)
         log("committed the design")

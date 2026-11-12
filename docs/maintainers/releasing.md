@@ -225,32 +225,30 @@ so the rule holds without anyone having to remember it.
 
 ## The glossary
 
-The glossary on the font page ("6. Glossary") is made from `components.csv`,
-so its spellings are the font's:
+The glossary on the font page ("6. Glossary") is made from `site/glossary.json`
+and the spellings in `components.csv`, so its spellings are the font's:
 
-- A glyph's **Glossary** column (Glyphs → List view) names the section(s) where
-  it has a row of its own, by title: `1c: Left Hand Techniques`, or two
-  separated by a semicolon (`1d: Special Cases; 3c: Related to String & Hui
-  Number`). The cell offers the titles to pick from. Leave it empty for a
-  glyph that only appears inside a word, such as 带 in :带起. `4: Uncategorized`
-  is for a glyph that doesn't fit a section yet; `99: Hidden in Glossary`
-  (`"kind": "hidden"` in `site/glossary.json`, no table and no marker on the
+- `site/glossary.json` lists the sections by id (`1c`), each with its title
+  (which starts with the id), how its table looks (an example word per row,
+  `0{}5` / `散{}五` with `{}` the glyph, or a vertical table) and its **rows in
+  page order**. A row is a glyph (`{"glyph": "lg_gou"}`) or a word written
+  together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
+  `"meaning"` for the Meaning column (a section gets that column once one of
+  its rows has a meaning).
+- The rows are edited in the Builder's Glyphs → **Glossary**: drag a row to
+  move it, + Add to put a glyph or a word in a section, a meaning per row. The
+  Builder writes the file one row per line, so a diff shows the rows that moved.
+  It's a font file (`FONT_PATHS` in `jzpbuild/release.py`), so it changes through
+  a release, or a pull request with the `font-files` label (a new section or a
+  changed example template is such a change: add its `<!-- glossary <id> -->`
+  marker to `site/index.html` in the same pull request).
+- Every glyph with a spelling is in some section, on its own or in a word.
+  `4: Uncategorized` is for a glyph that doesn't fit a section yet;
+  `99: Hidden in Glossary` (`"kind": "hidden"`, no table and no marker on the
   page) keeps a glyph off the page on purpose, so the check doesn't report it.
-- The id before the colon is what the generator goes by, and the titles must
-  match `site/glossary.json` (the test says which glyph doesn't). Renaming a
-  section means changing its title in both places.
-- A glyph's **Glossary order** column sets where its row goes in its section:
-  a number, decimals allowed (`2.5` goes between 2 and 3), one per section
-  (`1; 15`) when it has two. Rows sort by it, ties alphabetically by their
-  ASCII spelling, rows without a number last. ⋯ → **Renumber the glossary
-  order** (Glyphs) makes every section 1, 2, 3… in the order it shows.
-- Words written together, like :带起, are rows of `builder/inputs/words.csv`
-  (Glyphs → **Words**): the word, its glyphs, and its own Glossary, Glossary
-  order and Meaning. It's a font file like `components.csv`, so it changes
-  through a release (or a pull request with the `font-files` label).
-- `site/glossary.json` says how each section's table looks: the example word
-  for each row (`0{}5` / `散{}五`, where `{}` is the glyph), or a vertical
-  table. Editing it is an ordinary site change on main.
+  Words go in vertical sections only.
+- A Change Request carries the glossary a section at a time: Review keeps or
+  skips a section whole, rows in the draft's order.
 - `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
   `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
   around them stay as written.

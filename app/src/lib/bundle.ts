@@ -7,7 +7,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Design } from './api';
 import { sanitizeSvg } from './svg';
 import * as T from './typing';
-import { changedWords, cleanWord, wordsFromCsv, wordsToCsv, type Words } from './glossaryWords';
+import { changedSections, cleanRows, type GlossaryRows } from './glossary';
 
 export const BUNDLE_FORMAT = 1;
 /** Same rule as the server's SVG_NAME (webserver.py). */
@@ -32,9 +32,9 @@ export type Bundle = {
   typing: T.Typing;
   /** Added and changed glyphs only. */
   svgs: SvgMap;
-  /** The glossary's words (words.csv); a draft from before words has none: it takes the font's. */
-  words?: Words;
-  base: { design: Design; typing: T.Typing; svgs: SvgMap; words?: Words };
+  /** The glossary's rows by section (site/glossary.json); a draft from before it has none: it takes the font's. */
+  glossary?: GlossaryRows;
+  base: { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows };
 };
 
 /** Which glyph files differ between the base set and the current set. */
@@ -53,7 +53,7 @@ const norm = (t: string) => t.replace(/\s+$/, '');
 export function makeBundle(o: {
   design: Design; typing: T.Typing; svgs: SvgMap;
   baseDesign: Design; baseTyping: T.Typing; baseSvgs: SvgMap; base: BaseVersion;
-  words?: Words; baseWords?: Words;
+  glossary?: GlossaryRows; baseGlossary?: GlossaryRows;
   author?: Manifest['author']; note?: string; now?: Date;
 }): Bundle {
   const d = diffSvgs(o.baseSvgs, o.svgs);
@@ -66,9 +66,9 @@ export function makeBundle(o: {
     design: clone(o.design),
     typing: clone(o.typing),
     svgs: pick(o.svgs, [...d.added, ...d.changed]),
-    ...(o.words ? { words: clone(o.words) } : {}),
+    ...(o.glossary ? { glossary: clone(o.glossary) } : {}),
     base: { design: clone(o.baseDesign), typing: clone(o.baseTyping), svgs: pick(o.baseSvgs, [...d.changed, ...d.deleted]),
-      ...(o.baseWords ? { words: clone(o.baseWords) } : {}) }
+      ...(o.baseGlossary ? { glossary: clone(o.baseGlossary) } : {}) }
   };
 }
 
@@ -84,7 +84,7 @@ export function isEmptyBundle(b: Bundle): boolean {
   return !s.added.length && !s.changed.length && !s.deleted.length
     && JSON.stringify(b.design) === JSON.stringify(b.base.design)
     && T.changedGlyphs(b.base.typing, b.typing).length === 0
-    && (!b.words || changedWords(b.base.words ?? b.words, b.words).length === 0);
+    && (!b.glossary || changedSections(b.base.glossary ?? b.glossary, b.glossary).length === 0);
 }
 
 // ---------------------------------------------------------------- checks
@@ -108,11 +108,12 @@ export function validate(x: unknown): Bundle {
   for (const n of [...m.svgs.added, ...m.svgs.changed]) {
     if (typeof b.svgs[n] !== 'string') throw new BundleError(`The draft lists ${n} but has no file for it.`);
   }
-  const words = (w: unknown) => (Array.isArray(w) ? (w as Words).map(cleanWord).filter((x) => x.word) : undefined);
   const out: Bundle = { ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } };
-  const w = words(b.words), bw = words(b.base.words);
-  if (w) out.words = w; else delete out.words;
-  if (bw) out.base.words = bw;
+  // a draft from before the glossary was its own file holds `words` (a list): its glossary is the font's
+  delete (out as { words?: unknown }).words;
+  const g = cleanRows(b.glossary), bg = cleanRows(b.base.glossary);
+  if (g) out.glossary = g; else delete out.glossary;
+  if (bg) out.base.glossary = bg;
   return out;
 }
 
@@ -148,8 +149,8 @@ export function toZip(b: Bundle): Uint8Array {
     'base/design.json': strToU8(JSON.stringify(b.base.design, null, 2) + '\n'),
     'base/components.csv': strToU8(T.toCsv(b.base.typing))
   };
-  if (b.words) files['words.csv'] = strToU8(wordsToCsv(b.words));
-  if (b.base.words) files['base/words.csv'] = strToU8(wordsToCsv(b.base.words));
+  if (b.glossary) files['glossary.json'] = strToU8(JSON.stringify(b.glossary, null, 1) + '\n');
+  if (b.base.glossary) files['base/glossary.json'] = strToU8(JSON.stringify(b.base.glossary, null, 1) + '\n');
   for (const [n, t] of Object.entries(b.svgs)) files[`svg/${n}.svg`] = strToU8(t);
   for (const [n, t] of Object.entries(b.base.svgs)) files[`base/svg/${n}.svg`] = strToU8(t);
   return zipSync(files, { level: 6 });
@@ -171,9 +172,9 @@ export function fromZip(bytes: Uint8Array): Bundle {
     design: json('design.json'),
     typing: T.fromCsv(text('components.csv') ?? ''),
     svgs: svgsUnder('svg/'),
-    ...(text('words.csv') != null ? { words: wordsFromCsv(text('words.csv')!) } : {}),
+    ...(text('glossary.json') != null ? { glossary: json('glossary.json') } : {}),
     base: { design: json('base/design.json'), typing: T.fromCsv(text('base/components.csv') ?? ''), svgs: svgsUnder('base/svg/'),
-      ...(text('base/words.csv') != null ? { words: wordsFromCsv(text('base/words.csv')!) } : {}) }
+      ...(text('base/glossary.json') != null ? { glossary: json('base/glossary.json') } : {}) }
   });
 }
 

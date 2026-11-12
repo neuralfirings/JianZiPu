@@ -35,7 +35,7 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
-  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'word' ? `Word · ${i.key}` : `Glyph · ${i.key}`);
+  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : `Glyph · ${i.key}`);
   let picked = $derived(items.filter((i) => chosen[i.id]));
   /** A new glyph and its spellings go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {

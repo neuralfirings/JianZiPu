@@ -71,29 +71,34 @@ def test_scope_lets_a_release_regenerate_only_the_glossary():
     assert release.scope(["site/index.html"], "release/3.200") == ["site/index.html"]
     assert release.scope(["site/index.html"], "release/3.200", glossary_only=True) == []
     assert release.scope(["site/index.html"], "fix/site") == []
+    # the glossary's rows are the font's, edited in the Builder: they go through a release
+    assert release.scope(["site/glossary.json"], "release/3.200") == []
+    assert release.scope(["site/glossary.json"], "fix/site") == ["site/glossary.json"]
 
 
-CSV_HEAD = "glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin,glossary\n"
+CSV_HEAD = "glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin\n"
 PAGE = "<h3>6. Glossary</h3>\n<!-- glossary 2a -->\n<!-- /glossary 2a -->\n<p>hand-written</p>\n"
 
 
 def test_a_candidate_regenerates_the_glossary_and_scope_allows_only_that(repo):
-    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand\n")
-    (repo / "site" / "glossary.json").write_text(json.dumps(
-        {"sections": {"2a": {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"]}}}))
+    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu\n")
+    sec = {"title": "2a: Basic Right Hand", "kind": "usage", "usage": ["0{}5", "散{}五"], "rows": [{"glyph": "lg_gou"}]}
+    (repo / "site" / "glossary.json").write_text(json.dumps({"sections": {"2a": sec}}))
     (repo / "site" / "index.html").write_text(PAGE)
     sh(repo, "add", "-A")
     sh(repo, "commit", "-m", "glossary")
     sh(repo, "push", "origin", "main")
     release.start("3.200", repo=repo, log=lambda _: None)
-    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand\nlg_tiao,,,u,,挑,,tiāo,2a: Basic Right Hand\n")
+    (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu\nlg_tiao,,,u,,挑,,tiāo\n")
+    sec["rows"].append({"glyph": "lg_tiao"})            # the Builder's Glyphs > Glossary
+    (repo / "site" / "glossary.json").write_text(json.dumps({"sections": {"2a": sec}}))
     candidate(repo)
     page = (repo / "site" / "index.html").read_text()
     assert "<td>挑</td>" in page and "<p>hand-written</p>" in page
     assert not release.dirty_files(repo)
     assert release.glossary_only("origin/main", "HEAD", repo=repo)
     files = sh(repo, "diff", "--name-only", "origin/main...HEAD").splitlines()
-    assert "site/index.html" in files
+    assert "site/index.html" in files and "site/glossary.json" in files
     assert release.scope(files, "release/3.200", release.glossary_only("origin/main", "HEAD", repo=repo)) == []
     # a hand-written change on the release branch is still out of scope
     (repo / "site" / "index.html").write_text(page.replace("hand-written", "changed"))

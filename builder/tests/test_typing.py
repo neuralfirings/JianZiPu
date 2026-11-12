@@ -227,20 +227,14 @@ def test_write_keeps_order_drops_empty_rows_and_returns_the_new_hash(csv_copy):
     assert "lg_tiao,,,t," in text
 
 
-def test_the_glossary_column_is_kept_and_never_clashes(csv_copy):
+def test_the_old_glossary_columns_are_dropped_on_save(csv_copy):
+    # components.csv is the font's alone: the glossary lives in site/glossary.json
     payload = webserver.glyphs_payload()
-    assert {"id": "1a", "title": "1a: Left Hand Finger"} in payload["glossary_sections"]
-    rows = [{"glyph_name": r["glyph"], **{k: r[k] for k in tp.ROW_FIELDS if k != "glyph_name"}}
+    rows = [{"glyph_name": r["glyph"], **{k: r[k] for k in tp.ROW_FIELDS if k != "glyph_name"}, "glossary": "2a: X"}
             for r in payload["glyphs"]]
-    gou = next(r for r in rows if r["glyph_name"] == "lg_gou")
-    assert gou["glossary"] == "2a: Basic Right Hand"
-    for r in rows:
-        if r["glyph_name"] in ("lg_gou", "lg_tiao"):
-            r["glossary"] = "2a: Basic Right Hand; 3b: Related to Notes"   # the same sections twice: no clash
     webserver.write_glyph_rows(rows, payload["hash"])
     text = csv_copy.read_text(encoding="utf-8")
-    assert text.splitlines()[0].endswith(",pinyin,glossary,glossary_order,meaning")
-    assert "lg_gou,,,k,,勾,,gōu,2a: Basic Right Hand; 3b: Related to Notes," in text
+    assert text.splitlines()[0].endswith(",simplified,traditional,pinyin") and "2a: X" not in text
 
 
 def test_write_refuses_a_stale_hash(csv_copy):

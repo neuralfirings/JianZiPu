@@ -6,6 +6,7 @@ import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmpt
 import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, updateSummary, usesOfGlyph, withChanges } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
+import type { GlossaryRows } from './glossary';
 
 const design = (): Design => ({
   version: 2,
@@ -208,11 +209,13 @@ describe('what a font update brings, in words', () => {
   const gl = (key: string) => ({ id: `glyph:${key}`, kind: 'glyph', key, status: 'changed', conflict: false }) as never;
   const lay = (name: string) => ({ id: `design:layout:${name}`, kind: 'design', unit: { type: 'layout', name }, status: 'changed', conflict: false }) as never;
   it('counts glyphs per kind of change, biggest first', () => {
-    expect(updateSummary([sp('md_1', 'glossary'), sp('md_2', 'glossary', 'pinyin'), gl('md_3')]))
-      .toBe('glossary sections for 2 glyphs, pinyin for 1 glyph and 1 glyph drawing');
+    expect(updateSummary([sp('md_1', 'simplified'), sp('md_2', 'traditional', 'pinyin'), gl('md_3')]))
+      .toBe('Chinese spellings for 2 glyphs, pinyin for 1 glyph and 1 glyph drawing');
     expect(updateSummary([sp('md_1', 'latin', 'latin_alt')])).toBe('Latin entries for 1 glyph');
-    expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('b', 'meaning'), sp('c', 'simplified')]))
-      .toBe('2 word types, meanings for 1 glyph, Chinese spellings for 1 glyph and more');
+    const gs = (key: string) => ({ id: `glossary:${key}`, kind: 'glossary', key, status: 'changed', conflict: false }) as never;
+    expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('c', 'simplified'), gs('3e')]))
+      .toBe('2 word types, Chinese spellings for 1 glyph, 1 glyph drawing and more');
+    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary sections');
     expect(updateSummary([])).toBe('');
   });
 });
@@ -276,29 +279,34 @@ describe('undoing one change (Your changes)', () => {
   });
 });
 
-describe('glossary words in a draft', () => {
-  const w = (word: string, glossary = '3e: E', meaning = '') => ({ word, glyphs: 'md_a md_b', glossary, glossary_order: '1', meaning });
-  const mk = (words: ReturnType<typeof w>[] | undefined, baseWords: ReturnType<typeof w>[] | undefined) => makeBundle({
-    design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base, words, baseWords
+describe('the glossary in a draft', () => {
+  const g = (glyph: string, meaning?: string) => ({ glyph, ...(meaning ? { meaning } : {}) });
+  const w = (word: string) => ({ word, glyphs: ['md_a', 'md_b'] });
+  const mk = (glossary: GlossaryRows | undefined, baseGlossary: GlossaryRows | undefined) => makeBundle({
+    design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base, glossary, baseGlossary
   });
-  it('carries them through JSON and the zip, and an old draft has none', () => {
-    const b = mk([w('少息', '3e: E', 'rest'), w('大息')], [w('大息')]);
+  it('carries it through JSON and the zip, and an old draft has none', () => {
+    const b = mk({ '3e': [w('少息'), g('md_a', 'rest')], '1a': [g('md_ming')] }, { '3e': [g('md_a')], '1a': [g('md_ming')] });
     expect(isEmptyBundle(b)).toBe(false);
-    expect(fromJson(toJson(b)).words).toEqual(b.words);
-    expect(fromZip(toZip(b)).words).toEqual(b.words);
-    expect(fromZip(toZip(b)).base.words).toEqual([w('大息')]);
+    expect(fromJson(toJson(b)).glossary).toEqual(b.glossary);
+    expect(fromZip(toZip(b)).glossary).toEqual(b.glossary);
+    expect(fromZip(toZip(b)).base.glossary).toEqual({ '3e': [g('md_a')], '1a': [g('md_ming')] });
     const old = mk(undefined, undefined);
-    expect(old.words).toBeUndefined();
+    expect(old.glossary).toBeUndefined();
     expect(isEmptyBundle(old)).toBe(true);
-    expect(diffBundle(old, { design: design(), typing: {}, svgs: baseSvgs, words: [w('大息')] })).toEqual([]);
+    expect(diffBundle(old, { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a')] } })).toEqual([]);
+    // a draft from the words.csv days: its words are dropped, the font's glossary stands
+    const legacy = fromJson(JSON.stringify({ ...JSON.parse(toJson(old)), words: [{ word: '少息', glyphs: 'md_a md_b' }] }));
+    expect((legacy as { words?: unknown }).words).toBeUndefined();
   });
-  it('reviews a word whole: added, edited, deleted, and a conflict', () => {
-    const b = mk([w('少息'), w('大息', '3e: E', 'rest')], [w('大息'), w('小息')]);
-    const cur = { design: design(), typing: {}, svgs: baseSvgs, words: [w('大息', '3e: E', 'pause'), w('小息')] };
-    const items = diffBundle(b, cur).filter((i) => i.kind === 'word');
-    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['大息', 'changed', true], ['小息', 'deleted', false], ['少息', 'added', false]]);
-    const m = applyMerge(items, { 'word:大息': true, 'word:少息': true, 'word:小息': true }, cur);
-    expect(m.words).toEqual([w('大息', '3e: E', 'rest'), w('少息')]);
-    expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).words).toBeUndefined();   // left out: untouched
+  it('reviews a section whole: changed, conflicting, and left alone when the Builder has it already', () => {
+    const b = mk({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] },
+                 { '3e': [g('md_a')], '1a': [g('md_x'), g('md_y')], '2a': [] });
+    const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a'), g('md_c')], '1a': [g('md_x'), g('md_y')], '2a': [g('lg_gou')] } };
+    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary');
+    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['1a', 'changed', false], ['3e', 'changed', true]]);
+    const m = applyMerge(items, { 'glossary:1a': true, 'glossary:3e': true }, cur);
+    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
+    expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).glossary).toBeUndefined();   // left out: untouched
   });
 });

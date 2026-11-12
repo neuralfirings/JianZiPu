@@ -1,13 +1,10 @@
 <script lang="ts">
   // One spelling field of one glyph, edited in place. Checked as you type in a line under the
   // field; Enter (or leaving the field) saves it as one undo step; Esc puts the old value back.
-  // A vertical form shows its partner's spelling greyed out as the placeholder. The Glossary field
-  // is a picker instead: every section on the font page, one or two ticked (a browser's own
-  // suggestion list showed only the sections matching what the cell already held).
+  // A vertical form shows its partner's spelling greyed out as the placeholder.
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
-  import GlossaryPicker from './GlossaryPicker.svelte';
   let {
     glyph, field, cell = false, onenter, onpastegrid
   }: {
@@ -28,7 +25,7 @@
   let placeholder = $derived(inherited ? T.shown(app.typing, glyph, field).value : suggestion);
   let draft = $state<string | null>(null);
   let focused = $state(false);
-  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g), app.glossarySections.map((s) => s.title)) : null);
+  let note = $derived(focused && draft !== null ? T.cellNote(app.typing, glyph, field, draft, app.known, (g) => app.charOf(g)) : null);
   let bad = $derived(app.typingErrors.some((e) => (e.kind === 'clash' ? e.fields.some((f) => f.glyph === glyph && f.field === field) : e.glyph === glyph && e.field === field)));
   let changed = $derived(T.get(app.savedTyping, glyph)[field] !== own);
   let zh = $derived(field === 'simplified' || field === 'traditional');
@@ -56,9 +53,6 @@
 <span class="si" class:cell>
   {#if field === 'common'}
     <span class="ro" title={T.HELP.common}>{own}</span>
-  {:else if field === 'glossary'}
-    <GlossaryPicker value={own} cell {changed} {locked} lockTip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined}
-      tip={T.HELP.glossary} onchange={(v) => app.setSpelling(glyph, 'glossary', v)} />
   {:else}
     <input bind:this={input} type="text" value={own} {placeholder} class:zh class:bad class:changed class:inh={!!inherited && !own} class:sug={!!suggestion && !own}
       readonly={locked} data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined}

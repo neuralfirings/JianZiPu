@@ -27,6 +27,9 @@ export { default as TabRequests } from '@lucide/svelte/icons/inbox';
 
 // panels, menus, disclosure
 export { default as Grip } from '@lucide/svelte/icons/grip-vertical';
+/** move a row up or down a list (Glyphs > Glossary) */
+export { default as RowUp } from '@lucide/svelte/icons/arrow-up';
+export { default as RowDown } from '@lucide/svelte/icons/arrow-down';
 export { default as Folded } from '@lucide/svelte/icons/chevron-right';
 export { default as Unfolded } from '@lucide/svelte/icons/chevron-down';
 export { default as Dropdown } from '@lucide/svelte/icons/chevron-down';
