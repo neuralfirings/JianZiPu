@@ -13,6 +13,8 @@
   import { beforeNavigate, goto } from '$app/navigation';
   import ImportExport from '$lib/components/ImportExport.svelte';
   import GlossaryCheck from '$lib/components/GlossaryCheck.svelte';
+  import RenameDialog from '$lib/components/RenameDialog.svelte';
+  import { renaming } from '$lib/renaming.svelte';
   import { updateSummary } from '$lib/merge';
   import PilotDialogs from '$lib/components/PilotDialogs.svelte';
   import SignIn from '$lib/components/SignIn.svelte';
@@ -418,6 +420,7 @@
   {:else if dialog}
     <ImportExport mode={dialog} onclose={() => (dialog = null)} />
   {/if}
+  {#if renaming.name}{#key renaming.name}<RenameDialog />{/key}{/if}
   <PilotDialogs />
   {#if feedback}
     <ContactDialog kind="feedback" name={hosted.user?.name ?? ''} email={hosted.user?.email ?? ''}

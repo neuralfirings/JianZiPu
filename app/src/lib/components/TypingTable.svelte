@@ -7,6 +7,7 @@
   // Enter saves and moves down, Tab moves right, Esc puts the old value back; a pasted range
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.
+  import { renaming } from '$lib/renaming.svelte';
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import { typingCheck } from '$lib/typingcheck.svelte';
@@ -78,7 +79,8 @@
           {@const partner = partnerOf[g]}
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
             <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
-            <td class="gl"><span class="ga"><Glyph name={g} size={26} /></span><span class="gn">{g}</span></td>
+            <td class="gl"><span class="ga"><Glyph name={g} size={26} /></span><button class="gn" data-tip="Rename {g}"
+              onclick={() => renaming.ask(g, { done: (_f, to) => onselect(to), undone: (f) => onselect(f) })}>{g}</button></td>
             {#each COLS as f}
               <td data-f={f}>
                 {#if f === 'vert_variant' && partner}<span class="muted small" title="This is the vertical form of {partner}: typed after a colon"><I.PartnerOf size={12} /> of {partner}</span>
@@ -121,7 +123,8 @@
   .st.warn { color: var(--status-draft); }
   .gl { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; }
-  .gn { font-family: var(--font-mono); font-size: var(--t-caption); }
+  .gn { font-family: var(--font-mono); font-size: var(--t-caption); border: 0; background: transparent; padding: 0; height: auto; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
+  button.gn:hover { text-decoration-color: var(--link); color: var(--link); }
   .issue { color: var(--ink-muted); max-width: 280px; }
   .small { font-size: var(--t-caption); }
   .lnk { height: 20px; padding: 0 6px; border-style: dashed; background: transparent; font-size: var(--t-caption); }

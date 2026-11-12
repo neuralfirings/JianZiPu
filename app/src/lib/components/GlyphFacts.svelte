@@ -4,7 +4,12 @@
   // Shown in the Glyphs inspector and in the glyph editor's Glyph panel.
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
-  let { glyph, showBox = true, showName = true }: { glyph: string; showBox?: boolean; showName?: boolean } = $props();
+  import { renaming } from '$lib/renaming.svelte';
+  let { glyph, showBox = true, showName = true, onrenamed }: {
+    glyph: string; showBox?: boolean; showName?: boolean;
+    /** after a rename (to the new name) and after its Undo (back to the old one) */
+    onrenamed?: (name: string) => void;
+  } = $props();
 
   let d = $derived(app.design!);
   let areaNames = $derived(Object.keys(d.areas));
@@ -15,7 +20,8 @@
 
 <div class="gf">
   {#if showName}
-    <div class="h"><strong class="mono">{glyph}</strong>{#if app.charOf(glyph)} <span>{app.charOf(glyph)}</span>{/if}{#if !svg}<span class="badge-warn"> · no SVG on disk</span>{/if}</div>
+    <div class="h"><button class="name mono" onclick={() => renaming.ask(glyph, { done: (_f, to) => onrenamed?.(to), undone: (f) => onrenamed?.(f) })}
+      data-tip="Rename {glyph}">{glyph}</button>{#if !svg}<span class="badge-warn"> · no SVG on disk</span>{/if}</div>
   {/if}
   <div class="row"><span class="k">In areas</span>
     {#each mine as a (a)}<span class="chip">{app.areaLabel(a)} <span class="id">{a}</span> <button class="x" title="Remove from {a}" onclick={() => app.removeFromArea(a, glyph)} aria-label="Remove from {a}"><I.Close size={12} /></button></span>{/each}
@@ -31,6 +37,8 @@
 </div>
 
 <style>
+  .name { border: 0; background: transparent; padding: 0; height: auto; font-weight: 600; font-size: inherit; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
+  .name:hover { text-decoration-color: var(--link); color: var(--link); }
   .gf { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; font-size: var(--t-small); }
   .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .mono { font-family: var(--font-mono); }

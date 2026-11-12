@@ -354,7 +354,7 @@
       <div class="big"><Glyph name={sel.glyph} size={view === 'typing' && !phone.on ? 84 : 120} /></div>
       <div class="facts col">
         <div class="colh">Glyph</div>
-        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles' || phone.on} />
+        <GlyphFacts glyph={sel.glyph} showBox={view === 'tiles' || phone.on} onrenamed={(n) => (selected = n)} />
         {#if phone.on}
         <div class="row" style="margin-top: var(--space-4)">
           <a href={editUrl(sel.glyph)}><button><I.Computer /> Edit outline</button></a><span class="muted small">needs a computer</span>

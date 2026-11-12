@@ -8,7 +8,7 @@
   import { beforeNavigate, goto } from '$app/navigation';
   import { app } from '$lib/state.svelte';
   import { hosted } from '$lib/hosted.svelte';
-  import { pilot } from '$lib/pilot.svelte';
+  import { renaming } from '$lib/renaming.svelte';
   import { glyphEditor as ed } from '$lib/glyphed/editor.svelte';
   import type { Mode } from '$lib/glyphed/tools';
   import * as I from '$lib/icons';
@@ -48,22 +48,11 @@
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   function say(t: string) { toast = t; if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast = null), 4000); }
 
-  // ---- rename (app.renameGlyph: everywhere the name is used, one undo step)
-  let renaming = $state<string | null>(null);     // the new name being typed
+  // ---- rename: the app's Rename box (RenameDialog), then this page moves to the new name
   let renameBlocked = $derived(ed.isNew ? 'Save the new glyph first.' : ed.dirty ? 'Save or discard your edits to the drawing first.' : app.renameRefusal(name));
-  let renameProblem = $derived(renaming === null ? null : app.renameRefusal(name, renaming));
-  let impact = $derived(renaming === null ? null : app.renameImpact(name));
-  function rename() {
-    if (renaming === null || renameProblem) return;
-    const to = renaming.trim();
-    const why = app.renameGlyph(name, to);
-    if (why) { say(why); return; }
-    renaming = null;
-    const page = (n: string) => `/glyphs/${encodeURIComponent(n)}/edit${back ? `?back=${encodeURIComponent(back)}` : ''}`;
-    const from = name;
-    pilot.say(`Renamed ${from} to ${to}.${hosted.isHosted ? '' : ' Its file moves when you Save.'}`,
-      { undo: true, onundo: () => goto(page(from), { replaceState: true }) });
-    goto(page(to), { replaceState: true });
+  const pageOf = (n: string) => `/glyphs/${encodeURIComponent(n)}/edit${back ? `?back=${encodeURIComponent(back)}` : ''}`;
+  function askRename() {
+    renaming.ask(name, { done: (_f, to) => goto(pageOf(to), { replaceState: true }), undone: (f) => goto(pageOf(f), { replaceState: true }) });
   }
 
   let row = $derived(app.glyphs.find((g) => g.glyph === name) ?? null);
@@ -350,8 +339,7 @@
     <a href={backHref} class="back"><I.Back />{backLabel}</a>
     <span class="thumb"><Glyph name={name} size={28} /></span>
     <strong class="mono">{name}</strong>
-    <button class="sm quiet" onclick={() => (renaming = name)} disabled={!!renameBlocked} data-tip={renameBlocked ?? 'Give this glyph another name, everywhere it is used'}>Rename…</button>
-    {#if app.charOf(name)}<span class="char">{app.charOf(name)}</span>{/if}
+    <button class="sm quiet" onclick={askRename} disabled={!!renameBlocked} data-tip={renameBlocked ?? 'Give this glyph another name, everywhere it is used'}>Rename…</button>
     {#if areaName}<a class="chip" href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area (sets the box): open it on the Layouts screen">{app.areaLabel(areaName)} · {ed.box[0]} × {ed.box[1]}</a>{:else}<span class="chip" title="No area yet: default box">no area · {ed.box[0]} × {ed.box[1]}</span>{/if}
     <span class="state">
       {#if ed.saving}<span class="chip">Saving…</span>
@@ -496,31 +484,6 @@
   </div>
 {/if}
 
-{#if renaming !== null && impact}
-  <div class="modal-bg" role="presentation" onclick={() => (renaming = null)}>
-    <div class="modal rename" role="dialog" aria-modal="true" aria-labelledby="rename-title" tabindex="-1"
-      onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') renaming = null; }}>
-      <h3 id="rename-title" style="margin:0">Rename <span class="mono">{name}</span></h3>
-      <label class="row">New name
-        <!-- svelte-ignore a11y_autofocus -->
-        <input type="text" class="mono" bind:value={renaming} autofocus spellcheck="false" autocomplete="off"
-          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); rename(); } }} /></label>
-      {#if renameProblem && renaming.trim() !== name}<p class="small" style="color: var(--status-danger)">{renameProblem}</p>{/if}
-      <p>The name is the glyph's ID, so it changes everywhere it's used:</p>
-      <ul class="small">
-        {#if impact.drawing}<li>its drawing: <span class="mono">{name}.svg</span> becomes <span class="mono">{renaming.trim() || '…'}.svg</span>{hosted.isHosted ? ' in your draft' : ' when you Save'}</li>{/if}
-        {#if impact.spellings}<li>its spellings</li>{/if}
-        {#if impact.areas.length}<li>its place in {impact.areas.map((a) => app.areaLabel(a)).join(', ')}</li>{/if}
-        {#if impact.rules}<li>{impact.rules} spacing rule{impact.rules === 1 ? '' : 's'} that name it</li>{/if}
-        {#if impact.vertical.length}<li>the Vertical form of {impact.vertical.join(', ')}</li>{/if}
-      </ul>
-      {#if !hosted.isHosted}<p class="small muted">If <span class="mono">site/glossary.json</span> lists it by name, change it there too: Check the glossary will point it out.</p>{/if}
-      <p class="small muted">It's one step: Undo takes all of it back.</p>
-      <div class="row end"><button onclick={() => (renaming = null)}>Cancel</button><button class="primary" onclick={rename} disabled={!!renameProblem}>Rename</button></div>
-    </div>
-  </div>
-{/if}
-
 {#if leave}
   <div class="modal-bg" role="presentation">
     <div class="modal" role="dialog" tabindex="-1">
@@ -554,11 +517,6 @@
 
 <style>
   .ge { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-  .rename { width: min(480px, 94vw); display: flex; flex-direction: column; gap: var(--space-3); }
-  .rename label { gap: var(--space-3); }
-  .rename input { flex: 1; }
-  .rename ul { margin: 0; padding-left: 20px; }
-  .rename .end { justify-content: flex-end; }
   .gbar { display: flex; align-items: center; gap: var(--space-4); padding: 6px var(--space-6); border-bottom: 1px solid var(--border); background: var(--bg-panel); }
   .back { display: inline-flex; align-items: center; gap: var(--space-2); text-decoration: none; margin-right: var(--space-4); }
   .thumb { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-field); }
