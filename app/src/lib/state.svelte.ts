@@ -14,7 +14,7 @@ import { day, fontOf, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import { isNetworkError } from './net';
 import { renameIn, renameProblem, type RenameImpact } from './rename';
-import { changedSections, cleanRows, renameInRows, type GlossaryRows, type Section } from './glossary';
+import { changedLayout, changedSections, cleanLayout, cleanRows, emptyLayout, renameInRows, sectionList, type GlossaryLayout, type GlossaryRows, type Section } from './glossary';
 import * as T from './typing';
 
 const DRAFT_KEY = 'jzp-builder-draft';
@@ -23,10 +23,10 @@ export const AUTOSAVE_MS = 30_000;
 /** Unsaved glyph files: text to write, or null to delete. */
 export type PendingSvgs = Record<string, string | null>;
 /** What a merge puts into the unsaved changes (merge.ts applyMerge). */
-export type Changes = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; glossary: GlossaryRows };
+export type Changes = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; glossary: GlossaryRows; glossaryLayout: GlossaryLayout };
 /** The font version a hosted draft started from, and the originals a merge needs. */
-export type DraftBase = { version: BaseVersion; design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows };
-type Step = { label: string; json: string; typing: string; svgs: string; glossary?: string; base?: string };
+export type DraftBase = { version: BaseVersion; design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
+type Step = { label: string; json: string; typing: string; svgs: string; glossary?: string; layout?: string; base?: string };
 
 export function withPending(saved: SvgMap, pending: PendingSvgs): SvgMap {
   const out = { ...saved };
@@ -68,6 +68,10 @@ class DesignState {
   savedGlossaryJson = $state('{}');
   glossaryHash = $state('');
   mainGlossary = $state<GlossaryRows>({});
+  /** Its section titles and subtitles, with their titles and descriptions (Glyphs > Glossary): now, as saved, and main's. */
+  glossaryLayout = $state<GlossaryLayout>(emptyLayout());
+  savedLayoutJson = $state(JSON.stringify(emptyLayout()));
+  mainLayout = $state<GlossaryLayout>(emptyLayout());
   csvHash = $state('');
   csvOrder = $state<string[]>([]);
   /** Set when Save was refused because spellings clash or are malformed. */
@@ -78,8 +82,10 @@ class DesignState {
   glyphs = $state<GlyphRow[]>([]);
   /** Built-in glyphs typed by symbols (blank, blank_colon…): never need a spelling. */
   control = $state<string[]>([]);
-  /** The glossary's sections on the font page (site/glossary.json), in page order; empty where the server has no site/. */
-  glossarySections = $state<Section[]>([]);
+  /** The glossary's subtitles on the font page (site/glossary.json), in page order; empty where the server has no site/. */
+  get glossarySections(): (Section & { description?: string })[] {
+    return sectionList(this.glossaryLayout);
+  }
   /** Every glyph outline as the app shows it: saved files plus `pendingSvgs`. */
   svgs = $state<Record<string, string>>({});
   /** The saved outlines (local: the files; hosted: the font plus the saved draft). */
@@ -139,7 +145,9 @@ class DesignState {
       const [kind, ...rest] = id.split(':'), key = rest.join(':');
       if (kind === 'design' && next.design && !same(unitOf(this.design, key), unitOf(next.design, key))) return id;
       if (kind === 'spelling' && next.typing && !same(T.get(this.typing, key), T.get(next.typing, key))) return id;
-      if (kind === 'glossary' && next.glossary && !same(this.glossary[key] ?? [], next.glossary[key] ?? [])) return id;
+      if (kind === 'glossary' && ((next.glossary && !same(this.glossary[key] ?? [], next.glossary[key] ?? []))
+        || (next.glossaryLayout && !same(this.glossaryLayout.sections[key], next.glossaryLayout.sections[key])))) return id;
+      if (kind === 'glossary-titles' && next.glossaryLayout && !same(this.glossaryLayout.groups, next.glossaryLayout.groups)) return id;
       if (kind === 'glyph' && ((next.svgWrites && key in next.svgWrites && next.svgWrites[key] !== this.svgs[key]) || next.svgDeletes?.includes(key))) return id;
     }
     return null;
@@ -177,7 +185,7 @@ class DesignState {
     return JSON.stringify(this.typing) !== this.savedTypingJson;
   }
   get glossaryDirty() {
-    return JSON.stringify(this.glossary) !== this.savedGlossaryJson;
+    return JSON.stringify(this.glossary) !== this.savedGlossaryJson || JSON.stringify(this.glossaryLayout) !== this.savedLayoutJson;
   }
   get svgsDirty() {
     return Object.keys(this.pendingSvgs).length > 0;
@@ -272,11 +280,13 @@ class DesignState {
       this.csvHash = g.hash;
       this.csvOrder = g.order;
       this.control = g.control;
-      this.glossarySections = (g.glossary_sections ?? []).map((s) => ({ id: s.id, title: s.title, kind: s.kind ?? 'vertical', usage: s.usage ?? null }));
       this.mainSvgs = svgs;
       this.mainDesign = d.design;
       this.mainTyping = typing;
       this.mainGlossary = cleanRows(Object.fromEntries((g.glossary_sections ?? []).map((s) => [s.id, s.rows ?? []]))) ?? {};
+      // a server from before section titles: every subtitle under one untitled one
+      this.mainLayout = cleanLayout({ groups: g.glossary_groups ?? [{ id: 'glossary', title: '', sections: (g.glossary_sections ?? []).map((s) => s.id) }],
+        sections: Object.fromEntries((g.glossary_sections ?? []).map((s) => [s.id, s])) }) ?? emptyLayout();
       this.glossaryHash = g.glossary_hash ?? '';
       this.savedElsewhere = null;
       this.offline = false;
@@ -316,11 +326,13 @@ class DesignState {
   }
 
   /** Make (design, typing, svgs, glossary) the saved state and the current one, with no history. */
-  private setSaved(design: Design, typing: T.Typing, svgs: SvgMap, glossary: GlossaryRows = this.mainGlossary) {
+  private setSaved(design: Design, typing: T.Typing, svgs: SvgMap, glossary: GlossaryRows = this.mainGlossary, layout: GlossaryLayout = this.mainLayout) {
     this.savedJson = JSON.stringify(design);
     this.savedTypingJson = JSON.stringify(typing);
     this.savedGlossaryJson = JSON.stringify(glossary);
     this.glossary = clone(glossary);
+    this.savedLayoutJson = JSON.stringify(layout);
+    this.glossaryLayout = clone(layout);
     this.savedSvgs = svgs;
     this.design = clone(design);
     this.typing = clone(typing);
@@ -337,7 +349,7 @@ class DesignState {
     const c = hosted.client, uid = hosted.user?.id;
     const fresh = (): DraftBase => ({
       version: { commit: this.main?.commit ?? null, version: this.main?.version ?? null, date: this.main?.date ?? null, design_hash: this.main?.design_hash ?? this.diskHash, csv_hash: this.main?.csv_hash ?? this.csvHash },
-      design: clone(mainDesign), typing: clone(mainTyping), svgs: {}, glossary: clone(this.mainGlossary)
+      design: clone(mainDesign), typing: clone(mainTyping), svgs: {}, glossary: clone(this.mainGlossary), glossaryLayout: clone(this.mainLayout)
     });
     this.requests = c && uid ? await myRequests(c, uid).catch(() => []) : [];
     this.requestDraft = c && uid ? await loadRequestDraft(c, uid) : null;
@@ -351,16 +363,16 @@ class DesignState {
     const b = got.bundle;
     // a draft from before the glossary was its own file takes the font's, as its own and as what it started from
     this.draftBase = { version: b.manifest.base, design: b.base.design, typing: b.base.typing, svgs: b.base.svgs,
-      glossary: b.base.glossary ?? clone(this.mainGlossary) };
+      glossary: b.base.glossary ?? clone(this.mainGlossary), glossaryLayout: b.base.glossaryLayout ?? clone(this.mainLayout) };
     this.draftStamp = got.stamp;
     const svgs = { ...this.mainSvgs, ...b.svgs };
     for (const n of b.manifest.svgs.deleted) delete svgs[n];
-    this.setSaved(b.design, b.typing, svgs, b.glossary ?? this.mainGlossary);
+    this.setSaved(b.design, b.typing, svgs, b.glossary ?? this.mainGlossary, b.glossaryLayout ?? this.mainLayout);
   }
 
   /** Edits that never reached the files or the draft (crash, offline, closed tab). */
   private restoreBuffer() {
-    let buf: { hash?: string; stamp?: string | null; design: Design; changes: string[]; csvHash?: string; typing?: T.Typing; svgs?: PendingSvgs; glossaryHash?: string; glossary?: GlossaryRows } | null = null;
+    let buf: { hash?: string; stamp?: string | null; design: Design; changes: string[]; csvHash?: string; typing?: T.Typing; svgs?: PendingSvgs; glossaryHash?: string; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout } | null = null;
     try {
       const raw = localStorage.getItem(this.draftKey);
       buf = raw ? JSON.parse(raw) : null;
@@ -372,15 +384,19 @@ class DesignState {
     const same = hosted.isHosted ? (buf.stamp ?? null) === this.draftStamp : buf.hash === this.diskHash;
     if (!same) return;
     const typing = buf.typing && (hosted.isHosted || buf.csvHash === this.csvHash) ? buf.typing : null;
-    const glossary = buf.glossary && !Array.isArray(buf.glossary) && (hosted.isHosted || buf.glossaryHash === this.glossaryHash) ? buf.glossary : null;
+    const sameGlossary = hosted.isHosted || buf.glossaryHash === this.glossaryHash;
+    const glossary = buf.glossary && !Array.isArray(buf.glossary) && sameGlossary ? buf.glossary : null;
+    const layout = sameGlossary ? cleanLayout(buf.glossaryLayout) ?? null : null;
     const svgs = buf.svgs ?? {};
     const differs = JSON.stringify(buf.design) !== this.savedJson
       || (typing && JSON.stringify(typing) !== this.savedTypingJson) || Object.keys(svgs).length > 0
-      || (glossary && JSON.stringify(glossary) !== this.savedGlossaryJson);
+      || (glossary && JSON.stringify(glossary) !== this.savedGlossaryJson)
+      || (layout && JSON.stringify(layout) !== this.savedLayoutJson);
     if (!differs) return;
     this.design = buf.design;
     if (typing) this.typing = typing;
     if (glossary) this.glossary = glossary;
+    if (layout) this.glossaryLayout = layout;
     this.pendingSvgs = svgs;
     this.svgs = withPending(this.savedSvgs, svgs);
     this.changes = buf.changes ?? [];
@@ -449,6 +465,7 @@ class DesignState {
     if (c.draftBase) this.draftBase = clone(c.draftBase);
     if (c.design) this.design = clone(c.design);
     if (c.glossary) this.glossary = clone(c.glossary);
+    if (c.glossaryLayout) this.glossaryLayout = clone(c.glossaryLayout);
     if (c.typing) {
       const t = clone(c.typing);
       for (const [g, sp] of Object.entries(t)) if (T.isEmpty(sp)) delete t[g];
@@ -481,6 +498,11 @@ class DesignState {
     const d = this.design ?? { areas: {}, layouts: [], center: {} } as unknown as Design;
     return { ...renameIn(d, this.typing, from, `${from}\u0000`).impact, drawing: from in this.svgs,
       glossary: renameInRows(this.glossary, from, `${from}\u0000`).changed };
+  }
+  /** Change the glossary's section titles and subtitles (and, with them, rows) as one undo step. */
+  editGlossaryLayout(label: string, fn: (layout: GlossaryLayout, rows: GlossaryRows) => { layout: GlossaryLayout; rows?: GlossaryRows }) {
+    const r = fn(clone(this.glossaryLayout), clone(this.glossary));
+    this.applyChanges(label, { glossaryLayout: r.layout, ...(r.rows ? { glossary: r.rows } : {}) });
   }
   /** Change the glossary's rows (Glyphs > Glossary) as one undo step. */
   editGlossary(label: string, fn: (rows: GlossaryRows) => GlossaryRows) {
@@ -532,7 +554,7 @@ class DesignState {
   private snapshot(label: string, withBase = false): Step {
     return {
       label, json: JSON.stringify(this.design), typing: JSON.stringify(this.typing), svgs: JSON.stringify(this.pendingSvgs),
-      glossary: JSON.stringify(this.glossary),
+      glossary: JSON.stringify(this.glossary), layout: JSON.stringify(this.glossaryLayout),
       ...(withBase ? { base: JSON.stringify(this.draftBase) } : {})
     };
   }
@@ -541,6 +563,7 @@ class DesignState {
     this.design = JSON.parse(step.json);
     this.typing = JSON.parse(step.typing);
     if (step.glossary) this.glossary = JSON.parse(step.glossary);
+    if (step.layout) this.glossaryLayout = JSON.parse(step.layout);
     this.setPending(JSON.parse(step.svgs ?? '{}'));
   }
   private setPending(p: PendingSvgs) {
@@ -579,6 +602,7 @@ class DesignState {
     this.design = JSON.parse(this.savedJson);
     this.typing = JSON.parse(this.savedTypingJson);
     this.glossary = JSON.parse(this.savedGlossaryJson);
+    this.glossaryLayout = JSON.parse(this.savedLayoutJson);
     this.setPending({});
     this.paused = null;
     this.changes = [];
@@ -593,7 +617,8 @@ class DesignState {
       if (this.dirty) {
         localStorage.setItem(this.draftKey, JSON.stringify({
           hash: this.diskHash, stamp: this.draftStamp, design: this.design, changes: this.changes,
-          csvHash: this.csvHash, typing: this.typing, svgs: this.pendingSvgs, glossaryHash: this.glossaryHash, glossary: this.glossary
+          csvHash: this.csvHash, typing: this.typing, svgs: this.pendingSvgs, glossaryHash: this.glossaryHash, glossary: this.glossary,
+          glossaryLayout: this.glossaryLayout
         }));
       } else {
         localStorage.removeItem(this.draftKey);
@@ -685,7 +710,7 @@ class DesignState {
         this.csvOrder = [...this.csvOrder, ...Object.keys(this.typing).filter((g) => !this.csvOrder.includes(g))];
       }
       if (this.glossaryDirty) {
-        const r = await api.saveGlossary(this.glossary, force ? '' : this.glossaryHash);
+        const r = await api.saveGlossary(this.glossary, force ? '' : this.glossaryHash, this.glossaryLayout);
         if (!r.ok) {
           if (r.conflict) { this.conflictFile = 'site/glossary.json'; this.conflict = r.error ?? 'conflict'; return false; }
           this.fail(`Not saved: site/glossary.json: ${r.error ?? 'save failed'}`, 'save');
@@ -694,6 +719,8 @@ class DesignState {
         this.glossaryHash = r.hash ?? this.glossaryHash;
         this.savedGlossaryJson = JSON.stringify(this.glossary);
         this.mainGlossary = clone(this.glossary);
+        this.savedLayoutJson = JSON.stringify(this.glossaryLayout);
+        this.mainLayout = clone(this.glossaryLayout);
       }
       this.changes = [];
       this.lastSaved = new Date();
@@ -714,12 +741,14 @@ class DesignState {
   bundle(note?: string): Bundle {
     const b = this.draftBase ?? {
       version: { commit: null, design_hash: this.diskHash, csv_hash: this.csvHash },
-      design: JSON.parse(this.savedJson), typing: this.savedTyping, svgs: {}, glossary: JSON.parse(this.savedGlossaryJson) as GlossaryRows
+      design: JSON.parse(this.savedJson), typing: this.savedTyping, svgs: {}, glossary: JSON.parse(this.savedGlossaryJson) as GlossaryRows,
+      glossaryLayout: JSON.parse(this.savedLayoutJson) as GlossaryLayout
     };
     return makeBundle({
       design: this.design!, typing: this.typing, svgs: this.svgs,
       baseDesign: b.design, baseTyping: b.typing,
       glossary: this.glossary, baseGlossary: b.glossary ?? this.mainGlossary,
+      glossaryLayout: this.glossaryLayout, baseGlossaryLayout: b.glossaryLayout ?? this.mainLayout,
       // glyphs the draft never touched ride the font: their base is the font's current file
       baseSvgs: { ...this.mainSvgs, ...b.svgs }, base: b.version,
       author: hosted.user ? { id: hosted.user.id, name: hosted.user.name || hosted.firstName } : {}, note
@@ -734,7 +763,8 @@ class DesignState {
     const a = units(b.base.design), c = units(b.design);
     const design = [...new Set([...Object.keys(a), ...Object.keys(c)])].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(c[k])).length;
     return { glyphs: s.added.length + s.changed.length + s.deleted.length, spellings: T.changedGlyphs(b.base.typing, b.typing).length, design,
-      glossary: b.glossary ? changedSections(b.base.glossary ?? {}, b.glossary).length : 0 };
+      glossary: new Set([...(b.glossary ? changedSections(b.base.glossary ?? {}, b.glossary) : []),
+        ...(b.glossaryLayout ? changedLayout(b.base.glossaryLayout ?? b.glossaryLayout, b.glossaryLayout) : [])]).size };
   }
 
   private async saveDraft(force: boolean): Promise<boolean> {
@@ -757,6 +787,7 @@ class DesignState {
       this.savedJson = JSON.stringify(this.design);
       this.savedTypingJson = JSON.stringify(this.typing);
       this.savedGlossaryJson = JSON.stringify(this.glossary);
+      this.savedLayoutJson = JSON.stringify(this.glossaryLayout);
       this.savedSvgs = this.svgs;
       this.pendingSvgs = {};
       this.changes = [];
@@ -802,9 +833,9 @@ class DesignState {
     if (!this.design || !this.mainDesign) return [];
     const b = this.bundle();
     return fontUpdateItems(
-      { design: b.base.design, typing: b.base.typing, svgs: b.base.svgs, glossary: b.base.glossary ?? this.mainGlossary },
-      { design: this.mainDesign, typing: this.mainTyping, svgs: this.mainSvgs, glossary: this.mainGlossary },
-      { design: this.design, typing: this.typing, svgs: this.svgs, glossary: this.glossary }
+      { design: b.base.design, typing: b.base.typing, svgs: b.base.svgs, glossary: b.base.glossary ?? this.mainGlossary, glossaryLayout: b.base.glossaryLayout ?? this.mainLayout },
+      { design: this.mainDesign, typing: this.mainTyping, svgs: this.mainSvgs, glossary: this.mainGlossary, glossaryLayout: this.mainLayout },
+      { design: this.design, typing: this.typing, svgs: this.svgs, glossary: this.glossary, glossaryLayout: this.glossaryLayout }
     );
   }
 
@@ -812,12 +843,12 @@ class DesignState {
    *  One undo step. Returns how many of the font's changes came in and how many of mine were kept. */
   async updateToFont(items: Item[], keep: Record<string, boolean>, label: string) {
     if (!this.design || !this.mainDesign || !this.main) return { came: 0, kept: 0 };
-    const m = applyMerge(items, keep, { design: this.design, typing: this.typing, svgs: this.svgs, glossary: this.glossary });
+    const m = applyMerge(items, keep, { design: this.design, typing: this.typing, svgs: this.svgs, glossary: this.glossary, glossaryLayout: this.glossaryLayout });
     this.applyChanges(label, {
       ...m,
       draftBase: {
         version: { commit: this.main.commit, version: this.main.version ?? null, date: this.main.date, design_hash: this.main.design_hash, csv_hash: this.main.csv_hash },
-        design: this.mainDesign, typing: this.mainTyping, svgs: {}, glossary: clone(this.mainGlossary)
+        design: this.mainDesign, typing: this.mainTyping, svgs: {}, glossary: clone(this.mainGlossary), glossaryLayout: clone(this.mainLayout)
       }
     });
     await this.save();

@@ -40,6 +40,10 @@ INDENT = " " * 8
 MAX_MEANING = 300
 MAX_USAGE = 200
 MAX_WORD_GLYPHS = 12
+MAX_TITLE = 120
+MAX_DESCRIPTION = 4000
+ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}")
+ALL, NAV = "all", "nav"     # the page's two markers: every section title, subtitle and table; the contents links
 
 
 class GlossaryError(Exception):
@@ -90,6 +94,58 @@ def load_sections(path: Path | None = None) -> dict[str, dict]:
     return load_file(path)["sections"]
 
 
+def load_groups(path: Path | None = None) -> list[dict]:
+    """The section titles ("1: Left Hand"), each with its subtitles (the sections' ids) in page order."""
+    return load_file(path).get("groups", [])
+
+
+def one_group(sections: dict[str, dict]) -> list[dict]:
+    """Every section under one untitled section title (a page or a test without groups)."""
+    return [{"id": "glossary", "title": "", "sections": list(sections)}]
+
+
+def section_order(sections: dict[str, dict], groups: list[dict]) -> list[str]:
+    """The sections in page order: by their section titles, then any no title holds."""
+    seen = [sid for g in groups for sid in g.get("sections", []) if sid in sections]
+    return list(dict.fromkeys(seen + list(sections)))
+
+
+# ---------------------------------------------------------------- descriptions: a little Markdown
+
+# the page's own tags a description may use as they are; anything else is shown as text
+_TAGS = re.compile(r"&lt;(/?)(u|jzp|text|small|br ?/?)&gt;")
+_LINK = re.compile(r"\[([^\]]+)\]\(((?:https?://|/|#)[^\s()<>\"]*)\)")
+
+
+def _inline(s: str) -> str:
+    codes: list[str] = []
+    def keep(m: re.Match) -> str:
+        codes.append(m.group(1))
+        return f"\0{len(codes) - 1}\0"
+    s = re.sub(r"`([^`]+)`", keep, s)                      # `s9k3`: a typed example, the page's grey pill
+    s = _TAGS.sub(lambda m: "<" + m.group(1) + m.group(2) + ">", s)
+    s = _LINK.sub(lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', s)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])", r"<em>\1</em>", s)
+    return re.sub(r"\0(\d+)\0", lambda m: f"<text>{codes[int(m.group(1))]}</text>", s)
+
+
+def markdown(text: str) -> str:
+    """A description's HTML: paragraphs (a blank line between), a line break within one, lists of
+    "- " lines, **bold**, *italic*, `typed examples`, [links](https://…), and the page's <u>, <jzp>,
+    <text>, <small> and <br>. Any other HTML is escaped (app/src/lib/glossary.ts has the same)."""
+    out = []
+    for block in re.split(r"\n\s*\n", html.escape(text.strip(), quote=False)):
+        lines = [l.strip() for l in block.strip().split("\n") if l.strip()]
+        if not lines:
+            continue
+        if all(l.startswith("- ") for l in lines):
+            out.append("<ul>" + "".join(f"<li>{_inline(l[2:])}</li>" for l in lines) + "</ul>")
+        else:
+            out.append("<p>" + "<br />".join(_inline(l) for l in lines) + "</p>")
+    return "\n".join(out)
+
+
 def clean_row(x) -> dict:
     """A row as site/glossary.json keeps it, or ValueError saying what's wrong with it."""
     if not isinstance(x, dict):
@@ -136,6 +192,85 @@ def with_rows(sections: dict[str, dict], rows_by_section: dict) -> dict[str, dic
             raise ValueError(f"glossary: section {sid}'s rows are a list")
         out[sid]["rows"] = [clean_row(r) for r in rows]
     return out
+
+
+def _text(x, what: str, limit: int, required: bool = False) -> str:
+    if x is not None and not isinstance(x, str):
+        raise ValueError(f"{what}: text, please")
+    t = (x or "").strip()
+    if required and not t:
+        raise ValueError(f"{what} is empty")
+    if len(t) > limit:
+        raise ValueError(f"{what} is longer than {limit} characters")
+    return t
+
+
+def _id(x, what: str) -> str:
+    if not isinstance(x, str) or not ID_RE.fullmatch(x):
+        raise ValueError(f"{what}: an id of letters, digits, - and _ (up to 32), please")
+    return x
+
+
+def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None = None) -> tuple[dict[str, dict], list[dict]]:
+    """The Builder's section titles and subtitles (unsaved ones), checked, with each subtitle's rows: the
+    Builder's where it sends them, else the file's. `layout` is {"groups": [{id, title, nav?, description?,
+    sections: [id…]}], "sections": {id: {title, kind, usage?, description?}}}. A subtitle the layout drops
+    goes only when it has no rows. Returns (sections in page order, groups)."""
+    if not isinstance(layout, dict) or not isinstance(layout.get("groups"), list) or not isinstance(layout.get("sections"), dict):
+        raise ValueError("layout: the section titles and subtitles, please")
+    metas = {}
+    for sid, m in layout["sections"].items():
+        _id(sid, "a subtitle's id")
+        if not isinstance(m, dict):
+            raise ValueError(f"subtitle {sid}: an object, please")
+        kind = m.get("kind", "vertical")
+        if kind not in KINDS:
+            raise ValueError(f"subtitle {sid}: kind {kind!r} is none of {', '.join(KINDS)}")
+        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE, True), "kind": kind}
+        u = m.get("usage")
+        if kind == "usage":
+            if not (isinstance(u, list) and len(u) == 2 and all(isinstance(x, str) and len(x) <= MAX_USAGE for x in u)):
+                u = ["{}", "{}"]
+            meta["usage"] = [x.strip() for x in u]
+        if d := _text(m.get("description"), f"subtitle {sid}'s description", MAX_DESCRIPTION):
+            meta["description"] = d
+        metas[sid] = meta
+    groups, held = [], set()
+    if len(layout["groups"]) > 100:
+        raise ValueError("too many section titles")
+    for g in layout["groups"]:
+        if not isinstance(g, dict):
+            raise ValueError("a section title: an object, please")
+        gid = _id(g.get("id"), "a section title's id")
+        if any(x["id"] == gid for x in groups):
+            raise ValueError(f"two section titles have the id {gid}")
+        secs = g.get("sections") or []
+        if not isinstance(secs, list) or any(not isinstance(x, str) or x not in metas for x in secs):
+            raise ValueError(f"the section title {gid} lists a subtitle that isn't there")
+        if held.intersection(secs):
+            raise ValueError(f"{', '.join(sorted(held.intersection(secs)))} is under two section titles")
+        held.update(secs)
+        out = {"id": gid, "title": _text(g.get("title"), f"the section title {gid}", MAX_TITLE, True)}
+        if nav := _text(g.get("nav"), f"the section title {gid}'s short name", 40):
+            out["nav"] = nav
+        if d := _text(g.get("description"), f"the section title {gid}'s description", MAX_DESCRIPTION):
+            out["description"] = d
+        groups.append({**out, "sections": list(secs)})
+    rows_by_section = rows_by_section or {}
+    for sid in sections:
+        if sid not in metas:
+            left = rows_by_section.get(sid, sections[sid].get("rows", []))
+            if left:
+                raise ValueError(f"subtitle {sid} still has {len(left)} row(s): move or remove them before deleting it")
+    out = {}
+    for sid in section_order(metas, groups):
+        rows = rows_by_section[sid] if sid in rows_by_section else sections.get(sid, {}).get("rows", [])
+        if not isinstance(rows, list):
+            raise ValueError(f"glossary: section {sid}'s rows are a list")
+        out[sid] = {**metas[sid], "rows": [clean_row(r) for r in rows]}
+    if extra := [sid for sid in rows_by_section if sid not in out]:
+        raise ValueError(f"glossary: there's no section {extra[0]}")
+    return out, groups
 
 
 def entries(sid: str, sec: dict, rows: dict[str, dict] | None = None) -> list[Entry]:
@@ -315,8 +450,8 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
     problems = []
     shown: set[str] = set()
     for sid, sec in sections.items():
-        if not sec.get("title", "").startswith(sid + ": "):
-            problems.append(f"site/glossary.json: section {sid}'s title should start with \"{sid}: \".")
+        if not sec.get("title", "").strip():
+            problems.append(f"site/glossary.json: section {sid} has no title.")
         seen: set[str] = set()
         for e in entries(sid, sec):
             key = "word " + e.word if e.word else e.glyph
@@ -341,19 +476,87 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
     return problems
 
 
-def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, dict] | None = None) -> str:
-    """`page` with every glossary table regenerated."""
+def missing_layout(sections: dict[str, dict], groups: list[dict]) -> list[str]:
+    """A subtitle no section title holds (so the page doesn't show it), or a section title naming one that isn't there."""
+    problems, held = [], {}
+    for g in groups:
+        for sid in g.get("sections", []):
+            if sid not in sections:
+                problems.append(f"site/glossary.json: the section title {g.get('title') or g.get('id')!r} lists {sid}, which isn't a section.")
+            elif sid in held:
+                problems.append(f"site/glossary.json: {sid} is under two section titles, {held[sid]!r} and {g.get('title')!r}.")
+            held.setdefault(sid, g.get("title") or g.get("id"))
+    for sid, sec in sections.items():
+        if sid not in held and sec.get("kind") != "hidden":
+            problems.append(f"{sec.get('title') or sid} isn't under a section title, so the page doesn't show it: "
+                            f"put it under one in Glyphs > Glossary.")
+    return problems
+
+
+def _desc(text: str, cls: str) -> list[str]:
+    return [f'<div class="{cls}">', *("  " + l for l in markdown(text).split("\n")), "</div>"] if text.strip() else []
+
+
+def page_html(sections: dict[str, dict], groups: list[dict], rows: dict[str, dict], start: int = 1) -> tuple[str, int]:
+    """Every section title, its description, its subtitles with theirs, and their tables, in page
+    order; and how many rows the tables numbered. A section title with only hidden subtitles is left
+    out, and a subtitle with the section title's own title shows it once."""
+    lines: list[str] = []
+    count = start - 1
+    for g in groups:
+        shown = [sid for sid in g.get("sections", []) if sid in sections and sections[sid].get("kind") != "hidden"]
+        if not shown:
+            continue
+        if lines:
+            lines.append("")
+        gid = g.get("id", "")
+        lines.append(f'<h4 id="glossary-{_esc(gid)}">{_esc(g.get("title", ""))}</h4>')
+        lines += _desc(g.get("description", ""), "glossary-desc")
+        for sid in shown:
+            sec = sections[sid]
+            if sec.get("title", "").strip() != g.get("title", "").strip():
+                lines.append(f'<label id="glossary-{_esc(sid)}">{_esc(sec.get("title", ""))}</label>')
+            lines += _desc(sec.get("description", ""), "glossary-subdesc")
+            lines += [l[len(INDENT):] if l.startswith(INDENT) else l for l in table_html(sid, sec, rows, count + 1).split("\n")]
+            count += len(section_rows(sid, sec, rows))
+    return "\n".join(INDENT + l if l else l for l in lines), count - start + 1
+
+
+def nav_html(sections: dict[str, dict], groups: list[dict]) -> str:
+    """The contents' links to the section titles (each one's short `nav` name, else its title)."""
+    out = []
+    for g in groups:
+        if any(sid in sections and sections[sid].get("kind") != "hidden" for sid in g.get("sections", [])):
+            out.append(f'{INDENT}<a class="sub" href="#glossary-{_esc(g.get("id", ""))}">{_esc(g.get("nav") or g.get("title", ""))}</a>')
+    return "\n".join(out)
+
+
+def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, dict] | None = None,
+           groups: list[dict] | None = None) -> str:
+    """`page` with the glossary regenerated: the whole of it between `<!-- glossary all -->` markers and
+    its contents links between `<!-- glossary nav -->`, or (an older page, the tests) a table per
+    section's own marker."""
     rows = load_rows() if rows is None else rows
-    sections = load_sections() if sections is None else sections
+    if sections is None:
+        sections = load_sections()
+        groups = load_groups() if groups is None else groups
+    groups = one_group(sections) if groups is None else groups
     seen = set()
     count = 0                         # rows numbered so far, in page order
 
     def sub(m: re.Match) -> str:
         sid = m.group(2)
+        nonlocal count
+        if sid == ALL:
+            seen.update(sections)
+            body, n = page_html(sections, groups, rows, count + 1)
+            count += n
+            return f"{m.group(1)}\n{body}\n{INDENT}{m.group(4)}"
+        if sid == NAV:
+            return f"{m.group(1)}\n{nav_html(sections, groups)}\n{INDENT}{m.group(4)}"
         if sid not in sections:
             raise GlossaryError(f"site/index.html has a glossary marker for {sid}, which site/glossary.json doesn't define.")
         seen.add(sid)
-        nonlocal count
         html = table_html(sid, sections[sid], rows, count + 1)
         count += len(section_rows(sid, sections[sid], rows))
         return f"{m.group(1)}\n{html}\n{INDENT}{m.group(4)}"
@@ -364,26 +567,36 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
     return out
 
 
+def descriptions_html(sections: dict[str, dict], groups: list[dict]) -> str:
+    """Every description as the page shows it, for examples() to type."""
+    texts = [g.get("description", "") for g in groups] + [s.get("description", "") for s in sections.values()]
+    return "\n".join(markdown(t) for t in texts if t.strip())
+
+
 def strip_generated(page: str) -> str:
     """`page` with the generated tables emptied: what's left is written by hand."""
     return BLOCK_RE.sub(lambda m: m.group(1) + m.group(4), page)
 
 
 def examples(page: str | None = None, rows: dict[str, dict] | None = None,
-             sections: dict[str, dict] | None = None, skip: set[str] = frozenset()) -> list[tuple[str, list[str]]]:
+             sections: dict[str, dict] | None = None, skip: set[str] = frozenset(),
+             groups: list[dict] | None = None) -> list[tuple[str, list[str]]]:
     """Every example on the page as (where, spellings that must type the same glyph): the generated
     tables' rows, and the hand-written ones (<text>/<txs> spellings and the <jzp> rendering they
     give, in the lessons and around the tables)."""
     page = config.SITE_INDEX.read_text(encoding="utf-8") if page is None else page
     rows = load_rows() if rows is None else rows
-    sections = load_sections() if sections is None else sections
+    if sections is None:
+        sections, groups = load_sections(), load_groups() if groups is None else groups
+    groups = groups or []
     out = []
     for sid, sec in sections.items():
         for r in section_rows(sid, sec, rows):
             if not skip.intersection(r.glyphs):          # `skip`: glyphs the font hasn't got yet
                 out += [(f"glossary {sid}", ex) for ex in r.examples]
+    # the hand-written page, and the descriptions the glossary is written with
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<!--(?! glossary| /glossary).*?-->", " ",
-                  strip_generated(page), flags=re.S)
+                  strip_generated(page) + "\n" + descriptions_html(sections, groups), flags=re.S)
     for m in re.finditer(r"<(li|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
         where = "page: " + re.sub(r"\s+", " ", _plain(m.group(2))).strip()[:60]
         # an example is a run of spellings and the rendering they give (`a or b → <jzp>`), joined
@@ -414,7 +627,7 @@ def check_typing(font: Path | None = None, page: str | None = None, rows: dict[s
     return _typing(font, page, rows, design, sections, svg)[0]
 
 
-def _typing(font, page, rows, design, sections, svg=None, gpos=False):
+def _typing(font, page, rows, design, sections, svg=None, gpos=False, groups=None):
     """check_typing(), the glyphs it skipped because the font hasn't got them, and the preview font."""
     from . import typing_preview
     font = font or config.SITE_FONT
@@ -425,7 +638,7 @@ def _typing(font, page, rows, design, sections, svg=None, gpos=False):
     skip = set(prev.not_built)
     horizontal = {r["vert_variant"]: g for g, r in rows.items() if r["vert_variant"]}
     problems = []
-    for where, ex in examples(page, rows, sections, skip):
+    for where, ex in examples(page, rows, sections, skip, groups):
         if prev.lacking and any(ch in prev.lacking for x in ex for ch in x):
             continue                                   # a character only a Build adds: wait for it
         typed = typing_preview.shape(prev, ex)
@@ -457,21 +670,23 @@ def in_glossary(sections: dict[str, dict]) -> set[str]:
 
 
 def check(rows: dict[str, dict], design: dict | None = None, font: Path | None = None, svg=None,
-          sections: dict[str, dict] | None = None) -> dict:
+          sections: dict[str, dict] | None = None, groups: list[dict] | None = None) -> dict:
     """The Builder's "Check the glossary": with these spellings, what the font page's glossary
     would leave out or get wrong, and its tables as they would be written (each section's HTML,
     numbered down the page). `font`: the build to type the examples with (default the released one);
     `svg(name)`: the drawing of a glyph it hasn't got. The examples are typed in a preview font: `font`
     plus those glyphs, these spellings and the design's positioning, which `font_key` names
     (typing_preview.FONTS.by_key) so the Builder can draw the tables in it; `drawn` lists the glyphs
-    drawn in from their files. `sections`: the glossary with the Builder's unsaved rows (with_rows)."""
+    drawn in from their files. `sections`, `groups`: the glossary with the Builder's unsaved rows and
+    titles (with_rows, with_layout)."""
     sections = load_sections() if sections is None else sections
+    groups = load_groups() if groups is None else groups
     page = config.SITE_INDEX.read_text(encoding="utf-8")
     out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
-    order = [m.group(2) for m in BLOCK_RE.finditer(page)]
+    order = [sid for sid in section_order(sections, groups) if sections[sid].get("kind") != "hidden"]
     try:
-        out["problems"] = missing(rows, sections)
-        render(page, rows, sections)          # the same errors a release would stop on
+        out["problems"] = missing(rows, sections) + missing_layout(sections, groups)
+        render(page, rows, sections, groups)          # the same errors a release would stop on
         count = 0
         for sid in order:
             sec = sections[sid]
@@ -480,7 +695,7 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
             count += len(section_rows(sid, sec, rows))
     except GlossaryError as e:
         return {**out, "ok": False, "error": str(e)}
-    out["typing"], unbuilt, prev = _typing(font, page, rows, design, sections, svg, gpos=True)
+    out["typing"], unbuilt, prev = _typing(font, page, rows, design, sections, svg, gpos=True, groups=groups)
     # glyphs the glossary shows that have no drawing at all: their examples wait for one
     shown = in_glossary(sections)
     out["not_built"] = [g for g in unbuilt if g in shown]
@@ -528,7 +743,7 @@ def write(path: Path | None = None, csv_path: Path | None = None, sections_path:
     """Rewrite the page's glossary tables; True when the file changed."""
     path = path or config.SITE_INDEX
     old = path.read_text(encoding="utf-8")
-    new = render(old, load_rows(csv_path), load_sections(sections_path))
+    new = render(old, load_rows(csv_path), load_sections(sections_path), load_groups(sections_path))
     if new != old:
         path.write_text(new, encoding="utf-8")
     return new != old
@@ -539,10 +754,10 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true", help="change nothing; exit 1 if the page is out of date")
     args = ap.parse_args(argv)
     try:
-        rows, sections = load_rows(), load_sections()
-        problems = missing(rows, sections)
+        rows, sections, groups = load_rows(), load_sections(), load_groups()
+        problems = missing(rows, sections) + missing_layout(sections, groups)
         page = config.SITE_INDEX.read_text(encoding="utf-8")
-        new = render(page, rows, sections)
+        new = render(page, rows, sections, groups)
     except GlossaryError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

@@ -365,3 +365,32 @@ def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatc
         webserver.write_glossary({"9z": []}, r["hash"])
     with pytest.raises(ValueError):
         webserver.write_glossary({"3e": [{"glyph": ""}]}, r["hash"])
+
+
+def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, monkeypatch):
+    f = tmp_path / "glossary.json"
+    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
+    p = webserver.glyphs_payload()
+    groups = p["glossary_groups"]
+    assert groups[0]["title"] == "1: Left Hand" and groups[0]["sections"][0] == "1a"
+    metas = {s["id"]: {k: s[k] for k in ("title", "kind", "usage", "description") if s.get(k)} for s in p["glossary_sections"]}
+    assert metas["2b"]["description"].startswith("These notes")
+    rows = {s["id"]: s["rows"] for s in p["glossary_sections"]}
+    # a new subtitle under a new section title, a renamed one, a description
+    metas["5a"] = {"title": "5a: Ornaments", "kind": "vertical", "description": "Written **after** the note."}
+    metas["1a"]["title"] = "1a: Fingers"
+    layout = {"groups": groups + [{"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}], "sections": metas}
+    rows["5a"] = [{"glyph": "md_placeholder"}]
+    rows["3x"] = []
+    r = webserver.write_glossary(rows, p["glossary_hash"], layout)
+    doc = json.loads(f.read_text(encoding="utf-8"))
+    assert r["ok"] and doc["groups"][-1] == {"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}
+    assert doc["sections"]["5a"] == {"title": "5a: Ornaments", "kind": "vertical", "description": "Written **after** the note.",
+                                     "rows": [{"glyph": "md_placeholder"}]}
+    assert doc["sections"]["1a"]["title"] == "1a: Fingers" and list(doc)[:3] == ["about", "groups", "sections"]
+    # a subtitle with rows can't be dropped
+    del layout["sections"]["2b"]
+    layout["groups"][1]["sections"].remove("2b")
+    with pytest.raises(ValueError, match="still has"):
+        webserver.write_glossary(rows, r["hash"], layout)

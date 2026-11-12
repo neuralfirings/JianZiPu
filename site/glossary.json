@@ -1,9 +1,13 @@
 {
   "about": [
-    "The font page's glossary (site/index.html, 6. Glossary): its sections and each one's rows, in page order.",
-    "The Builder edits the rows in Glyphs > Glossary; `cd builder && python3 -m jzpbuild.glossary` then rewrites the",
-    "tables between the <!-- glossary <id> --> markers (a release does it too); headings and text around them stay as written.",
-    "A section's key is its id, and its title starts with it (\"1c: Left Hand Techniques\").",
+    "The font page's glossary (site/index.html, 6. Glossary), written by the Builder's Glyphs > Glossary.",
+    "`groups` are the section titles (\"1: Left Hand\"; `nav` is the contents' short name for one), each with a",
+    "description and its subtitles in page order; `sections` are the subtitles (\"1a: Left Hand Finger\"), each with a",
+    "title, a description, how its table is laid out and its rows in page order. Descriptions are a little Markdown:",
+    "paragraphs, **bold**, *italic*, `typed examples`, [links](https://…), \"- \" lists, and the page's <u>, <jzp>, <text>,",
+    "<small> and <br>; any other HTML shows as text. A section title with only hidden subtitles isn't on the page.",
+    "`cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the <!-- glossary all --> markers and the",
+    "contents links between <!-- glossary nav --> (a release does it too); the rest of the page stays as written.",
     "A row is a glyph, {\"glyph\": \"lg_gou\"}, or a word written together, {\"word\": \"少息\", \"glyphs\": [\"md_shao\", \"md_xi\"]};",
     "its ASCII, 中文 and 拼音 come from the glyphs' spellings in builder/inputs/components.csv. \"meaning\" (optional) fills",
     "the Meaning column, which a section gets once one of its rows has a meaning. \"typed\" (optional) is what was typed to add or edit the row.",
@@ -12,6 +16,13 @@
     "spelling, marked red; <r>…</r> marks more. A row's own \"usage\" (the Builder's Example column) replaces it. Words don't go here.",
     "kind 'vertical': each spelling after a colon, typed on its own (a row's own \"usage\" is shown instead). Consecutive numbers (md_1 to md_13) share one row.",
     "kind 'hidden': no table and no marker on the page."
+  ],
+  "groups": [
+    {"id": "left", "title": "1: Left Hand", "nav": "Left hand", "sections": ["1a", "1b", "1c", "1d", "1d-v", "1e"]},
+    {"id": "right", "title": "2: Right Hand", "nav": "Right hand", "sections": ["2a", "2b", "2c"]},
+    {"id": "symbols", "title": "3. General Symbols (Vertical Layout Only)", "nav": "General symbols", "description": "Preface with `:` to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.", "sections": ["3a", "3b", "3c", "3d", "3e", "3x"]},
+    {"id": "uncategorized", "title": "4: Uncategorized", "nav": "Uncategorized", "sections": ["4"]},
+    {"id": "hidden", "title": "99: Hidden in Glossary", "sections": ["99"]}
   ],
   "sections": {
     "1a": {
@@ -58,6 +69,7 @@
     "1d-v": {
       "title": "1d-v: Special Cases, vertical",
       "kind": "vertical",
+      "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"word": "带起", "glyphs": ["md_dai", "md_qi"]},
         {"word": "对起", "glyphs": ["md_dui", "md_qi"]},
@@ -68,6 +80,7 @@
     "1e": {
       "title": "1e: Left Hand Vibratos and Slides",
       "kind": "vertical",
+      "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"glyph": "md_tui"},
         {"glyph": "md_jin"},
@@ -107,6 +120,7 @@
       "title": "2b: Chords",
       "kind": "usage",
       "usage": ["{}d7,7<r>|</r>06", "{}中七，七<r>｜</r>散六"],
+      "description": "These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a `|`.\n\nex: `Cs9,3|05` or `撮名九,三｜散五` will make <jzp>Cs9,3|05</jzp>",
       "rows": [
         {"glyph": "xl_cuo", "usage": ["{}d8,7<r>|</r>05", "{}中八，七<r>｜</r>散五"]},
         {"glyph": "xl_dacuo", "usage": ["{}d8,7<r>|</r>02", "{}中八，七<r>｜</r>散二"]},
@@ -121,6 +135,7 @@
     "2c": {
       "title": "2c: Other Right Hand Strum Techniques",
       "kind": "vertical",
+      "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"glyph": "lg_lun"},
         {"glyph": "lg_banlun"},

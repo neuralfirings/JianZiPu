@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byId, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, changedLayout, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -89,5 +89,27 @@ describe("a row's example word", () => {
     expect(exampleText('{}d7,7<r>|</r>06', 'C')).toBe('Cd7,7|06');
     expect(exampleHtml('s9{}k3', '&gt;')).toBe('s9<span class="r">&amp;gt;</span>k3');
     expect(exampleHtml('{}d7<r>|</r>0', 'C')).toBe('<span class="r">C</span>d7<span class="r">|</span>0');
+  });
+});
+
+describe('section titles, subtitles and descriptions', () => {
+  it('reads a little Markdown, the same as the server', () => {
+    expect(markdown('Preface with `:`. **Best** use *Chinese*.')).toBe('<p>Preface with <text>:</text>. <strong>Best</strong> use <em>Chinese</em>.</p>');
+    expect(markdown('<u>Vertical only</u>\n<small>see [this](#glossary-left)</small>')).toBe('<p><u>Vertical only</u><br /><small>see <a href="#glossary-left">this</a></small></p>');
+    expect(markdown('one\n\n- a\n- `s9k3`')).toBe('<p>one</p>\n<ul><li>a</li><li><text>s9k3</text></li></ul>');
+    expect(markdown('ex: <jzp>Cs9,3|05</jzp>')).toBe('<p>ex: <jzp>Cs9,3|05</jzp></p>');
+    const bad = markdown('<img src=x onerror=alert(1)> <script>x</script> <u onclick="x">u</u> [x](javascript:alert(1))');
+    expect(bad).not.toMatch(/<img|<script|<u |href="javascript/);
+  });
+  it('orders subtitles by their section titles and names new ones', () => {
+    const l = { groups: [{ id: 'b', title: 'B', sections: ['2a'] }, { id: 'a', title: 'A', sections: ['1a'] }],
+      sections: { '1a': { title: '1a', kind: 'usage' as const, usage: ['{}', '{}'] as [string, string] }, '2a': { title: '2a', kind: 'vertical' as const }, '99': { title: 'h', kind: 'hidden' as const } } };
+    expect(sectionList(l).map((x) => x.id)).toEqual(['2a', '1a', '99']);
+    expect(newId('3f: Ornaments', ['3e'])).toBe('3f');
+    expect(newId('3e: Again', ['3e'])).toBe('3e-again');
+    expect(newId('五', ['s1'])).toBe('s2');
+    const m = { ...l, groups: [{ ...l.groups[0], title: 'B!' }, l.groups[1]], sections: { ...l.sections, '2a': { ...l.sections['2a'], description: 'd' } } };
+    expect(changedLayout(l, m)).toEqual(['2a', 'titles']);
+    expect(titlesSummary(l.groups, m.groups)).toEqual(['renamed: B → B!']);
   });
 });

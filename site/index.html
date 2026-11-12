@@ -255,6 +255,8 @@
       body.typing .download-bar { display: none; }
     }
 
+    .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
+    .glossary-subdesc { margin-bottom: .25rem; }
   </style>
   
   <!-- "Send me the font": an EmailOctopus sign-up form (docs/maintainers/setup.md, EmailOctopus).
@@ -302,10 +304,12 @@
         <a href="#chords">4. Chords</a>
         <a href="#vertical">5. Vertical Texts</a>
         <a href="#glossary">6. Glossary</a>
+        <!-- glossary nav: the glossary's contents links, generated like the glossary -->
         <a class="sub" href="#glossary-left">Left hand</a>
         <a class="sub" href="#glossary-right">Right hand</a>
         <a class="sub" href="#glossary-symbols">General symbols</a>
         <a class="sub" href="#glossary-uncategorized">Uncategorized</a>
+        <!-- /glossary nav -->
       </nav>
     </details>
     <a class="download" id="download-font" href="./JianZiPu.ttf" download>
@@ -564,9 +568,9 @@ Cv9,6|02 BLv9\6|02
             placeholder="k, gou, 勾, a meaning, or a section such as chords" />
           <p id="glossary-search-status" aria-live="polite"></p>
         </div>
+        <!-- glossary all: generated from site/glossary.json and builder/inputs/components.csv (the Builder's Glossary view; cd builder && python3 -m jzpbuild.glossary); edit those, not this -->
         <h4 id="glossary-left">1: Left Hand</h4>
-        <label>1a: Left Hand Finger</label>
-        <!-- glossary 1a: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1a">1a: Left Hand Finger</label>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -633,10 +637,7 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 1a -->
-    
-        <label>1b: Speed mods & mods related to 韵 production</label>
-        <!-- glossary 1b: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1b">1b: Speed mods &amp; mods related to 韵 production</label>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -683,10 +684,7 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 1b -->
-    
-        <label>1c: Left Hand Techniques</label>
-        <!-- glossary 1c: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1c">1c: Left Hand Techniques</label>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -732,10 +730,7 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 1c -->
-    
-        <label>1d: Special Cases</label>
-        <!-- glossary 1d: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1d">1d: Special Cases</label>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -769,13 +764,10 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 1d -->
-    
-        <u>For use in Vertical Layout only</u><br />
-        <small>
-          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
-        </small>
-        <!-- glossary 1d-v: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1d-v">1d-v: Special Cases, vertical</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
         <table class="table">
           <thead>
             <tr>
@@ -815,14 +807,10 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:撇起</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 1d-v -->
-    
-        <label>1e: Left Hand Vibratos and Slides</label>
-        <u>For use in Vertical Layout only</u><br />
-        <small>
-          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
-        </small>
-        <!-- glossary 1e: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-1e">1e: Left Hand Vibratos and Slides</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
         <table class="table">
           <thead>
             <tr>
@@ -925,13 +913,9 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:淌</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 1e -->
-    
-      </div>
-      <div class="col">
+
         <h4 id="glossary-right">2: Right Hand</h4>
-        <label>2a: Basic Right Hand</label>
-        <!-- glossary 2a: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-2a">2a: Basic Right Hand</label>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -1076,14 +1060,11 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 2a -->
-    
-        <label>2b: Chords</label>
-        <p>These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a <text>|</text>.</p>
-        <p>ex: <text>Cs9,3|05</text> or <text>撮名九,三｜散五</text>	will make <span><jzp>Cs9,3|05</jzp></span>
-        </p>
-        </p>
-        <!-- glossary 2b: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-2b">2b: Chords</label>
+        <div class="glossary-subdesc">
+          <p>These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a <text>|</text>.</p>
+          <p>ex: <text>Cs9,3|05</text> or <text>撮名九,三｜散五</text> will make <jzp>Cs9,3|05</jzp></p>
+        </div>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -1187,15 +1168,10 @@ Cv9,6|02 BLv9\6|02
             </td>
           </tr>
         </table>
-        <!-- /glossary 2b -->
-    
-        <label>2c: Other Right Hand Strum Techniques</label>
-    
-        <u>For use in Vertical Layout only</u><br />
-        <small>
-          preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins
-        </small>
-        <!-- glossary 2c: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-2c">2c: Other Right Hand Strum Techniques</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
         <table class="table">
           <thead>
             <tr>
@@ -1291,17 +1267,12 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:全扶</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 2c -->
-    
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
+
         <h4 id="glossary-symbols">3. General Symbols (Vertical Layout Only)</h4>
-        <p>Preface with <text>:</text> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
-        
-        <u>3a: Related to Score</u><br />
-        <!-- glossary 3a: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <div class="glossary-desc">
+          <p>Preface with <text>:</text> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+        </div>
+        <label id="glossary-3a">3a: Related to Score</label>
         <table class="table">
           <thead>
             <tr>
@@ -1313,10 +1284,7 @@ Cv9,6|02 BLv9\6|02
             </tr>
           </thead>
         </table>
-        <!-- /glossary 3a -->
-    
-        <u>3b: Related to Notes</u><br/>
-        <!-- glossary 3b: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-3b">3b: Related to Notes</label>
         <table class="table">
           <thead>
             <tr>
@@ -1370,10 +1338,7 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:如</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 3b -->
-    
-        <u>3c: Related to String & Hui Number</u><br />
-        <!-- glossary 3c: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-3c">3c: Related to String &amp; Hui Number</label>
         <table class="table">
           <thead>
             <tr>
@@ -1441,10 +1406,7 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:至</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 3c -->
-    
-        <u>3d: Related to position</u><br />
-        <!-- glossary 3d: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-3d">3d: Related to position</label>
         <table class="table">
           <thead>
             <tr>
@@ -1456,10 +1418,7 @@ Cv9,6|02 BLv9\6|02
             </tr>
           </thead>
         </table>
-        <!-- /glossary 3d -->
-    
-        <u>3e: related to expression</u><br />
-        <!-- glossary 3e: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-3e">3e: related to expression</label>
         <table class="table">
           <thead>
             <tr>
@@ -1485,10 +1444,7 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:少息</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 3e -->
-    
-        <u>Placeholder for Future/Unknown Characters</u><br />
-        <!-- glossary 3x: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
+        <label id="glossary-3x">3x: Placeholder for Future/Unknown Characters</label>
         <table class="table">
           <thead>
             <tr>
@@ -1507,10 +1463,8 @@ Cv9,6|02 BLv9\6|02
             <td><jzp>:*</jzp></td>
           </tr>
         </table>
-        <!-- /glossary 3x -->
 
         <h4 id="glossary-uncategorized">4: Uncategorized</h4>
-        <!-- glossary 4: generated from builder/inputs/components.csv and site/glossary.json (cd builder && python3 -m jzpbuild.glossary); edit those, not this table -->
         <table class="table">
           <thead>
             <tr>
@@ -1522,7 +1476,7 @@ Cv9,6|02 BLv9\6|02
             </tr>
           </thead>
         </table>
-        <!-- /glossary 4 -->
+        <!-- /glossary all -->
       </div>
     </div>
     <div class="row">

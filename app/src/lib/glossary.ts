@@ -232,3 +232,109 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
   // the colon that starts vertical text is written : in Chinese too, as the page has it (:大息)
   return { source: zh ? source.replace(/：/g, ':') : source, other: missing.length ? null : other, zh, missing };
 }
+
+// ---------------------------------------------------------------- section titles, subtitles, descriptions
+
+/** A section title ("1: Left Hand"): its short name in the page's contents, a description, its subtitles in order. */
+export type Group = { id: string; title: string; nav?: string; description?: string; sections: string[] };
+/** A subtitle's own settings (its rows are in GlossaryRows). */
+export type SectionMeta = { title: string; kind: SectionKind; usage?: [string, string] | null; description?: string };
+/** The glossary's titles and descriptions: site/glossary.json without the rows. */
+export type GlossaryLayout = { groups: Group[]; sections: Record<string, SectionMeta> };
+export const emptyLayout = (): GlossaryLayout => ({ groups: [], sections: {} });
+
+/** The subtitles in page order (by their section titles, then any no title holds), as Section. */
+export function sectionList(l: GlossaryLayout): (Section & { description?: string })[] {
+  const ids = [...new Set([...l.groups.flatMap((g) => g.sections), ...Object.keys(l.sections)])].filter((id) => id in l.sections);
+  return ids.map((id) => ({ id, ...l.sections[id], usage: l.sections[id].usage ?? null }));
+}
+
+/** A layout from anywhere (a draft, the server), cleaned; undefined when it isn't one. */
+export function cleanLayout(x: unknown): GlossaryLayout | undefined {
+  if (!x || typeof x !== 'object') return undefined;
+  const o = x as Record<string, unknown>;
+  if (!Array.isArray(o.groups) || !o.sections || typeof o.sections !== 'object') return undefined;
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const sections: Record<string, SectionMeta> = {};
+  for (const [id, m] of Object.entries(o.sections as Record<string, Record<string, unknown>>)) {
+    if (!m || typeof m !== 'object') continue;
+    const kind = (['usage', 'vertical', 'hidden'].includes(m.kind as string) ? m.kind : 'vertical') as SectionKind;
+    const u = Array.isArray(m.usage) && m.usage.length === 2 ? (m.usage.map((v) => String(v ?? '')) as [string, string]) : null;
+    sections[id] = { title: str(m.title), kind, ...(kind === 'usage' ? { usage: u ?? ['{}', '{}'] } : {}), ...(str(m.description) ? { description: str(m.description) } : {}) };
+  }
+  const groups = (o.groups as Record<string, unknown>[]).filter((g) => g && typeof g === 'object' && str(g.id)).map((g) => ({
+    id: str(g.id), title: str(g.title), ...(str(g.nav) ? { nav: str(g.nav) } : {}), ...(str(g.description) ? { description: str(g.description) } : {}),
+    sections: Array.isArray(g.sections) ? (g.sections as unknown[]).map(String).filter((s) => s in sections) : []
+  }));
+  return { groups, sections };
+}
+
+/** An id for a new section title or subtitle: what its title starts with ("3f: Ornaments" -> 3f) when
+ *  that's free, else a word of the title, else s1, s2… (builder ID_RE: letters, digits, - and _). */
+export function newId(title: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  const lead = /^\s*([A-Za-z0-9][A-Za-z0-9_-]{0,31})\s*[:.]/.exec(title)?.[1];
+  const word = title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+  for (const c of [lead, word]) if (c && /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(c) && !used.has(c)) return c;
+  let n = 1;
+  while (used.has(`s${n}`)) n++;
+  return `s${n}`;
+}
+
+// a little Markdown, the same as builder jzpbuild/glossary.py markdown(): the page's own <u>, <jzp>, <text>,
+// <small> and <br>; any other HTML shows as text
+const TAGS = /&lt;(\/?)(u|jzp|text|small|br ?\/?)&gt;/g;
+const LINK = /\[([^\]]+)\]\(((?:https?:\/\/|\/|#)[^\s()<>"]*)\)/g;
+function inline(s: string): string {
+  const codes: string[] = [];
+  s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  s = s.replace(TAGS, (_, slash, tag) => `<${slash}${tag}>`);
+  s = s.replace(LINK, (_, t, href) => `<a href="${href}">${t}</a>`);
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])/g, '<em>$1</em>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<text>${codes[+i]}</text>`);
+}
+/** A description's HTML: paragraphs, line breaks, "- " lists, **bold**, *italic*, `typed examples`, [links](…). */
+export function markdown(text: string): string {
+  const out: string[] = [];
+  for (const block of esc(text.trim()).split(/\n\s*\n/)) {
+    const lines = block.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    if (lines.every((l) => l.startsWith('- '))) out.push('<ul>' + lines.map((l) => `<li>${inline(l.slice(2))}</li>`).join('') + '</ul>');
+    else out.push('<p>' + lines.map(inline).join('<br />') + '</p>');
+  }
+  return out.join('\n');
+}
+
+/** What differs between two layouts: the subtitles whose title, kind, example or description changed
+ *  (or that came or went), and 'titles' when the section titles changed (names, descriptions, order). */
+export function changedLayout(a: GlossaryLayout, b: GlossaryLayout): string[] {
+  const ids = [...new Set([...Object.keys(a.sections), ...Object.keys(b.sections)])]
+    .filter((id) => JSON.stringify(a.sections[id] ?? null) !== JSON.stringify(b.sections[id] ?? null));
+  return [...ids.sort(byId), ...(JSON.stringify(a.groups) !== JSON.stringify(b.groups) ? ['titles'] : [])];
+}
+
+/** What changed in a subtitle's settings, in words: "title: 1a: Fingers", "description", "example". */
+export function metaSummary(a: SectionMeta | undefined, b: SectionMeta | undefined): string[] {
+  if (!a && b) return [`new subtitle: ${b.title}`];
+  if (a && !b) return [`subtitle deleted: ${a.title}`];
+  if (!a || !b) return [];
+  return [a.title !== b.title ? `title: ${b.title}` : '', a.kind !== b.kind ? `kind: ${b.kind}` : '',
+    (a.description ?? '') !== (b.description ?? '') ? 'description' : '', JSON.stringify(a.usage ?? null) !== JSON.stringify(b.usage ?? null) ? 'example' : ''].filter(Boolean);
+}
+/** What changed in the section titles, in words. */
+export function titlesSummary(a: Group[], b: Group[]): string[] {
+  const by = (gs: Group[]) => new Map(gs.map((g) => [g.id, g]));
+  const ma = by(a), mb = by(b), out: string[] = [];
+  for (const g of b) {
+    const o = ma.get(g.id);
+    if (!o) { out.push(`new: ${g.title}`); continue; }
+    if (o.title !== g.title) out.push(`renamed: ${o.title} → ${g.title}`);
+    if ((o.nav ?? '') !== (g.nav ?? '')) out.push(`short name of ${g.title}`);
+    if ((o.description ?? '') !== (g.description ?? '')) out.push(`description of ${g.title}`);
+    if (o.sections.join() !== g.sections.join()) out.push(`subtitles of ${g.title}`);
+  }
+  for (const g of a) if (!mb.has(g.id)) out.push(`deleted: ${g.title}`);
+  if (!out.length && a.map((g) => g.id).join() !== b.map((g) => g.id).join()) out.push('order');
+  return out;
+}

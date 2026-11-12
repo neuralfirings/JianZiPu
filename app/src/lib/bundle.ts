@@ -7,7 +7,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Design } from './api';
 import { sanitizeSvg } from './svg';
 import * as T from './typing';
-import { changedSections, cleanRows, type GlossaryRows } from './glossary';
+import { changedLayout, changedSections, cleanLayout, cleanRows, type GlossaryLayout, type GlossaryRows } from './glossary';
 
 export const BUNDLE_FORMAT = 1;
 /** Same rule as the server's SVG_NAME (webserver.py). */
@@ -34,7 +34,9 @@ export type Bundle = {
   svgs: SvgMap;
   /** The glossary's rows by section (site/glossary.json); a draft from before it has none: it takes the font's. */
   glossary?: GlossaryRows;
-  base: { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows };
+  /** Its section titles and subtitles (names, descriptions, examples); a draft from before has none. */
+  glossaryLayout?: GlossaryLayout;
+  base: { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 };
 
 /** Which glyph files differ between the base set and the current set. */
@@ -53,7 +55,7 @@ const norm = (t: string) => t.replace(/\s+$/, '');
 export function makeBundle(o: {
   design: Design; typing: T.Typing; svgs: SvgMap;
   baseDesign: Design; baseTyping: T.Typing; baseSvgs: SvgMap; base: BaseVersion;
-  glossary?: GlossaryRows; baseGlossary?: GlossaryRows;
+  glossary?: GlossaryRows; baseGlossary?: GlossaryRows; glossaryLayout?: GlossaryLayout; baseGlossaryLayout?: GlossaryLayout;
   author?: Manifest['author']; note?: string; now?: Date;
 }): Bundle {
   const d = diffSvgs(o.baseSvgs, o.svgs);
@@ -67,8 +69,10 @@ export function makeBundle(o: {
     typing: clone(o.typing),
     svgs: pick(o.svgs, [...d.added, ...d.changed]),
     ...(o.glossary ? { glossary: clone(o.glossary) } : {}),
+    ...(o.glossaryLayout ? { glossaryLayout: clone(o.glossaryLayout) } : {}),
     base: { design: clone(o.baseDesign), typing: clone(o.baseTyping), svgs: pick(o.baseSvgs, [...d.changed, ...d.deleted]),
-      ...(o.baseGlossary ? { glossary: clone(o.baseGlossary) } : {}) }
+      ...(o.baseGlossary ? { glossary: clone(o.baseGlossary) } : {}),
+      ...(o.baseGlossaryLayout ? { glossaryLayout: clone(o.baseGlossaryLayout) } : {}) }
   };
 }
 
@@ -84,7 +88,8 @@ export function isEmptyBundle(b: Bundle): boolean {
   return !s.added.length && !s.changed.length && !s.deleted.length
     && JSON.stringify(b.design) === JSON.stringify(b.base.design)
     && T.changedGlyphs(b.base.typing, b.typing).length === 0
-    && (!b.glossary || changedSections(b.base.glossary ?? b.glossary, b.glossary).length === 0);
+    && (!b.glossary || changedSections(b.base.glossary ?? b.glossary, b.glossary).length === 0)
+    && (!b.glossaryLayout || changedLayout(b.base.glossaryLayout ?? b.glossaryLayout, b.glossaryLayout).length === 0);
 }
 
 // ---------------------------------------------------------------- checks
@@ -114,6 +119,9 @@ export function validate(x: unknown): Bundle {
   const g = cleanRows(b.glossary), bg = cleanRows(b.base.glossary);
   if (g) out.glossary = g; else delete out.glossary;
   if (bg) out.base.glossary = bg;
+  const l = cleanLayout(b.glossaryLayout), bl = cleanLayout(b.base.glossaryLayout);
+  if (l) out.glossaryLayout = l; else delete out.glossaryLayout;
+  if (bl) out.base.glossaryLayout = bl;
   return out;
 }
 
@@ -151,6 +159,8 @@ export function toZip(b: Bundle): Uint8Array {
   };
   if (b.glossary) files['glossary.json'] = strToU8(JSON.stringify(b.glossary, null, 1) + '\n');
   if (b.base.glossary) files['base/glossary.json'] = strToU8(JSON.stringify(b.base.glossary, null, 1) + '\n');
+  if (b.glossaryLayout) files['glossary-titles.json'] = strToU8(JSON.stringify(b.glossaryLayout, null, 1) + '\n');
+  if (b.base.glossaryLayout) files['base/glossary-titles.json'] = strToU8(JSON.stringify(b.base.glossaryLayout, null, 1) + '\n');
   for (const [n, t] of Object.entries(b.svgs)) files[`svg/${n}.svg`] = strToU8(t);
   for (const [n, t] of Object.entries(b.base.svgs)) files[`base/svg/${n}.svg`] = strToU8(t);
   return zipSync(files, { level: 6 });
@@ -173,8 +183,10 @@ export function fromZip(bytes: Uint8Array): Bundle {
     typing: T.fromCsv(text('components.csv') ?? ''),
     svgs: svgsUnder('svg/'),
     ...(text('glossary.json') != null ? { glossary: json('glossary.json') } : {}),
+    ...(text('glossary-titles.json') != null ? { glossaryLayout: json('glossary-titles.json') } : {}),
     base: { design: json('base/design.json'), typing: T.fromCsv(text('base/components.csv') ?? ''), svgs: svgsUnder('base/svg/'),
-      ...(text('base/glossary.json') != null ? { glossary: json('base/glossary.json') } : {}) }
+      ...(text('base/glossary.json') != null ? { glossary: json('base/glossary.json') } : {}),
+      ...(text('base/glossary-titles.json') != null ? { glossaryLayout: json('base/glossary-titles.json') } : {}) }
   });
 }
 

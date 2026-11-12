@@ -551,7 +551,16 @@ def glyphs_payload() -> dict:
                         **{k: (r.get(k) or "").strip() for k in CSV_FIELDS if k != "glyph_name"}})
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
             "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
-            "glossary_sections": glossary_sections(), "glossary_hash": _hash(_read_glossary_text())}
+            "glossary_sections": glossary_sections(), "glossary_groups": glossary_groups(),
+            "glossary_hash": _hash(_read_glossary_text())}
+
+
+def glossary_groups() -> list[dict]:
+    """The glossary's section titles, each with its subtitles in page order (Glyphs > Glossary)."""
+    try:
+        return glossary.load_groups()
+    except (OSError, ValueError, KeyError):
+        return []
 
 
 def glossary_sections() -> list[dict]:
@@ -559,6 +568,7 @@ def glossary_sections() -> list[dict]:
     where the server has no site/ folder (the Dockerfile copies the files these read)."""
     try:
         return [{"id": k, "title": v.get("title", k), "kind": v.get("kind", "vertical"), "usage": v.get("usage"),
+                 "description": v.get("description", ""),
                  "rows": [glossary.clean_row(r) for r in v.get("rows", [])]}
                 for k, v in glossary.load_sections().items()]
     except (OSError, ValueError, KeyError):
@@ -589,7 +599,7 @@ def _read_glossary_text() -> str:
     return p.read_text(encoding="utf-8") if p.exists() else ""
 
 
-def write_glossary(rows: dict, base_hash: str | None = None) -> dict:
+def write_glossary(rows: dict, base_hash: str | None = None, layout: dict | None = None) -> dict:
     """Rewrite the rows of site/glossary.json from the app's (Glyphs > Glossary); everything else in
     the file stays. Refuses when the file changed on disk since `base_hash`, a section that isn't
     there, or a row that isn't one."""
@@ -601,7 +611,10 @@ def write_glossary(rows: dict, base_hash: str | None = None) -> dict:
     if not isinstance(rows, dict) or sum(len(v) for v in rows.values() if isinstance(v, list)) > MAX_ROWS:
         raise ValueError("rows: the glossary's rows by section, please.")
     doc = json.loads(current)
-    doc["sections"] = glossary.with_rows(doc["sections"], rows)
+    if layout is not None:
+        doc["sections"], doc["groups"] = glossary.with_layout(doc["sections"], layout, rows)
+    else:
+        doc["sections"] = glossary.with_rows(doc["sections"], rows)
     text = glossary.dumps(doc)
     config.GLOSSARY_SECTIONS.write_text(text, encoding="utf-8")
     return {"ok": True, "rows": sum(len(v.get("rows", [])) for v in doc["sections"].values()), "hash": _hash(text)}
@@ -721,8 +734,13 @@ def glossary_payload(body: dict, owner: str = "local") -> dict:
     text = rows_to_csv([r for r in clean if r["glyph_name"]], _read_csv_text())
     rows = glossary.records(list(csv.DictReader(io.StringIO(text))))
     # the glossary's rows: the Builder's (unsaved too), else site/glossary.json's
-    sections = glossary.load_sections()
-    if body.get("glossary") is not None:
+    sections, groups = glossary.load_sections(), glossary.load_groups()
+    if body.get("layout") is not None:
+        try:
+            sections, groups = glossary.with_layout(sections, body["layout"], body.get("glossary") or {})
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+    elif body.get("glossary") is not None:
         g = body["glossary"]
         if not isinstance(g, dict) or sum(len(v) for v in g.values() if isinstance(v, list)) > MAX_ROWS:
             return {"ok": False, "error": "glossary: the rows by section, please."}
@@ -730,7 +748,7 @@ def glossary_payload(body: dict, owner: str = "local") -> dict:
             sections = glossary.with_rows(sections, g)
         except ValueError as e:
             return {"ok": False, "error": str(e)}
-    out = glossary.check(rows, design, font, svg_source(body), sections)
+    out = glossary.check(rows, design, font, svg_source(body), sections, groups)
     key = out.pop("font_key", None)
     url = (f"/api/preview-fonts/{key}.ttf" if key else BUILD.public(build)["url"] if build else "/api/glossary/font")
     return {**out, "font": "released" if font == config.SITE_FONT else "build", "font_url": url}
@@ -1064,7 +1082,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json({"ok": True, **{k: v for k, v in _design_payload(body["design"], text).items() if k != "design"}})
             if path == "/api/glossary":
                 try:
-                    return self._json(write_glossary(body.get("rows"), body.get("base_hash")))
+                    return self._json(write_glossary(body.get("rows"), body.get("base_hash"), body.get("layout")))
                 except CsvConflict as err:
                     return self._json({"ok": False, "error": str(err), "conflict": True, "hash": _hash(_read_glossary_text())}, 409)
                 except ValueError as err:

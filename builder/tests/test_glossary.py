@@ -137,7 +137,7 @@ def test_missing_names_glyphs_with_no_row_and_rows_that_cant_be_shown():
     assert any("lg_tiao is in the section twice" in p for p in problems)
     assert any("uses lg_gone, which isn't a glyph" in p for p in problems)
     assert any("挑挑 is in a section of example words" in p for p in problems)
-    assert any("should start with" in p for p in glossary.missing({}, {"1d": {"title": "Special Cases", "kind": "usage"}}))
+    assert any("has no title" in p for p in glossary.missing({}, {"1d": {"title": " ", "kind": "usage"}}))
 
 
 def test_a_glyph_can_have_a_row_in_two_sections():
@@ -260,7 +260,9 @@ def test_the_check_passes_the_shipped_files():
     out = glossary.check(glossary.records(shipped()))
     assert out["ok"] and out["problems"] == [] and out["typing"] == [] and out["not_built"] == []
     text = config.SITE_INDEX.read_text(encoding="utf-8")
-    assert [t["id"] for t in out["tables"]] == [m.group(2) for m in glossary.BLOCK_RE.finditer(text)]
+    secs = glossary.load_sections()
+    assert [t["id"] for t in out["tables"]] == [sid for sid in glossary.section_order(secs, glossary.load_groups())
+                                                if secs[sid]["kind"] != "hidden"]
     assert all(t["html"] in text for t in out["tables"])                    # the tables the page has
 
 
@@ -373,7 +375,7 @@ def test_the_shipped_sections_include_uncategorized_and_hidden():
     assert {k: v for k, v in secs["4"].items() if k != "rows"} == {"title": "4: Uncategorized", "kind": "vertical"}
     assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "kind": "hidden"}
     text = config.SITE_INDEX.read_text(encoding="utf-8")
-    assert "<!-- glossary 4" in text and "<!-- glossary 99" not in text
+    assert '<h4 id="glossary-uncategorized">4: Uncategorized</h4>' in text and "99: Hidden" not in text
 
 
 def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
@@ -389,3 +391,76 @@ def test_the_shipped_glossary_has_its_words():
     words = [e.word for sid, sec in secs.items() for e in glossary.entries(sid, sec) if e.word]
     assert len(words) == 15 and "少息" in words
     assert not (config.INPUTS_DIR / "words.csv").exists()
+
+
+# ---------------------------------------------------------------- section titles, subtitles and descriptions
+
+def test_descriptions_are_a_little_markdown_and_nothing_else():
+    md = glossary.markdown
+    assert md("Preface with `:`. **Best** use *Chinese*.") == "<p>Preface with <text>:</text>. <strong>Best</strong> use <em>Chinese</em>.</p>"
+    assert md("<u>Vertical only</u>\n<small>see [this](#glossary-left)</small>") == \
+        '<p><u>Vertical only</u><br /><small>see <a href="#glossary-left">this</a></small></p>'
+    assert md("one\n\n- a\n- `s9k3`") == "<p>one</p>\n<ul><li>a</li><li><text>s9k3</text></li></ul>"
+    assert md("ex: <jzp>Cs9,3|05</jzp>") == "<p>ex: <jzp>Cs9,3|05</jzp></p>"
+    # anything else is text: a tag with attributes, a script, a javascript: link
+    bad = md('<img src=x onerror=alert(1)> <script>x</script> <u onclick="x">u</u> [x](javascript:alert(1))')
+    assert "<img" not in bad and "<script" not in bad and "<u " not in bad and 'href="javascript' not in bad
+    assert md("  ") == ""
+
+
+def test_the_page_is_generated_from_titles_subtitles_and_descriptions():
+    r = rows("lg_gou,,,k,,勾,,gōu", "md_qi,,,qi,,起,,qǐ", "md_x,,,zz,,,,")
+    sec = {"2a": {**usage("2a", g("lg_gou"), template=("0{}5", "散{}五")), "title": "2a: Basic", "description": "Pluck **inward**."},
+           "3b": {**vertical("3b", g("md_qi")), "title": "4: Other"},
+           "99": {"title": "99: Hidden", "kind": "hidden", "rows": [g("md_x")]}}
+    groups = [{"id": "right", "title": "2: Right Hand", "nav": "Right hand", "description": "Use `0` for open strings.", "sections": ["2a"]},
+              {"id": "other", "title": "4: Other", "sections": ["3b"]}, {"id": "hidden", "title": "Hidden", "sections": ["99"]}]
+    page_ = ('<nav>\n<!-- glossary nav -->\n<!-- /glossary nav -->\n</nav>\n<p>hand</p>\n'
+             '<!-- glossary all: generated -->\n<!-- /glossary all -->\n<p>after</p>')
+    out = glossary.render(page_, r, sec, groups)
+    assert '<a class="sub" href="#glossary-right">Right hand</a>' in out and '#glossary-other">4: Other</a>' in out
+    assert "#glossary-hidden" not in out                                    # only hidden subtitles: not on the page
+    assert '<h4 id="glossary-right">2: Right Hand</h4>' in out and '<p>Use <text>0</text> for open strings.</p>' in out
+    assert '<label id="glossary-2a">2a: Basic</label>' in out and '<div class="glossary-subdesc">' in out
+    assert '<label id="glossary-3b">' not in out                            # the same title as its section title: once
+    assert out.index("<h4 id=\"glossary-right\"") < out.index("2a: Basic") < out.index("<h4 id=\"glossary-other\"") < out.index("<p>after</p>")
+    assert '<tr id="2">' in out and "zz" not in out                          # one count down the page; hidden left out
+    assert glossary.render(out, r, sec, groups) == out
+    assert glossary.strip_generated(out) == glossary.strip_generated(page_)
+    # the descriptions' examples are typed like the page's
+    assert ["0"] not in [e for _, e in glossary.examples(out, r, sec, groups=groups)]
+    assert glossary.missing_layout(sec, groups) == []
+    assert any("isn't under a section title" in p for p in glossary.missing_layout(sec, groups[:1]))
+    assert any("isn't a section" in p for p in glossary.missing_layout(sec, groups + [{"id": "x", "title": "X", "sections": ["9z"]}]))
+
+
+def test_the_builders_titles_and_subtitles_are_checked():
+    secs = {"2a": {**usage("2a", g("lg_gou")), "title": "2a: Basic"}, "2b": vertical("2b")}
+    lay = {"groups": [{"id": "right", "title": " 2: Right ", "description": "x", "sections": ["2a", "2c"]}],
+           "sections": {"2a": {"title": "2a: Basic", "kind": "usage", "usage": ["0{}5", "散{}五"]},
+                        "2c": {"title": "2c: New", "kind": "vertical", "description": "*new*", "evil": 1}}}
+    out, groups = glossary.with_layout(secs, lay)
+    assert list(out) == ["2a", "2c"] and out["2a"]["rows"] == [g("lg_gou")] and out["2c"] == {
+        "title": "2c: New", "kind": "vertical", "description": "*new*", "rows": []}
+    assert groups == [{"id": "right", "title": "2: Right", "description": "x", "sections": ["2a", "2c"]}]
+    # a subtitle with rows can't be dropped; one without can (2b had none)
+    with pytest.raises(ValueError, match="still has 1 row"):
+        glossary.with_layout(secs, {**lay, "groups": [{"id": "r", "title": "R", "sections": ["2c"]}],
+                                    "sections": {"2c": lay["sections"]["2c"]}})
+    out, _ = glossary.with_layout(secs, lay, {"2c": [g("md_x")]})               # rows for a new subtitle
+    assert out["2c"]["rows"] == [g("md_x")]
+    for bad in ({"groups": [], "sections": {"bad id": {"title": "x"}}}, {"groups": [{"id": "a", "title": "", "sections": []}], "sections": {}},
+                {"groups": [{"id": "a", "title": "A", "sections": ["2z"]}], "sections": {}}, {"groups": "x", "sections": {}},
+                {"groups": [], "sections": {"2a": {"title": "t", "kind": "table"}}},
+                {"groups": [{"id": "a", "title": "A", "sections": ["2a"]}, {"id": "b", "title": "B", "sections": ["2a"]}],
+                 "sections": {"2a": {"title": "t"}}}):
+        with pytest.raises(ValueError):
+            glossary.with_layout({}, bad)
+
+
+def test_the_shipped_glossary_has_its_section_titles():
+    groups = glossary.load_groups()
+    assert [g["id"] for g in groups] == ["left", "right", "symbols", "uncategorized", "hidden"]
+    assert glossary.missing_layout(glossary.load_sections(), groups) == []
+    text = config.SITE_INDEX.read_text(encoding="utf-8")
+    assert "<!-- glossary all" in text and "<!-- glossary nav" in text and "<!-- glossary 1a" not in text

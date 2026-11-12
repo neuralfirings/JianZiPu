@@ -11,7 +11,7 @@
   import { app } from '$lib/state.svelte';
   import { Hold } from '$lib/hold';
   import * as T from '$lib/typing';
-  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, moveRow, refuse, rowKey, rowName, usageFrom, verticalTemplate,
+  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
 
@@ -28,6 +28,7 @@
 
   let sections = $derived(app.glossarySections);
   let saved = $derived(JSON.parse(app.savedGlossaryJson) as Record<string, GRow[]>);
+  let savedLayout = $derived(JSON.parse(app.savedLayoutJson) as typeof app.glossaryLayout);
   const rowsOf = (sid: string) => app.glossary[sid] ?? [];
   const sec = (sid: string) => sections.find((s) => s.id === sid)!;
   const KIND: Record<Section['kind'], string> = {
@@ -95,6 +96,87 @@
     const r = rowsOf(sid)[i];
     edit(`Remove ${rowName(r)} from ${sid}`, (rows) => ({ ...rows, [sid]: rows[sid].filter((_, j) => j !== i) }));
     onnotice?.(`Removed ${rowName(r)} from ${sec(sid).title}.`, true);
+  }
+
+  // ---------------------------------------------------------------- section titles and subtitles
+
+  let layout = $derived(app.glossaryLayout);
+  /** Subtitles no section title holds: not on the page until they're put under one. */
+  let loose = $derived(sections.filter((x) => x.kind !== 'hidden' && !layout.groups.some((g) => g.sections.includes(x.id))));
+  let titleEdit = $state<{ key: string; value: string; nav?: string } | null>(null);
+  let descEdit = $state<{ key: string; value: string } | null>(null);
+  let newSub = $state<Record<string, { title: string; kind: Section['kind'] }>>({});
+  let newGroup = $state('');
+  let layoutNote = $state<{ key: string; text: string } | null>(null);
+  const taken = () => [...layout.groups.map((g) => g.id), ...Object.keys(layout.sections)];
+
+  function editLayout(label: string, fn: (l: typeof layout, rows: Record<string, GRow[]>) => void) {
+    app.editGlossaryLayout(label, (l, rows) => { fn(l, rows); return { layout: l, rows }; });
+  }
+  function saveTitle() {
+    if (!titleEdit) return;
+    const { key, value, nav } = titleEdit, v = value.trim();
+    titleEdit = null;
+    if (!v) { layoutNote = { key, text: 'A title can\'t be empty.' }; return; }
+    const [kind, id] = [key.slice(0, 1), key.slice(2)];
+    if (kind === 'g') {
+      const g = layout.groups.find((x) => x.id === id)!;
+      if (g.title === v && (g.nav ?? '') === (nav ?? '').trim()) return;
+      editLayout(`Section title: ${v}`, (l) => { const x = l.groups.find((y) => y.id === id)!; x.title = v; if (nav?.trim()) x.nav = nav.trim(); else delete x.nav; });
+    } else if (layout.sections[id].title !== v) editLayout(`Subtitle: ${v}`, (l) => { l.sections[id].title = v; });
+  }
+  function saveDesc() {
+    if (!descEdit) return;
+    const { key, value } = descEdit, v = value.trim();
+    descEdit = null;
+    const [kind, id] = [key.slice(0, 1), key.slice(2)];
+    const cur = kind === 'g' ? layout.groups.find((x) => x.id === id)?.description : layout.sections[id]?.description;
+    if ((cur ?? '') === v) return;
+    editLayout(`Description of ${kind === 'g' ? layout.groups.find((x) => x.id === id)?.title : layout.sections[id].title}`, (l) => {
+      const o: { description?: string } = kind === 'g' ? l.groups.find((x) => x.id === id)! : l.sections[id];
+      if (v) o.description = v; else delete o.description;
+    });
+  }
+  function addGroup() {
+    const t = newGroup.trim();
+    if (!t) return;
+    const id = newId(t, taken());
+    editLayout(`New section title: ${t}`, (l) => { l.groups.push({ id, title: t, sections: [] }); });
+    newGroup = '';
+  }
+  function addSub(gid: string) {
+    const f = newSub[gid];
+    const t = f?.title.trim();
+    if (!t) return;
+    const id = newId(t, taken());
+    editLayout(`New subtitle: ${t}`, (l, rows) => {
+      l.sections[id] = { title: t, kind: f.kind, ...(f.kind === 'usage' ? { usage: ['{}', '{}'] as [string, string] } : {}) };
+      l.groups.find((g) => g.id === gid)!.sections.push(id);
+      rows[id] = [];
+    });
+    newSub = { ...newSub, [gid]: { title: '', kind: f.kind } };
+  }
+  function deleteGroup(gid: string) {
+    const g = layout.groups.find((x) => x.id === gid)!;
+    if (g.sections.length) { layoutNote = { key: `g:${gid}`, text: 'Delete or move its subtitles first.' }; return; }
+    editLayout(`Delete the section title ${g.title}`, (l) => { l.groups = l.groups.filter((x) => x.id !== gid); });
+    onnotice?.(`Deleted the section title ${g.title}.`, true);
+  }
+  function deleteSub(sid: string) {
+    const n = rowsOf(sid).length, t = layout.sections[sid].title;
+    if (n) { layoutNote = { key: `s:${sid}`, text: `It has ${n} row${n === 1 ? '' : 's'}: move or remove them first.` }; return; }
+    editLayout(`Delete the subtitle ${t}`, (l, rows) => {
+      delete l.sections[sid]; delete rows[sid];
+      for (const g of l.groups) g.sections = g.sections.filter((x) => x !== sid);
+    });
+    onnotice?.(`Deleted the subtitle ${t}.`, true);
+  }
+  /** Put a subtitle no section title holds under one (at its end). */
+  function adopt(sid: string, gid: string) {
+    if (!gid) return;
+    editLayout(`Put ${layout.sections[sid].title} under ${layout.groups.find((g) => g.id === gid)?.title}`, (l) => {
+      l.groups.find((g) => g.id === gid)!.sections.push(sid);
+    });
   }
 
   // ---------------------------------------------------------------- folding
@@ -350,29 +432,7 @@
   });
 </script>
 
-<div class="gloss" bind:this={root} class:dragging={!!drag}>
-  <p class="muted small intro">
-    The font page's glossary, a section at a time, in page order. A row is one glyph, or a word written together (:少息);
-    its ASCII, 中文 and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
-    Fold a section by its title. Save writes site/glossary.json; a release puts it on jianzipufont.com.
-    <button class="lnk" onclick={() => (folded = folded.length ? [] : sections.map((x) => x.id))}>{folded.length ? 'Unfold every section' : 'Fold every section'}</button>
-  </p>
-  {#if !sections.length}
-    <div class="banner info"><span class="ic"><I.Info /></span> This copy of the Builder has no site/glossary.json, so there's no glossary to edit here.</div>
-  {/if}
-  {#if shownGlyph && !shownGlyph.sid}
-    <div class="banner draft"><span class="ic"><I.Warn /></span>
-      <span>{shownGlyph.glyph} isn't in the glossary, so the glossary check reports it. Add it to</span>
-      <select bind:value={target} aria-label="Section to add {shownGlyph.glyph} to">
-        <option value="" disabled>a section…</option>
-        {#each sections as s (s.id)}<option value={s.id}>{s.title}</option>{/each}
-      </select>
-      <button onclick={addFocused} disabled={!target}>Add</button>
-      <button class="quiet" onclick={() => (shownGlyph = null)} aria-label="Close" data-tip="Close"><I.Close size={14} /></button>
-    </div>
-  {/if}
-
-  {#each sections as s (s.id)}
+{#snippet subtitle(s: Section & { description?: string })}
     {@const rows = rowsOf(s.id)}
     {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
     {#if !q.trim() || shown.length}
@@ -382,7 +442,13 @@
         <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}">
           {#if isFolded(s.id)}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}<span>{s.title}</span></button>
         <span class="muted small">· {rows.length} row{rows.length === 1 ? '' : 's'} · {KIND[s.kind]}</span>
-        {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}</h3>
+        {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
+        <span class="hact">
+          <button class="quiet ic" onclick={() => (titleEdit = { key: `s:${s.id}`, value: s.title })} aria-label="Rename the subtitle {s.title}" data-tip="Rename the subtitle"><I.EditRow size={14} /></button>
+          <button class="quiet ic" onclick={() => (descEdit = { key: `s:${s.id}`, value: s.description ?? '' })} aria-label="Describe {s.title}" data-tip="{s.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
+          <button class="quiet ic" onclick={() => deleteSub(s.id)} aria-label="Delete the subtitle {s.title}" data-tip={rows.length ? 'Delete the subtitle (move or remove its rows first)' : 'Delete the subtitle (Undo brings it back)'}><I.Close size={14} /></button>
+        </span></h3>
+      {@render editors(`s:${s.id}`, s.description ?? '', 'glossary-subdesc')}
       {#if !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
@@ -473,7 +539,114 @@
       {/if}
     </section>
     {/if}
+  {/snippet}
+
+{#snippet editors(key: string, desc: string, cls: string)}
+  {#if titleEdit?.key === key}
+    <div class="tedit">
+      <!-- svelte-ignore a11y_autofocus -->
+      <input type="text" bind:value={titleEdit.value} autofocus aria-label="Title"
+        onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} />
+      {#if key.startsWith('g:')}
+        <input type="text" class="nav" bind:value={titleEdit.nav} placeholder="Short name in the contents (optional)" aria-label="Short name in the page's contents"
+          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } else if (e.key === 'Escape') titleEdit = null; }} />
+      {/if}
+      <button class="sm" onclick={saveTitle}>Done</button>
+      <button class="sm quiet" onclick={() => (titleEdit = null)}>Cancel</button>
+    </div>
+  {/if}
+  {#if descEdit?.key === key}
+    <div class="dedit">
+      <!-- svelte-ignore a11y_autofocus -->
+      <textarea bind:value={descEdit.value} rows="4" autofocus aria-label="Description"
+        onkeydown={(e) => { if (e.key === 'Escape') descEdit = null; else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveDesc(); } }}></textarea>
+      <div class="dprev {cls}">{@html markdown(descEdit.value)}</div>
+      <p class="muted small">Markdown: a blank line starts a paragraph; **bold**, *italic*, `s9k3` for a typed example, [a link](https://…), “- ” for a list, and the page's &lt;u&gt;, &lt;jzp&gt; and &lt;small&gt;. Ctrl+Enter keeps it.</p>
+      <div><button class="sm" onclick={saveDesc}>Done</button> <button class="sm quiet" onclick={() => (descEdit = null)}>Cancel</button></div>
+    </div>
+  {:else if desc}
+    <button class="desc {cls}" onclick={() => (descEdit = { key, value: desc })} data-tip="Click to edit the description">{@html markdown(desc)}</button>
+  {/if}
+  {#if layoutNote?.key === key}<p class="small bad" role="status"><I.Problem size={12} /> {layoutNote.text}</p>{/if}
+{/snippet}
+
+<div class="gloss" bind:this={root} class:dragging={!!drag}>
+  <p class="muted small intro">
+    The font page's glossary, a section at a time, in page order. A row is one glyph, or a word written together (:少息);
+    its ASCII, 中文 and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
+    Fold a section by its title. Save writes site/glossary.json; a release puts it on jianzipufont.com.
+    <button class="lnk" onclick={() => (folded = folded.length ? [] : sections.map((x) => x.id))}>{folded.length ? 'Unfold every section' : 'Fold every section'}</button>
+  </p>
+  {#if !sections.length}
+    <div class="banner info"><span class="ic"><I.Info /></span> This copy of the Builder has no site/glossary.json, so there's no glossary to edit here.</div>
+  {/if}
+  {#if shownGlyph && !shownGlyph.sid}
+    <div class="banner draft"><span class="ic"><I.Warn /></span>
+      <span>{shownGlyph.glyph} isn't in the glossary, so the glossary check reports it. Add it to</span>
+      <select bind:value={target} aria-label="Section to add {shownGlyph.glyph} to">
+        <option value="" disabled>a section…</option>
+        {#each sections as s (s.id)}<option value={s.id}>{s.title}</option>{/each}
+      </select>
+      <button onclick={addFocused} disabled={!target}>Add</button>
+      <button class="quiet" onclick={() => (shownGlyph = null)} aria-label="Close" data-tip="Close"><I.Close size={14} /></button>
+    </div>
+  {/if}
+
+  {#each layout.groups as g (g.id)}
+    {@const subs = g.sections.map((id) => sections.find((x) => x.id === id)).filter((x) => !!x)}
+    {#if !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
+    <section class="grp" aria-labelledby="gg-{g.id}">
+      <h2 id="gg-{g.id}">
+        <span class="gt" class:untitled={!g.title}>{g.title || 'Untitled section'}</span>
+        {#if g.nav}<span class="muted small">· “{g.nav}” in the contents</span>{/if}
+        {#if !subs.some((x) => x.kind !== 'hidden')}<span class="muted small">· not on the page</span>{/if}
+        {#if JSON.stringify(savedLayout.groups.find((x) => x.id === g.id) ?? null) !== JSON.stringify(g)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
+        <span class="hact">
+          <button class="quiet ic" onclick={() => (titleEdit = { key: `g:${g.id}`, value: g.title, nav: g.nav ?? '' })} aria-label="Rename the section title {g.title}" data-tip="Rename the section title"><I.EditRow size={14} /></button>
+          <button class="quiet ic" onclick={() => (descEdit = { key: `g:${g.id}`, value: g.description ?? '' })} aria-label="Describe {g.title}" data-tip="{g.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
+          <button class="quiet ic" onclick={() => deleteGroup(g.id)} aria-label="Delete the section title {g.title}" data-tip={g.sections.length ? 'Delete the section title (delete or move its subtitles first)' : 'Delete the section title (Undo brings it back)'}><I.Close size={14} /></button>
+        </span>
+      </h2>
+      {@render editors(`g:${g.id}`, g.description ?? '', 'glossary-desc')}
+      {#each subs as s (s.id)}{@render subtitle(s)}{/each}
+      {#if !q.trim()}
+        {@const f = newSub[g.id] ?? { title: '', kind: 'vertical' }}
+        <div class="addsub">
+          <input type="text" value={f.title} placeholder="New subtitle, e.g. 3f: Ornaments" aria-label="New subtitle under {g.title}"
+            oninput={(e) => (newSub = { ...newSub, [g.id]: { ...f, title: (e.target as HTMLInputElement).value } })}
+            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSub(g.id); } }} />
+          <select value={f.kind} aria-label="How its table is laid out" onchange={(e) => (newSub = { ...newSub, [g.id]: { ...f, kind: (e.target as HTMLSelectElement).value as Section['kind'] } })}>
+            <option value="vertical">each typed on its own, after a colon</option>
+            <option value="usage">each glyph in an example word</option>
+            <option value="hidden">not on the page</option>
+          </select>
+          <button class="sm" onclick={() => addSub(g.id)} disabled={!f.title.trim()}><I.Plus size={14} /> Add subtitle</button>
+        </div>
+      {/if}
+    </section>
+    {/if}
   {/each}
+  {#if loose.length && !q.trim()}
+    <section class="grp">
+      <h2><span class="gt untitled">Not under a section title</span></h2>
+      <p class="muted small">The page doesn't show these until they're under a section title.</p>
+      {#each loose as s (s.id)}
+        <div class="adopt"><span>{s.title}</span>
+          <select aria-label="Section title for {s.title}" onchange={(e) => adopt(s.id, (e.target as HTMLSelectElement).value)}>
+            <option value="">Put it under…</option>
+            {#each layout.groups as g (g.id)}<option value={g.id}>{g.title}</option>{/each}
+          </select></div>
+        {@render subtitle(s)}
+      {/each}
+    </section>
+  {/if}
+  {#if sections.length && !q.trim()}
+    <div class="addgrp">
+      <input type="text" bind:value={newGroup} placeholder="New section title, e.g. 5: Ornaments" aria-label="New section title"
+        onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } }} />
+      <button onclick={addGroup} disabled={!newGroup.trim()}><I.Plus size={14} /> Add section title</button>
+    </div>
+  {/if}
   {#if q.trim() && !sections.some((s) => rowsOf(s.id).some((r) => matches(r, s)))}<p class="muted small">No row matches.</p>{/if}
 </div>
 
@@ -548,5 +721,27 @@
     .act .ic, .grip .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
     .c-grip { width: 40px; } .c-act { width: 112px; }
     .add input { width: 100%; }
+  }
+  .grp { display: flex; flex-direction: column; gap: var(--space-4); padding-top: var(--space-2); }
+  .grp + .grp { border-top: 1px solid var(--border); padding-top: var(--space-5); }
+  .grp h2 { margin: 0; font-family: var(--font-display); font-size: var(--t-title, 20px); font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .gt.untitled { color: var(--ink-muted); font-style: italic; }
+  .hact { display: inline-flex; gap: 2px; margin-left: var(--space-1); }
+  .hact .ic { width: 24px; min-height: 24px; height: 24px; padding: 0; }
+  button.desc { display: block; text-align: left; width: 100%; height: auto; padding: var(--space-1) var(--space-2); border: 1px solid transparent; background: transparent; font: inherit; font-size: var(--t-small); color: var(--ink); cursor: text; }
+  button.desc:hover { border-color: var(--border); }
+  .desc :global(p), .dprev :global(p) { margin: 0 0 var(--space-1); }
+  .desc :global(text), .dprev :global(text) { font-family: var(--font-mono); background: var(--bg-sunken); padding: 0 3px; border-radius: 3px; }
+  .tedit, .addsub, .addgrp, .adopt { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .tedit input { width: 360px; height: 28px; } .tedit input.nav { width: 240px; }
+  .dedit { display: flex; flex-direction: column; gap: var(--space-2); max-width: 760px; }
+  .dedit textarea { width: 100%; font-family: var(--font-mono); font-size: var(--t-small); }
+  .dprev { border-left: 2px solid var(--border); padding-left: var(--space-3); font-size: var(--t-small); }
+  .addsub input, .addgrp input { width: 300px; height: 26px; }
+  .addsub select { height: 26px; }
+  .addgrp { padding-top: var(--space-4); border-top: 1px solid var(--border); }
+  @media (max-width: 759.98px) {
+    .hact .ic { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
+    .tedit input, .tedit input.nav, .addsub input, .addgrp input { width: 100%; }
   }
 </style>

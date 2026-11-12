@@ -360,10 +360,18 @@ describe('the glossary', () => {
     app.redo();
     expect(await app.save()).toBe(true);
     expect((api as unknown as { saveGlossary: ReturnType<typeof vi.fn> }).saveGlossary)
-      .toHaveBeenCalledWith({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'], meaning: 'seven' }] }, 'g0');
+      .toHaveBeenCalledWith({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'], meaning: 'seven' }] }, 'g0',
+        expect.objectContaining({ groups: [expect.objectContaining({ sections: ['1a', '3e'] })] }));
     expect(app.glossaryDirty).toBe(false);
     expect(app.glossaryHash).toBe('g1');
     expect(app.renameImpact('md_ming').glossary).toEqual(['1a', '3e']);
+    // titles and descriptions: an undo step, saved with the rows
+    app.editGlossaryLayout('title', (l) => { l.sections['1a'].title = '1a: Fingers'; l.groups[0].description = 'All **of** it'; return { layout: l }; });
+    expect(app.glossaryDirty).toBe(true);
+    expect(app.glossarySections[0].title).toBe('1a: Fingers');
+    app.undo();
+    expect(app.glossarySections[0].title).toBe('1a: Left Hand Finger');
+    app.redo();
     expect(app.renameGlyph('md_7', 'md_qi')).toBeNull();
     expect(app.glossary['3e'][0]).toMatchObject({ glyphs: ['md_ming', 'md_qi'] });
   });

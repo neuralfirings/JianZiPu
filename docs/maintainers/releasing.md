@@ -228,8 +228,10 @@ so the rule holds without anyone having to remember it.
 The glossary on the font page ("6. Glossary") is made from `site/glossary.json`
 and the spellings in `components.csv`, so its spellings are the font's:
 
-- `site/glossary.json` lists the sections by id (`1c`), each with its title
-  (which starts with the id), how its table looks (an example word per row,
+- `site/glossary.json` holds the whole glossary: its section titles (`groups`:
+  "1: Left Hand", a short `nav` name for the page's contents, a description, and
+  its subtitles in order) and its subtitles (`sections`, by id, `1c`), each with
+  its title, a description, how its table looks (an example word per row,
   `0{}5` / `散{}五` with `{}` the glyph, or a vertical table) and its **rows in
   page order**. A row is a glyph (`{"glyph": "lg_gou"}`) or a word written
   together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
@@ -259,9 +261,13 @@ and the spellings in `components.csv`, so its spellings are the font's:
   Words go in vertical sections only.
 - A Change Request carries the glossary a section at a time: Review keeps or
   skips a section whole, rows in the draft's order.
-- `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
-  `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
-  around them stay as written.
+- `cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the
+  `<!-- glossary all -->` markers in `site/index.html` (every section title,
+  subtitle, description and table) and the contents links between
+  `<!-- glossary nav -->`; the rest of the page stays as written. Descriptions
+  are a little Markdown (`builder/jzpbuild/glossary.py` `markdown()`, the same
+  as the Builder's preview): any HTML but the page's `<u>`, `<jzp>`, `<text>`,
+  `<small>` and `<br>` is escaped.
 - Each row shows every spelling: the ASCII ones (`fanyin, fy`) and the
   Chinese ones (simplified, then traditional when it differs: `绰, 綽`), with
   the example word typed each way.

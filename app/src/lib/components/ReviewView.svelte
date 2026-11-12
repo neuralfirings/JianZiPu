@@ -20,7 +20,7 @@
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
   import GlossaryRowsDiff from './GlossaryRowsDiff.svelte';
-  import { sectionSummary } from '$lib/glossary';
+  import { markdown, metaSummary, sectionSummary, titlesSummary } from '$lib/glossary';
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
@@ -37,8 +37,8 @@
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
   let current = $derived.by(() => {
-    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs, glossary: app.glossary };
-    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs), glossary: bundle.base.glossary ?? app.mainGlossary };
+    if (mode !== 'mine' && mode !== 'sent' && mode !== 'decide') return { design: app.design!, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout };
+    return { design: bundle.base.design, typing: bundle.base.typing, svgs: startSvgs(bundle, app.mainSvgs), glossary: bundle.base.glossary ?? app.mainGlossary, glossaryLayout: bundle.base.glossaryLayout ?? app.mainLayout };
   });
   let items = $derived(diffBundle(bundle, current));
   // true = take the draft's, false = keep what the Builder has, undefined = conflict not picked yet
@@ -71,7 +71,7 @@
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
     { title: 'Design', items: shown.filter((i) => i.kind === 'design') },
-    { title: 'Glossary', items: shown.filter((i) => i.kind === 'glossary') }
+    { title: 'Glossary', items: shown.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles') }
   ]);
 
   function setAll(v: boolean) { picks = Object.fromEntries(items.map((i) => [i.id, v])); }
@@ -86,10 +86,12 @@
     const g = applied.filter((i) => i.kind === 'glyph').map((i) => i.key);
     const sp = applied.filter((i) => i.kind === 'spelling').length;
     const d = applied.filter((i) => i.kind === 'design').map((i) => (i.kind === 'design' ? i.label.replace(/^Area · |^Word type · /, '') : ''));
+    const gl = applied.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles').length;
     const parts = [
       ...(g.length > 3 ? [`${g.length} glyphs`] : g),
       ...(sp ? [`${sp} spelling${sp === 1 ? '' : 's'}`] : []),
-      ...(d.length > 3 ? [`${d.length} design items`] : d)
+      ...(d.length > 3 ? [`${d.length} design items`] : d),
+      ...(gl ? [`${gl} glossary item${gl === 1 ? '' : 's'}`] : [])
     ];
     return `Apply ${name}'s draft: ${parts.join(', ')}`;
   }
@@ -135,7 +137,7 @@
       if (sp) these = [it, sp];
     }
     asking = null;
-    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary });
+    const m = revertItems(these, { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout });
     if (newGlyph) for (const a of Object.values(m.design.areas)) a.glyphs = a.glyphs.filter((g) => g !== it.key);
     app.applyChanges(`Undo: ${nameOf(it)}`, m);
     pilot.say(`${nameOf(it)} is back the way the font has it.`, { undo: true });
@@ -264,9 +266,15 @@
               </tbody>
             </table>
           {:else if it.kind === 'glossary'}
-            <p class="muted small">{sectionSummary(it.base, it.theirs).join(' · ')}. A section is one item: you keep its rows whole, in the draft's order.</p>
+            <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...sectionSummary(it.base, it.theirs)].join(' · ')}. A subtitle is one item: you keep its rows (in the draft's order), title and description whole.</p>
+            {#if it.meta?.theirs?.description && it.meta.theirs.description !== it.meta.base?.description}
+              <div class="desc">{@html markdown(it.meta.theirs.description)}</div>
+            {/if}
             <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs },
               ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current }] : [])]} />
+          {:else if it.kind === 'glossary-titles'}
+            <p class="muted small">{titlesSummary(it.base, it.theirs).join(' · ')}. The section titles are one item, kept whole.</p>
+            <ul class="small">{#each it.theirs as g (g.id)}<li><b>{g.title}</b>{#if g.sections.length} · {g.sections.join(', ')}{/if}{#if g.description}<div class="desc">{@html markdown(g.description)}</div>{/if}</li>{/each}</ul>
           {:else}
             <div class="more">
               <button class="link" onclick={() => (open = { ...open, [it.id + ':w']: !open[it.id + ':w'] })}>{open[it.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
@@ -330,7 +338,7 @@
           {#each done as it (it.id)}
             {@const r = released[it.id]}
             <li>
-              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : it.kind === 'glossary' ? `Glossary · ${it.key}` : `Glyph · ${it.key}`}</b>
+              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : it.kind === 'glossary' ? `Glossary · ${it.key}` : it.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${it.key}`}</b>
               <span class="tag {it.status}">{it.status}</span>
               {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
               <span class="spacer"></span>
@@ -420,4 +428,6 @@
   .donelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); }
   .donelist li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--hairline); }
   .donelist li:last-child { border-bottom: 0; }
+  .desc { font-size: var(--t-small); color: var(--ink-muted); border-left: 2px solid var(--border); padding-left: var(--space-3); margin: var(--space-2) 0; }
+  .desc :global(text) { font-family: var(--font-mono); background: var(--bg-sunken); padding: 0 3px; border-radius: 3px; }
 </style>

@@ -7,7 +7,7 @@
 import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
-import { changedSections, type GRow, type GlossaryRows } from './glossary';
+import { changedSections, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
 
 export type Status = 'added' | 'changed' | 'deleted';
 type Base = { id: string; status: Status; conflict: boolean };
@@ -19,10 +19,14 @@ export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
 };
-/** One section of the glossary (site/glossary.json): its rows in order, kept or skipped whole. */
-export type GlossaryItem = Base & { kind: 'glossary'; key: string; base: GRow[]; theirs: GRow[]; current: GRow[] };
-export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem;
-export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows };
+/** One subtitle of the glossary (site/glossary.json): its rows in order and, from a draft that has
+ *  them, its title, kind, example and description (`meta`, undefined: not there), kept or skipped whole. */
+export type GlossaryItem = Base & { kind: 'glossary'; key: string; base: GRow[]; theirs: GRow[]; current: GRow[];
+  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta } };
+/** The glossary's section titles: their names, short names, descriptions and which subtitles each holds, whole. */
+export type GlossaryTitlesItem = Base & { kind: 'glossary-titles'; key: 'titles'; base: Group[]; theirs: Group[]; current: Group[] };
+export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryTitlesItem;
+export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
@@ -32,17 +36,30 @@ const status = (base: unknown, theirs: unknown): Status => (base === undefined ?
  *  already has are left out. */
 export function diffBundle(b: Bundle, cur: Current): Item[] {
   return [...glyphItems(b, cur), ...spellingItems(b, cur), ...designItems(b.base.design, b.design, cur.design),
-    ...(b.glossary ? glossaryItems(b.base.glossary ?? {}, b.glossary, cur.glossary ?? {}) : [])];
+    ...(b.glossary || b.glossaryLayout ? glossaryItems(b, cur) : [])];
 }
 
-/** The glossary sections whose rows the draft changed (a draft from before the glossary file has none to give). */
-function glossaryItems(base: GlossaryRows, theirs: GlossaryRows, current: GlossaryRows): GlossaryItem[] {
-  const out: GlossaryItem[] = [];
-  for (const k of changedSections(base, theirs)) {
-    const b = base[k] ?? [], t = theirs[k] ?? [], c = current[k] ?? [];
-    if (!changedSections({ k: t }, { k: c }).length) continue;
-    out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: !b.length ? 'added' : !t.length ? 'deleted' : 'changed',
-      base: b, theirs: t, current: c, conflict: changedSections({ k: c }, { k: b }).length > 0 });
+/** The subtitles whose rows or settings the draft changed, and its section titles when it changed
+ *  them (a draft from before the glossary file has no rows to give, one from before titles no titles). */
+function glossaryItems(bundle: Bundle, cur: Current): Item[] {
+  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows, curRows = cur.glossary ?? {};
+  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay, curLay = cur.glossaryLayout;
+  const metaOf = (l: GlossaryLayout | undefined, k: string) => l?.sections[k];
+  const differ = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+  const ids = new Set([...changedSections(baseRows, rows), ...(lay ? Object.keys({ ...baseLay!.sections, ...lay.sections }).filter((k) => differ(metaOf(baseLay, k), metaOf(lay, k))) : [])]);
+  const out: Item[] = [];
+  for (const k of [...ids].sort()) {
+    const b = baseRows[k] ?? [], t = rows[k] ?? [], c = curRows[k] ?? [];
+    const meta = lay ? { base: metaOf(baseLay, k), theirs: metaOf(lay, k), current: metaOf(curLay, k) } : undefined;
+    if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
+    const gone = meta ? !meta.theirs : !t.length, fresh = meta ? !meta.base : !b.length;
+    out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
+      base: b, theirs: t, current: c, ...(meta ? { meta } : {}),
+      conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+  }
+  if (lay && differ(baseLay!.groups, lay.groups) && differ(lay.groups, curLay?.groups)) {
+    out.push({ id: 'glossary-titles', kind: 'glossary-titles', key: 'titles', status: 'changed',
+      base: baseLay!.groups, theirs: lay.groups, current: curLay?.groups ?? [], conflict: !!curLay && differ(curLay.groups, baseLay!.groups) });
   }
   return out;
 }
@@ -160,8 +177,9 @@ export function fontUpdateItems(base: Current, font: Current, mine: Current): It
   }
   const pseudo = {
     manifest: { svgs: { added, changed, deleted } }, design: font.design, typing: font.typing, svgs: fontSvgs,
-    ...(font.glossary ? { glossary: font.glossary } : {}),
-    base: { design: base.design, typing: base.typing, svgs: baseSvgs, ...(base.glossary ? { glossary: base.glossary } : {}) }
+    ...(font.glossary ? { glossary: font.glossary } : {}), ...(font.glossaryLayout ? { glossaryLayout: font.glossaryLayout } : {}),
+    base: { design: base.design, typing: base.typing, svgs: baseSvgs, ...(base.glossary ? { glossary: base.glossary } : {}),
+      ...(base.glossaryLayout ? { glossaryLayout: base.glossaryLayout } : {}) }
   } as unknown as Bundle;
   return diffBundle(pseudo, mine);
 }
@@ -180,7 +198,7 @@ export function updateSummary(items: Item[]): string {
   const design = new Map<string, number>();
   for (const it of items) {
     if (it.kind === 'glyph') drawings++;
-    else if (it.kind === 'glossary') sections++;
+    else if (it.kind === 'glossary' || it.kind === 'glossary-titles') sections++;
     else if (it.kind === 'spelling') {
       for (const f of it.fields) {
         const noun = SPELLING_NOUN[f.field];
@@ -205,8 +223,9 @@ export function updateSummary(items: Item[]): string {
 
 // ---------------------------------------------------------------- applying
 
-/** `glossary`: only when `cur` had it, so a caller that leaves it out can't empty it. */
-export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; glossary?: GlossaryRows; applied: Item[] };
+/** `glossary`, `glossaryLayout`: only when `cur` had them, so a caller that leaves them out can't empty them. */
+export type Merged = { design: Design; typing: T.Typing; svgWrites: SvgMap; svgDeletes: string[]; glossary?: GlossaryRows;
+  glossaryLayout?: GlossaryLayout; applied: Item[] };
 
 /** Apply the kept items (`keep[id] === true`) to the current font. */
 export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Current): Merged {
@@ -214,10 +233,18 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
   const typing: T.Typing = JSON.parse(JSON.stringify(cur.typing));
   const svgWrites: SvgMap = {}, svgDeletes: string[] = [], applied: Item[] = [];
   const glossary: GlossaryRows = JSON.parse(JSON.stringify(cur.glossary ?? {}));
+  const layout: GlossaryLayout = JSON.parse(JSON.stringify(cur.glossaryLayout ?? { groups: [], sections: {} }));
+  const copy = <V>(v: V): V => JSON.parse(JSON.stringify(v));
   for (const it of items) {
     if (!keep[it.id]) continue;
     applied.push(it);
-    if (it.kind === 'glossary') glossary[it.key] = JSON.parse(JSON.stringify(it.theirs));
+    if (it.kind === 'glossary') {
+      glossary[it.key] = copy(it.theirs);
+      if (it.meta) {
+        if (it.meta.theirs) layout.sections[it.key] = copy(it.meta.theirs);
+        else { delete layout.sections[it.key]; delete glossary[it.key]; }
+      }
+    } else if (it.kind === 'glossary-titles') layout.groups = copy(it.theirs);
     else if (it.kind === 'glyph') {
       if (it.theirs == null) svgDeletes.push(it.key);
       else svgWrites[it.key] = it.theirs;
@@ -228,7 +255,10 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
       else typing[it.key] = s;
     } else setUnit(design, it.unit, it.theirs);
   }
-  return { design, typing, svgWrites, svgDeletes, ...(cur.glossary !== undefined ? { glossary } : {}), applied };
+  // a section title can't hold a subtitle that isn't there (one whose own item was skipped)
+  for (const g of layout.groups) g.sections = g.sections.filter((id) => id in layout.sections);
+  return { design, typing, svgWrites, svgDeletes, ...(cur.glossary !== undefined ? { glossary } : {}),
+    ...(cur.glossaryLayout !== undefined ? { glossaryLayout: layout } : {}), applied };
 }
 
 function setUnit(d: Design, u: DesignUnit, v: unknown) {
@@ -265,7 +295,9 @@ export function defaultKeep(items: Item[]): Record<string, boolean> {
  *  The items come from comparing the draft with its base (Review's "mine" view). */
 export function revertItems(items: Item[], cur: Current): Merged {
   const back = items.map((it): Item =>
-    it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) } : { ...it, theirs: it.base } as Item);
+    it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) }
+      : it.kind === 'glossary' && it.meta ? { ...it, theirs: it.base, meta: { ...it.meta, theirs: it.meta.base } }
+      : { ...it, theirs: it.base } as Item);
   return applyMerge(back, Object.fromEntries(back.map((i) => [i.id, true])), cur);
 }
 
