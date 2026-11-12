@@ -29,7 +29,7 @@
     }
     /* The scroll: rice paper, calligraphy ink and one seal red (the JZP design system's tokens, the same names as the Builder's app.css) */
     :root {
-      --bg-app: #eeeae5; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
+      --bg-app: #f3f1ed; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
       --bg-bar: #2e2a27; --on-bar: #f7f5f1; --on-bar-muted: #cfc9c2;
       --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a;
       --border: #cdc7bf; --border-strong: #7c756e; --hairline: #ddd8d1;
@@ -44,12 +44,12 @@
       background-color: var(--bg-app);
       background-image:
         /* fibres and grain of the paper */
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.26 0 0 0 0.9 -0.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.12'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.26 0 0 0 0.9 -0.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.14'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.1'/%3E%3C/svg%3E"),
         /* the soft mottling of old paper */
-        radial-gradient(ellipse 60% 40% at 18% 22%, rgba(120, 112, 104, 0.05), transparent 70%),
-        radial-gradient(ellipse 50% 35% at 82% 65%, rgba(120, 112, 104, 0.045), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 18% 22%, rgba(120, 112, 104, 0.04), transparent 70%),
+        radial-gradient(ellipse 50% 35% at 82% 65%, rgba(120, 112, 104, 0.04), transparent 70%),
         /* the scroll's edges, darker where the paper meets the mounting */
-        linear-gradient(90deg, rgba(100, 92, 84, 0.09), transparent 6%, transparent 94%, rgba(100, 92, 84, 0.09));
+        linear-gradient(90deg, rgba(100, 92, 84, 0.11), transparent 6%, transparent 94%, rgba(100, 92, 84, 0.11));
       background-size: 360px 360px, 100% 1600px, 100% 1600px, 100% 100%;   /* the mottling repeats down the scroll */
       background-repeat: repeat, repeat-y, repeat-y, no-repeat;
     }
@@ -150,7 +150,7 @@
       padding: 10px 1.5em 10px 10px;
     }
     .jzp-example-container {
-      background-color: rgba(253, 251, 246, 0.55);
+      background-color: rgba(255, 255, 255, 0.55);   /* reads as #faf9f7 on the paper */
       border: 1px solid var(--border);
       color: var(--ink);
       position: relative;
