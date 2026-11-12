@@ -423,9 +423,10 @@ Columns:
   trigger this glyph, one column per script variant. Multi-character
   spellings (e.g. `半轮` for 半轮) become multi-glyph ligature rules;
   single-character ones become single substitution rules.
-- `pinyin`, `glossary`, `meaning` — never typed and never clash-checked.
+- `pinyin`, `glossary`, `glossary_order`, `meaning` — never typed and never clash-checked.
   `pinyin` is reference only; `glossary` names the section(s) of the font
-  page's glossary with a row for the glyph, by title; `meaning` says in a few
+  page's glossary with a row for the glyph, by title; `glossary_order` where in
+  the section (a number, one per section when it has two); `meaning` says in a few
   plain words what the glyph means, for the glossary's Meaning column (a
   section's table gets that column once any of its glyphs has one). The
   tables are written by `jzpbuild/glossary.py`; the Builder's More → Check the

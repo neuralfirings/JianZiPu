@@ -37,7 +37,7 @@
 </div>
 
 <style>
-  .name { border: 0; background: transparent; padding: 0; height: auto; font-weight: 600; font-size: inherit; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
+  .name { border: 0; background: transparent; padding: 3px 0; min-height: 24px; height: auto; font-weight: 600; font-size: inherit; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
   .name:hover { text-decoration-color: var(--link); color: var(--link); }
   .gf { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; font-size: var(--t-small); }
   .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }

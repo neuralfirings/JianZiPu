@@ -239,9 +239,18 @@ so its spellings are the font's:
 - The id before the colon is what the generator goes by, and the titles must
   match `site/glossary.json` (the test says which glyph doesn't). Renaming a
   section means changing its title in both places.
+- A glyph's **Glossary order** column sets where its row goes in its section:
+  a number, decimals allowed (`2.5` goes between 2 and 3), one per section
+  (`1; 15`) when it has two. Rows sort by it, ties alphabetically by their
+  ASCII spelling, rows without a number last. ⋯ → **Renumber the glossary
+  order** (Glyphs) makes every section 1, 2, 3… in the order it shows.
+- Words written together, like :带起, are rows of `builder/inputs/words.csv`
+  (Glyphs → **Words**): the word, its glyphs, and its own Glossary, Glossary
+  order and Meaning. It's a font file like `components.csv`, so it changes
+  through a release (or a pull request with the `font-files` label).
 - `site/glossary.json` says how each section's table looks: the example word
-  for each row (`0{}5` / `散{}五`, where `{}` is the glyph), the order of the
-  rows, and words like :带起. Editing it is an ordinary site change on main.
+  for each row (`0{}5` / `散{}五`, where `{}` is the glyph), or a vertical
+  table. Editing it is an ordinary site change on main.
 - `cd builder && python3 -m jzpbuild.glossary` rewrites the tables between the
   `<!-- glossary 1a -->` markers in `site/index.html`. The headings and text
   around them stay as written.
