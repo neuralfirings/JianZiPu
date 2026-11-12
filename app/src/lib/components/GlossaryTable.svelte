@@ -191,6 +191,13 @@
   /** Folded, unless a search or a glyph from List view needs it open. */
   const isFolded = (sid: string) => folded.includes(sid) && !q.trim() && shownGlyph?.sid !== sid;
   const fold = (sid: string) => (folded = folded.includes(sid) ? folded.filter((x) => x !== sid) : [...folded, sid]);
+  // section titles fold too: everything under one (its description, subtitles and add button) goes
+  const GFOLD_KEY = 'jzp-glossary-folded-titles';
+  let gfolded = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem(GFOLD_KEY) ?? '[]'); } catch { return []; } })());
+  $effect(() => { const v = JSON.stringify(gfolded); try { localStorage.setItem(GFOLD_KEY, v); } catch { /* not kept */ } });
+  const groupFolded = (gid: string) => gfolded.includes(gid) && !q.trim()
+    && !(shownGlyph?.sid && layout.groups.find((g) => g.id === gid)?.sections.includes(shownGlyph.sid));
+  const gfold = (gid: string) => (gfolded = gfolded.includes(gid) ? gfolded.filter((x) => x !== gid) : [...gfolded, gid]);
 
   // ---------------------------------------------------------------- Example: a row's example word
 
@@ -544,10 +551,10 @@
         {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
           <button class="quiet ic" onclick={() => (titleEdit = { key: `s:${s.id}`, value: s.title })} aria-label="Rename the subtitle {s.title}" data-tip="Rename the subtitle"><I.EditRow size={14} /></button>
-          <button class="quiet ic" onclick={() => (descEdit = { key: `s:${s.id}`, value: s.description ?? '' })} aria-label="Describe {s.title}" data-tip="{s.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
+          <button class="quiet ic" onclick={() => { descEdit = { key: `s:${s.id}`, value: s.description ?? '' }; folded = folded.filter((x) => x !== s.id); }} aria-label="Describe {s.title}" data-tip="{s.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
           <button class="quiet ic" onclick={() => deleteSub(s.id)} aria-label="Delete the subtitle {s.title}" data-tip={rows.length ? 'Delete the subtitle (move or remove its rows first)' : 'Delete the subtitle (Undo brings it back)'}><I.Close size={14} /></button>
         </span></h3>
-      {@render editors(`s:${s.id}`, s.description ?? '', 'glossary-subdesc')}
+      {@render editors(`s:${s.id}`, s.description ?? '', 'glossary-subdesc', isFolded(s.id))}
       {#if !isFolded(s.id)}
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
@@ -646,7 +653,7 @@
     {/if}
   {/snippet}
 
-{#snippet editors(key: string, desc: string, cls: string)}
+{#snippet editors(key: string, desc: string, cls: string, folded = false)}
   {#if titleEdit?.key === key}
     <div class="tedit">
       <!-- svelte-ignore a11y_autofocus -->
@@ -669,7 +676,7 @@
       <p class="muted small">Markdown: a blank line starts a paragraph; **bold**, *italic*, `s9k3` for a typed example, [a link](https://…), “- ” for a list, and the page's &lt;u&gt;, &lt;jzp&gt; and &lt;small&gt;. Ctrl+Enter keeps it.</p>
       <div><button class="sm" onclick={saveDesc}>Done</button> <button class="sm quiet" onclick={() => (descEdit = null)}>Cancel</button></div>
     </div>
-  {:else if desc}
+  {:else if desc && !folded}
     <button class="desc {cls}" onclick={() => (descEdit = { key, value: desc })} data-tip="Click to edit the description">{@html markdown(desc)}</button>
   {/if}
   {#if layoutNote?.key === key}<p class="small bad" role="status"><I.Problem size={12} /> {layoutNote.text}</p>{/if}
@@ -679,8 +686,13 @@
   <p class="muted small intro">
     The font page's glossary, a section at a time, in page order. A row is one glyph, or a word written together (:少息);
     its ASCII, 中文 and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
-    Fold a section by its title. Save writes site/glossary.json; a release puts it on jianzipufont.com.
-    <button class="lnk" onclick={() => (folded = folded.length ? [] : sections.map((x) => x.id))}>{folded.length ? 'Unfold every section' : 'Fold every section'}</button>
+    Fold a section or a subsection by its title. Save writes site/glossary.json; a release puts it on jianzipufont.com.
+    <span class="folds">
+      <button class="lnk" onclick={() => (gfolded = layout.groups.map((g) => g.id))}>Fold all sections</button> ·
+      <button class="lnk" onclick={() => (gfolded = [])}>Unfold all sections</button> ·
+      <button class="lnk" onclick={() => (folded = sections.map((x) => x.id))}>Fold all subsections</button> ·
+      <button class="lnk" onclick={() => (folded = [])}>Unfold all subsections</button>
+    </span>
   </p>
   {#if !sections.length}
     <div class="banner info"><span class="ic"><I.Info /></span> This copy of the Builder has no site/glossary.json, so there's no glossary to edit here.</div>
@@ -706,16 +718,19 @@
       <h2 id="gg-{g.id}" data-gid={g.id} class:hd-in={headDrop?.kind === 's' && headDrop.gid === g.id && headDrop.id === ''}>
         <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 'g', g.id)} disabled={!!q.trim()}
           aria-label="Drag the section title {g.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the section title · a finger: press and hold first'}><I.Grip size={14} /></button>
-        <span class="gt" class:untitled={!g.title}>{g.title || 'Untitled section'}</span>
+        <button class="quiet fold gfold" onclick={() => gfold(g.id)} aria-expanded={!groupFolded(g.id)} aria-controls="gc-{g.id}">
+          {#if groupFolded(g.id)}<I.Folded size={18} />{:else}<I.Unfolded size={18} />{/if}<span class="gt" class:untitled={!g.title}>{g.title || 'Untitled section'}</span></button>
         <span class="count" data-tip={[g.nav ? `“${g.nav}” in the page's contents` : '', !subs.some((x) => x.kind !== 'hidden') ? 'not on the page' : ''].filter(Boolean).join(' · ') || undefined}>({entries(subs.reduce((n, x) => n + rowsOf(x.id).length, 0))})</span>
         {#if JSON.stringify(savedLayout.groups.find((x) => x.id === g.id) ?? null) !== JSON.stringify(g)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
         <span class="hact">
           <button class="quiet ic" onclick={() => (titleEdit = { key: `g:${g.id}`, value: g.title, nav: g.nav ?? '' })} aria-label="Rename the section title {g.title}" data-tip="Rename the section title"><I.EditRow size={14} /></button>
-          <button class="quiet ic" onclick={() => (descEdit = { key: `g:${g.id}`, value: g.description ?? '' })} aria-label="Describe {g.title}" data-tip="{g.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
+          <button class="quiet ic" onclick={() => { descEdit = { key: `g:${g.id}`, value: g.description ?? '' }; gfolded = gfolded.filter((x) => x !== g.id); }} aria-label="Describe {g.title}" data-tip="{g.description ? 'Edit' : 'Add'} its description"><I.Description size={14} /></button>
           <button class="quiet ic" onclick={() => deleteGroup(g.id)} aria-label="Delete the section title {g.title}" data-tip={g.sections.length ? 'Delete the section title (delete or move its subtitles first)' : 'Delete the section title (Undo brings it back)'}><I.Close size={14} /></button>
         </span>
       </h2>
-      {@render editors(`g:${g.id}`, g.description ?? '', 'glossary-desc')}
+      {@render editors(`g:${g.id}`, g.description ?? '', 'glossary-desc', groupFolded(g.id))}
+      {#if !groupFolded(g.id)}
+      <div class="gbody" id="gc-{g.id}">
       {#each subs as s (s.id)}{@render subtitle(s)}{/each}
       {#if !q.trim()}
         {@const f = newSub[g.id] ?? { title: '', kind: 'vertical' }}
@@ -736,6 +751,8 @@
           <button class="sm quiet" onclick={() => open(`sub:${g.id}`)}><I.Plus size={14} /> Add subtitle</button>
           {/if}
         </div>
+      {/if}
+      </div>
       {/if}
     </section>
     {/if}
@@ -857,6 +874,10 @@
   section.hd-before { box-shadow: 0 -2px 0 var(--link); }
   section.hd-after { box-shadow: 0 2px 0 var(--link); }
   h2.hd-in { box-shadow: inset 0 -2px 0 var(--link); }
+  .gbody { display: flex; flex-direction: column; gap: var(--space-4); }
+  .gfold { font: inherit; font-size: inherit; font-weight: inherit; color: var(--ink); }
+  .folds { white-space: nowrap; }
+  .folds .lnk { margin-left: 0; }
   .gt.untitled { color: var(--ink-muted); font-style: italic; }
   .hact { display: inline-flex; gap: 2px; margin-left: var(--space-1); }
   .hact .ic { width: 24px; min-height: 24px; height: 24px; padding: 0; }
