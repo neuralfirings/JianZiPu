@@ -11,11 +11,19 @@ export type WordRow = { word: string; glyphs: string[]; meaning?: string; typed?
 export type GRow = GlyphRow | WordRow;
 /** section id -> its rows, in page order */
 export type GlossaryRows = Record<string, GRow[]>;
-/** 'usage': an example word per row; 'vertical': each typed on its own after a colon. */
-export type SectionKind = 'usage' | 'vertical';
-/** `usage`: a usage section's default example, for rows without their own, as [ASCII, 中文] templates; `hidden`:
- *  off the page, by its own switch or its section title's. */
-export type Section = { id: string; title: string; kind: SectionKind; usage?: [string, string] | null; hidden?: boolean };
+/** `usage`: the section's default example, for rows without their own, as [ASCII, 中文] templates with {} for the
+ *  row's glyph (s9{}k3); none: each row typed on its own, after a colon where it needs one. `hidden`: off the page,
+ *  by its own switch or its section title's. */
+export type Section = { id: string; title: string; usage?: [string, string] | null; hidden?: boolean };
+
+/** A subtitle's default example from anywhere (a draft, the server), or null. An older file's `kind` still counts:
+ *  'vertical' (or 'hidden') had none, 'usage' always one. As default_example() in glossary.py. */
+export function defaultExample(m: { usage?: unknown; kind?: unknown }): [string, string] | null {
+  if (m.kind === 'vertical' || m.kind === 'hidden') return null;
+  const u = m.usage;
+  if (Array.isArray(u) && u.length === 2 && u.every((x) => typeof x === 'string') && u.some((x) => x.trim())) return [u[0].trim(), u[1].trim()];
+  return m.kind === 'usage' ? ['{}', '{}'] : null;
+}
 
 export const isWord = (r: GRow): r is WordRow => 'word' in r;
 /** A row's identity within its section: g:lg_gou, w:少息 */
@@ -261,7 +269,7 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
 /** A section title ("1: Left Hand"): its short name in the page's contents, a description, its subtitles in order. */
 export type Group = { id: string; title: string; nav?: string; description?: string; hidden?: boolean; sections: string[] };
 /** A subtitle's own settings (its rows are in GlossaryRows); `hidden`: switched off, not on the page. */
-export type SectionMeta = { title: string; kind: SectionKind; usage?: [string, string] | null; description?: string; hidden?: boolean };
+export type SectionMeta = { title: string; usage?: [string, string] | null; description?: string; hidden?: boolean };
 /** The glossary's titles and descriptions: site/glossary.json without the rows. */
 export type GlossaryLayout = { groups: Group[]; sections: Record<string, SectionMeta> };
 export const emptyLayout = (): GlossaryLayout => ({ groups: [], sections: {} });
@@ -282,10 +290,9 @@ export function cleanLayout(x: unknown): GlossaryLayout | undefined {
   const sections: Record<string, SectionMeta> = {};
   for (const [id, m] of Object.entries(o.sections as Record<string, Record<string, unknown>>)) {
     if (!m || typeof m !== 'object') continue;
-    // the old kind 'hidden' is a vertical subtitle switched off
-    const kind = (m.kind === 'usage' ? 'usage' : 'vertical') as SectionKind, hidden = !!m.hidden || m.kind === 'hidden';
-    const u = Array.isArray(m.usage) && m.usage.length === 2 ? (m.usage.map((v) => String(v ?? '')) as [string, string]) : null;
-    sections[id] = { title: str(m.title), kind, ...(hidden ? { hidden: true } : {}), ...(kind === 'usage' ? { usage: u ?? ['{}', '{}'] } : {}),
+    // the old kind 'hidden' is a subtitle switched off
+    const hidden = !!m.hidden || m.kind === 'hidden', u = defaultExample(m);
+    sections[id] = { title: str(m.title), ...(hidden ? { hidden: true } : {}), ...(u ? { usage: u } : {}),
       ...(str(m.description) ? { description: str(m.description) } : {}) };
   }
   const groups = (o.groups as Record<string, unknown>[]).filter((g) => g && typeof g === 'object' && str(g.id)).map((g) => ({
@@ -333,7 +340,7 @@ export function markdown(text: string): string {
   return out.join('\n');
 }
 
-/** What differs between two layouts: the subtitles whose title, kind, example or description changed
+/** What differs between two layouts: the subtitles whose title, default example or description changed
  *  (or that came or went), and 'titles' when the section titles changed (names, descriptions, order). */
 export function changedLayout(a: GlossaryLayout, b: GlossaryLayout): string[] {
   const ids = [...new Set([...Object.keys(a.sections), ...Object.keys(b.sections)])]
@@ -346,9 +353,9 @@ export function metaSummary(a: SectionMeta | undefined, b: SectionMeta | undefin
   if (!a && b) return [`new subtitle: ${b.title}`];
   if (a && !b) return [`subtitle deleted: ${a.title}`];
   if (!a || !b) return [];
-  return [a.title !== b.title ? `title: ${b.title}` : '', a.kind !== b.kind ? `kind: ${b.kind}` : '',
+  return [a.title !== b.title ? `title: ${b.title}` : '',
     !!a.hidden !== !!b.hidden ? (b.hidden ? 'hidden' : 'shown') : '',
-    (a.description ?? '') !== (b.description ?? '') ? 'description' : '', JSON.stringify(a.usage ?? null) !== JSON.stringify(b.usage ?? null) ? 'example' : ''].filter(Boolean);
+    (a.description ?? '') !== (b.description ?? '') ? 'description' : '', JSON.stringify(a.usage ?? null) !== JSON.stringify(b.usage ?? null) ? (b.usage ? `default example: ${b.usage.filter(Boolean).join(' / ')}` : 'no default example') : ''].filter(Boolean);
 }
 /** What changed in the section titles, in words. */
 export function titlesSummary(a: Group[], b: Group[]): string[] {

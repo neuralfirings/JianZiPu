@@ -237,12 +237,13 @@ and the spellings in `components.csv`, so its spellings are the font's:
   together (`{"word": "带起", "glyphs": ["md_dai", "md_qi"]}`), with an optional
   `"meaning"` for the Definition column (a section gets that column once one of
   its rows has one).
-- A section with an example word per row (`"kind": "usage"`) has its example
-  as `"usage": [ASCII, 中文]`, with `{}` where the row's glyph goes; a row's own
-  `"usage"` replaces it for that row (the Builder's Input column, where you type
-  the example in one language and the other is made from the spellings). A row
-  of a vertical section can have one too: its Output then shows that example
-  (`[":vxi7", ":大息七"]`) in place of the row typed on its own.
+- A section can have a default example, `"usage": [ASCII, 中文]`, with `{}`
+  where the row's glyph goes (the Builder's "Default example" under a
+  subtitle). Without one, each row is typed on its own after a colon where the
+  font needs one. A row's own `"usage"` replaces either (the Builder's Input
+  column, where you type the example in one language and the other is made
+  from the spellings), e.g. `[":vxi7", ":大息七"]`. Older files said which with
+  `"kind": "usage"` or `"vertical"`; it still reads, and isn't written.
 - `"typed"` keeps what was typed to add or edit a row (`:shaoxi`, `勾`); the
   Builder shows it again when the row is edited. A row without one opens with
   its ASCII spelling, or its Chinese when it has none.

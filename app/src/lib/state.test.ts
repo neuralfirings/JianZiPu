@@ -345,14 +345,14 @@ describe('adding several glyphs from files', () => {
 
 
 describe('the glossary', () => {
-  const sections = [{ id: '1a', title: '1a: Left Hand Finger', kind: 'usage', rows: [{ glyph: 'md_ming' }] },
-    { id: '3e', title: '3e: E', kind: 'vertical', rows: [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] }];
+  const sections = [{ id: '1a', title: '1a: Left Hand Finger', usage: ['{}9k3', '{}九勾三'] as [string, string], rows: [{ glyph: 'md_ming' }] },
+    { id: '3e', title: '3e: E', rows: [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] }];
   it('edits are undo steps, Save writes site/glossary.json (local), and a rename follows into it', async () => {
     api.glyphs.mockResolvedValue({ fields: [], glyphs: [{ glyph: 'md_ming', svg: true, areas: ['left'], latin: 'ming' }, { glyph: 'md_7', svg: true, areas: [] }], control: [], order: ['md_ming'], hash: 'c0', glossary_sections: sections, glossary_hash: 'g0' });
     (api as unknown as { saveGlossary: unknown }).saveGlossary = vi.fn(async () => ({ ok: true, hash: 'g1' }));
     await app.load();
     expect(app.glossary).toEqual({ '1a': [{ glyph: 'md_ming' }], '3e': [{ word: '名七', glyphs: ['md_ming', 'md_7'] }] });
-    expect(app.glossarySections.map((s) => s.kind)).toEqual(['usage', 'vertical']);
+    expect(app.glossarySections.map((s) => s.usage ?? null)).toEqual([['{}9k3', '{}九勾三'], null]);
     app.editGlossary('meaning', (rows) => ({ ...rows, '3e': [{ ...rows['3e'][0], meaning: 'seven' }] }));
     expect(app.glossaryDirty).toBe(true);
     app.undo();

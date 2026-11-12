@@ -3,7 +3,7 @@
     "The font page's glossary (site/index.html, 6. Glossary), written by the Builder's Glyphs > Glossary.",
     "`groups` are the section titles (\"1: Left Hand\"; `nav` is the contents' short name for one), each with a",
     "description and its subtitles in page order; `sections` are the subtitles (\"1a: Left Hand Finger\"), each with a",
-    "title, a description, how its table is laid out and its rows in page order. Descriptions are a little Markdown:",
+    "title, a description, its default example and its rows in page order. Descriptions are a little Markdown:",
     "paragraphs, **bold**, *italic*, `typed examples`, [links](https://…), \"- \" lists, and the page's <u>, <jzp>, <text>,",
     "<small> and <br>; any other HTML shows as text. A section title whose subtitles are all hidden isn't on the page either.",
     "`cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the <!-- glossary all --> markers and the",
@@ -12,9 +12,10 @@
     "its ASCII, 中文 and 拼音 come from the glyphs' spellings in builder/inputs/components.csv. \"meaning\" (optional) fills",
     "the Definition column, which a section gets once one of its rows has one. \"typed\" (optional) is what was typed to add or edit the row.",
     "Every glyph with spellings is in some section, on its own or in a word; a hidden one leaves it out on purpose.",
-    "kind 'usage': ASCII | 中文 | 拼音 | Input | Output, an example word and how to type it. `usage` is the section's default example as [ASCII, 中文]; {} is the glyph's",
-    "spelling, marked red; <r>…</r> marks more. A row's own \"usage\" (the Builder's Input column) replaces it. A word in one is shown like a vertical row.",
-    "kind 'vertical': each spelling after a colon, typed on its own (a row's own \"usage\" is shown instead). Consecutive numbers (md_1 to md_13) share one row.",
+    "Columns: ASCII | 中文 | 拼音 | Input | Output | Definition: Output is the row's example and Input how to type it. A subtitle's \"usage\"",
+    "(optional) is its default example as [ASCII, 中文]: {} is the row's glyph's spelling, marked red; <r>…</r> marks more. Without one, each row",
+    "is typed on its own, after a colon where the font needs one, and consecutive numbers (md_1 to md_13) share one row. A row's own \"usage\"",
+    "(the Builder's Input column) replaces either; a word is typed on its own unless it has one. (Older files' \"kind\" said which.)",
     "\"hidden\": true on a subtitle or a section title (the Builder's eye switch) leaves it off the page; its glyphs count as left out on purpose."
   ],
   "groups": [
@@ -27,7 +28,6 @@
   "sections": {
     "1a": {
       "title": "1a: Left Hand Finger",
-      "kind": "usage",
       "usage": ["{}9k3", "{}九勾三"],
       "rows": [
         {"glyph": "md_ming"},
@@ -39,7 +39,6 @@
     },
     "1b": {
       "title": "1b: Speed mods & mods related to 韵 production",
-      "kind": "usage",
       "usage": ["s9{}k3", "名九{}勾三"],
       "rows": [
         {"glyph": "mod_chuo"},
@@ -49,7 +48,6 @@
     },
     "1c": {
       "title": "1c: Left Hand Techniques",
-      "kind": "usage",
       "usage": ["s9{}6", "名九{}六"],
       "rows": [
         {"glyph": "lg_yan"},
@@ -59,7 +57,6 @@
     },
     "1d": {
       "title": "1d: Special Cases",
-      "kind": "usage",
       "usage": ["{}k5", "{}勾五"],
       "rows": [
         {"glyph": "md_san"},
@@ -68,7 +65,6 @@
     },
     "1d-v": {
       "title": "1d-v: Special Cases, vertical",
-      "kind": "vertical",
       "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"word": "带起", "glyphs": ["md_dai", "md_qi"]},
@@ -79,7 +75,6 @@
     },
     "1e": {
       "title": "1e: Left Hand Vibratos and Slides",
-      "kind": "vertical",
       "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"glyph": "md_tui"},
@@ -99,7 +94,6 @@
     },
     "2a": {
       "title": "2a: Basic Right Hand",
-      "kind": "usage",
       "usage": ["0{}5", "散{}五"],
       "rows": [
         {"glyph": "lg_pi"},
@@ -118,7 +112,6 @@
     },
     "2b": {
       "title": "2b: Chords",
-      "kind": "usage",
       "usage": ["{}d7,7<r>|</r>06", "{}中七，七<r>｜</r>散六"],
       "description": "These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a `|`.\n\nex: `Cs9,3|05` or `撮名九,三｜散五` will make <jzp>Cs9,3|05</jzp>",
       "rows": [
@@ -134,7 +127,6 @@
     },
     "2c": {
       "title": "2c: Other Right Hand Strum Techniques",
-      "kind": "vertical",
       "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
         {"glyph": "lg_lun"},
@@ -153,12 +145,10 @@
     },
     "3a": {
       "title": "3a: Related to Score",
-      "kind": "vertical",
       "rows": []
     },
     "3b": {
       "title": "3b: Related to Notes",
-      "kind": "vertical",
       "rows": [
         {"glyph": "md_fan"},
         {"glyph": "md_zhi"},
@@ -170,7 +160,6 @@
     },
     "3c": {
       "title": "3c: Related to String & Hui Number",
-      "kind": "vertical",
       "rows": [
         {"glyph": "md_1"},
         {"glyph": "md_2"},
@@ -196,12 +185,10 @@
     },
     "3d": {
       "title": "3d: Related to position",
-      "kind": "vertical",
       "rows": []
     },
     "3e": {
       "title": "3e: related to expression",
-      "kind": "vertical",
       "rows": [
         {"word": "大息", "glyphs": ["md_da", "md_xi"]},
         {"word": "少息", "glyphs": ["md_shao", "md_xi"]}
@@ -209,19 +196,16 @@
     },
     "3x": {
       "title": "3x: Placeholder for Future/Unknown Characters",
-      "kind": "vertical",
       "rows": [
         {"glyph": "md_placeholder"}
       ]
     },
     "4": {
       "title": "4: Uncategorized",
-      "kind": "vertical",
       "rows": []
     },
     "99": {
       "title": "99: Hidden in Glossary",
-      "kind": "vertical",
       "hidden": true,
       "rows": []
     }

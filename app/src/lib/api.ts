@@ -1,5 +1,5 @@
 // Thin client for the Python web server (python3 -m jzpbuild.webserver).
-import type { GlossaryLayout, GlossaryRows, GRow, Group, SectionKind } from './glossary';
+import type { GlossaryLayout, GlossaryRows, GRow, Group } from './glossary';
 export type Design = {
   version: 2;
   center: { x: number; y: number };
@@ -148,7 +148,7 @@ export const api = {
    *  so new spellings and glyphs show without a Build; without it, the last build's spellings. */
   words: (design: Design, words: string[], typed?: { rows: Record<string, string>[]; svgs: Record<string, string> }) =>
     call<WordPayload & { error?: string }>('POST', '/api/words', { design, words, ...typed }),
-  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; kind?: SectionKind; usage?: [string, string] | null; description?: string; rows?: GRow[] }[]; glossary_groups?: Group[]; glossary_hash?: string; vertical_only?: string[] }>('GET', '/api/glyphs'),
+  glyphs: () => call<{ fields: string[]; glyphs: CatalogRow[]; control: string[]; order: string[]; hash: string; glossary_sections?: { id: string; title: string; usage?: [string, string] | null; description?: string; rows?: GRow[] }[]; glossary_groups?: Group[]; glossary_hash?: string; vertical_only?: string[] }>('GET', '/api/glyphs'),
   /** Write the glossary's rows into site/glossary.json (local mode), hash-checked like the spellings. */
   saveGlossary: (rows: GlossaryRows, base_hash: string, layout?: GlossaryLayout) =>
     call<{ ok: boolean; hash?: string; error?: string; conflict?: boolean }>('PUT', '/api/glossary', { rows, base_hash, layout }),

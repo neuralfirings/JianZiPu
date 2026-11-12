@@ -31,13 +31,13 @@
   let savedLayout = $derived(JSON.parse(app.savedLayoutJson) as typeof app.glossaryLayout);
   const rowsOf = (sid: string) => app.glossary[sid] ?? [];
   const sec = (sid: string) => sections.find((s) => s.id === sid)!;
-  const KIND: Record<Section['kind'], string> = {
-    usage: 'each glyph in an example word', vertical: 'each typed on its own, after a colon'
-  };
+  /** What a subtitle's rows show where they have no example of their own. */
+  const layoutTip = (s: Section) => (s.usage ? `Each glyph in the default example ${s.usage.filter(Boolean).join(' / ')}` : 'Each typed on its own, after a colon where it needs one');
 
   // ---------------------------------------------------------------- what a row shows
 
-  const vertical = (s: Section) => s.kind !== 'usage';
+  /** No default example: each row typed on its own (a "vertical" section, as they were called). */
+  const vertical = (s: Section) => !s.usage;
   function asciiOf(g: string): string[] {
     const sp = T.get(app.typing, g), p = T.partners(app.typing);
     const own = [sp.latin, sp.latin_alt, sp.common].filter(Boolean);
@@ -92,7 +92,7 @@
       const gid = to.sid.slice(4), src = sec(from.sid), id = newId('', taken());
       const g = layout.groups.find((x) => x.id === gid)!;
       app.editGlossaryLayout(`Move ${rowName(r)} under ${g.title}`, (l, rows) => {
-        l.sections[id] = { title: '', kind: src.kind, ...(src.kind === 'usage' ? { usage: src.usage ?? ['{}', '{}'] } : {}) };
+        l.sections[id] = { title: '', ...(src.usage ? { usage: src.usage } : {}) };
         l.groups.find((x) => x.id === gid)!.sections.unshift(id);
         rows[from.sid] = rows[from.sid].filter((_, j) => j !== from.index);
         rows[id] = [r];
@@ -154,7 +154,7 @@
   }
   let titleEdit = $state<{ key: string; value: string; nav?: string } | null>(null);
   let descEdit = $state<{ key: string; value: string } | null>(null);
-  let newSub = $state<Record<string, { title: string; kind: Section['kind'] }>>({});
+  let newSub = $state<Record<string, { title: string }>>({});
   let newGroup = $state('');
   /** The one add box showing: `row:<subtitle>`, `sub:<section title>` or `group`; the rest are a + button. */
   let opened = $state<string | null>(null);
@@ -204,11 +204,27 @@
     if (!t) return;
     const id = newId(t, taken());
     editLayout(`New subtitle: ${t}`, (l, rows) => {
-      l.sections[id] = { title: t, kind: f.kind, ...(f.kind === 'usage' ? { usage: ['{}', '{}'] as [string, string] } : {}) };
+      l.sections[id] = { title: t };                    // no default example: add one under its title
       l.groups.find((g) => g.id === gid)!.sections.push(id);
       rows[id] = [];
     });
-    newSub = { ...newSub, [gid]: { title: '', kind: f.kind } };
+    newSub = { ...newSub, [gid]: { title: '' } };
+  }
+  /** A subtitle's default example, one language at a time (k: 0 ASCII, 1 中文); both empty: none, each row on its own. */
+  function setDefault(id: string, k: 0 | 1, value: string) {
+    const cur = layout.sections[id]?.usage ?? ['', ''];
+    if ((cur[k] ?? '') === value.trim()) return;
+    const next = [...cur] as [string, string];
+    next[k] = value.trim();
+    if (next.some(Boolean) && !next.some((t) => t.includes('{}') || /<r>/.test(t))) {
+      layoutNote = { key: `ex:${id}`, text: 'Put {} where the row\'s glyph goes: s9{}k3, 名九{}勾三.' };
+      return;
+    }
+    layoutNote = null;
+    const t = layout.sections[id].title || 'the entries';
+    editLayout(next.some(Boolean) ? `Default example of ${t}` : `No default example for ${t}`, (l) => {
+      if (next.some(Boolean)) l.sections[id].usage = next; else delete l.sections[id].usage;
+    });
   }
   function deleteGroup(gid: string) {
     const g = layout.groups.find((x) => x.id === gid)!;
@@ -254,7 +270,7 @@
   /** The example a row shows: its own, else a glyph in a usage section the section's, else the row
    *  typed on its own after a colon (a vertical section's row, and a word anywhere). */
   const templateOf = (r: GRow, s: Section): [string, string] => {
-    const t = r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r, app.verticalOnly)) || ['', ''];
+    const t = r.usage || (s.usage && !isWord(r) ? s.usage : verticalTemplate(app.typing, r, app.verticalOnly)) || ['', ''];
     // a line whose glyph has no spelling in that language (the placeholder * has no Chinese) is empty, not ":"
     const sp = isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph);
     return [t[0].includes('{}') && !sp[0] ? '' : t[0], t[1].includes('{}') && !sp[1] ? '' : t[1]];
@@ -268,9 +284,9 @@
   }
   /** The row's glyph in red: in a usage section, or an example with more in it than the row itself
    *  (s9k3 for 名, 0k5 for 散; not :san or :vxi). */
-  const marked = (r: GRow, s: Section) => !isWord(r) && (s.kind === 'usage' || marksGlyph(templateOf(r, s)));
+  const marked = (r: GRow, s: Section) => !isWord(r) && (!!s.usage || marksGlyph(templateOf(r, s)));
   /** Faded: a usage row showing its section's default example, not one of its own. */
-  const shared = (r: GRow, s: Section) => s.kind === 'usage' && !isWord(r) && !r.usage;
+  const shared = (r: GRow, s: Section) => !!s.usage && !isWord(r) && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
   let drawn = $state<Record<string, WordPiece[]>>({});
   /** What each example line types (both lines, so a row whose two lines disagree says so). */
@@ -436,8 +452,8 @@
     finally { busy = null; }
   }
 
-  /** An entry straight under a section title (its rows without a subtitle, made first): the kind
-   *  of its first subtitle, so it reads like its neighbours. */
+  /** An entry straight under a section title (its rows without a subtitle, made first): the default
+   *  example of its first subtitle, so it reads like its neighbours. */
   async function addToGroup(gid: string) {
     const key = `grp:${gid}`;
     busy = key; addNote = null;
@@ -445,9 +461,9 @@
       const r = await resolve(adding[key] ?? '');
       if ('error' in r) { addNote = { sid: key, level: 'error', text: r.error }; return; }
       const g = layout.groups.find((x) => x.id === gid)!, near = g.sections.map((id) => sections.find((x) => x.id === id)).find((x) => x && x.title);
-      const kind = near?.kind ?? 'vertical', id = newId('', taken()), typed = (adding[key] ?? '').trim();
+      const id = newId('', taken()), typed = (adding[key] ?? '').trim();
       app.editGlossaryLayout(`Add ${rowName(r)} under ${g.title}`, (l, rows) => {
-        l.sections[id] = { title: '', kind, ...(kind === 'usage' ? { usage: near?.usage ?? ['{}', '{}'] } : {}) };
+        l.sections[id] = { title: '', ...(near?.usage ? { usage: near.usage } : {}) };
         l.groups.find((x) => x.id === gid)!.sections.unshift(id);
         rows[id] = [{ ...r, typed }];
         return { layout: l, rows };
@@ -643,7 +659,7 @@
     {@const rows = rowsOf(s.id)}
     {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
     {#if !q.trim() || shown.length}
-    {@const usage = s.kind === 'usage'}
+    {@const usage = !!s.usage}
     {@const plain = !s.title.trim()}
     <section class="sec" class:plain class:off={s.hidden} aria-labelledby="gs-{s.id}" data-sid={s.id}
       class:hd-before={headDrop?.kind === 's' && headDrop.id === s.id && headDrop.before} class:hd-after={headDrop?.kind === 's' && headDrop.id === s.id && !headDrop.before}
@@ -652,7 +668,7 @@
       <h3 id="gs-{s.id}" data-drop={isFolded(s.id) ? 'end' : 'start'} data-sid={s.id} data-i={rows.length} class:gap={!!drag && isFolded(s.id) && drop?.sid === s.id} class:no={!okDrop && drop?.sid === s.id}>
         <button class="quiet g hg" onpointerdown={(e) => grabHead(e, 's', s.id)} disabled={!!q.trim()}
           aria-label="Drag the subtitle {s.title} to move it" data-tip={q.trim() ? 'Clear the search to drag' : 'Drag to move the subtitle · a finger: press and hold first'}><I.Grip size={14} /></button>
-        <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}" data-tip={KIND[s.kind]}>
+        <button class="quiet fold" onclick={() => fold(s.id)} aria-expanded={!isFolded(s.id)} aria-controls="gb-{s.id}" data-tip={layoutTip(s)}>
           {#if isFolded(s.id)}<I.Folded size={14} />{:else}<I.Unfolded size={14} />{/if}{#if s.title}<span>{s.title}</span>{:else}<span class="untitled">No subtitle</span>{/if}</button>
         <span class="count">({entries(rows.length)})</span>
         {#if JSON.stringify(saved[s.id] ?? []) !== JSON.stringify(rows) || JSON.stringify(savedLayout.sections[s.id] ?? null) !== JSON.stringify(layout.sections[s.id] ?? null)}<span class="pill draft"><I.Unsaved size={12} /> unsaved</span>{/if}
@@ -668,6 +684,16 @@
       {@render editors(`s:${s.id}`, s.description ?? '', 'glossary-subdesc', isFolded(s.id))}
       {/if}
       {#if plain || !isFolded(s.id)}
+      <div class="defex">
+        <span class="small muted" data-tip={'What a row without an example of its own shows, {} for its glyph (s9{}k3). Empty: each row is typed on its own, after a colon where it needs one.'}>Default example</span>
+        {#each [0, 1] as k (k)}
+          <input type="text" class="meaning" class:mono={k === 0} class:zh={k === 1} value={s.usage?.[k] ?? ''} spellcheck="false"
+            placeholder={k ? '中文' : s.usage ? 'ASCII' : 'none: each row on its own'}
+            aria-label="Default example of {s.title || 'the entries'} in {k ? 'Chinese' : 'ASCII'}"
+            onchange={(e) => setDefault(s.id, k as 0 | 1, (e.target as HTMLInputElement).value)} />
+        {/each}
+        {#if layoutNote?.key === `ex:${s.id}`}<span class="small bad" role="status"><I.Problem size={12} /> {layoutNote.text}</span>{/if}
+      </div>
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
         <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
@@ -748,7 +774,7 @@
               <span class="add">
                 {#if opened === `row:${s.id}`}
                   <!-- svelte-ignore a11y_autofocus -->
-                  <input type="text" bind:value={adding[s.id]} placeholder={s.kind === 'usage' ? 'A glyph: k, 勾 or lg_gou' : 'A glyph or a word: 勾, :shaoxi'}
+                  <input type="text" bind:value={adding[s.id]} placeholder={s.usage ? 'A glyph: k, 勾 or lg_gou' : 'A glyph or a word: 勾, :shaoxi'}
                     aria-label="Add to {s.title}" spellcheck="false" autofocus
                     onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void add(s.id); } else if (e.key === 'Escape') close(); }} />
                   <button class="sm" onclick={() => add(s.id)} disabled={busy === s.id || !adding[s.id]?.trim()}>{#if busy === s.id}<I.Working size={14} />{/if} Add an entry</button>
@@ -872,17 +898,13 @@
       {/if}
       {#each subs as s (s.id)}{@render subtitle(s)}{/each}
       {#if !q.trim()}
-        {@const f = newSub[g.id] ?? { title: '', kind: 'vertical' }}
+        {@const f = newSub[g.id] ?? { title: '' }}
         <div class="addsub">
           {#if opened === `sub:${g.id}`}
           <!-- svelte-ignore a11y_autofocus -->
           <input type="text" value={f.title} placeholder="Its title, e.g. 3f: Ornaments" aria-label="New subtitle under {g.title}" autofocus
             oninput={(e) => (newSub = { ...newSub, [g.id]: { ...f, title: (e.target as HTMLInputElement).value } })}
             onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSub(g.id); } else if (e.key === 'Escape') close(); }} />
-          <select value={f.kind} aria-label="How its table is laid out" onchange={(e) => (newSub = { ...newSub, [g.id]: { ...f, kind: (e.target as HTMLSelectElement).value as Section['kind'] } })}>
-            <option value="vertical">each typed on its own, after a colon</option>
-            <option value="usage">each glyph in an example word</option>
-          </select>
           <button class="sm" onclick={() => { addSub(g.id); close(); }} disabled={!f.title.trim()}>Add subtitle</button>
           <button class="sm quiet" onclick={close}>Cancel</button>
           {:else}
@@ -979,6 +1001,8 @@
   .lnk { margin-left: var(--space-2); border: 0; background: transparent; padding: 0; height: auto; min-height: 24px; color: var(--link); font-size: inherit; cursor: pointer; }
   td.use { padding-top: var(--space-1); padding-bottom: var(--space-1); white-space: normal; }
   td.out { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .defex { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-1) var(--space-6); flex-wrap: wrap; }
+  .defex input { width: 12rem; height: 24px; font-size: var(--t-small); }
   td.out, th.out { text-align: center; }
   .lines { display: flex; flex-direction: column; min-width: 0; }
   .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
@@ -1037,7 +1061,6 @@
   .dedit textarea { width: 100%; font-family: var(--font-mono); font-size: var(--t-small); }
   .dprev { border-left: 2px solid var(--border); padding-left: var(--space-3); font-size: var(--t-small); }
   .addsub input, .addgrp input { width: 300px; height: 26px; }
-  .addsub select { height: 26px; }
   .addgrp { padding-top: var(--space-4); border-top: 1px solid var(--border); }
   @media (max-width: 759.98px) {
     .hact .ic { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }

@@ -34,12 +34,23 @@ from . import config
 # components.csv's columns (typing_preview.ROW_FIELDS); not imported from there, so the release
 # scope check can read the page with the standard library alone
 FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt", "simplified", "traditional", "pinyin")
-KINDS = ("usage", "vertical")     # a section's table: an example word per row, or each typed on its own
 
 
 def is_hidden(sec: dict) -> bool:
     """Left off the page on purpose (its switch is off in the Builder): `"hidden": true`, or the old kind 'hidden'."""
     return bool(sec.get("hidden")) or sec.get("kind") == "hidden"
+
+
+def default_example(sec: dict) -> tuple[str, str] | None:
+    """The section's default example, [ASCII, 中文] templates with {} for each row's glyph (s9{}k3), shown
+    by its rows without one of their own; None: each row typed on its own, after a colon where it needs one.
+    An older file's "kind" still counts: 'vertical' (or 'hidden') had none, 'usage' always one."""
+    if sec.get("kind") in ("vertical", "hidden"):
+        return None
+    u = sec.get("usage")
+    if isinstance(u, (list, tuple)) and len(u) == 2 and all(isinstance(x, str) for x in u) and any(x.strip() for x in u):
+        return (u[0].strip(), u[1].strip())
+    return ("{}", "{}") if sec.get("kind") == "usage" else None
 
 
 def effective(sections: dict[str, dict], groups: list[dict]) -> dict[str, dict]:
@@ -143,7 +154,7 @@ def load_rows(path: Path | None = None) -> dict[str, dict]:
 
 
 def load_file(path: Path | None = None) -> dict:
-    """site/glossary.json as it is: {"about": [...], "sections": {id: {title, kind, ..., rows}}}."""
+    """site/glossary.json as it is: {"about": [...], "sections": {id: {title, usage?, ..., rows}}}."""
     return json.loads((path or config.GLOSSARY_SECTIONS).read_text(encoding="utf-8"))
 
 
@@ -271,7 +282,7 @@ def _id(x, what: str) -> str:
 def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None = None) -> tuple[dict[str, dict], list[dict]]:
     """The Builder's section titles and subtitles (unsaved ones), checked, with each subtitle's rows: the
     Builder's where it sends them, else the file's. `layout` is {"groups": [{id, title, nav?, description?,
-    sections: [id…]}], "sections": {id: {title, kind, usage?, description?}}}. A subtitle the layout drops
+    sections: [id…]}], "sections": {id: {title, usage?, description?}}}. A subtitle the layout drops
     goes only when it has no rows. Returns (sections in page order, groups)."""
     if not isinstance(layout, dict) or not isinstance(layout.get("groups"), list) or not isinstance(layout.get("sections"), dict):
         raise ValueError("layout: the section titles and subtitles, please")
@@ -280,19 +291,14 @@ def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None 
         _id(sid, "a subtitle's id")
         if not isinstance(m, dict):
             raise ValueError(f"subtitle {sid}: an object, please")
-        kind = m.get("kind", "vertical")
-        hidden = bool(m.get("hidden")) or kind == "hidden"          # the old kind 'hidden': vertical, switched off
-        kind = "vertical" if kind == "hidden" else kind
-        if kind not in KINDS:
-            raise ValueError(f"subtitle {sid}: kind {kind!r} is none of {', '.join(KINDS)}")
-        # no title: rows straight under the section title, before its subtitles
-        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE), "kind": kind,
-                **({"hidden": True} if hidden else {})}
+        hidden = bool(m.get("hidden")) or m.get("kind") == "hidden"   # the old kind 'hidden': switched off
         u = m.get("usage")
-        if kind == "usage":
-            if not (isinstance(u, list) and len(u) == 2 and all(isinstance(x, str) and len(x) <= MAX_USAGE for x in u)):
-                u = ["{}", "{}"]
-            meta["usage"] = [x.strip() for x in u]
+        if u is not None and not (isinstance(u, list) and len(u) == 2 and all(isinstance(x, str) and len(x) <= MAX_USAGE for x in u)):
+            raise ValueError(f"subtitle {sid}: its default example is [ASCII, 中文], each up to {MAX_USAGE} characters")
+        # no title: rows straight under the section title, before its subtitles
+        meta = {"title": _text(m.get("title"), f"subtitle {sid}'s title", MAX_TITLE), **({"hidden": True} if hidden else {})}
+        if ex := default_example(m):
+            meta["usage"] = list(ex)
         if d := _text(m.get("description"), f"subtitle {sid}'s description", MAX_DESCRIPTION):
             meta["description"] = d
         metas[sid] = meta
@@ -399,12 +405,12 @@ def chinese(rec: dict) -> list[str]:
     return [c for i, c in enumerate((rec["simplified"], rec["traditional"])) if c and c not in (rec["simplified"], rec["traditional"])[:i]]
 
 
-def _usage_row(sec: dict, g: str, rec: dict, meaning: str = "", own: tuple[str, str] | None = None) -> Row:
-    """`own`: the row's own example ([ASCII, 中文] templates, either may be empty), else the section's."""
+def _usage_row(default: tuple[str, str], g: str, rec: dict, meaning: str = "", own: tuple[str, str] | None = None) -> Row:
+    """`own`: the row's own example ([ASCII, 中文] templates, either may be empty), else the section's default."""
     sp, zh = spellings(rec), chinese(rec)
     if not sp or not rec["simplified"]:
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
-    ta, tz = own or sec["usage"]
+    ta, tz = own or default
     # the same example with each spelling: Chinese (traditional too) under Chinese, ASCII under ASCII
     # one example per spelling where {} stands for the glyph; one where a spelling was written out (s9<r>bl</r>7)
     zs = list(dict.fromkeys(_fill(tz, c) for c in zh)) if tz else []
@@ -490,15 +496,14 @@ def _number_row(recs: list[dict]) -> Row:
 def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
     if is_hidden(sec):                    # switched off: its glyphs are left out on purpose, no table
         return []
-    if sec["kind"] not in KINDS:
-        raise GlossaryError(f"section {sid}: kind {sec['kind']!r} is none of 'usage' or 'vertical'.")
+    ex = default_example(sec)
     out: list[Row] = []
     numbers: list[dict] = []
     for e in entries(sid, sec) + [None]:
         if e is not None:
             for g in e.glyphs:
                 _rec(rows, sid, e, g)
-        if sec["kind"] == "vertical" and e is not None and not e.word and not e.meaning and not e.usage and _is_number(rows[e.glyph]):
+        if ex is None and e is not None and not e.word and not e.meaning and not e.usage and _is_number(rows[e.glyph]):
             numbers.append(rows[e.glyph])
             continue
         if numbers:
@@ -506,8 +511,8 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
             numbers = []
         if e is None:
             break
-        if sec["kind"] == "usage" and not e.word:
-            out.append(_usage_row(sec, e.glyph, rows[e.glyph], e.meaning, e.usage))
+        if ex is not None and not e.word:
+            out.append(_usage_row(ex, e.glyph, rows[e.glyph], e.meaning, e.usage))
         else:                   # a vertical section's row, or a word anywhere: typed on its own after a colon
             out.append(_vertical_row(rows, e))
     return out
@@ -516,7 +521,7 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
     """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
     A Definition column (the rows' "meaning") joins it, last, once any of its rows has one."""
-    cls = "table table-sm" if sec["kind"] == "usage" else "table"
+    cls = "table table-sm" if default_example(sec) else "table"
     body = section_rows(sid, sec, rows)
     meaning = any(r.meaning for r in body)
     widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
@@ -560,7 +565,7 @@ def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:
                     problems.append(f"glossary {sid}: {e.name} uses {g}, which isn't a glyph in components.csv (renamed or deleted?).")
                     continue
                 shown.add(g)
-                if sec.get("kind") == "vertical" and not e.word and _partner(rows, g):
+                if default_example(sec) is None and not e.word and _partner(rows, g):
                     shown.add(rows[g]["vert_variant"])
     for g, r in rows.items():
         if has_spelling(r) and g not in shown:

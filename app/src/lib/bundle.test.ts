@@ -313,7 +313,7 @@ describe('the glossary in a draft', () => {
 
 describe("the glossary's titles in a draft", () => {
   const lay = (title: string, desc = '') => ({ groups: [{ id: 'right', title: '2: Right', sections: ['2a'] }],
-    sections: { '2a': { title, kind: 'vertical' as const, ...(desc ? { description: desc } : {}) } } });
+    sections: { '2a': { title, ...(desc ? { description: desc } : {}) } } });
   const mk = (l: ReturnType<typeof lay>, bl: ReturnType<typeof lay>) => makeBundle({
     design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base,
     glossary: { '2a': [] }, baseGlossary: { '2a': [] }, glossaryLayout: l, baseGlossaryLayout: bl });
@@ -326,11 +326,11 @@ describe("the glossary's titles in a draft", () => {
     const items = diffBundle(b, cur);
     expect(items.map((i) => [i.id, i.conflict])).toEqual([['glossary:2a', false]]);
     const m = applyMerge(items, { 'glossary:2a': true }, cur);
-    expect(m.glossaryLayout!.sections['2a']).toEqual({ title: '2a: New', kind: 'vertical', description: '**d**' });
+    expect(m.glossaryLayout!.sections['2a']).toEqual({ title: '2a: New', description: '**d**' });
   });
   it('keeps section titles whole, and never lists a subtitle that was skipped', () => {
     const fresh = { groups: [{ id: 'right', title: '2: Right', sections: ['2a', '2b'] }],
-      sections: { '2a': { title: '2a', kind: 'vertical' as const }, '2b': { title: '2b: New', kind: 'vertical' as const } } };
+      sections: { '2a': { title: '2a' }, '2b': { title: '2b: New' } } };
     const b = makeBundle({ design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base,
       glossaryLayout: fresh, baseGlossaryLayout: lay('2a') });
     const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: {}, glossaryLayout: lay('2a') };

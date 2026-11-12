@@ -6,7 +6,7 @@ import { empty } from './typing';
 
 const g = (glyph: string, meaning?: string) => ({ glyph, ...(meaning ? { meaning } : {}) });
 const w = (word: string, ...glyphs: string[]) => ({ word, glyphs });
-const sections: Section[] = [{ id: '1a', title: '1a: A', kind: 'usage' }, { id: '3e', title: '3e: E', kind: 'vertical' }, { id: '99', title: '99: Hidden', kind: 'vertical', hidden: true }];
+const sections: Section[] = [{ id: '1a', title: '1a: A', usage: ['{}9k3', '{}九勾三'] }, { id: '3e', title: '3e: E' }, { id: '99', title: '99: Hidden', hidden: true }];
 
 describe('the glossary rows', () => {
   it('moves a row within a section and to another, counting the gaps before the move', () => {
@@ -125,12 +125,15 @@ describe('section titles, subtitles and descriptions', () => {
   });
   it('orders subtitles by their section titles and names new ones', () => {
     const l = { groups: [{ id: 'b', title: 'B', sections: ['2a'] }, { id: 'a', title: 'A', sections: ['1a'] }],
-      sections: { '1a': { title: '1a', kind: 'usage' as const, usage: ['{}', '{}'] as [string, string] }, '2a': { title: '2a', kind: 'vertical' as const }, '99': { title: 'h', kind: 'vertical' as const, hidden: true } } };
+      sections: { '1a': { title: '1a', usage: ['{}', '{}'] as [string, string] }, '2a': { title: '2a' }, '99': { title: 'h', hidden: true } } };
     expect(sectionList(l).map((x) => x.id)).toEqual(['2a', '1a', '99']);
     // visibility is its own switch; a hidden section title hides its subtitles; the old kind 'hidden' reads as one
     expect(sectionList({ ...l, groups: [...l.groups, { id: 'h', title: 'H', hidden: true, sections: ['99'] }] }).map((x) => !!x.hidden)).toEqual([false, false, true]);
     expect(sectionList({ groups: [{ id: 'x', title: 'X', hidden: true, sections: ['2a'] }], sections: { '2a': l.sections['2a'] } })[0].hidden).toBe(true);
-    expect(cleanLayout({ groups: [], sections: { o: { title: 'old', kind: 'hidden' } } })!.sections.o).toEqual({ title: 'old', kind: 'vertical', hidden: true });
+    expect(cleanLayout({ groups: [], sections: { o: { title: 'old', kind: 'hidden' } } })!.sections.o).toEqual({ title: 'old', hidden: true });
+    // an older file's kind: 'usage' always had a default example, 'vertical' none; no kind is written back
+    const old = cleanLayout({ groups: [], sections: { u: { title: 'u', kind: 'usage' }, v: { title: 'v', kind: 'vertical', usage: ['{}', '{}'] }, e: { title: 'e', usage: ['', ' '] } } })!;
+    expect(old.sections).toEqual({ u: { title: 'u', usage: ['{}', '{}'] }, v: { title: 'v' }, e: { title: 'e' } });
     expect(newId('3f: Ornaments', ['3e'])).toBe('3f');
     expect(newId('3e: Again', ['3e'])).toBe('3e-again');
     expect(newId('五', ['s1'])).toBe('s2');

@@ -350,7 +350,7 @@ def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatc
     monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
     p = webserver.glyphs_payload()
     secs = {s["id"]: s for s in p["glossary_sections"]}
-    assert secs["1a"]["title"] == "1a: Left Hand Finger" and secs["1a"]["kind"] == "usage"
+    assert secs["1a"]["title"] == "1a: Left Hand Finger" and secs["1a"]["usage"] == ["{}9k3", "{}九勾三"]
     assert secs["1a"]["rows"][0] == {"glyph": "md_ming"}
     assert {"word": "少息", "glyphs": ["md_shao", "md_xi"]} in secs["3e"]["rows"]
     rows = {"3e": [{"word": "大息", "glyphs": ["md_da", "md_xi"], "meaning": "rest"}], "1a": secs["1a"]["rows"][::-1]}
@@ -374,11 +374,11 @@ def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, 
     p = webserver.glyphs_payload()
     groups = p["glossary_groups"]
     assert groups[0]["title"] == "1: Left Hand" and groups[0]["sections"][0] == "1a"
-    metas = {s["id"]: {k: s[k] for k in ("title", "kind", "usage", "description") if s.get(k)} for s in p["glossary_sections"]}
+    metas = {s["id"]: {k: s[k] for k in ("title", "usage", "description") if s.get(k)} for s in p["glossary_sections"]}
     assert metas["2b"]["description"].startswith("These notes")
     rows = {s["id"]: s["rows"] for s in p["glossary_sections"]}
     # a new subtitle under a new section title, a renamed one, a description
-    metas["5a"] = {"title": "5a: Ornaments", "kind": "vertical", "description": "Written **after** the note."}
+    metas["5a"] = {"title": "5a: Ornaments", "description": "Written **after** the note."}
     metas["1a"]["title"] = "1a: Fingers"
     layout = {"groups": groups + [{"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}], "sections": metas}
     rows["5a"] = [{"glyph": "md_placeholder"}]
@@ -386,7 +386,7 @@ def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, 
     r = webserver.write_glossary(rows, p["glossary_hash"], layout)
     doc = json.loads(f.read_text(encoding="utf-8"))
     assert r["ok"] and doc["groups"][-1] == {"id": "ornaments", "title": "5: Ornaments", "sections": ["5a"]}
-    assert doc["sections"]["5a"] == {"title": "5a: Ornaments", "kind": "vertical", "description": "Written **after** the note.",
+    assert doc["sections"]["5a"] == {"title": "5a: Ornaments", "description": "Written **after** the note.",
                                      "rows": [{"glyph": "md_placeholder"}]}
     assert doc["sections"]["1a"]["title"] == "1a: Fingers" and list(doc)[:3] == ["about", "groups", "sections"]
     # a subtitle with rows can't be dropped

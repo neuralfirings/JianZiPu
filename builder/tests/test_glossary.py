@@ -39,11 +39,11 @@ def w(word: str, *glyphs: str, meaning: str = "") -> dict:
 
 
 def usage(sid: str, *rs, template=("{}", "{}"), **more) -> dict:
-    return {"title": f"{sid}: {sid.upper()}", "kind": "usage", "usage": list(template), **more, "rows": list(rs)}
+    return {"title": f"{sid}: {sid.upper()}", "usage": list(template), **more, "rows": list(rs)}
 
 
 def vertical(sid: str, *rs) -> dict:
-    return {"title": f"{sid}: {sid.upper()}", "kind": "vertical", "rows": list(rs)}
+    return {"title": f"{sid}: {sid.upper()}", "rows": list(rs)}
 
 
 def page(*ids: str) -> str:
@@ -376,8 +376,8 @@ def test_a_hidden_section_has_no_table_and_leaves_its_glyphs_out_on_purpose():
 
 def test_the_shipped_sections_include_uncategorized_and_hidden():
     secs = glossary.load_sections()
-    assert {k: v for k, v in secs["4"].items() if k != "rows"} == {"title": "4: Uncategorized", "kind": "vertical"}
-    assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "kind": "vertical", "hidden": True}
+    assert {k: v for k, v in secs["4"].items() if k != "rows"} == {"title": "4: Uncategorized"}
+    assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "hidden": True}
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert '<h4 id="glossary-uncategorized">4: Uncategorized</h4>' in text and "99: Hidden" not in text
 
@@ -445,7 +445,7 @@ def test_the_builders_titles_and_subtitles_are_checked():
                         "2c": {"title": "2c: New", "kind": "vertical", "description": "*new*", "evil": 1}}}
     out, groups = glossary.with_layout(secs, lay)
     assert list(out) == ["2a", "2c"] and out["2a"]["rows"] == [g("lg_gou")] and out["2c"] == {
-        "title": "2c: New", "kind": "vertical", "description": "*new*", "rows": []}
+        "title": "2c: New", "description": "*new*", "rows": []}
     assert groups == [{"id": "right", "title": "2: Right", "description": "x", "sections": ["2a", "2c"]}]
     # a subtitle with rows can't be dropped; one without can (2b had none)
     with pytest.raises(ValueError, match="still has 1 row"):
@@ -459,7 +459,7 @@ def test_the_builders_titles_and_subtitles_are_checked():
     assert list(out) == ["2c"] and out["2c"]["rows"] == [g("lg_gou")]
     for bad in ({"groups": [], "sections": {"bad id": {"title": "x"}}}, {"groups": [{"id": "a", "title": "", "sections": []}], "sections": {}},
                 {"groups": [{"id": "a", "title": "A", "sections": ["2z"]}], "sections": {}}, {"groups": "x", "sections": {}},
-                {"groups": [], "sections": {"2a": {"title": "t", "kind": "table"}}},
+                {"groups": [], "sections": {"2a": {"title": "t", "usage": "s9{}k3"}}},
                 {"groups": [{"id": "a", "title": "A", "sections": ["2a"]}, {"id": "b", "title": "B", "sections": ["2a"]}],
                  "sections": {"2a": {"title": "t"}}}):
         with pytest.raises(ValueError):
@@ -487,7 +487,7 @@ def test_visibility_is_its_own_switch_on_subtitles_and_section_titles():
     # the Builder's switch: the old kind 'hidden' reads as vertical and off
     out_secs, out_groups = glossary.with_layout({}, {"groups": [{"id": "x", "title": "X", "hidden": True, "sections": ["9"]}],
                                                      "sections": {"9": {"title": "9", "kind": "hidden"}}})
-    assert out_secs["9"] == {"title": "9", "kind": "vertical", "hidden": True, "rows": []} and out_groups[0]["hidden"] is True
+    assert out_secs["9"] == {"title": "9", "hidden": True, "rows": []} and out_groups[0]["hidden"] is True
 
 
 def test_rows_can_sit_straight_under_a_section_title():
@@ -537,3 +537,16 @@ def test_a_vertical_row_with_an_example_word_of_its_own_has_no_colon():
     assert "<td>/</td>" in out and ":/" not in out and "<jzp>s9<r>/</r>k3</jzp>" in out   # spelled as in its example
     out = glossary.render(page("1d"), r, {"1d": vertical("1d", {"glyph": "mod_chuo", "usage": [":{}", ""]})})
     assert "<td>:/</td>" in out                                                # an example on its own keeps the colon
+
+
+def test_a_default_example_decides_the_table_and_older_files_kind_still_reads():
+    assert glossary.default_example({"usage": ["s9{}k3", "名九{}勾三"]}) == ("s9{}k3", "名九{}勾三")
+    assert glossary.default_example({}) is None and glossary.default_example({"usage": ["", " "]}) is None
+    assert glossary.default_example({"kind": "usage"}) == ("{}", "{}")              # an older file's example-word section
+    assert glossary.default_example({"kind": "vertical", "usage": ["{}", "{}"]}) is None
+    r = rows("lg_gou,,,k,,勾,,gōu")
+    lay = {"groups": [{"id": "r", "title": "R", "sections": ["2a", "2b"]}],
+           "sections": {"2a": {"title": "2a", "usage": ["0{}5", "散{}五"]}, "2b": {"title": "2b", "usage": ["", ""]}}}
+    out, _ = glossary.with_layout({}, lay, {"2a": [g("lg_gou")], "2b": []})
+    assert out["2a"]["usage"] == ["0{}5", "散{}五"] and "usage" not in out["2b"] and "kind" not in out["2a"]   # no kind written
+    assert "<jzp>0<r>k</r>5</jzp>" in glossary.render(page("2a"), r, {"2a": out["2a"]})
