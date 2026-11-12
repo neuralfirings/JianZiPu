@@ -126,10 +126,10 @@
       {/if}
     </span>
   {:else}
-    <input bind:this={input} type="text" value={own} {placeholder} class:zh class:bad class:changed class:inh={!!inherited && !own}
+    <input bind:this={input} type="text" value={own} {placeholder} class:zh class:bad class:changed class:inh={!!inherited && !own} class:sug={!!suggestion && !own}
       readonly={locked} data-tip={locked ? app.lockMessage(`spelling:${glyph}`) : undefined}
       list={field === 'vert_variant' ? 'jzp-glyph-names' : undefined}
-      title={inherited && !own ? `${T.LABEL[field]} of ${inherited}, its partner: typed after a colon` : T.HELP[field]}
+      title={inherited && !own ? `${T.LABEL[field]} of ${inherited}, its partner: typed after a colon` : suggestion && !own ? `Suggested from the pinyin, not a spelling yet: press Tab to use it` : T.HELP[field]}
       onfocus={() => { focused = true; draft = own; }}
       onblur={() => { focused = false; if (!locked) commit(); }}
       oninput={(e) => (draft = (e.target as HTMLInputElement).value)}
@@ -150,6 +150,8 @@
   input.changed { background: color-mix(in srgb, var(--status-draft) 14%, transparent); }
   input.bad { border-color: var(--status-danger) !important; color: var(--status-danger); }
   input.inh::placeholder { color: var(--ink-muted); font-style: italic; }
+  /* a suggestion from the pinyin: faint and italic, so it can't pass for a spelling (Tab takes it) */
+  input.sug::placeholder { color: var(--ink-faint); font-style: italic; }
   .ro { display: inline-block; padding: 0 6px; font-family: var(--font-mono); font-size: var(--t-small); color: var(--ink-muted); border-bottom: 1px dotted var(--border); }
   .note { position: absolute; left: 0; top: 100%; z-index: 20; margin-top: 2px; white-space: nowrap; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: var(--t-caption); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
   .note.error { border-color: var(--status-danger); color: var(--status-danger); }

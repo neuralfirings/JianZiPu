@@ -127,7 +127,7 @@
         <figure><a href="/help/typing.jpg" target="_blank"><img src="/help/typing.jpg" alt="The List view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin" width="1280" height="800" loading="lazy" /></a><figcaption>List view, showing the Left hand area: <code>s</code> types 名, <code>d</code> types 中.</figcaption></figure>
         <table class="ref">
           <tbody>
-            <tr><th>Latin Entry</th><td>What you type on an English keyboard: a one-letter shortcut (<code>k</code>) or the pinyin (<code>lun</code>). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.</td></tr>
+            <tr><th>Latin Entry</th><td>What you type on an English keyboard: a one-letter shortcut (<code>k</code>) or the pinyin (<code>lun</code>). On an empty cell, Tab accepts the faint, slanted suggestion made from the pinyin; until you take it, it isn't a spelling and typing it gives separate letters.</td></tr>
             <tr><th>Latin Entry (Alt)</th><td>A second way to type it (<code>bl</code>, <code>fy</code>).</td></tr>
             <tr><th>Number/Symbol</th><td>Digits and symbols typed the same in any input mode (<code>7</code>, <code>13+</code>, <code>/</code>). Shown, not edited here.</td></tr>
             <tr><th>简体 / 繁體</th><td>The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.</td></tr>

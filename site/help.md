@@ -67,7 +67,7 @@ The **Tiles | List view** switch turns the screen into a table of every glyph's 
 ![The List view for the Left hand area: glyph names with their Latin entries, 简体 characters and pinyin](https://builder.jianzipufont.com/help/typing.jpg)
 *List view, showing the Left hand area: `s` types 名, `d` types 中.*
 
-- Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the greyed suggestion made from the pinyin.
+- Latin Entry: What you type on an English keyboard: a one-letter shortcut (`k`) or the pinyin (`lun`). On an empty cell, Tab accepts the faint, slanted suggestion made from the pinyin; until you take it, it isn't a spelling and typing it gives separate letters.
 - Latin Entry (Alt): A second way to type it (`bl`, `fy`).
 - Number/Symbol: Digits and symbols typed the same in any input mode (`7`, `13+`, `/`). Shown, not edited here.
 - 简体 / 繁體: The characters as typed with a Chinese input method. 繁體 only when it differs from 简体.
