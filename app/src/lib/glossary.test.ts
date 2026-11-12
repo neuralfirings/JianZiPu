@@ -65,6 +65,10 @@ describe("a row's example word", () => {
   it('makes the ASCII from Chinese, commas and the chord bar included', () => {
     const r = usageFrom('撮中七，七｜散六', typed(['xl_cuo', 'md_zhong', 'md_7', 'md_7', 'blank_bar', 'md_san', 'md_6'], ['撮', '中', '七，', '七', '｜', '散', '六']), 'xl_cuo', t);
     expect(r).toEqual({ source: '{}中七，七｜散六', other: '{}d7,7|06', zh: true, missing: [] });
+    // 十二 after a finger reads as 10.2 in Chinese: 徽 keeps it the twelfth hui, as the row's glyph or not
+    const t12: Typing = { ...t, md_12: sp({ common: '12', simplified: '十二' }), md_5: sp({ common: '5', simplified: '五' }) };
+    expect(usageFrom('s12k5', typed(['md_ming', 'md_12', 'lg_gou', 'md_5'], ['s', '12', 'k', '5']), 'md_12', t12)).toMatchObject({ other: '名{}徽勾五' });
+    expect(usageFrom('s12k5', typed(['md_ming', 'md_12', 'lg_gou', 'md_5'], ['s', '12', 'k', '5']), 'lg_gou', t12)).toMatchObject({ other: '名十二徽{}五' });
     const p = usageFrom('5.4k3', typed(['md_5.4', 'lg_gou', 'md_3'], ['5.4', 'k', '3']), 'lg_gou', t);
     expect(p).toMatchObject({ other: '五点四{}三' });
   });

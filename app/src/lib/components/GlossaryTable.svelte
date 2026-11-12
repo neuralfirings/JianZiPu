@@ -203,8 +203,12 @@
 
   /** The example a row shows: its own, else a glyph in a usage section the section's, else the row
    *  typed on its own after a colon (a vertical section's row, and a word anywhere). */
-  const templateOf = (r: GRow, s: Section): [string, string] =>
-    r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r)) || ['', ''];
+  const templateOf = (r: GRow, s: Section): [string, string] => {
+    const t = r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r)) || ['', ''];
+    // a line whose glyph has no spelling in that language (the placeholder * has no Chinese) is empty, not ":"
+    const sp = isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph);
+    return [t[0].includes('{}') && !sp[0] ? '' : t[0], t[1].includes('{}') && !sp[1] ? '' : t[1]];
+  };
   /** What {} stands for in each language: the glyph's main spellings (a word has none: it's written out). */
   const spellsOf = (r: GRow): [string, string] => (isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph));
   /** The example as typed in the font (ASCII, else Chinese), to draw it. */
@@ -219,11 +223,24 @@
   const shared = (r: GRow, s: Section) => s.kind === 'usage' && !isWord(r) && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
   let drawn = $state<Record<string, WordPiece[]>>({});
+  /** What each example line types (both lines, so a row whose two lines disagree says so). */
+  let typedAs = $state<Record<string, string>>({});
+  const glyphsKey = (gs: string[]) => gs.filter((g) => g !== 'blank_colon').join(' ');
+  /** The two lines of a row's example, as typed text: [ASCII, 中文] ('' where there's none). */
+  const lines = (r: GRow, s: Section): [string, string] => {
+    const [a, z] = templateOf(r, s), [sa, sz] = spellsOf(r);
+    return [a ? exampleText(a, sa) : '', z ? exampleText(z, sz) : ''];
+  };
+  /** Both lines typed, and they give different glyphs: the page's two spellings of it disagree. */
+  const disagree = (r: GRow, s: Section) => {
+    const [a, z] = lines(r, s);
+    return !!a && !!z && a in typedAs && z in typedAs && typedAs[a] !== typedAs[z];
+  };
   let drawKey = '';
   let drawTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
     const words = [...new Set(sections.filter((s) => !isFolded(s.id))
-      .flatMap((s) => rowsOf(s.id).map((r) => exampleOf(r, s))).filter((w) => w && !(w in drawn)))];
+      .flatMap((s) => rowsOf(s.id).flatMap((r) => [exampleOf(r, s), ...lines(r, s)])).filter((w) => w && !(w in typedAs)))];
     const typed = app.typedWith, design = app.design;
     const key = JSON.stringify([words, typed.rows.length, Object.keys(typed.svgs)]);
     if (!words.length || !design || key === drawKey) return;
@@ -232,12 +249,15 @@
       drawKey = key;
       try {
         const r = await api.words(design, words, typed);
-        if (r.ok) drawn = { ...drawn, ...Object.fromEntries(r.words.map((w) => [w.word, w.pieces])) };
+        if (r.ok) {
+          drawn = { ...drawn, ...Object.fromEntries(r.words.map((w) => [w.word, w.pieces])) };
+          typedAs = { ...typedAs, ...Object.fromEntries(r.words.map((w) => [w.word, glyphsKey(w.glyphs)])) };
+        }
       } catch { /* the example shows as text only */ }
     }, 250);
   });
   // a spelling or a drawing changed: draw the examples again
-  $effect(() => { JSON.stringify(app.typing); Object.keys(app.extraSvgs).join(); drawn = {}; drawKey = ''; });
+  $effect(() => { JSON.stringify(app.typing); Object.keys(app.extraSvgs).join(); drawn = {}; typedAs = {}; drawKey = ''; });
 
   let editing = $state<string | null>(null);          // `${sid}:${i}:${'a' | 'z'}`
   let usageNote = $state<{ key: string; level: 'error' | 'warn'; text: string } | null>(null);
@@ -274,12 +294,6 @@
       if (other === null) {
         other = cur[zh ? 0 : 1];
         usageNote = { key, level: 'warn', text: `${u.missing.join(', ')} has no ${otherLang} spelling, so the ${otherLang} stays as it was: click it to change it.` };
-      } else {
-        const made = exampleText(other, zh ? sa : sz);
-        const back = (await api.words(app.design, [made], app.typedWith)).words?.[0];
-        const strip = (gs: string[]) => gs.filter((g) => g !== 'blank_colon').join(' ');
-        if (back && strip(back.glyphs) !== strip(typed.glyphs))
-          usageNote = { key, level: 'warn', text: `The ${otherLang} made from it, ${made}, types something else: click it to fix it.` };
       }
       put(zh ? [other, u.source] : [u.source, other]);
     } catch (e) { usageNote = { key, level: 'error', text: (e as Error).message }; }
@@ -618,6 +632,10 @@
                 </div>
                 {#if gone.length}<span class="bad small" title="{gone.join(', ')} isn't a glyph any more: edit the row or remove it"><I.Problem size={12} /> {gone.join(', ')}</span>{/if}
                 {#if usageBusy === key}<span class="small muted"><I.Working size={12} /> typing it…</span>{/if}
+                {#if disagree(r, s) && usageNote?.key !== key}
+                  {@const [la, lz] = lines(r, s)}
+                  <span class="small note" role="status"><I.Warn size={12} /> {lz} and {la} type different glyphs: click a line to fix it.</span>
+                {/if}
                 {#if usageNote?.key === key}<span class="small note" class:bad={usageNote.level === 'error'} role="status">{#if usageNote.level === 'error'}<I.Problem size={12} />{:else}<I.Warn size={12} />{/if} {usageNote.text}</span>{/if}
               </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Meaning of {rowName(r)} in {s.id}" placeholder="what it means"

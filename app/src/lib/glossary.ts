@@ -221,12 +221,14 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     // the glyph's spelling the text starts with, and what's left (a comma the font swallowed: 7, → md_7)
     const spelled = gs.length === 1 ? spellingsIn(t, gs[0], zh).find((sp) => gr.text.startsWith(sp)) ?? '' : '';
     const rest = spelled ? gr.text.slice(spelled.length) : gs.length ? '' : gr.text;
-    if (glyph && gs.map(norm).includes(glyph)) { source += '{}' + esc(rest); other += '{}' + esc(punct(rest, zh)); continue; }
+    // 十一 十二 十三 as a position: two numerals after a finger read as a decimal (名十二 is 名 10.2), 徽 keeps them whole
+    const hui = (g: string) => (!zh && /^md_1[123]$/.test(g) && !/^[徽点點]/.test(punct(rest, zh)) ? '徽' : '');
+    if (glyph && gs.map(norm).includes(glyph)) { source += '{}' + esc(rest); other += '{}' + hui(gs[0]) + esc(punct(rest, zh)); continue; }
     source += esc(gr.text);
     if (!gs.length) { other += esc(punct(gr.text, zh)); continue; }
     const made = gs.map((g) => spellingsIn(t, g, !zh)[0]);
     if (made.some((x) => !x)) { missing.push(gr.text); continue; }
-    other += esc(made.join('') + punct(rest, zh));
+    other += esc(made.join('') + (gs.length === 1 ? hui(gs[0]) : '') + punct(rest, zh));
   }
   // the colon that starts vertical text is written : in Chinese too, as the page has it (:大息)
   return { source: zh ? source.replace(/：/g, ':') : source, other: missing.length ? null : other, zh, missing };
