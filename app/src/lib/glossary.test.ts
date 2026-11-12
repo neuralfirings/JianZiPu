@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byId, changedLayout, cleanLayout, glossarySearchText, marksGlyph, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, changedLayout, cleanLayout, glossarySearchText, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -62,6 +62,18 @@ describe("a row's example word", () => {
     const r = usageFrom('s9k3', typed(['md_ming', 'md_9', 'lg_gou', 'md_3'], ['s', '9', 'k', '3']), 'lg_gou', t);
     expect(r).toEqual({ source: 's9{}3', other: '名九{}三', zh: false, missing: [] });
   });
+  it('marks a word in its example only when the example has more than the word', () => {
+    const tw: Typing = { ...t, md_dai: sp({ latin: 'dai', simplified: '带' }), md_qi: sp({ latin: 'qi', simplified: '起' }) };
+    const word = ['md_dai', 'md_qi'];
+    expect(usageFrom('s9k6 daiqi', typed(['md_ming', 'md_9', 'lg_gou', 'md_6', 'space', 'md_dai', 'md_qi'], ['s', '9', 'k', '6', ' ', 'dai', 'qi']), word, { ...tw, md_6: sp({ common: '6', simplified: '六' }) }))
+      .toMatchObject({ source: 's9k6 <r>daiqi</r>', other: '名九勾六 <r>带起</r>' });
+    expect(usageFrom(':daiqi', typed(['blank_colon', 'md_dai', 'md_qi'], [':', 'dai', 'qi']), word, tw)).toMatchObject({ source: ':daiqi', other: ':带起' });
+    // one saved before words were marked: marked where it's shown, red by the same rule as a glyph
+    const old = markWordIn(['s9k6 daiqi', '名九勾六 带起'], tw, word);
+    expect(old).toEqual(['s9k6 <r>daiqi</r>', '名九勾六 <r>带起</r>']);
+    expect(marksGlyph(old)).toBe(true);
+    expect(marksGlyph(markWordIn([':daiqi', ':带起'], tw, word))).toBe(false);
+  });
   it('keeps the space between the words of an example in context', () => {
     const tt: Typing = { ...t, md_tc: sp({ latin: 'tc', simplified: '推出' }) };
     expect(usageFrom('名九勾三 推出', typed(['md_ming', 'md_9', 'lg_gou', 'md_3', 'space', 'md_tc'], ['名', '九', '勾', '三', ' ', '推出']), 'md_tc', tt))
@@ -97,7 +109,7 @@ describe("a row's example word", () => {
     expect(usageFrom(':san5', typed(['blank_colon', 'md_san2', 'md_5'], [':', 'san', '5']), 'md_san', { ...tv, md_5: sp({ common: '5', simplified: '五' }) }))
       .toEqual({ source: ':{}5', other: ':{}五', zh: false, missing: [] });
     expect(usageFrom('：大息七', typed(['blank_colon', 'md_da', 'md_xi', 'md_7'], ['：', '大', '息', '七']), ['md_da', 'md_xi'], tv))
-      .toEqual({ source: ':大息七', other: ':vxi7', zh: true, missing: [] });
+      .toEqual({ source: ':<r>大息</r>七', other: ':<r>vxi</r>7', zh: true, missing: [] });   // the word red: there's more
     expect(usageFrom(':v7', typed(['blank_colon', 'md_da', 'md_7'], [':', 'v', '7']), ['md_da', 'md_xi'], tv))
       .toMatchObject({ error: expect.stringMatching(/doesn't type md_xi \(息\)/) });
     expect(verticalTemplate(tv, { word: '大息', glyphs: ['md_da', 'md_xi'] })).toEqual([':vxi', ':大息']);

@@ -411,10 +411,12 @@ def _usage_row(default: tuple[str, str], g: str, rec: dict, meaning: str = "", o
     if not sp or not rec["simplified"]:
         raise GlossaryError(f"{g} needs an ASCII and a Chinese spelling for an example word.")
     ta, tz = own or default
+    # the glyph in red only when the example has more in it than the glyph ({} alone: plain)
+    fill = _fill if marks_glyph((ta, tz)) else _unmarked
     # the same example with each spelling: Chinese (traditional too) under Chinese, ASCII under ASCII
     # one example per spelling where {} stands for the glyph; one where a spelling was written out (s9<r>bl</r>7)
-    zs = list(dict.fromkeys(_fill(tz, c) for c in zh)) if tz else []
-    as_ = list(dict.fromkeys(_fill(ta, s) for s in sp)) if ta else []
+    zs = list(dict.fromkeys(fill(tz, c) for c in zh)) if tz else []
+    as_ = list(dict.fromkeys(fill(ta, s) for s in sp)) if ta else []
     a = (as_ or zs)[0]
     return Row(_list(sp), _list(zh), _esc(rec["pinyin"]), f"<jzp>{a}</jzp>",
                [[_plain(x) for x in zs + as_]], _esc(meaning), (g,), zs + as_)
@@ -428,13 +430,32 @@ def marks_glyph(usage) -> bool:
     return any(more(t) for t in usage)
 
 
-def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str], list[str]]:
+def _unmarked(t: str, spelling: str) -> str:
+    return re.sub(r"</?r>", "", t).replace("{}", _esc(spelling))
+
+
+def mark_word_in(usage: tuple[str, str], recs: list[dict]) -> tuple[str, str]:
+    """A word row's example with the word marked <r>…</r>, for one saved before words were (s9k6 daiqi):
+    its spelling in each language, the glyphs' main spellings run together (or their second ones).
+    Whether it's red is then marks_glyph's rule, as for a glyph (as markWordIn in the Builder)."""
+    out = []
+    for x, langs in zip(usage, (spellings, chinese)):
+        if not x or "<r>" in x:
+            out.append(x)
+            continue
+        runs = {"".join((langs(r)[n] if len(langs(r)) > n else (langs(r) or [""])[0]) for r in recs) for n in (0, 1)}
+        hit = next((a for a in sorted(filter(None, runs), key=len, reverse=True) if _esc(a) in x), None)
+        out.append(x.replace(_esc(hit), f"<r>{_esc(hit)}</r>", 1) if hit else x)
+    return out[0], out[1]
+
+
+def _own_example(e: Entry, sa: str, sz: str, usage: tuple[str, str] | None = None) -> tuple[str, list[str], list[str]]:
     """A vertical row's own example (the Builder's Input column): its Output, drawn from the ASCII
     (else the Chinese), its Input lines (Chinese, then ASCII), and those as plain text to type.
     {} is the glyph's spelling, marked red when the example has more in it than the glyph (:{}5),
     not when it's the row on its own (:{})."""
-    ta, tz = e.usage
-    fill = _fill if marks_glyph(e.usage) else (lambda t, sp: re.sub(r"</?r>", "", t).replace("{}", _esc(sp)))
+    ta, tz = usage = usage or e.usage
+    fill = _fill if marks_glyph(usage) else _unmarked
     a = fill(ta, sa) if ta else ""
     z = fill(tz, sz) if tz else ""
     lines = [x for x in (z, a) if x]
@@ -458,8 +479,8 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
         a = col(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
         z = col(*e.glyphs) + "".join(r["simplified"] for r in recs)
         out, typed, examples = f"<jzp>{_esc(z)}</jzp>", [_esc(z), _esc(a)], [[a, z]]
-        if e.usage:
-            out, typed, own = _own_example(e, "", "")
+        if e.usage:                  # the word red where its example has more in it than the word
+            out, typed, own = _own_example(e, "", "", mark_word_in(e.usage, recs))
             examples.append(own)
         return Row(_esc(a), _esc(z), _esc(" ".join(r["pinyin"] for r in recs if r["pinyin"])),
                    out, examples, _esc(e.meaning), e.glyphs, typed)

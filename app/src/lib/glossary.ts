@@ -169,6 +169,17 @@ export const exampleText = (t: string, spelling: string) => unesc(t.replace(/<\/
 export const exampleHtml = (t: string, spelling: string, mark = true) => mark
   ? t.split('{}').map((p) => p.replace(/<r>/g, '<span class="r">').replace(/<\/r>/g, '</span>')).join(`<span class="r">${esc(spelling)}</span>`)
   : t.replace(/<\/?r>/g, '').split('{}').join(esc(spelling));
+/** A word row's example with the word marked <r>…</r>, for one saved before words were (s9k6 daiqi): its
+ *  spelling in each language, the glyphs' main spellings run together (or their second ones). Whether
+ *  it's red is then marksGlyph's rule, the same as for a glyph: only when the example has more in it. */
+export function markWordIn(tpl: [string, string], t: T.Typing, glyphs: string[]): [string, string] {
+  return tpl.map((x, k) => {
+    if (!x || x.includes('<r>')) return x;
+    const runs = [0, 1].map((n) => glyphs.map((g) => { const sp = spellingsIn(t, g, k === 1); return sp[n] ?? sp[0] ?? ''; }).join(''));
+    const hit = [...new Set(runs)].filter(Boolean).sort((a, b) => b.length - a.length).find((a) => x.includes(esc(a)));
+    return hit ? x.replace(esc(hit), `<r>${esc(hit)}</r>`) : x;
+  }) as [string, string];
+}
 /** A vertical section's row as it is typed on its own, after a colon: [ASCII, 中文] templates. */
 export function verticalTemplate(t: T.Typing, r: GRow, verticalOnly: Set<string> = new Set()): [string, string] {
   // no colon where the font sets the word vertically by itself (a glyph only a vertical word can hold: shang)
@@ -225,14 +236,16 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     if (last && (typed.clusters?.[i - 1] ?? i - 1) === c) last.glyphs.push(g);
     else groups.push({ glyphs: [g], text: typed.texts[i] ?? '' });
   });
+  // both lines a piece at a time: its text, what it reads as when typed (`shown`, {} filled in), whether
+  // it's a hui number, which a numeral or 半 right after it would turn into a decimal, and whether it's
+  // part of the row's word (marked <r>…</r> when the example has more in it than the word)
+  const src: { text: string; w: boolean }[] = [];
+  const parts: { text: string; shown: string; num: boolean; w?: boolean }[] = [];
   let source = '';
-  // the other line a piece at a time: its text, what it reads as when typed (`shown`, {} filled in), and
-  // whether it's a hui number, which a numeral or 半 right after it would turn into a decimal
-  const parts: { text: string; shown: string; num: boolean }[] = [];
   const missing: string[] = [];
   for (const gr of groups) {
     // a space between words (s9k3 tc): the same in both languages
-    if (gr.text && !gr.text.trim()) { source += gr.text; parts.push({ text: gr.text, shown: gr.text, num: false }); continue; }
+    if (gr.text && !gr.text.trim()) { src.push({ text: gr.text, w: false }); parts.push({ text: gr.text, shown: gr.text, num: false }); continue; }
     const gs = gr.glyphs.filter((g) => g !== 'blank_colon' && g !== 'blank_bar');
     // the glyph's spelling the text starts with, and what's left (a comma the font swallowed: 7, → md_7)
     const spelled = gs.length === 1 ? spellingsIn(t, gs[0], zh).find((sp) => gr.text.startsWith(sp)) ?? '' : '';
@@ -244,18 +257,25 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
       // the row's glyph: {} (its main spelling, and the page lists each spelling) unless another of its
       // spellings was typed (bl for banlun), which is kept as typed, marked
       const main = spellingsIn(t, gs[0], zh)[0];
-      source += (spelled && spelled !== main ? `<r>${esc(spelled)}</r>` : '{}') + esc(rest);
+      src.push({ text: (spelled && spelled !== main ? `<r>${esc(spelled)}</r>` : '{}') + esc(rest), w: false });
       const sh = spellingsIn(t, gs[0], !zh)[0] ?? '';
       parts.push({ text: '{}' + hui(gs[0]) + esc(punct(rest, zh)), shown: sh + hui(gs[0]) + punct(rest, zh), num });
       continue;
     }
-    source += esc(gr.text);
+    const w = !glyph && gs.length > 0 && gs.every((g) => need.includes(norm(g)));
+    src.push({ text: esc(gr.text), w });
     if (!gs.length) { parts.push({ text: esc(punct(gr.text, zh)), shown: punct(gr.text, zh), num: false }); continue; }
     const made = gs.map((g) => spellingsIn(t, g, !zh)[0]);
     if (made.some((x) => !x)) { missing.push(gr.text); continue; }
     const tx = made.join('') + (gs.length === 1 ? hui(gs[0]) : '') + punct(rest, zh);
-    parts.push({ text: esc(tx), shown: tx, num });
+    parts.push({ text: esc(tx), shown: tx, num, w });
   }
+  // the word's own pieces in red, when there's more to the example than the word (s9k6 daiqi, not :daiqi)
+  const more = parts.some((p) => !p.w && p.shown.replace(/[:：\s]/g, ''));
+  const wrap = <P extends { text: string; w?: boolean }>(ps: P[]) => ps.map((p, i) => ({ ...p,
+    text: (more && p.w && !ps[i - 1]?.w ? '<r>' : '') + p.text + (more && p.w && !ps[i + 1]?.w ? '</r>' : '') }));
+  source = wrap(src).map((p) => p.text).join('');
+  parts.splice(0, parts.length, ...wrap(parts));
   // in Chinese, a hui number followed by a numeral or 半 reads as a decimal (名九半轮 is 名 9.5 轮): a comma keeps them apart
   let other = '';
   parts.forEach((p, i) => {

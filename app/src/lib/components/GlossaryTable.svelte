@@ -11,7 +11,7 @@
   import { app } from '$lib/state.svelte';
   import { Hold } from '$lib/hold';
   import * as T from '$lib/typing';
-  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
+  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, markWordIn, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
   import Glyph from './Glyph.svelte';
@@ -304,9 +304,13 @@
     const [a, z] = templateOf(r, s), [sa, sz] = spellsOf(r);
     return a ? exampleText(a, sa) : z ? exampleText(z, sz) : '';
   }
-  /** The row's glyph in red: in a usage section, or an example with more in it than the row itself
-   *  (s9k3 for 名, 0k5 for 散; not :san or :vxi). */
-  const marked = (r: GRow, s: Section) => !isWord(r) && (!!s.usage || marksGlyph(templateOf(r, s)));
+  /** The example as shown: a word's own spelling marked <r>…</r> in it (one saved before words were). */
+  const shownTpl = (r: GRow, s: Section): [string, string] => (isWord(r) ? markWordIn(templateOf(r, s), app.typing, r.glyphs) : templateOf(r, s));
+  /** The row's glyphs in red when the example has more in it than the row itself, a glyph or a word alike
+   *  (s9k3 for 名, s9k6 daiqi for 带起; not :san or :daiqi on their own). */
+  const marked = (r: GRow, s: Section) => marksGlyph(shownTpl(r, s));
+  /** The glyphs to draw red: the row's, and their vertical forms (a word is typed after a colon). */
+  const marks = (r: GRow) => glyphsOfRow(r).flatMap((g) => [g, T.get(app.typing, g).vert_variant].filter(Boolean));
   /** Faded: a usage row showing its section's default example, not one of its own. */
   const shared = (r: GRow, s: Section) => !!s.usage && !isWord(r) && !r.usage;
   // every example in view, drawn by one request through the unsaved spellings (as Try it does)
@@ -723,7 +727,7 @@
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
-            {@const tpl = templateOf(r, s)}
+            {@const tpl = shownTpl(r, s)}
             {@const sp = spellsOf(r)}
             {@const key = `${s.id}:${i}`}
             <tr data-drop="row" data-sid={s.id} data-i={i} data-glyphs={glyphsOfRow(r).join(' ')}
@@ -777,7 +781,7 @@
                   <button class="ga vert" data-picks onclick={(e) => openGlyph(r, `${key}:out`, e)} aria-label={isWord(r) ? `Choose a glyph of ${rowName(r)} to show` : `Show ${glyphsOfRow(r)[0]}`}
                     aria-haspopup={isWord(r) ? 'menu' : undefined} aria-expanded={isWord(r) ? picking?.key === `${key}:out` : undefined}
                     data-tip={picking?.key === `${key}:out` ? null : `${exampleOf(r, s)} as the font sets it · click: ${isWord(r) ? 'choose a glyph to show' : glyphsOfRow(r)[0]} in the glyph panel`}>
-                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} scale={0.04} /></button>
+                    <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) ? marks(r) : []} scale={0.04} /></button>
                 {/if}
               </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
@@ -1044,7 +1048,7 @@
   .pick { gap: 2px; }
   .gbox { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--bg-field); }
   .defex { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-1) var(--space-6); flex-wrap: wrap; }
-  .defex input { width: 12rem; height: 24px; font-size: var(--t-small); }
+  .defex input { width: 15rem; height: 24px; font-size: var(--t-small); }
   td.out, th.out { text-align: center; }
   .lines { display: flex; flex-direction: column; min-width: 0; }
   .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
