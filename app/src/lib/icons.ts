@@ -33,8 +33,6 @@ export { default as Dropdown } from '@lucide/svelte/icons/chevron-down';
 export { default as Less } from '@lucide/svelte/icons/chevron-up';
 export { default as Prev } from '@lucide/svelte/icons/chevron-left';
 export { default as Next } from '@lucide/svelte/icons/chevron-right';
-export { default as SideHide } from '@lucide/svelte/icons/panel-left-close';
-export { default as SideShow } from '@lucide/svelte/icons/panel-left-open';
 export { default as PanelShow } from '@lucide/svelte/icons/panel-bottom-open';
 
 // status: always next to a word (design system: colour + icon + word)

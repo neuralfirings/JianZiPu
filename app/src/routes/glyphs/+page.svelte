@@ -206,11 +206,6 @@
 <div class="page">
   <input type="file" accept=".csv,text/csv" bind:this={fileInput} onchange={pickCsv} hidden />
   <div class="toolbar">
-    {#if !phone.on}
-      <button class="quiet side-toggle" onclick={() => (sideOpen = !sideOpen)} aria-pressed={!sideOpen}
-        aria-label={sideOpen ? 'Hide the sidebar' : 'Show the sidebar'} data-tip={sideOpen ? 'Hide the sidebar' : 'Show the sidebar'}>
-        {#if sideOpen}<I.SideHide />{:else}<I.SideShow />{/if}</button>
-    {/if}
     <input type="text" placeholder="Search  k · 勾 · gou · lg_gou · 7.6" bind:value={q} style="width: 250px" />
     <span class="seg" role="tablist">
       <button role="tab" class:on={view === 'tiles'} aria-selected={view === 'tiles'} onclick={() => (view = 'tiles')}>Tiles</button>
@@ -261,6 +256,9 @@
   {#if typingCheck.error}<div class="banner warn"><span class="ic"><I.Warn /></span> Spelling check: {typingCheck.error}</div>{/if}
 
   <div class="body">
+    {#if !phone.on && !sideOpen}
+      <button class="rail" onclick={() => (sideOpen = true)} aria-label="Show the sidebar" data-tip="Show the sidebar" data-tip-side="right"><I.Next size={14} /></button>
+    {/if}
     {#if !phone.on && sideOpen}
     <aside class="groups" style:width="{sideW}px">
       <button class:on={group === 'all'} onclick={() => (group = 'all')}><span>All</span><span class="muted">{all.length}</span></button>
@@ -282,7 +280,9 @@
     </aside>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (a focusable window splitter: drag or arrow keys) -->
     <div class="vresize" role="separator" aria-orientation="vertical" aria-label="Resize the sidebar" tabindex="0"
-      data-tip="Drag to resize · arrow keys · Home resets" data-tip-side="right" onpointerdown={(e) => resize(e, 'side')} onkeydown={(e) => resizeKey(e, 'side')}></div>
+      data-tip="Drag to resize · arrow keys · Home resets" data-tip-side="right" onpointerdown={(e) => resize(e, 'side')} onkeydown={(e) => resizeKey(e, 'side')}>
+      <button class="fold-tab" onclick={() => (sideOpen = false)} onpointerdown={(e) => e.stopPropagation()} aria-label="Fold the sidebar away" data-tip="Fold the sidebar away" data-tip-side="right"><I.Prev size={14} /></button>
+    </div>
     {/if}
 
     <section class="grid-wrap">
@@ -440,7 +440,10 @@
   .tile .sub { font-size: var(--t-caption); max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .empty { padding: var(--space-8); display: flex; flex-direction: column; align-items: center; gap: var(--space-5); }
   .ok { color: var(--status-saved); }
-  .side-toggle { padding: 0 var(--space-2); }
+  .fold-tab { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); width: 18px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-panel); color: var(--ink-muted); cursor: pointer; }
+  .fold-tab:hover { color: var(--ink); background: var(--bg-hover); }
+  .rail { flex: none; width: 24px; height: auto; padding: var(--space-4) 0 0; display: flex; justify-content: center; align-items: flex-start; border: 0; border-right: 1px solid var(--border); border-radius: 0; background: var(--bg-panel); color: var(--ink-muted); }
+  .rail:hover { color: var(--ink); background: var(--bg-hover); }
   .vresize { flex: none; width: 6px; margin-left: -3px; margin-right: -3px; cursor: col-resize; position: relative; z-index: 2; }
   .hresize { height: 6px; margin-bottom: -3px; cursor: row-resize; position: relative; z-index: 2; }
   .vresize, .hresize { touch-action: none; }
