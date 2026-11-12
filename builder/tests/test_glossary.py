@@ -529,3 +529,11 @@ def test_input_and_output_columns_in_both_kinds_of_section():
     assert "<td><jzp>0<r>k</r>5</jzp></td>" in a and "<txs>散<r>勾</r>五</txs>" in a
     v = glossary.render(page("3e"), r, {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"]})})
     assert "<txs>:大息</txs>" in v and "<txs>:vxi</txs>" in v and "<td><jzp>:大息</jzp></td>" in v
+
+
+def test_a_vertical_row_with_an_example_word_of_its_own_has_no_colon():
+    r = rows("mod_chuo,,/,,,绰,綽,chuò", "md_9,,9,,,九,,jiǔ", "md_ming,,,s,,名,,míng", "lg_gou,,,k,,勾,,gōu", "md_3,,3,,,三,,sān")
+    out = glossary.render(page("1d"), r, {"1d": vertical("1d", {"glyph": "mod_chuo", "usage": ["s9{}k3", "名九{}勾三"]})})
+    assert "<td>/</td>" in out and ":/" not in out and "<jzp>s9<r>/</r>k3</jzp>" in out   # spelled as in its example
+    out = glossary.render(page("1d"), r, {"1d": vertical("1d", {"glyph": "mod_chuo", "usage": [":{}", ""]})})
+    assert "<td>:/</td>" in out                                                # an example on its own keeps the colon

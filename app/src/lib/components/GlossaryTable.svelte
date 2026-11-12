@@ -48,9 +48,12 @@
   const pyOf = (g: string) => T.get(app.typing, g).pinyin || T.shown(app.typing, g, 'pinyin').value;
   /** The colon a vertical word starts with, unless the font sets it vertically by itself (shang, not :shang). */
   const colonFor = (...gs: string[]) => (gs.some((g) => app.verticalOnly.has(g)) ? '' : ':');
+  /** The row is typed on its own after a colon: a vertical section's row or a word, unless its own example isn't a
+   *  vertical word (/ in Vibratos and Slides with the example s9/k3 is spelled /, not :/). As alone() in glossary.py. */
+  const alone = (r: GRow, s: Section) => (vertical(s) || isWord(r)) && !(r.usage?.some((l) => l.trim()) && !r.usage.some((l) => /^[:：]/.test(l.trim())));
   function ascii(r: GRow, s: Section): string {
-    if (isWord(r)) return colonFor(...r.glyphs) + r.glyphs.map((g) => asciiOf(g)[0] ?? '?').join('');
-    if (!vertical(s)) return asciiOf(r.glyph).join(', ');
+    if (isWord(r)) return (alone(r, s) ? colonFor(...r.glyphs) : '') + r.glyphs.map((g) => asciiOf(g)[0] ?? '?').join('');
+    if (!alone(r, s)) return asciiOf(r.glyph).join(', ');
     // each spelling with its own glyph's colon: 散's 0 needs one, its vertical form's san doesn't
     const sp = T.get(app.typing, r.glyph), v = sp.vert_variant;
     const own = [sp.latin, sp.latin_alt, sp.common].filter(Boolean);
@@ -59,8 +62,8 @@
     return [...own.map((a) => colonFor(r.glyph) + a), ...theirs.map((a) => colonFor(v) + a)].join(', ');
   }
   function chinese(r: GRow, s: Section): string {
-    if (isWord(r)) return colonFor(...r.glyphs) + r.glyphs.map((g) => zhOf(g)[0] ?? '?').join('');
-    const pre = vertical(s) ? colonFor(r.glyph) : '';
+    if (isWord(r)) return (alone(r, s) ? colonFor(...r.glyphs) : '') + r.glyphs.map((g) => zhOf(g)[0] ?? '?').join('');
+    const pre = alone(r, s) ? colonFor(r.glyph) : '';
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
   const pinyin = (r: GRow) => glyphsOfRow(r).map(pyOf).filter(Boolean).join(' ');
@@ -376,7 +379,7 @@
       rowEdit = null;
       // typed without the colon where the page still needs it: say why it stays (lun alone is the right hand's 轮)
       const t = text.trim(), gs = glyphsOfRow(next);
-      if (!/^[:：]/.test(t) && (sec(sid).kind === 'vertical' || isWord(next)) && colonFor(...gs) === ':') {
+      if (!/^[:：]/.test(t) && alone(next, sec(sid)) && colonFor(...gs) === ':') {
         const v = !isWord(next) ? app.typing[gs[0]]?.vert_variant : '';
         usageNote = { key: `${sid}:${i}`, level: 'warn', text: v
           ? `${t} without the colon types ${gs[0]}; its vertical form, ${v}, needs the colon, so the page keeps :${t}.`

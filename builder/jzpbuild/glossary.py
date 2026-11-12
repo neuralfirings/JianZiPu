@@ -435,13 +435,22 @@ def _own_example(e: Entry, sa: str, sz: str) -> tuple[str, list[str], list[str]]
     return f"<jzp>{a or z}</jzp>", lines, [_plain(x) for x in (a, z) if x]
 
 
+def alone(e: Entry) -> bool:
+    """A vertical section's row or a word is typed on its own after a colon, unless its own example
+    isn't a vertical word: / in Vibratos and Slides with the example s9/k3 is spelled /, not :/
+    (as alone() in the Builder's GlossaryTable.svelte)."""
+    lines = [t.strip() for t in (e.usage or ()) if t and t.strip()]
+    return not lines or any(t[0] in ":：" for t in lines)
+
+
 def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
+    col = _colon if alone(e) else (lambda *_: "")    # the colon a glyph needs, where the row is typed on its own
     if e.word:                       # a word: each glyph's main spelling, run together
         recs = [rows[g] for g in e.glyphs]
         if not all(spellings(r) and r["simplified"] for r in recs):
             raise GlossaryError(f"every glyph of the word {e.word} ({' + '.join(e.glyphs)}) needs an ASCII and a Chinese spelling.")
-        a = _colon(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
-        z = _colon(*e.glyphs) + "".join(r["simplified"] for r in recs)
+        a = col(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
+        z = col(*e.glyphs) + "".join(r["simplified"] for r in recs)
         out, typed, examples = f"<jzp>{_esc(z)}</jzp>", [_esc(z), _esc(a)], [[a, z]]
         if e.usage:
             out, typed, own = _own_example(e, "", "")
@@ -452,8 +461,10 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
     rec, other = rows[g], _partner(rows, g)
     v = rec["vert_variant"]
     # each spelling with the colon its glyph needs: none for one the font sets vertically itself (:0 but san)
-    sp = [_colon(g) + s for s in spellings(rec)] + ([_colon(v) + s for s in spellings(other)] if other else [])
-    zhs = [_colon(g) + c for c in chinese(rec)] or ([_colon(v) + c for c in chinese(other)] if other else [])
+    if not alone(e):                 # spelled as in an example word: its own spellings, no colon
+        other = None
+    sp = [col(g) + s for s in spellings(rec)] + ([col(v) + s for s in spellings(other)] if other else [])
+    zhs = [col(g) + c for c in chinese(rec)] or ([col(v) + c for c in chinese(other)] if other else [])
     zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
     examples = [[s] + zhs for s in sp] or ([zhs] if zhs else [])
