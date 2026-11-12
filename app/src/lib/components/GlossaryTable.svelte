@@ -14,6 +14,7 @@
   import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
+  import Glyph from './Glyph.svelte';
 
   let { q = '', focus = null, onnotice, onopen }: {
     q?: string;
@@ -33,6 +34,27 @@
   const sec = (sid: string) => sections.find((s) => s.id === sid)!;
   /** What a subtitle's rows show where they have no example of their own. */
   const layoutTip = (s: Section) => (s.usage ? `Each glyph in the default example ${s.usage.filter(Boolean).join(' / ')}` : 'Each typed on its own, after a colon where it needs one');
+
+  // ---------------------------------------------------------------- the glyph panel
+  /** A word's glyphs to choose from for the glyph panel, under the button that asked (fixed to the window:
+   *  a phone's table scrolls sideways and would cut a menu inside it). */
+  let picking = $state<{ key: string; glyphs: string[]; top: number; right: number } | null>(null);
+  function openGlyph(r: GRow, key: string, e: MouseEvent) {
+    const gs = [...new Set(glyphsOfRow(r))];
+    if (gs.length < 2) { picking = null; onopen?.(gs[0]); return; }
+    if (picking?.key === key) { picking = null; return; }
+    const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    picking = { key, glyphs: gs, top: b.bottom + 4, right: Math.max(8, innerWidth - b.right) };
+    document.querySelector<HTMLElement>('body > .tip')?.setAttribute('hidden', '');   // the button's tip (shown on focus) would cover it
+  }
+  $effect(() => {
+    if (!picking) return;
+    const close = (e: Event) => { if (!(e.target instanceof Element && e.target.closest('.pick, [data-picks]'))) picking = null; };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') picking = null; };
+    const gone = () => (picking = null);
+    addEventListener('pointerdown', close); addEventListener('keydown', key); addEventListener('scroll', gone, true);
+    return () => { removeEventListener('pointerdown', close); removeEventListener('keydown', key); removeEventListener('scroll', gone, true); };
+  });
 
   // ---------------------------------------------------------------- what a row shows
 
@@ -752,15 +774,19 @@
               </td>
               <td class="out" class:def={shared(r, s)}>
                 {#if drawn[exampleOf(r, s)]}
-                  <button class="ga vert" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]}" data-tip="{exampleOf(r, s)} as the font sets it · click: {glyphsOfRow(r)[0]} in the glyph panel">
+                  <button class="ga vert" data-picks onclick={(e) => openGlyph(r, `${key}:out`, e)} aria-label={isWord(r) ? `Choose a glyph of ${rowName(r)} to show` : `Show ${glyphsOfRow(r)[0]}`}
+                    aria-haspopup={isWord(r) ? 'menu' : undefined} aria-expanded={isWord(r) ? picking?.key === `${key}:out` : undefined}
+                    data-tip={picking?.key === `${key}:out` ? null : `${exampleOf(r, s)} as the font sets it · click: ${isWord(r) ? 'choose a glyph to show' : glyphsOfRow(r)[0]} in the glyph panel`}>
                     <GlossaryExample pieces={drawn[exampleOf(r, s)]} mark={marked(r, s) && !isWord(r) ? r.glyph : ''} {...(marked(r, s) ? {} : { scale: 0.04 })} /></button>
                 {/if}
               </td>
               <td><input type="text" class="meaning" value={r.meaning ?? ''} aria-label="Definition of {rowName(r)} in {s.id}" placeholder="its definition"
                 onchange={(e) => setMeaning(s.id, i, (e.target as HTMLInputElement).value)} /></td>
               <td class="act">
-                <button class="quiet ic" onclick={() => onopen?.(glyphsOfRow(r)[0])} aria-label="Show {glyphsOfRow(r)[0]} in the glyph panel"
-                  data-tip="Show {glyphsOfRow(r)[0]} in the glyph panel"><I.GlyphPanel size={14} /></button>
+                <button class="quiet ic" data-picks onclick={(e) => openGlyph(r, key, e)}
+                  aria-label={isWord(r) ? `Choose a glyph of ${rowName(r)} to show in the glyph panel` : `Show ${glyphsOfRow(r)[0]} in the glyph panel`}
+                  aria-haspopup={isWord(r) ? 'menu' : undefined} aria-expanded={isWord(r) ? picking?.key === key : undefined}
+                  data-tip={picking?.key === key ? null : isWord(r) ? 'Show one of its glyphs in the glyph panel' : `Show ${glyphsOfRow(r)[0]} in the glyph panel`}><I.GlyphPanel size={14} /></button>
                 <button class="quiet ic" onclick={() => { rowNote = null; rowEdit = { sid: s.id, i, text: entryOf(r, s) }; }} disabled={!!rowEdit && rowEdit.sid === s.id && rowEdit.i === i}
                   aria-label="Edit {rowName(r)}" data-tip="Edit: type it again, as it was entered"><I.EditRow size={14} /></button>
                 <button class="quiet ic" onclick={() => remove(s.id, i)} aria-label="Remove {rowName(r)} from {s.id}" data-tip="Remove from this section (Undo brings it back)"><I.Close size={14} /></button>
@@ -956,6 +982,16 @@
   <div class="sr" role="status">Moving {drag.name}{drop ? ` to ${drop.sid}, place ${drop.index + 1}` : ''}</div>
 {/if}
 
+{#if picking}
+  <div class="pick float" role="menu" aria-label="Show in the glyph panel" style="top: {picking.top}px; right: {picking.right}px">
+    <span class="small muted">Show in the glyph panel</span>
+    {#each picking.glyphs as g (g)}
+      <button role="menuitem" onclick={() => { picking = null; onopen?.(g); }}>
+        <span class="gbox"><Glyph name={g} size={26} /></span><span class="zh">{zhOf(g)[0] ?? ''}</span><span class="mono small">{g}</span></button>
+    {/each}
+  </div>
+{/if}
+
 <style>
   .gloss { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-7); }
   .gloss.dragging { user-select: none; cursor: grabbing; }
@@ -1001,6 +1037,12 @@
   .lnk { margin-left: var(--space-2); border: 0; background: transparent; padding: 0; height: auto; min-height: 24px; color: var(--link); font-size: inherit; cursor: pointer; }
   td.use { padding-top: var(--space-1); padding-bottom: var(--space-1); white-space: normal; }
   td.out { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .pick { position: fixed; z-index: var(--z-popover); min-width: 200px; display: flex; flex-direction: column; padding: var(--space-2); }
+  .pick > span { padding: var(--space-1) var(--space-3); }
+  .pick button { display: flex; align-items: center; gap: var(--space-3); height: auto; min-height: var(--control-md); justify-content: flex-start; text-align: left; border: 0; background: transparent; font-weight: 400; }
+  .pick button:hover { background: var(--bg-hover); }
+  .pick { gap: 2px; }
+  .gbox { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--bg-field); }
   .defex { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-1) var(--space-6); flex-wrap: wrap; }
   .defex input { width: 12rem; height: 24px; font-size: var(--t-small); }
   td.out, th.out { text-align: center; }
