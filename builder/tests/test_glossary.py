@@ -262,7 +262,9 @@ def test_the_check_passes_the_shipped_files():
     secs = glossary.load_sections()
     assert [t["id"] for t in out["tables"]] == [sid for sid in glossary.section_order(secs, glossary.load_groups())
                                                 if not glossary.is_hidden(secs[sid])]
-    assert all(t["html"] in text for t in out["tables"])                    # the tables the page has
+    # the tables the next release writes: its font sets some glyphs vertically without their colon
+    text = glossary.render(text, vertical_only=glossary.vertical_only_for())
+    assert all(t["html"] in text for t in out["tables"])
 
 
 def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
@@ -328,7 +330,8 @@ def test_http_check_locally_and_online(monkeypatch):
         status, res = post({"rows": shipped()[::-1]})       # the Builder sends them in any order
         assert status == 200 and res["ok"] and res["problems"] == [] and res["tables"]
         text = config.SITE_INDEX.read_text(encoding="utf-8")
-        assert all(t["html"] in text for t in res["tables"])  # in components.csv's order, as the page has them
+        text = glossary.render(text, vertical_only=glossary.vertical_only_for())   # as the next release writes them
+        assert all(t["html"] in text for t in res["tables"])
         assert post({"rows": "nope"})[1]["ok"] is False
         assert font(res["font_url"]) and font("/api/glossary/font")
         # online: a signed-in tester checks their draft's spellings; signed out, nothing
@@ -448,6 +451,10 @@ def test_the_builders_titles_and_subtitles_are_checked():
                                     "sections": {"2c": lay["sections"]["2c"]}})
     out, _ = glossary.with_layout(secs, lay, {"2c": [g("md_x")]})               # rows for a new subtitle
     assert out["2c"]["rows"] == [g("md_x")]
+    # a subtitle the Builder dropped with its rows (its rows left out too): gone, whatever the file had
+    out, _ = glossary.with_layout(secs, {**lay, "groups": [{"id": "r", "title": "R", "sections": ["2c"]}],
+                                         "sections": {"2c": lay["sections"]["2c"]}}, {"2c": [g("lg_gou")]})
+    assert list(out) == ["2c"] and out["2c"]["rows"] == [g("lg_gou")]
     for bad in ({"groups": [], "sections": {"bad id": {"title": "x"}}}, {"groups": [{"id": "a", "title": "", "sections": []}], "sections": {}},
                 {"groups": [{"id": "a", "title": "A", "sections": ["2z"]}], "sections": {}}, {"groups": "x", "sections": {}},
                 {"groups": [], "sections": {"2a": {"title": "t", "kind": "table"}}},
@@ -499,3 +506,14 @@ def test_an_example_keeps_the_spelling_typed_for_the_glyph():
     assert out.count("<txs>s9<r>bl</r>7</txs>") == 1 and "<txs>名九，<r>半轮</r>七</txs>" in out   # once, not once per spelling
     assert "<jzp>:bl</jzp>" in out                                  # the row on its own: nothing marked
     assert glossary.marks_glyph(["s9<r>bl</r>7", ""]) and not glossary.marks_glyph([":<r>bl</r>", ":{}"])
+
+
+def test_a_glyph_the_font_sets_vertically_by_itself_needs_no_colon():
+    r = rows("md_shang,,,shang,,上,,shàng", "md_san,md_san2,0,,,散,,sàn", "md_san2,,,san,,,,", "md_dai,,,dai,,带,,dài", "md_qi,,,qi,,起,,qǐ")
+    sec = {"3c": vertical("3c", g("md_shang"), g("md_san"), w("带起", "md_dai", "md_qi"))}
+    off = glossary.render(page("3c"), r, sec)
+    assert "<td>:shang</td>" in off and "<td>:daiqi</td>" in off                    # an older font: every colon kept
+    on = glossary.render(page("3c"), r, sec, vertical_only=frozenset({"md_shang", "md_san2", "md_qi"}))
+    assert "<td>shang</td>" in on and "<td>上</td>" in on and "<jzp>上</jzp>" in on
+    assert '<span class="nw">:0</span>, <span class="nw">san</span>' in on            # 0 still needs its colon; san doesn't
+    assert "<td>daiqi</td>" in on                                                   # a word holding one: no colon either

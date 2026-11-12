@@ -82,6 +82,8 @@ class DesignState {
   glyphs = $state<GlyphRow[]>([]);
   /** Built-in glyphs typed by symbols (blank, blank_colon…): never need a spelling. */
   control = $state<string[]>([]);
+  /** Glyphs the font sets vertically without their colon (only a vertical word can hold them: shang = :shang). */
+  verticalOnly = $state<Set<string>>(new Set());
   /** The glossary's subtitles on the font page (site/glossary.json), in page order; empty where the server has no site/. */
   get glossarySections(): (Section & { description?: string })[] {
     return sectionList(this.glossaryLayout);
@@ -280,6 +282,7 @@ class DesignState {
       this.csvHash = g.hash;
       this.csvOrder = g.order;
       this.control = g.control;
+      this.verticalOnly = new Set(g.vertical_only ?? []);
       this.mainSvgs = svgs;
       this.mainDesign = d.design;
       this.mainTyping = typing;

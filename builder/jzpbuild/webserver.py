@@ -552,6 +552,8 @@ def glyphs_payload() -> dict:
     return {"fields": CSV_FIELDS, "glyphs": catalog, "control": sorted(config.CONTROL_GLYPHS),
             "order": [r["glyph_name"].strip() for r in rows], "hash": _hash(text),
             "glossary_sections": glossary_sections(), "glossary_groups": glossary_groups(),
+            # glyphs the font sets vertically without their colon (shang = :shang): the Glossary view drops it
+            "vertical_only": sorted(glossary.vertical_only_for()),
             "glossary_hash": _hash(_read_glossary_text())}
 
 

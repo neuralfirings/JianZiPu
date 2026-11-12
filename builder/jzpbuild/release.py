@@ -290,6 +290,9 @@ def candidate(notes: str, message: str = "", repo: Path = REPO, log: Log = print
     source = git("rev-parse", "--short", "HEAD", repo=repo)
     (repo / "builder" / "VERSION").write_text(version + "\n")
     build(repo / "site" / "JianZiPu.ttf", source, log)
+    # the glossary again with the font just built: what it sets vertically by itself needs no colon on the page
+    if regenerate_glossary(repo):
+        log("updated the glossary on the font page for the new font")
     date = today or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     slug = github_slug(repo)
     (repo / "site" / "version.json").write_text(json.dumps(
@@ -298,7 +301,8 @@ def candidate(notes: str, message: str = "", repo: Path = REPO, log: Log = print
     cl.write_text(changelog_with(cl.read_text() if cl.exists() else "# Changelog\n", version, notes, date))
     n = len(rc_tags(version, repo)) + 1
     tag = f"v{version}-rc.{n}"
-    git("add", "--", "builder/VERSION", "site/JianZiPu.ttf", "site/version.json", "CHANGELOG.md", repo=repo)
+    git("add", "--", "builder/VERSION", "site/JianZiPu.ttf", "site/version.json", "CHANGELOG.md",
+        *[p for p in (GLOSSARY_PAGE,) if (repo / p).exists()], repo=repo)
     git("commit", "-m", f"{tag}: JianZiPu {version}, release candidate {n}", repo=repo)
     git("tag", "-a", tag, "-m", f"JianZiPu {version}, release candidate {n}", repo=repo)
     log(f"tagged {tag}")

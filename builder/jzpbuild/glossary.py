@@ -20,6 +20,7 @@ different glyphs.
 from __future__ import annotations
 
 import argparse
+import contextvars
 import csv
 import html
 import json
@@ -54,7 +55,51 @@ MAX_WORD_GLYPHS = 12
 MAX_TITLE = 120
 MAX_DESCRIPTION = 4000
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}")
-ALL, NAV = "all", "nav"     # the page's two markers: every section title, subtitle and table; the contents links
+ALL, NAV = "all", "nav"
+# glyphs the page's font sets vertically by themselves, so their spellings need no colon (render, check)
+_VO: contextvars.ContextVar = contextvars.ContextVar("glossary_vertical_only", default=frozenset())
+
+
+def _colon(*glyphs: str) -> str:
+    """The colon that starts a vertical word, unless one of its glyphs gets it from the font (shang = :shang)."""
+    return "" if _VO.get().intersection(glyphs) else ":"
+
+
+def vertical_only_for(design: dict | None = None) -> frozenset:
+    """The glyphs only a vertical word can place (features.vertical_only_glyphs), for `design` (default the
+    file's); the font sets a word holding one vertically without its colon. Empty if it can't be worked out."""
+    try:
+        from . import features
+        from .positioning import schema
+        token = features._DESIGN_OVERRIDE.set(schema.parse_design(design)) if design is not None else None
+        try:
+            return frozenset(features.vertical_only_glyphs())
+        finally:
+            if token is not None:
+                features._DESIGN_OVERRIDE.reset(token)
+    except Exception:
+        return frozenset()
+
+
+def site_vertical_only(font: Path | None = None, rows: dict[str, dict] | None = None) -> frozenset:
+    """vertical_only_for(), if the page's font (site/JianZiPu.ttf) already sets such a glyph vertically
+    without the colon; else nothing (an older font: the page keeps the colon its readers need)."""
+    vo = vertical_only_for()
+    try:
+        import uharfbuzz as hb
+        rows = load_rows() if rows is None else rows
+        probe = next((rows[g]["latin"] for g in sorted(vo) if g in rows and rows[g]["latin"]), None)
+        if not probe:
+            return frozenset()
+        hbfont = hb.Font(hb.Face(hb.Blob.from_file_path(str(font or config.SITE_FONT))))
+        buf = hb.Buffer()
+        buf.add_str(probe)
+        buf.guess_segment_properties()
+        hb.shape(hbfont, buf, {"liga": True})
+        first = hbfont.glyph_to_string(buf.glyph_infos[0].codepoint) if buf.glyph_infos else ""
+        return vo if first == "blank_colon" else frozenset()
+    except Exception:
+        return frozenset()     # the page's two markers: every section title, subtitle and table; the contents links
 
 
 class GlossaryError(Exception):
@@ -276,7 +321,8 @@ def with_layout(sections: dict[str, dict], layout, rows_by_section: dict | None 
     rows_by_section = rows_by_section or {}
     for sid in sections:
         if sid not in metas:
-            left = rows_by_section.get(sid, sections[sid].get("rows", []))
+            # the Builder sends every subtitle's rows: one it leaves out has none (deleted with its title)
+            left = rows_by_section.get(sid, []) if rows_by_section else sections[sid].get("rows", [])
             if left:
                 raise ValueError(f"subtitle {sid} still has {len(left)} row(s): move or remove them before deleting it")
     out = {}
@@ -393,8 +439,8 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
         recs = [rows[g] for g in e.glyphs]
         if not all(spellings(r) and r["simplified"] for r in recs):
             raise GlossaryError(f"every glyph of the word {e.word} ({' + '.join(e.glyphs)}) needs an ASCII and a Chinese spelling.")
-        a = ":" + "".join(spellings(r)[0] for r in recs)
-        z = ":" + "".join(r["simplified"] for r in recs)
+        a = _colon(*e.glyphs) + "".join(spellings(r)[0] for r in recs)
+        z = _colon(*e.glyphs) + "".join(r["simplified"] for r in recs)
         out, examples = f"<jzp>{_esc(z)}</jzp>", [[a, z]]
         if e.usage:
             out, own = _own_example(e, "", "")
@@ -403,16 +449,18 @@ def _vertical_row(rows: dict[str, dict], e: Entry) -> Row:
                    out, examples, _esc(e.meaning), glyphs=e.glyphs)
     g = e.glyph
     rec, other = rows[g], _partner(rows, g)
-    sp = spellings(rec) + (spellings(other) if other else [])
-    zhs = chinese(rec) or (chinese(other) if other else [])
+    v = rec["vert_variant"]
+    # each spelling with the colon its glyph needs: none for one the font sets vertically itself (:0 but san)
+    sp = [_colon(g) + s for s in spellings(rec)] + ([_colon(v) + s for s in spellings(other)] if other else [])
+    zhs = [_colon(g) + c for c in chinese(rec)] or ([_colon(v) + c for c in chinese(other)] if other else [])
     zh = zhs[0] if zhs else ""
     py = rec["pinyin"] or (other or {}).get("pinyin", "")
-    examples = [[":" + s] + [":" + c for c in zhs] for s in sp] or ([[":" + c for c in zhs]] if zhs else [])
-    out = f"<jzp>{_esc(':' + (zh or (sp[0] if sp else '')))}</jzp>"
+    examples = [[s] + zhs for s in sp] or ([zhs] if zhs else [])
+    out = f"<jzp>{_esc(zh or (sp[0] if sp else ''))}</jzp>"
     if e.usage:
-        out, own = _own_example(e, sp[0] if sp else "", zh)
+        out, own = _own_example(e, sp[0].lstrip(":") if sp else "", zh.lstrip(":"))
         examples.append(own)
-    return Row(_list([":" + s for s in sp]) if sp else "", _list([":" + c for c in zhs]) if zhs else "", _esc(py),
+    return Row(_list(sp) if sp else "", _list(zhs) if zhs else "", _esc(py),
                out, examples, _esc(e.meaning), (g,))
 
 
@@ -554,7 +602,7 @@ def nav_html(sections: dict[str, dict], groups: list[dict]) -> str:
 
 
 def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, dict] | None = None,
-           groups: list[dict] | None = None) -> str:
+           groups: list[dict] | None = None, vertical_only: frozenset | None = None) -> str:
     """`page` with the glossary regenerated: the whole of it between `<!-- glossary all -->` markers and
     its contents links between `<!-- glossary nav -->`, or (an older page, the tests) a table per
     section's own marker."""
@@ -562,8 +610,18 @@ def render(page: str, rows: dict[str, dict] | None = None, sections: dict[str, d
     if sections is None:
         sections = load_sections()
         groups = load_groups() if groups is None else groups
+        vertical_only = site_vertical_only(rows=rows) if vertical_only is None else vertical_only
     groups = one_group(sections) if groups is None else groups
     sections = effective(sections, groups)
+    token = _VO.set(frozenset(vertical_only)) if vertical_only is not None else None
+    try:
+        return _render(page, rows, sections, groups)
+    finally:
+        if token is not None:
+            _VO.reset(token)
+
+
+def _render(page: str, rows: dict[str, dict], sections: dict[str, dict], groups: list[dict]) -> str:
     seen = set()
     count = 0                         # rows numbered so far, in page order
 
@@ -705,6 +763,15 @@ def check(rows: dict[str, dict], design: dict | None = None, font: Path | None =
     titles (with_rows, with_layout)."""
     sections = load_sections() if sections is None else sections
     groups = load_groups() if groups is None else groups
+    # the next release's font sets these vertically without their colon (it's built from this design)
+    token = _VO.set(vertical_only_for(design))
+    try:
+        return _check(rows, design, font, svg, sections, groups)
+    finally:
+        _VO.reset(token)
+
+
+def _check(rows, design, font, svg, sections, groups) -> dict:
     page = config.SITE_INDEX.read_text(encoding="utf-8")
     out: dict = {"ok": True, "problems": [], "typing": [], "tables": []}
     sections = effective(sections, groups)

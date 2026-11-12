@@ -162,10 +162,12 @@ export const exampleHtml = (t: string, spelling: string, mark = true) => mark
   ? t.split('{}').map((p) => p.replace(/<r>/g, '<span class="r">').replace(/<\/r>/g, '</span>')).join(`<span class="r">${esc(spelling)}</span>`)
   : t.replace(/<\/?r>/g, '').split('{}').join(esc(spelling));
 /** A vertical section's row as it is typed on its own, after a colon: [ASCII, 中文] templates. */
-export function verticalTemplate(t: T.Typing, r: GRow): [string, string] {
-  if (!isWord(r)) return [':{}', ':{}'];
+export function verticalTemplate(t: T.Typing, r: GRow, verticalOnly: Set<string> = new Set()): [string, string] {
+  // no colon where the font sets the word vertically by itself (a glyph only a vertical word can hold: shang)
+  const c = glyphsOfRow(r).some((g) => verticalOnly.has(g)) ? '' : ':';
+  if (!isWord(r)) return [c + '{}', c + '{}'];
   const sp = r.glyphs.map((g) => mainSpellings(t, g));
-  return [':' + esc(sp.map((x) => x[0]).join('')), ':' + esc(sp.map((x) => x[1]).join(''))];
+  return [c + esc(sp.map((x) => x[0]).join('')), c + esc(sp.map((x) => x[1]).join(''))];
 }
 /** The glyph's main spelling in each language, as the page fills the example with. */
 export function mainSpellings(t: T.Typing, g: string): [string, string] {

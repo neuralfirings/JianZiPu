@@ -97,6 +97,9 @@ describe("a row's example word", () => {
       .toMatchObject({ error: expect.stringMatching(/doesn't type md_xi \(息\)/) });
     expect(verticalTemplate(tv, { word: '大息', glyphs: ['md_da', 'md_xi'] })).toEqual([':vxi', ':大息']);
     expect(verticalTemplate(tv, { glyph: 'md_san' })).toEqual([':{}', ':{}']);
+    // a glyph the font sets vertically by itself needs no colon, nor does a word holding one
+    expect(verticalTemplate(tv, { glyph: 'md_da' }, new Set(['md_da']))).toEqual(['{}', '{}']);
+    expect(verticalTemplate(tv, { word: '大息', glyphs: ['md_da', 'md_xi'] }, new Set(['md_xi']))).toEqual(['vxi', '大息']);
     expect(exampleHtml(':{}<r>|</r>', 'san', false)).toBe(':san|');
     // the glyph is marked when the example has more in it than the glyph
     expect([[':{}5', ':{}五'], ['s9{}k3', ''], ['{}', '{}'], [':{}', ':{}'], [':vxi', ':大息']].map((u) => marksGlyph(u as [string, string])))

@@ -46,14 +46,21 @@
   }
   const zhOf = (g: string) => { const s = T.get(app.typing, g); return [...new Set([s.simplified || T.shown(app.typing, g, 'simplified').value, s.traditional].filter(Boolean))]; };
   const pyOf = (g: string) => T.get(app.typing, g).pinyin || T.shown(app.typing, g, 'pinyin').value;
+  /** The colon a vertical word starts with, unless the font sets it vertically by itself (shang, not :shang). */
+  const colonFor = (...gs: string[]) => (gs.some((g) => app.verticalOnly.has(g)) ? '' : ':');
   function ascii(r: GRow, s: Section): string {
-    const pre = vertical(s) || isWord(r) ? ':' : '';
-    if (isWord(r)) return pre + r.glyphs.map((g) => asciiOf(g)[0] ?? '?').join('');
-    return asciiOf(r.glyph).map((a) => pre + a).join(', ');
+    if (isWord(r)) return colonFor(...r.glyphs) + r.glyphs.map((g) => asciiOf(g)[0] ?? '?').join('');
+    if (!vertical(s)) return asciiOf(r.glyph).join(', ');
+    // each spelling with its own glyph's colon: 散's 0 needs one, its vertical form's san doesn't
+    const sp = T.get(app.typing, r.glyph), v = sp.vert_variant;
+    const own = [sp.latin, sp.latin_alt, sp.common].filter(Boolean);
+    const theirs = v ? [T.get(app.typing, v).latin, T.get(app.typing, v).latin_alt, T.get(app.typing, v).common].filter(Boolean) : [];
+    if (!own.length && !theirs.length) return asciiOf(r.glyph).map((a) => colonFor(r.glyph) + a).join(', ');
+    return [...own.map((a) => colonFor(r.glyph) + a), ...theirs.map((a) => colonFor(v) + a)].join(', ');
   }
   function chinese(r: GRow, s: Section): string {
-    const pre = vertical(s) || isWord(r) ? ':' : '';
-    if (isWord(r)) return pre + r.glyphs.map((g) => zhOf(g)[0] ?? '?').join('');
+    if (isWord(r)) return colonFor(...r.glyphs) + r.glyphs.map((g) => zhOf(g)[0] ?? '?').join('');
+    const pre = vertical(s) ? colonFor(r.glyph) : '';
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
   const pinyin = (r: GRow) => glyphsOfRow(r).map(pyOf).filter(Boolean).join(' ');
@@ -244,7 +251,7 @@
   /** The example a row shows: its own, else a glyph in a usage section the section's, else the row
    *  typed on its own after a colon (a vertical section's row, and a word anywhere). */
   const templateOf = (r: GRow, s: Section): [string, string] => {
-    const t = r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r)) || ['', ''];
+    const t = r.usage || (s.kind === 'usage' && !isWord(r) ? s.usage : verticalTemplate(app.typing, r, app.verticalOnly)) || ['', ''];
     // a line whose glyph has no spelling in that language (the placeholder * has no Chinese) is empty, not ":"
     const sp = isWord(r) ? ['', ''] : mainSpellings(app.typing, r.glyph);
     return [t[0].includes('{}') && !sp[0] ? '' : t[0], t[1].includes('{}') && !sp[1] ? '' : t[1]];

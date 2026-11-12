@@ -265,6 +265,11 @@ and the spellings in `components.csv`, so its spellings are the font's:
   after a colon, as in a vertical section.
 - A Change Request carries the glossary a section at a time: Review keeps or
   skips a section whole, rows in the draft's order.
+- A glyph only a vertical word can hold (上, 退…) gets its colon from the font,
+  so the page writes its spellings without one, but only once `site/JianZiPu.ttf`
+  does that (the generator types one such spelling with it to see). A
+  candidate rewrites the glossary again after building the font, so the
+  release that brings a change like that brings the page's new spellings too.
 - `cd builder && python3 -m jzpbuild.glossary` rewrites the glossary between the
   `<!-- glossary all -->` markers in `site/index.html` (every section title,
   subtitle, description and table) and the contents links between
