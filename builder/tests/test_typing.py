@@ -476,3 +476,53 @@ def test_brackets_type_their_glyph():
     recs = [dict(r, simplified="【") if r["glyph_name"] == "md_jiu" else r for r in recs]
     p = tp.FONTS.get(config.SITE_FONT, tp.rows_from(recs, DESIGN), DESIGN)
     assert "md_jiu" in tp.shape(p, ["【"])[0]["glyphs"] and "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]
+
+
+# 徽 a decimal point (分 may close it) or, alone, the end of the number; 十一–十三 whole; 弦 marks a string
+HUI_AND_STRING = {
+    "名九半轮六": ["md_ming", "md_9.5", "lg_lun", "md_6"],            # 9.5 first, without 徽
+    "名九，半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],
+    "名九徽半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],          # 徽 before 半轮: 9, then 半轮
+    "名九徽半勾六": ["md_ming", "md_9.5", "lg_gou", "md_6"],
+    "名十二勾五": ["md_ming", "md_12", "lg_gou", "md_5"],             # s12k5
+    "名十二徽勾五": ["md_ming", "md_12", "lg_gou", "md_5"],
+    "名十徽勾五": ["md_ming", "md_10", "lg_gou", "md_5"],
+    "名十徽二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],          # s10.2k5
+    "名十徽二分勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],
+    "名十点二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],
+    "名七徽六挑五": ["md_ming", "md_7.6", "lg_tiao", "md_5"],
+    "名十一": ["md_ming", "md_11"], "名十三": ["md_ming", "md_13"], "跪十一剔二": ["md_gui", "md_11", "lg_ti", "md_2"],
+    "名十一二": ["md_ming", "md_11.2"], "名十四": ["md_ming", "md_10.4"], "名十半": ["md_ming", "md_10.5"],
+    "名九七弦": ["md_ming", "md_9", "md_7"],                          # string 7, not 9.7
+    # a chord: 弦 closes its first half before the bar (撥: thumb, hui 9.4, string 6 | open string 5), as Bv9.4,6|05
+    "撥大九四六弦|散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
+    "撥大九四六弦｜散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
+    "撥大九四弦|散五": ["xl_bo", "md_da", "md_9", "md_4", "blank_bar", "md_san", "md_5"],
+    # 弦 wins over a point before its number: 9, string 7 (not 9.7)
+    "名九徽七弦": ["md_ming", "md_9", "md_7"], "名九点七弦": ["md_ming", "md_9", "md_7"],
+    "撮名七徽五弦|二": ["xl_cuo", "md_ming", "md_7", "md_5", "blank_bar", "md_2"],
+    "名九七": ["md_ming", "md_9.7"],
+}
+
+
+def test_hui_ends_the_number_and_xian_marks_a_string(built_font):
+    hb = pytest.importorskip("uharfbuzz")
+    font = hb.Font(hb.Face(hb.Blob.from_file_path(str(built_font))))
+    got = {}
+    for text in HUI_AND_STRING:
+        buf = hb.Buffer()
+        buf.add_str(text)
+        buf.guess_segment_properties()
+        hb.shape(font, buf, {})
+        got[text] = [font.glyph_to_string(i.codepoint) for i in buf.glyph_infos]
+    assert got == HUI_AND_STRING
+
+
+def test_the_rules_for_hui_and_xian_are_generated():
+    from jzpbuild import features
+    fea = "\n".join(features.gen_gsub())
+    assert "ch_hui" in fea.split("@area_period_subs = [")[1].split("]")[0]           # 徽 is a decimal point
+    assert "sub ch_10 @area_period_subs ch_2 ch_fen by md_10.2;" in fea and "sub md_12 ch_hui by md_12;" in fea
+    assert "sub ch_hui' ch_ban" in fea and "by comma;" in fea                       # 徽 before 半轮: a comma
+    assert "sub @area_left ch_10 ch_2' by md_10.2;" not in fea                      # 十二 is twelve
+    assert "sub md_7 ch_xian by md_7;" in fea and "lookup string_marks;" in fea

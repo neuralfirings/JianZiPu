@@ -13,6 +13,9 @@
   Cache-Control: public, max-age=3600
 /version.json
   Cache-Control: no-cache
+# vnext.html's preview of the next release, rebuilt whenever the coming font changes
+/JianZiPu-vnext.ttf
+  Cache-Control: public, max-age=3600
 
 # The help for AI tools (written by `npm run help:export` in app/): plain UTF-8 text, it holds Chinese
 /help.md

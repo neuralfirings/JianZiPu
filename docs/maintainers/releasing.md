@@ -176,6 +176,34 @@ After that:
 
 You can delete the `release/3.300` branch on GitHub. The tags keep its history.
 
+### The coming-next page
+
+`site/vnext.html` is the font page as it will be once the next release is out:
+`site/index.html` with its notation drawn in a preview build of the next font
+(`site/JianZiPu-vnext.ttf`), the glossary as that font reads it, the lessons the
+release changes, and a short "What's new in 3.300" list (a bullet and one
+example per change). Beside it, `site/release-3.300.html` holds the release
+notes: each change in the released font beside the next one, with links to all
+releases on GitHub and to the repository. Both are written by
+`builder/jzpbuild/vnext.py` from `index.html`, never by hand:
+
+```bash
+cd builder && python3 -m jzpbuild.vnext --font   # rebuild the preview font and the page
+cd builder && python3 -m jzpbuild.vnext          # the page only (index.html changed, not the font)
+```
+
+A pull request that changes the font's rules or the font page runs it;
+`tests/test_vnext.py` fails while the page is out of date, or when a lesson it
+rewrites (`CHANGES` in `vnext.py`) isn't on `index.html` any more. The tests
+skip on a release branch, which may change only font files.
+
+Once the release is out, its changes are no longer "next". In the next pull
+request to main: copy the rewritten lessons (`CHANGES`) into `index.html`, empty
+`CHANGES` and What's new in `vnext.py`, drop the coming-next links from
+`index.html` until something new is coming, and run `python3 -m jzpbuild.vnext`.
+`release-3.300.html` stays as that release's notes (link it from the GitHub
+release if you like); the next cycle writes `release-3.400.html`.
+
 ## Versions
 
 A version is `MAJOR.MINOR`, and the minor part always has three digits: 3.100,

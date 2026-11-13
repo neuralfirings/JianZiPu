@@ -38,7 +38,7 @@ from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
 from fontTools.ttLib import TTFont
 
 from . import config, features
-from .data import GlyphRow, resolve_char_to_glyph_name
+from .data import GlyphRow, load_char_to_glyph_name, resolve_char_to_glyph_name
 from .positioning import schema
 
 ROW_FIELDS = ("glyph_name", "vert_variant", "common", "latin", "latin_alt",
@@ -235,6 +235,32 @@ def _copy_chars(font: TTFont, rows: list[GlyphRow]) -> list[str]:
     return added
 
 
+def _name_chars(font: TTFont) -> list[str]:
+    """Give each character glyphRename.csv names (ch_fen for 分, ch_xian for 弦…) that name in `font`,
+    as a build would: a font built before the name was added has the character under another name (a
+    copy goes in under this one, and the character maps to it), or not at all (an empty glyph goes in,
+    so the rules naming it compile). Returns the names added."""
+    import copy as _copy
+    from fontTools.ttLib.tables._g_l_y_f import Glyph
+    from . import glyphs
+    have = set(font.getGlyphOrder())
+    cmap = font.getBestCmap() or {}
+    added = []
+    for ch, name in load_char_to_glyph_name().items():
+        if not name or name in have or len(ch) != 1:
+            continue
+        old = cmap.get(ord(ch))
+        if old and old in font["glyf"].glyphs:
+            g = _copy.deepcopy(font["glyf"][old])
+            advance, lsb = font["hmtx"][old]
+            glyphs.add_glyph(font, name, g, advance=advance, lsb=lsb, codepoint=ord(ch))
+        else:
+            glyphs.add_glyph(font, name, Glyph(), advance=0, lsb=0)
+        have.add(name)
+        added.append(name)
+    return added
+
+
 def _draw_in(font: TTFont, names: list[str], svg: Callable[[str], str | None]) -> list[str]:
     """Add the glyphs `names` the font hasn't got from their SVGs, as a build would (no advance,
     lsb = xMin), each at the next free private-use code point; return the ones added."""
@@ -317,6 +343,7 @@ class PreviewFonts:
         font = TTFont(io.BytesIO(self._base_bytes(base_font)))
         drawn = _draw_in(font, sorted(drawings), drawings.get)
         copied = _copy_chars(font, rows)
+        _name_chars(font)                 # a font from before a character was named (分 as ch_fen)
         font_glyphs = set(font.getGlyphOrder())
         srows, sdesign, not_built, missing_chars, lacking = _shapeable(rows, design, font_glyphs)
         parsed = schema.parse_design(sdesign)
