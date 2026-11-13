@@ -13,7 +13,7 @@ same text becomes the GitHub release notes.
 ### Added
 - A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
 - Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). 【 】 typed in Chinese still become `[` `]` unless a glyph's Chinese spelling claims them, so a glyph spelled `[` answers to 【 too.
-- 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7.
+- 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7, and so is `名九徽七弦` (弦 wins over a point before its number). In a chord it closes the first half: `撥大九四六弦|散五` is the same as `Bv9.4,6|05`.
 
 ### Changed
 - 十一, 十二 and 十三 typed in Chinese are always hui 11, 12 and 13 (they were 10.1, 10.2, 10.3): 10.2 is written `十徽二`, `十徽二分` or `十点二`. `十四` to `十九` are still 10.4 to 10.9.

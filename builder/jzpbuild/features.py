@@ -357,11 +357,15 @@ def gen_c2j_char_left(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
 
 def gen_c2j_hui_before_word(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
     """徽 before a word that starts with 半 (半轮, 半扶…) ends the hui number, as a comma does: 名九徽半轮六
-    is 9, then 半轮 (名九，半轮六), where 徽半 would otherwise be .5. Runs before the decimal lookups."""
+    is 9, then 半轮 (名九，半轮六), where 徽半 would otherwise be .5. So does a point (徽 点 點 。) before a
+    number that 弦 marks as a string: 名九徽七弦 is 9, string 7. Runs before the decimal lookups."""
     seconds = sorted({c2g[v[1]] for r in rows for v in (r.simplified, r.traditional)
                       if len(v) >= 2 and v[0] == "半" and v[1] in c2g})
     lines = ["lookup c2j_hui_before_word {"]
     lines += [f"  sub {HUI_END}' ch_ban {g} by comma;" for g in seconds] or ["  sub ch_hui' ch_ban ch_hui by ch_hui;"]
+    # a number then 弦 is a string, whatever point comes before it: 名九徽七弦 = 名九，七弦 (9, string 7), not 9.7
+    digits = " ".join(hui_ch(d) for d in range(1, 10))
+    lines.append(f"  sub @area_period_subs' [ {digits} ] {XIAN} by comma;")
     lines.append("} c2j_hui_before_word;")
     return lines
 

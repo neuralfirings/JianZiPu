@@ -493,6 +493,9 @@ HUI_AND_STRING = {
     "撥大九四六弦|散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
     "撥大九四六弦｜散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
     "撥大九四弦|散五": ["xl_bo", "md_da", "md_9", "md_4", "blank_bar", "md_san", "md_5"],
+    # 弦 wins over a point before its number: 9, string 7 (not 9.7)
+    "名九徽七弦": ["md_ming", "md_9", "md_7"], "名九点七弦": ["md_ming", "md_9", "md_7"],
+    "撮名七徽五弦|二": ["xl_cuo", "md_ming", "md_7", "md_5", "blank_bar", "md_2"],
     "名九七": ["md_ming", "md_9.7"],
 }
 

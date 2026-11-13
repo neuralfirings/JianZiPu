@@ -318,7 +318,7 @@
     }
     .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
     .glossary-subdesc { margin-bottom: .25rem; }
-    /* vnext.html: today's font, beside the next one in What's new */
+    /* the release notes: the released font, beside the next one */
     @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
     .vnext-banner { background: var(--target); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
     .whats-new table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
@@ -350,7 +350,7 @@
       </div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
-      <p class="vnext-banner"><small>A preview of this page once JianZiPu 3.300 is out, its notation drawn in a preview build of 3.300. <a href="#whats-new">What's new in 3.300</a> · <a href="./">The page for today's font</a>. The download is still today's font.</small></p>
+      <p class="vnext-banner"><small>A preview of this page once JianZiPu 3.300 is out, its notation drawn in a preview build of 3.300. <a href="#whats-new">What's new in 3.300</a> · <a href="./release-3.300.html">Release notes</a> · <a href="./">The page for v3.200</a>. The download is still v3.200.</small></p>
 
       <small class="font-version-top" id="font-version-top"></small>
 
@@ -392,52 +392,13 @@
   <div class="container">
     <div class="whats-new">
     <h3 id="whats-new">What's new in 3.300</h3>
-    <p>Each example drawn in today's font (grey) and in 3.300.</p>
-    <h4 id="whats-new-vertical">Vertical words without the colon</h4>
-    <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
-      <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
-    <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th class="now">Today</th><th class="next">Next</th></tr>
-        <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
-        <tr><td class="n">2</td><td class="typed">上三四</td><td class="now">上三四</td><td class="next">上三四</td></tr>
-        <tr><td class="n">3</td><td class="typed">xia79</td><td class="now">xia79</td><td class="next">xia79</td></tr>
-        <tr><td class="n">4</td><td class="typed">分开</td><td class="now">分开</td><td class="next">分开</td></tr>
-        <tr><td class="n">5</td><td class="typed">退</td><td class="now">退</td><td class="next">退</td></tr>
-        <tr><td class="n">6</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
-        <tr><td class="n">7</td><td class="typed">带起</td><td class="now">带起</td><td class="next">带起</td></tr>
-    </table></div>
-    <h4 id="whats-new-hui">Hui numbers in Chinese</h4>
     <ul>
-      <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
-      <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
-      <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
+      <li id="whats-new-vertical"><strong>Vertical words without the colon.</strong> A word with a character only a vertical word can hold (上, 下, 分开, 少息…) stands up by itself: <text>shang34</text> → <jzp>shang34</jzp></li>
+      <li id="whats-new-hui"><strong>十一 to 十三 are hui 11 to 13.</strong> 10.2 is <text>十徽二</text> or <text>十点二</text>: <text>名十二勾五</text> → <jzp>名十二勾五</jzp></li>
+      <li><strong>徽 before 半轮 ends the number.</strong> 9, then 半轮: <text>名九徽半轮六</text> → <jzp>名九徽半轮六</jzp> (<text>名九半轮六</text> is still 9.5, then 轮)</li>
+      <li id="whats-new-xian"><strong>弦 marks a string.</strong> Hui 9, string 7, not 9.7: <text>名九七弦</text> → <jzp>名九七弦</jzp></li>
     </ul>
-    <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">Today</th><th class="next">Next</th></tr>
-        <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
-        <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
-        <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
-        <tr><td class="n">4</td><td class="typed">名九半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九半勾六</td><td class="next">名九半勾六</td></tr>
-        <tr><td class="n">5</td><td class="typed">名九徽半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九徽半勾六</td><td class="next">名九徽半勾六</td></tr>
-        <tr><td class="n">6</td><td class="typed">名十二勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二勾五</td><td class="next">名十二勾五</td></tr>
-        <tr><td class="n">7</td><td class="typed">名十二徽勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二徽勾五</td><td class="next">名十二徽勾五</td></tr>
-        <tr><td class="n">8</td><td class="typed">名十徽勾五</td><td>10</td><td>勾</td><td>5</td><td class="now">名十徽勾五</td><td class="next">名十徽勾五</td></tr>
-        <tr><td class="n">9</td><td class="typed">名十徽二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二勾五</td><td class="next">名十徽二勾五</td></tr>
-        <tr><td class="n">10</td><td class="typed">名十徽二分勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二分勾五</td><td class="next">名十徽二分勾五</td></tr>
-        <tr><td class="n">11</td><td class="typed">名十点二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十点二勾五</td><td class="next">名十点二勾五</td></tr>
-        <tr><td class="n">12</td><td class="typed">名七六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七六挑五</td><td class="next">名七六挑五</td></tr>
-        <tr><td class="n">13</td><td class="typed">名七徽六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七徽六挑五</td><td class="next">名七徽六挑五</td></tr>
-    </table></div>
-    <h4 id="whats-new-xian">弦 marks a string</h4>
-    <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it. In a chord it closes the first half before the bar:
-      <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
-    <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">Today</th><th class="next">Next</th></tr>
-        <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
-        <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
-        <tr><td class="n">3</td><td class="typed">撥大九四六弦|散五</td><td>撥: thumb, hui 9.4, string 6 | open string 5</td><td class="now">撥大九四六弦|散五</td><td class="next">撥大九四六弦|散五</td></tr>
-        <tr><td class="n">4</td><td class="typed">撥大九四弦|散五</td><td>撥: thumb, hui 9, string 4 | open string 5</td><td class="now">撥大九四弦|散五</td><td class="next">撥大九四弦|散五</td></tr>
-    </table></div>
+    <p><small><a href="./release-3.300.html">Release notes for 3.300</a> · <a href="https://github.com/neuralfirings/JianZiPu/releases">All releases</a> · <a href="https://github.com/neuralfirings/JianZiPu">Contribute on GitHub</a></small></p>
     </div>
 
     <h3 id="how-to-type">How to type</h3>

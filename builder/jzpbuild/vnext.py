@@ -6,7 +6,9 @@ It's site/index.html with the next release's changes applied, so the two never d
   rebuilds it from builder/inputs), and the glossary is written as the next font reads it (no colon
   before a word only a vertical word can hold);
 - the lessons say what the next release changes (CHANGES below);
-- a "What's new in <next>" section shows each change in today's font beside the next one.
+- a short "What's new in <next>" list (a bullet and one example per change), and a release notes page,
+  site/release-<next>.html, showing each change in the released font beside the next one, with links
+  to all releases and to the repository.
 
     cd builder && python3 -m jzpbuild.vnext            # rewrite site/vnext.html
     cd builder && python3 -m jzpbuild.vnext --font     # and rebuild site/JianZiPu-vnext.ttf
@@ -51,7 +53,7 @@ CHANGES: list[tuple[str, str]] = [
         <li><text>名九七弦</text> or <text>s9,7</text> → <jzp>s9,7</jzp> 弦 marks a string: hui 9, string 7, not 9.7. In a chord it closes the first half: <text>撥大九四六弦｜散五</text> or <text>Bv9.4,6|05</text> → <jzp>Bv9.4,6|05</jzp></li>"""),
 ]
 
-HEAD = """    /* vnext.html: today's font, beside the next one in What's new */
+HEAD = """    /* the release notes: the released font, beside the next one */
     @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
     .vnext-banner { background: var(--target); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
     .whats-new table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
@@ -73,43 +75,83 @@ def _row(n: int, typed: str, *cells: str) -> str:
             f'<td class="now">{typed}</td><td class="next">{typed}</td></tr>')
 
 
-def _table(head: list[str], rows: list[tuple]) -> str:
+def _table(head: list[str], rows: list[tuple], current: str, version: str) -> str:
     th = "".join(f"<th>{h}</th>" for h in head)
     body = "\n".join(_row(i, *r) for i, r in enumerate(rows, 1))
     return (f'    <div class="cmp-scroll"><table class="cmp">\n'
-            f'        <tr><th></th><th>Typed</th>{th}<th class="now">Today</th><th class="next">Next</th></tr>\n'
+            f'        <tr><th></th><th>Typed</th>{th}<th class="now">v{current}</th><th class="next">v{version}</th></tr>\n'
             f"{body}\n    </table></div>")
 
 
+REPO_URL = "https://github.com/neuralfirings/JianZiPu"
+RELEASES_URL = REPO_URL + "/releases"
+
+
+def current_version() -> str:
+    """The released version (builder/VERSION)."""
+    return (config.BUILDER_DIR / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def release_path(version: str) -> Path:
+    """The next release's notes page, beside vnext.html: release-3.300.html."""
+    return config.SITE_DIR / f"release-{version}.html"
+
+
+def _links(version: str) -> str:
+    return (f'<a href="./release-{version}.html">Release notes for {version}</a> · '
+            f'<a href="{RELEASES_URL}">All releases</a> · '
+            f'<a href="{REPO_URL}">Contribute on GitHub</a>')
+
+
 def whats_new(version: str) -> str:
-    vertical = [("shang34",), ("上三四",), ("xia79",), ("分开",), ("退",), ("少息",), ("带起",)]
+    """The font page's short list: a bullet and one example (drawn in the next font) per change."""
+    return f"""    <div class="whats-new">
+    <h3 id="whats-new">What's new in {version}</h3>
+    <ul>
+      <li id="whats-new-vertical"><strong>Vertical words without the colon.</strong> A word with a character only a vertical word can hold (上, 下, 分开, 少息…) stands up by itself: <text>shang34</text> → <jzp>shang34</jzp></li>
+      <li id="whats-new-hui"><strong>十一 to 十三 are hui 11 to 13.</strong> 10.2 is <text>十徽二</text> or <text>十点二</text>: <text>名十二勾五</text> → <jzp>名十二勾五</jzp></li>
+      <li><strong>徽 before 半轮 ends the number.</strong> 9, then 半轮: <text>名九徽半轮六</text> → <jzp>名九徽半轮六</jzp> (<text>名九半轮六</text> is still 9.5, then 轮)</li>
+      <li id="whats-new-xian"><strong>弦 marks a string.</strong> Hui 9, string 7, not 9.7: <text>名九七弦</text> → <jzp>名九七弦</jzp></li>
+    </ul>
+    <p><small>{_links(version)}</small></p>
+    </div>
+"""
+
+
+def release_body(version: str, current: str) -> str:
+    """The release notes: each change drawn in the released font beside the next one."""
+    vertical = [("shang34",), ("少息",)]
     hui = [("名九半轮六", "9.5", "轮", "6"), ("名九，半轮六", "9", "半轮", "6"), ("名九徽半轮六", "9", "半轮", "6"),
            ("名九半勾六", "9.5", "勾", "6"), ("名九徽半勾六", "9.5", "勾", "6"), ("名十二勾五", "12", "勾", "5"),
            ("名十二徽勾五", "12", "勾", "5"), ("名十徽勾五", "10", "勾", "5"), ("名十徽二勾五", "10.2", "勾", "5"),
            ("名十徽二分勾五", "10.2", "勾", "5"), ("名十点二勾五", "10.2", "勾", "5"), ("名七六挑五", "7.6", "挑", "5"),
            ("名七徽六挑五", "7.6", "挑", "5")]
-    xian = [("名九七", "hui 9.7"), ("名九七弦", "hui 9, string 7"),
+    xian = [("名九七", "hui 9.7"), ("名九七弦", "hui 9, string 7"), ("名九徽七弦", "hui 9, string 7"),
             ("撥大九四六弦|散五", "撥: thumb, hui 9.4, string 6 | open string 5"),
-            ("撥大九四弦|散五", "撥: thumb, hui 9, string 4 | open string 5")]
-    return f"""    <div class="whats-new">
-    <h3 id="whats-new">What's new in {version}</h3>
-    <p>Each example drawn in today's font (grey) and in {version}.</p>
-    <h4 id="whats-new-vertical">Vertical words without the colon</h4>
+            ("撥大九四弦|散五", "撥: thumb, hui 9, string 4 | open string 5"),
+            ("撮名七徽五弦|二", "撮: hui 7, string 5 | string 2")]
+    t = lambda head, rows: _table(head, rows, current, version)
+    return f"""  <div class="container whats-new">
+    <p><a href="./">← The JianZiPu font</a> · <a href="./vnext.html">The font page once {version} is out</a></p>
+    <h1>JianZiPu {version}</h1>
+    <p class="vnext-banner"><small>Coming in the next release: not in the download yet. Each example is drawn in v{current} (grey, the font you can download now) and in v{version}.
+      {_links(version).replace(f'<a href="./release-{version}.html">Release notes for {version}</a> · ', '')}</small></p>
+    <h3 id="vertical">Vertical words without the colon</h3>
     <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
       <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
-{_table([], vertical)}
-    <h4 id="whats-new-hui">Hui numbers in Chinese</h4>
+{t([], vertical)}
+    <h3 id="hui">Hui numbers in Chinese</h3>
     <ul>
       <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
       <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
       <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
     </ul>
-{_table(["Hui", "Right hand", "String"], hui)}
-    <h4 id="whats-new-xian">弦 marks a string</h4>
-    <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it. In a chord it closes the first half before the bar:
-      <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
-{_table(["Reads as"], xian)}
-    </div>
+{t(["Hui", "Right hand", "String"], hui)}
+    <h3 id="xian">弦 marks a string</h3>
+    <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it, whatever point comes first (<text>名九徽七弦</text> is 9, string 7).
+      In a chord it closes the first half before the bar: <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
+{t(["Reads as"], xian)}
+  </div>
 """
 
 
@@ -132,9 +174,11 @@ def render(index: str, version: str | None = None) -> str:
     page = re.sub(r"<title>[^<]*</title>", f"<title>JianZiPu Font {version} (preview)</title>", page, count=1)
     page = _once(page, "src: url('./JianZiPu.ttf');", "src: url('./JianZiPu-vnext.ttf');", "the font's @font-face src")
     page = _once(page, "  </style>", HEAD + "  </style>", "the end of the page's style")
+    current = current_version()
     banner = (f'<p class="vnext-banner"><small>A preview of this page once JianZiPu {version} is out, its notation drawn in a '
               f'preview build of {version}. <a href="#whats-new">What\'s new in {version}</a> · '
-              '<a href="./">The page for today\'s font</a>. The download is still today\'s font.</small></p>')
+              f'<a href="./release-{version}.html">Release notes</a> · <a href="./">The page for v{current}</a>. '
+              f'The download is still v{current}.</small></p>')
     page = re.sub(r'<p class="vnext-link">.*?</p>', lambda _: banner, page, count=1, flags=re.S)
     if banner not in page:
         raise ValueError("site/index.html: the coming-next link at the top (<p class=\"vnext-link\">) isn't there")
@@ -147,6 +191,24 @@ def render(index: str, version: str | None = None) -> str:
     return glossary.render(page, vertical_only=glossary.vertical_only_for())
 
 
+def release_page(index: str, version: str | None = None) -> str:
+    """release-<next>.html: the release notes, in the font page's look (its <head> from index.html)."""
+    version = version or next_version()
+    head = index[index.index("<head>"):index.index("</head>") + len("</head>")]
+    head = _once(head, '<meta name="viewport" content="width=device-width, initial-scale=1">',
+                 '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+                 '  <!-- written by `cd builder && python3 -m jzpbuild.vnext` from index.html and vnext.py: edit those, not this -->\n'
+                 '  <meta name="robots" content="noindex">', "the viewport meta")
+    head = re.sub(r"<title>[^<]*</title>", f"<title>JianZiPu {version} release notes</title>", head, count=1)
+    head = _once(head, "src: url('./JianZiPu.ttf');", "src: url('./JianZiPu-vnext.ttf');", "the font's @font-face src")
+    head = _once(head, "  </style>", HEAD + "  </style>", "the end of the page's style")
+    return (f'<!DOCTYPE html>\n<html lang="en">\n{head}\n<body>\n  <div class="scroll-rod"></div>\n'
+            f"{release_body(version, current_version())}"
+            '  <div class="scroll-rod bottom"></div>\n'
+            '  <script>document.fonts.ready.then(() => document.documentElement.classList.remove("fonts-loading"));</script>\n'
+            "</body>\n</html>\n")
+
+
 def build_font() -> None:
     subprocess.run([sys.executable, "-m", "jzpbuild", "-o", str(VNEXT_FONT), "--fea-out", ""], cwd=config.BUILDER_DIR, check=True)
 
@@ -156,25 +218,27 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true", help="change nothing; exit 1 if site/vnext.html is out of date")
     ap.add_argument("--font", action="store_true", help="also rebuild site/JianZiPu-vnext.ttf (needs the base font)")
     args = ap.parse_args(argv)
+    version = next_version()
     try:
-        new = render(config.SITE_INDEX.read_text(encoding="utf-8"))
+        index = config.SITE_INDEX.read_text(encoding="utf-8")
+        pages = {VNEXT: render(index, version), release_path(version): release_page(index, version)}
     except (ValueError, glossary.GlossaryError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    old = VNEXT.read_text(encoding="utf-8") if VNEXT.exists() else ""
+    stale = [p for p, text in pages.items() if not p.exists() or p.read_text(encoding="utf-8") != text]
     if args.check:
-        if new != old:
-            print("error: site/vnext.html is out of date: run `cd builder && python3 -m jzpbuild.vnext`.", file=sys.stderr)
-            return 1
-        print("site/vnext.html is up to date")
-        return 0
+        for p in stale:
+            print(f"error: site/{p.name} is out of date: run `cd builder && python3 -m jzpbuild.vnext`.", file=sys.stderr)
+        if not stale:
+            print("site/vnext.html and its release notes are up to date")
+        return 1 if stale else 0
     if args.font:
         build_font()
-    if new != old:
-        VNEXT.write_text(new, encoding="utf-8")
-        print("wrote site/vnext.html")
-    else:
-        print("site/vnext.html is up to date")
+    for p in stale:
+        p.write_text(pages[p], encoding="utf-8")
+        print(f"wrote site/{p.name}")
+    if not stale:
+        print("site/vnext.html and its release notes are up to date")
     return 0
 
 

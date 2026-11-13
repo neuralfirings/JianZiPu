@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- written by `cd builder && python3 -m jzpbuild.vnext` from index.html and vnext.py: edit those, not this -->
+  <meta name="robots" content="noindex">
+  <meta property="og:image" content="https://xttzxfjcvenoossepgci.supabase.co/storage/v1/object/public/jianzipu/ogimage.jpg">
+
+  <title>JianZiPu 3.300 release notes</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
+  
+  <script>document.documentElement.classList.add('fonts-loading');</script>
+  <style>
+    /* until the JianZiPu font is in, notation would show as its raw spellings: keep it hidden, not the whole page */
+    .fonts-loading jzp, .fonts-loading .jzp, .fonts-loading .jzp-entry { visibility: hidden; }
+    @font-face {
+      font-family: 'JianZiPu';
+      src: url('./JianZiPu-vnext.ttf'); 
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap; /* avoids invisible text in Safari */
+      font-feature-settings: "kern", "liga"; /* required on Firefox */
+    }
+    /* The scroll: rice paper, calligraphy ink and one seal red (the JZP design system's tokens, the same names as the Builder's app.css) */
+    :root {
+      --bg-app: #f3f1ed; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
+      --bg-bar: #2e2a27; --on-bar: #f7f5f1; --on-bar-muted: #cfc9c2;
+      --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a;
+      --border: #cdc7bf; --border-strong: #7c756e; --hairline: #ddd8d1;
+      --link: #0a5cbf; --accent: #a3352b; --on-accent: #ffffff; --target: #f1e7cf;
+      --well: rgba(80, 72, 64, 0.08);        /* the typed-spelling chips: a wash, so the paper shows through */
+      --bs-body-bg: var(--bg-app); --bs-body-color: var(--ink); --bs-emphasis-color: var(--ink);
+      --bs-border-color: var(--border); --bs-secondary-color: var(--ink-muted); --bs-link-color: var(--link); --bs-link-color-rgb: 10, 92, 191;
+    }
+    html { background: var(--bg-app); }
+    body {
+      color: var(--ink);
+      background-color: var(--bg-app);
+      background-image:
+        /* fibres and grain of the paper */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.26 0 0 0 0.9 -0.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.14'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.1'/%3E%3C/svg%3E"),
+        /* the soft mottling of old paper */
+        radial-gradient(ellipse 60% 40% at 18% 22%, rgba(120, 112, 104, 0.04), transparent 70%),
+        radial-gradient(ellipse 50% 35% at 82% 65%, rgba(120, 112, 104, 0.04), transparent 70%),
+        /* the scroll's edges, darker where the paper meets the mounting */
+        linear-gradient(90deg, rgba(100, 92, 84, 0.11), transparent 6%, transparent 94%, rgba(100, 92, 84, 0.11));
+      background-size: 360px 360px, 100% 1600px, 100% 1600px, 100% 100%;   /* the mottling repeats down the scroll */
+      background-repeat: repeat, repeat-y, repeat-y, no-repeat;
+    }
+    /* the scroll's rods (天杆 at the top, 地杆 at the bottom) */
+    .scroll-rod { height: 10px; background: linear-gradient(180deg, #c9c2ba, #e2ddd7 40%, #bdb5ac 75%, #a9a097); border-bottom: 1px solid #958c83; }
+    .scroll-rod.bottom { margin-top: 48px; border-top: 1px solid #958c83; border-bottom: 0; }
+    /* the title row: the seal and the title centred on each other, the v2 link at the top right */
+    .title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .title-row h1 { margin: 0; }
+    .title-row .v2-link { margin-left: auto; align-self: flex-start; font-size: 12px; }
+    /* the seal beside the title: 减字谱 in reversed type, once on the page */
+    .seal { display: inline-flex; writing-mode: vertical-rl; align-items: center; justify-content: center; flex: none; padding: 6px 3px;
+      background: var(--accent); color: var(--bg-panel); font-family: "LXGW WenKai TC", "Kaiti SC", "KaiTi", "STKaiti", serif; font-size: 1rem; line-height: 1.1; letter-spacing: 0.05em;
+      border-radius: 3px 2px 4px 2px; box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px rgba(246, 242, 234, 0.65); }
+    body {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
+    }
+    a { color: var(--link); }
+    h1, h2, h3, h4 { color: var(--ink); }
+    .text-muted { color: var(--ink-muted) !important; }
+    .table { --bs-table-bg: transparent; --bs-table-color: var(--ink); --bs-table-border-color: var(--hairline); }
+    .table thead th { border-bottom: 1px solid var(--ink); }
+    .form-control { background-color: var(--bg-field); border-color: var(--border-strong); color: var(--ink); }
+    .form-control:focus { background-color: var(--bg-field); color: var(--ink); }
+    hr { border-color: var(--border); opacity: 1; }
+    .table {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
+    }
+    text {
+      background-color: var(--well);
+      color: var(--ink);
+      padding: 5px;
+      border-radius: 5px;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code',  monospace;
+      font-size: 0.8rem;
+    }
+    .alert-tip text {
+      background-color: var(--bg-panel);
+    }
+    txs {
+      display: block;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
+      font-size: 1rem;
+      word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
+      /* background-color: #eee;
+      padding: 3px;
+      margin: 2px;
+      border-radius: 5px; */
+    }
+    /* the glossary's row IDs (1, 2, 3… down the page), generated with the tables: a link to the row */
+    td.gid, th.gid { white-space: nowrap; }
+    .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
+    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
+    /* the glossary's search box (script at the end of the page) */
+    [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
+    .glossary-search { margin: 8px 0 16px; }
+    .glossary-search input { max-width: 420px; }
+    .glossary-search label { text-transform: none; }
+    .glossary-search p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.875rem; min-height: 1.3em; }
+    html { scroll-padding-top: 96px; }   /* a linked row or heading lands below the sticky download bar */
+    jzp {
+      font-size: 2.5rem;
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+    }
+    text r {
+      font-weight: bold;
+    }
+    r {
+      color: var(--accent);
+    }
+    h3 {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid var(--ink);
+    }
+    .jzp {
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+      padding-right: 3rem; /* to prevent characters from being cut off */
+    }
+    .text-entry {
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    .jzp-entry {
+      font-family: 'JianZiPu', 'LXGW WenKai TC', 'Arial',sans-serif;
+      font-size: 3rem;
+      height: 100%;
+    }
+    .jzp-example {
+      font-family: 'JianZiPu', 'LXGW WenKai TC', 'Arial',sans-serif;
+      font-size: 3rem;
+      min-height: 6rem;
+      position: relative;
+      overflow: visible;    
+      white-space: pre-wrap; 
+      padding: 10px 1.5em 10px 10px;
+    }
+    .jzp-example-container {
+      background-color: rgba(255, 255, 255, 0.55);   /* reads as #faf9f7 on the paper */
+      border: 1px solid var(--border);
+      color: var(--ink);
+      position: relative;
+      border-radius: 0px;
+    }
+    .jzp-example-container input {
+      border-radius: 50px;
+    }
+    .lat-entry, .text-entry {
+      font-family: "Roboto Mono", "M PLUS 1 Code",  monospace;
+      font-size: 1.2rem;
+      height: 100%;
+    }
+
+    label {
+      font-weight: 500;
+      text-transform: capitalize;
+      display: block;
+    }
+    .container {
+      margin-top: 20px;
+    }
+    .row {
+      margin: 20px 0;
+    }
+    .col-md-6 {
+      margin-bottom: 40px;
+    }
+    .alert-tip {
+      border-radius: 0px;
+      border-right: 0px;
+      border-left: solid 5px var(--ink);
+      border-top: 0px;
+      border-bottom: 0px;
+      background-color: var(--bg-sunken);
+      color: var(--ink);
+    }
+
+    /* Floating download button */
+    .floating-download-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .floating-download-btn:hover {
+      /* transform: translateY(-2px); */
+      /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); */
+    }
+
+    .btn-primary {
+      background-color: var(--ink);
+      border-color: var(--ink);
+      border-radius: 3px;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--ink);
+      border-color: var(--ink);
+      border-radius: 5px;
+    }
+
+    .btn-download-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 10px 20px;
+    }
+    .download-bar {
+      background-color: var(--bg-bar);
+      text-align: center;
+      padding: 10px 0;
+    }
+    .download-bar a {
+      color: var(--on-bar);
+    }
+    .download-bar .font-version {
+      display: block;
+      color: var(--on-bar-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .download-bar .font-version a {
+      color: var(--on-bar-muted);
+      text-decoration: underline;
+    }
+    /* the "send me the font" form (EmailOctopus) */
+    .signup-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px 20px; background: var(--bg-panel); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); }
+    .signup-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+    .signup-close { display: flex; justify-content: flex-end; margin: 0 0 4px; }
+    .signup-dialog h1, .signup-dialog h2, .signup-dialog h3 { margin-top: 0; padding-top: 0; border-top: 0; } /* not the page's section headings */
+    .signup-done { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+    .signup-done[hidden] { display: none; }
+    .signup-done p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink-muted); text-align: center; }
+    .signup-download { display: block; padding: 14px 16px; background: var(--ink); color: var(--bg-panel); text-align: center; font-size: 1.1rem; text-decoration: none; border-radius: 2px; }
+    .signup-download:hover, .signup-download:focus-visible { background: #45403b; color: var(--bg-panel); }
+    .signup-download:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .text-entry-examples {
+      font-size: 0.8em
+    }
+
+    /* ---- On a phone (narrower than 760px). A computer keeps the layout above. ---- */
+    .contents, .font-version-top { display: none; }
+    @media (max-width: 759.98px) {
+      html { scroll-padding-top: 72px; }
+      /* the spellings people read and copy, and the one rule everyone needs */
+      text { font-size: 15px; padding: 3px 6px; line-height: 2; }
+      /* a result glyph moves to the next line rather than running off the edge; glyphs inside sentences sit in the line */
+      li jzp { display: inline-block; max-width: 100%; }
+      p jzp, .alert-tip jzp { font-size: 1.6em; line-height: 1.2; }
+      /* tap targets */
+      .text-entry-examples a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; margin: 4px 2px; border: 1px solid var(--border-strong); border-radius: 22px; background: var(--bg-field); color: var(--ink); text-decoration: none; font-weight: 600; }
+      .v2-link a, .font-version-top a { display: inline-block; padding: 10px 2px; }
+      .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-muted); }
+      /* the demo: a box that wraps instead of a one-line field */
+      textarea.text-entry { resize: none; line-height: 1.4; }
+      /* the glossary's tables fit the screen: slimmer cell padding, and a long spelling may break when it must */
+      .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
+      .table td { overflow-wrap: anywhere; }
+      txs { word-break: normal; }
+      /* the sticky bar: one slim row, the contents on the left and the download button on the right */
+      /* pinned to the top from the first screen, so Contents and Download are always in reach */
+      body { padding-top: 56px; }
+      .download-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 1020; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; }
+      .download-bar .font-version { display: none; }
+      .download-bar .download { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; flex: none; margin-left: auto; border-radius: 4px; background: var(--on-bar); color: var(--ink); font-weight: 600; text-decoration: none; }
+      .contents { display: block; flex: 1 1 auto; min-width: 0; color: var(--on-bar); }
+      .contents summary { display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
+      .contents summary::-webkit-details-marker { display: none; }
+      .contents summary::after { content: "▾"; color: var(--on-bar-muted); }
+      .contents[open] summary::after { content: "▴"; }
+      .contents-label { color: var(--on-bar-muted); font-size: 14px; }
+      .contents-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+      .contents nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: 4px 0; background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+      .contents nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: var(--ink); text-decoration: none; border-left: 3px solid transparent; }
+      .contents nav a.sub { padding-left: 32px; color: var(--ink-muted); }
+      .contents nav a[aria-current="true"] { border-left-color: var(--accent); background: var(--bg-hover); font-weight: 600; }
+      .download-name { display: none; }
+      /* while a demo box has the keyboard, the bar steps aside so the notation stays in view */
+      body.typing .download-bar { display: none; }
+    }
+
+    /* "How to type": five rules, then the folded extras */
+    .rules { padding-left: 1.2rem; margin-bottom: 8px; }
+    .rules li, details.more li { margin: 4px 0; }
+    .rules jzp, details.more jzp { font-size: 2rem; }
+    details.more { margin: 4px 0 8px; }
+    details.more summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
+    details.more[open] summary { margin-bottom: 8px; }
+    @media (max-width: 759.98px) {
+      details.more summary { padding: 10px 0; }   /* a 44px tap target that keeps its open/closed marker */
+    }
+    .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
+    .glossary-subdesc { margin-bottom: .25rem; }
+    /* the release notes: the released font, beside the next one */
+    @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
+    .vnext-banner { background: var(--target); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+    .whats-new table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .whats-new table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid var(--border-strong); background: var(--bg-sunken); vertical-align: bottom; }
+    .whats-new table.cmp td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+    .whats-new td.n { color: var(--ink-faint); text-align: right; width: 2.5em; font-size: .9em; }
+    .whats-new td.typed { font-family: "LXGW WenKai TC", "Roboto Mono", serif; font-size: 1.15rem; white-space: nowrap; }
+    .whats-new td.now, .whats-new td.next { font-size: 44px; line-height: 1.3; white-space: nowrap; }
+    .whats-new td.now { font-family: 'JZP-now'; color: var(--ink-faint); }
+    .whats-new td.next { font-family: 'JianZiPu'; }
+    .whats-new .cmp-scroll { overflow-x: auto; }
+    @media (max-width: 759.98px) { .whats-new td.now, .whats-new td.next { font-size: 34px; } }
+  </style>
+  
+  <!-- "Send me the font": an EmailOctopus sign-up form (docs/maintainers/setup.md, EmailOctopus).
+       Its id is the one in the form's embed code, eocampaign1.com/form/<id>.js. Empty: the Download
+       button downloads the font straight away. -->
+  <script>window.EO_FORM_ID = 'dc6d7afe-dd52-11f1-978b-43af410d7c6e';</script>
+</head>
+<body>
+  <div class="scroll-rod"></div>
+  <div class="container whats-new">
+    <p><a href="./">← The JianZiPu font</a> · <a href="./vnext.html">The font page once 3.300 is out</a></p>
+    <h1>JianZiPu 3.300</h1>
+    <p class="vnext-banner"><small>Coming in the next release: not in the download yet. Each example is drawn in v3.200 (grey, the font you can download now) and in v3.300.
+      <a href="https://github.com/neuralfirings/JianZiPu/releases">All releases</a> · <a href="https://github.com/neuralfirings/JianZiPu">Contribute on GitHub</a></small></p>
+    <h3 id="vertical">Vertical words without the colon</h3>
+    <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
+      <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
+        <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
+        <tr><td class="n">2</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
+    </table></div>
+    <h3 id="hui">Hui numbers in Chinese</h3>
+    <ul>
+      <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
+      <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
+      <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
+    </ul>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
+        <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
+        <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
+        <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
+        <tr><td class="n">4</td><td class="typed">名九半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九半勾六</td><td class="next">名九半勾六</td></tr>
+        <tr><td class="n">5</td><td class="typed">名九徽半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九徽半勾六</td><td class="next">名九徽半勾六</td></tr>
+        <tr><td class="n">6</td><td class="typed">名十二勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二勾五</td><td class="next">名十二勾五</td></tr>
+        <tr><td class="n">7</td><td class="typed">名十二徽勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二徽勾五</td><td class="next">名十二徽勾五</td></tr>
+        <tr><td class="n">8</td><td class="typed">名十徽勾五</td><td>10</td><td>勾</td><td>5</td><td class="now">名十徽勾五</td><td class="next">名十徽勾五</td></tr>
+        <tr><td class="n">9</td><td class="typed">名十徽二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二勾五</td><td class="next">名十徽二勾五</td></tr>
+        <tr><td class="n">10</td><td class="typed">名十徽二分勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二分勾五</td><td class="next">名十徽二分勾五</td></tr>
+        <tr><td class="n">11</td><td class="typed">名十点二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十点二勾五</td><td class="next">名十点二勾五</td></tr>
+        <tr><td class="n">12</td><td class="typed">名七六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七六挑五</td><td class="next">名七六挑五</td></tr>
+        <tr><td class="n">13</td><td class="typed">名七徽六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七徽六挑五</td><td class="next">名七徽六挑五</td></tr>
+    </table></div>
+    <h3 id="xian">弦 marks a string</h3>
+    <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it, whatever point comes first (<text>名九徽七弦</text> is 9, string 7).
+      In a chord it closes the first half before the bar: <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
+        <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
+        <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
+        <tr><td class="n">3</td><td class="typed">名九徽七弦</td><td>hui 9, string 7</td><td class="now">名九徽七弦</td><td class="next">名九徽七弦</td></tr>
+        <tr><td class="n">4</td><td class="typed">撥大九四六弦|散五</td><td>撥: thumb, hui 9.4, string 6 | open string 5</td><td class="now">撥大九四六弦|散五</td><td class="next">撥大九四六弦|散五</td></tr>
+        <tr><td class="n">5</td><td class="typed">撥大九四弦|散五</td><td>撥: thumb, hui 9, string 4 | open string 5</td><td class="now">撥大九四弦|散五</td><td class="next">撥大九四弦|散五</td></tr>
+        <tr><td class="n">6</td><td class="typed">撮名七徽五弦|二</td><td>撮: hui 7, string 5 | string 2</td><td class="now">撮名七徽五弦|二</td><td class="next">撮名七徽五弦|二</td></tr>
+    </table></div>
+  </div>
+  <div class="scroll-rod bottom"></div>
+  <script>document.fonts.ready.then(() => document.documentElement.classList.remove("fonts-loading"));</script>
+</body>
+</html>

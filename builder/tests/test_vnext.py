@@ -27,17 +27,28 @@ def test_the_page_is_up_to_date():
 
 
 @needs_main
-def test_every_example_on_the_page_types_what_it_shows():
+@pytest.mark.parametrize("page", ["vnext", "release"])
+def test_every_example_on_the_pages_types_what_it_shows(page):
     pytest.importorskip("uharfbuzz")
-    problems = glossary.check_typing(page=vnext.VNEXT.read_text(encoding="utf-8"))
+    path = vnext.VNEXT if page == "vnext" else vnext.release_path(vnext.next_version())
+    problems = glossary.check_typing(page=path.read_text(encoding="utf-8"))
     assert problems == [], "\n".join(problems)
+
+
+def test_the_release_notes_compare_the_two_versions_and_link_out():
+    page = vnext.release_page(config.SITE_INDEX.read_text(encoding="utf-8"), "9.900")
+    assert "<title>JianZiPu 9.900 release notes</title>" in page and '<meta name="robots" content="noindex">' in page
+    assert f'<th class="now">v{vnext.current_version()}</th><th class="next">v9.900</th>' in page
+    assert vnext.RELEASES_URL in page and f'href="{vnext.REPO_URL}"' in page
+    assert "名九徽七弦" in page and "url('./JianZiPu-vnext.ttf')" in page
 
 
 def test_it_is_the_font_page_with_the_next_release_in_it():
     page = vnext.render(config.SITE_INDEX.read_text(encoding="utf-8"), "9.900")
     assert "url('./JianZiPu-vnext.ttf')" in page and "url('./JianZiPu.ttf'); font-display" in page   # next, and today's beside it
     assert '<meta name="robots" content="noindex">' in page and "What's new in 9.900" in page
-    assert 'id="whats-new-hui"' in page and 'class="vnext-link"' not in page
+    assert 'id="whats-new-hui"' in page and 'class="vnext-link"' not in page and 'href="./release-9.900.html"' in page
+    assert '<table class="cmp">' not in page                                   # the page has the short list; the tables are in the notes
     for _, new in vnext.CHANGES:
         assert new in page
 
