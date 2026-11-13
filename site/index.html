@@ -27,27 +27,73 @@
       font-display: swap; /* avoids invisible text in Safari */
       font-feature-settings: "kern", "liga"; /* required on Firefox */
     }
+    /* The scroll: rice paper, calligraphy ink and one seal red (the JZP design system's tokens, the same names as the Builder's app.css) */
+    :root {
+      --bg-app: #f3f1ed; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
+      --bg-bar: #2e2a27; --on-bar: #f7f5f1; --on-bar-muted: #cfc9c2;
+      --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a;
+      --border: #cdc7bf; --border-strong: #7c756e; --hairline: #ddd8d1;
+      --link: #0a5cbf; --accent: #a3352b; --on-accent: #ffffff; --target: #f1e7cf;
+      --well: rgba(80, 72, 64, 0.08);        /* the typed-spelling chips: a wash, so the paper shows through */
+      --bs-body-bg: var(--bg-app); --bs-body-color: var(--ink); --bs-emphasis-color: var(--ink);
+      --bs-border-color: var(--border); --bs-secondary-color: var(--ink-muted); --bs-link-color: var(--link); --bs-link-color-rgb: 10, 92, 191;
+    }
+    html { background: var(--bg-app); }
+    body {
+      color: var(--ink);
+      background-color: var(--bg-app);
+      background-image:
+        /* fibres and grain of the paper */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.26 0 0 0 0.9 -0.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.14'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.1'/%3E%3C/svg%3E"),
+        /* the soft mottling of old paper */
+        radial-gradient(ellipse 60% 40% at 18% 22%, rgba(120, 112, 104, 0.04), transparent 70%),
+        radial-gradient(ellipse 50% 35% at 82% 65%, rgba(120, 112, 104, 0.04), transparent 70%),
+        /* the scroll's edges, darker where the paper meets the mounting */
+        linear-gradient(90deg, rgba(100, 92, 84, 0.11), transparent 6%, transparent 94%, rgba(100, 92, 84, 0.11));
+      background-size: 360px 360px, 100% 1600px, 100% 1600px, 100% 100%;   /* the mottling repeats down the scroll */
+      background-repeat: repeat, repeat-y, repeat-y, no-repeat;
+    }
+    /* the scroll's rods (天杆 at the top, 地杆 at the bottom) */
+    .scroll-rod { height: 10px; background: linear-gradient(180deg, #c9c2ba, #e2ddd7 40%, #bdb5ac 75%, #a9a097); border-bottom: 1px solid #958c83; }
+    .scroll-rod.bottom { margin-top: 48px; border-top: 1px solid #958c83; border-bottom: 0; }
+    /* the title row: the seal and the title centred on each other, the v2 link at the top right */
+    .title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .title-row h1 { margin: 0; }
+    .title-row .v2-link { margin-left: auto; align-self: flex-start; font-size: 12px; }
+    /* the seal beside the title: 减字谱 in reversed type, once on the page */
+    .seal { display: inline-flex; writing-mode: vertical-rl; align-items: center; justify-content: center; flex: none; padding: 6px 3px;
+      background: var(--accent); color: var(--bg-panel); font-family: "LXGW WenKai TC", "Kaiti SC", "KaiTi", "STKaiti", serif; font-size: 1rem; line-height: 1.1; letter-spacing: 0.05em;
+      border-radius: 3px 2px 4px 2px; box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px rgba(246, 242, 234, 0.65); }
     body {
       font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
     }
+    a { color: var(--link); }
+    h1, h2, h3, h4 { color: var(--ink); }
+    .text-muted { color: var(--ink-muted) !important; }
+    .table { --bs-table-bg: transparent; --bs-table-color: var(--ink); --bs-table-border-color: var(--hairline); }
+    .table thead th { border-bottom: 1px solid var(--ink); }
+    .form-control { background-color: var(--bg-field); border-color: var(--border-strong); color: var(--ink); }
+    .form-control:focus { background-color: var(--bg-field); color: var(--ink); }
+    hr { border-color: var(--border); opacity: 1; }
     .table {
       font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
     }
     text {
-      background-color: #eee;
-      color: #000;
+      background-color: var(--well);
+      color: var(--ink);
       padding: 5px;
       border-radius: 5px;
       font-family: 'Roboto Mono', 'M PLUS 1 Code',  monospace;
       font-size: 0.8rem;
     }
     .alert-tip text {
-      background-color: #fff;
+      background-color: var(--bg-panel);
     }
     txs {
       display: block;
       font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
-      font-size: 0.7rem;
+      font-size: 1rem;
+      word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
       /* background-color: #eee;
       padding: 3px;
       margin: 2px;
@@ -56,13 +102,14 @@
     /* the glossary's row IDs (1, 2, 3… down the page), generated with the tables: a link to the row */
     td.gid, th.gid { white-space: nowrap; }
     .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
-    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: #777; }
-    tr:target { background-color: #fff6d6; }
+    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
     /* the glossary's search box (script at the end of the page) */
     [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
     .glossary-search { margin: 8px 0 16px; }
     .glossary-search input { max-width: 420px; }
-    .glossary-search p { margin: 4px 0 0; color: #666; font-size: 0.875rem; min-height: 1.3em; }
+    .glossary-search label { text-transform: none; }
+    .glossary-search p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.875rem; min-height: 1.3em; }
     html { scroll-padding-top: 96px; }   /* a linked row or heading lands below the sticky download bar */
     jzp {
       font-size: 2.5rem;
@@ -75,12 +122,12 @@
       font-weight: bold;
     }
     r {
-      color: rgb(180, 44, 44);
+      color: var(--accent);
     }
     h3 {
       margin-top: 30px;
       padding-top: 20px;
-      border-top: 2px solid #222;
+      border-top: 2px solid var(--ink);
     }
     .jzp {
       font-family: 'JianZiPu', 'Arial', sans-serif;
@@ -108,7 +155,9 @@
       padding: 10px 1.5em 10px 10px;
     }
     .jzp-example-container {
-      background-color: #eee;
+      background-color: rgba(255, 255, 255, 0.55);   /* reads as #faf9f7 on the paper */
+      border: 1px solid var(--border);
+      color: var(--ink);
       position: relative;
       border-radius: 0px;
     }
@@ -138,10 +187,11 @@
     .alert-tip {
       border-radius: 0px;
       border-right: 0px;
-      border-left: solid 5px #000;
+      border-left: solid 5px var(--ink);
       border-top: 0px;
       border-bottom: 0px;
-      background-color: #e2e3e5;
+      background-color: var(--bg-sunken);
+      color: var(--ink);
     }
 
     /* Floating download button */
@@ -161,14 +211,14 @@
     }
 
     .btn-primary {
-      background-color: #000;
-      border-color: #000;
+      background-color: var(--ink);
+      border-color: var(--ink);
       border-radius: 3px;
     }
 
     .btn-primary:hover {
-      background-color: #000;
-      border-color: #000;
+      background-color: var(--ink);
+      border-color: var(--ink);
       border-radius: 5px;
     }
 
@@ -181,80 +231,89 @@
       padding: 10px 20px;
     }
     .download-bar {
-      background-color: #353535;
+      background-color: var(--bg-bar);
       text-align: center;
       padding: 10px 0;
     }
     .download-bar a {
-      color: #fff;
+      color: var(--on-bar);
     }
     .download-bar .font-version {
       display: block;
-      color: #c8c8c8;
+      color: var(--on-bar-muted);
       font-size: 12px;
       margin-top: 2px;
     }
     .download-bar .font-version a {
-      color: #c8c8c8;
+      color: var(--on-bar-muted);
       text-decoration: underline;
     }
     /* the "send me the font" form (EmailOctopus) */
-    .signup-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px 20px; border: 1px solid #c4c4c4; border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); }
+    .signup-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px 20px; background: var(--bg-panel); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); }
     .signup-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
     .signup-close { display: flex; justify-content: flex-end; margin: 0 0 4px; }
     .signup-dialog h1, .signup-dialog h2, .signup-dialog h3 { margin-top: 0; padding-top: 0; border-top: 0; } /* not the page's section headings */
     .signup-done { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
     .signup-done[hidden] { display: none; }
-    .signup-done p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: #555; text-align: center; }
-    .signup-download { display: block; padding: 14px 16px; background: #000; color: #fff; text-align: center; font-size: 1.1rem; text-decoration: none; border-radius: 2px; }
-    .signup-download:hover, .signup-download:focus-visible { background: #333; color: #fff; }
-    .signup-download:focus-visible { outline: 2px solid #0a5cbf; outline-offset: 2px; }
+    .signup-done p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink-muted); text-align: center; }
+    .signup-download { display: block; padding: 14px 16px; background: var(--ink); color: var(--bg-panel); text-align: center; font-size: 1.1rem; text-decoration: none; border-radius: 2px; }
+    .signup-download:hover, .signup-download:focus-visible { background: #45403b; color: var(--bg-panel); }
+    .signup-download:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .text-entry-examples {
       font-size: 0.8em
     }
 
     /* ---- On a phone (narrower than 760px). A computer keeps the layout above. ---- */
-    .contents, .font-version-top, .keyboard-map-link { display: none; }
+    .contents, .font-version-top { display: none; }
     @media (max-width: 759.98px) {
       html { scroll-padding-top: 72px; }
       /* the spellings people read and copy, and the one rule everyone needs */
       text { font-size: 15px; padding: 3px 6px; line-height: 2; }
-      txs { font-size: 14px; }
-      .space-rule { display: block; margin-top: 8px; font-size: 15px; color: #333 !important; }
       /* a result glyph moves to the next line rather than running off the edge; glyphs inside sentences sit in the line */
       li jzp { display: inline-block; max-width: 100%; }
       p jzp, .alert-tip jzp { font-size: 1.6em; line-height: 1.2; }
       /* tap targets */
-      .text-entry-examples a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; margin: 4px 2px; border: 1px solid #999; border-radius: 22px; background: #fff; color: #000; text-decoration: none; font-weight: 600; }
+      .text-entry-examples a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; margin: 4px 2px; border: 1px solid var(--border-strong); border-radius: 22px; background: var(--bg-field); color: var(--ink); text-decoration: none; font-weight: 600; }
       .v2-link a, .font-version-top a { display: inline-block; padding: 10px 2px; }
-      .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: #555; }
+      .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-muted); }
       /* the demo: a box that wraps instead of a one-line field */
       textarea.text-entry { resize: none; line-height: 1.4; }
+      /* the glossary's tables fit the screen: slimmer cell padding, and a long spelling may break when it must */
+      .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
+      .table td { overflow-wrap: anywhere; }
+      txs { word-break: normal; }
       /* the sticky bar: one slim row, the contents on the left and the download button on the right */
       /* pinned to the top from the first screen, so Contents and Download are always in reach */
       body { padding-top: 56px; }
       .download-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 1020; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; }
       .download-bar .font-version { display: none; }
-      .download-bar .download { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; flex: none; margin-left: auto; border-radius: 4px; background: #fff; color: #000; font-weight: 600; text-decoration: none; }
-      .contents { display: block; flex: 1 1 auto; min-width: 0; color: #fff; }
+      .download-bar .download { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; flex: none; margin-left: auto; border-radius: 4px; background: var(--on-bar); color: var(--ink); font-weight: 600; text-decoration: none; }
+      .contents { display: block; flex: 1 1 auto; min-width: 0; color: var(--on-bar); }
       .contents summary { display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
       .contents summary::-webkit-details-marker { display: none; }
-      .contents summary::after { content: "▾"; color: #c8c8c8; }
+      .contents summary::after { content: "▾"; color: var(--on-bar-muted); }
       .contents[open] summary::after { content: "▴"; }
-      .contents-label { color: #c8c8c8; font-size: 14px; }
+      .contents-label { color: var(--on-bar-muted); font-size: 14px; }
       .contents-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-      .contents nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: 4px 0; background: #fafafa; border-bottom: 1px solid #ccc; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
-      .contents nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: #222; text-decoration: none; border-left: 3px solid transparent; }
-      .contents nav a.sub { padding-left: 32px; color: #444; }
-      .contents nav a[aria-current="true"] { border-left-color: #222; background: #e9e9e9; font-weight: 600; }
+      .contents nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: 4px 0; background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+      .contents nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: var(--ink); text-decoration: none; border-left: 3px solid transparent; }
+      .contents nav a.sub { padding-left: 32px; color: var(--ink-muted); }
+      .contents nav a[aria-current="true"] { border-left-color: var(--accent); background: var(--bg-hover); font-weight: 600; }
       .download-name { display: none; }
-      /* the keyboard map is unreadable at this width: a link to the full picture instead */
-      .keyboard-map { display: none; }
-      .keyboard-map-link { display: inline-flex; align-items: center; min-height: 44px; }
       /* while a demo box has the keyboard, the bar steps aside so the notation stays in view */
       body.typing .download-bar { display: none; }
     }
 
+    /* "How to type": five rules, then the folded extras */
+    .rules { padding-left: 1.2rem; margin-bottom: 8px; }
+    .rules li, details.more li { margin: 4px 0; }
+    .rules jzp, details.more jzp { font-size: 2rem; }
+    details.more { margin: 4px 0 8px; }
+    details.more summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
+    details.more[open] summary { margin-bottom: 8px; }
+    @media (max-width: 759.98px) {
+      details.more summary { padding: 10px 0; }   /* a 44px tap target that keeps its open/closed marker */
+    }
     .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
     .glossary-subdesc { margin-bottom: .25rem; }
   </style>
@@ -266,22 +325,22 @@
 </head>
 <body>
 
-  <div id="top" style="background: #EEE">
+  <div class="scroll-rod" aria-hidden="true"></div>
+  <div id="top">
     <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
-      <div>
-        <h1 style="float: left">JianZiPu Font (v3)</h1>
-        <small class="v2-link" style="font-size:12px; float: right"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
+      <div class="title-row">
+        <span class="seal" aria-hidden="true">减字谱</span>
+        <h1>JianZiPu Font (v3)</h1>
+        <small class="v2-link"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
       </div>
-      <div style="clear: both"></div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
       <p class="vnext-link"><small><a href="./vnext.html">Coming in the next release</a>: vertical words without the colon, and new ways to write hui numbers in Chinese (徽, 十一 to 十三, 弦).</small></p>
 
       <small class="font-version-top" id="font-version-top"></small>
-      <small class="text-muted space-rule">Remember: Use the spacebar to advance between characters for proper notation spacing!</small>
 
-      <div class="alert alert-secondary jzp-example-container" style="background: #FAFAFA">
-        <small>Type here to preview text</small>
+      <div class="alert alert-secondary jzp-example-container">
+        <small>Type here to preview. Press space after each character, or type # before it.</small>
         <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
         <div class="text-entry-examples">
           <span>See example in </span>
@@ -299,12 +358,8 @@
       <summary><span class="contents-label">Contents</span> <span class="contents-now">Introduction</span></summary>
       <nav aria-label="Contents">
         <a href="#top">Introduction</a>
-        <a href="#basic-layout">1. Basic Layout</a>
-        <a href="#numbers">2. Numbers and Decimals</a>
-        <a href="#modifiers">3. Basic Modifiers</a>
-        <a href="#chords">4. Chords</a>
-        <a href="#vertical">5. Vertical Texts</a>
-        <a href="#glossary">6. Glossary</a>
+        <a href="#how-to-type">How to type</a>
+        <a href="#glossary">Glossary</a>
         <!-- glossary nav: the glossary's contents links, generated like the glossary -->
         <a class="sub" href="#glossary-left">Left hand</a>
         <a class="sub" href="#glossary-right">Right hand</a>
@@ -318,250 +373,44 @@
     </a>
     <small class="font-version" id="font-version"></small>
   </div>
-  <div class="container">   
-    <p>The JianZiPu font uses a <strong>glyph layering system</strong> where each musical notation character is built by combining multiple component glyphs that stack and position themselves relative to each other. So each character is made of a series of glyphs, similar to how an English word is made of a series of letters.</p>
-    
-    <div class="alert alert-tip"><strong>Why the spacebar is essential:</strong> Each space character acts as a <em>positioning anchor</em> that tells the font where to place the next set of layered components. Without spaces, the glyph components would overlap or misalign, resulting in unreadable notation. The spacebar essentially advances the "cursor" to the next character position, ensuring proper spacing and alignment of the layered musical symbols.</div>
-    
-    <div class="alert alert-tip"><strong>Sibelius/MuseScore Users:</strong> In these music notation programs, the "space" advances lyrics to the next note. If you are using JianZiPu as lyrics, this messes up with formatting. In this case use <text>+</text> after a character to give the character some width. Ex: <text>勾七+</text> or <text>k7+</text> will display correctly in these programs as <jzp>k7</jzp>, then use spacebar to advance to the next note. <text>：泛起+名九挑六</text> or <text>:fanqi+s9u6</text> will be processed as one word <jzp>:fanqi+名九挑六</jzp> in these programs and thus both these will be attached to one note.</div>
-   
-    <h3 id="basic-layout">1. Basic Layout</h3>
-    
-    <p>For left hand...</p>
-    <ul>
-      <li><text>名</text> or <text>s</text> → <jzp>s</jzp>Ex: <text><r>名</r>九勾五</text> or <text><r>s</r>9k5</text> → <jzp><r>s</r>9k5 </jzp></li>
-      <li><text>中</text> or <text>d</text> → <jzp>d</jzp>Ex: <text><r>中</r>九勾五</text> or <text><r>d</r>9k5</text> → <jzp><r>d</r>9k5</jzp></li>
-      <li><text>食</text> or <text>f</text> → <jzp>f</jzp>Ex: <text><r>食</r>九勾五</text> or <text><r>f</r>9k5</text> → <jzp><r>f</r>9k5</jzp></li>
-      <li><text>大</text> or <text>v</text> → <jzp>v</jzp>Ex: <text><r>大</r>九勾五</text> or <text><r>v</r>9k5</text> → <jzp><r>v</r>9k5</jzp></li>
-      <li><text>跪</text> or <text>x</text> → <jzp>x</jzp>Ex: <text><r>跪</r>九勾五</text> or <text><r>x</r>9k5</text> → <jzp><r>x</r>9k5</jzp></li>
-    </ul>
-    <p>For right hand...</p>
-    <ul>
-      <li><text>劈</text> or <text>n</text> → <jzp>n</jzp>Ex: <text>名九<r>劈</r>五</text> or <text>s9<r>n</r>5</text> → <jzp>s9<r>n</r>5</jzp></li>
-      <li><text>托</text> or <text>h</text> → <jzp>h</jzp>Ex: <text>名九<r>托</r>五</text> or <text>s9<r>h</r>5</text> → <jzp>s9<r>h</r>5</jzp></li>
-      <li><text>抹</text> or <text>j</text> → <jzp>j</jzp>Ex: <text>名九<r>抹</r>五</text> or <text>s9<r>j</r>5</text> → <jzp>s9<r>j</r>5</jzp></li>
-      <li><text>挑</text> or <text>u</text> → <jzp>u</jzp>Ex: <text>名九<r>挑</r>五</text> or <text>s9<r>u</r>5</text> → <jzp>s9<r>u</r>5</jzp></li>
-      <li><text>勾</text> or <text>k</text> → <jzp>k</jzp>Ex: <text>名九<r>勾</r>五</text> or <text>s9<r>k</r>5</text> → <jzp>s9<r>k</r>5</jzp></li>
-      <li><text>剔</text> or <text>i</text> → <jzp>i</jzp>Ex: <text>名九<r>剔</r>五</text> or <text>s9<r>i</r>5</text> → <jzp>s9<r>i</r>5</jzp></li>
-      <li><text>打</text> or <text>l</text> → <jzp>l</jzp>Ex: <text>名九<r>打</r>五</text> or <text>s9<r>l</r>5</text> → <jzp>s9<r>l</r>5</jzp></li>
-      <li><text>摘</text> or <text>o</text> → <jzp>o</jzp>Ex: <text>名九<r>摘</r>五</text> or <text>s9<r>o</r>5</text> → <jzp>s9<r>o</r>5</jzp></li>
-      <li><text>历</text> or <text>U</text> → <jzp>U</jzp>This takes two strings. Ex: <text>名九<r>历</r>五四</text> or <text>s9<r>U</r>54</text> → <jzp>s9<r>U</r>54</jzp></li>
+  <div class="container">
+    <h3 id="how-to-type">How to type</h3>
+    <ul class="rules">
+      <li id="basic-layout">Type each character the way you read it, in 中文 or ASCII. A character has no width of its own, so press <strong>space</strong> after it: <text>名九勾五 中七挑三</text> or <text>s9k5 d7u3</text> → <jzp>s9k5 d7u3</jzp>. Or type <strong>#</strong> before it: <text>#名九勾五#中七挑三</text> or <text>#s9k5#d7u3</text> → <jzp>#s9k5#d7u3</jzp></li>
+      <li id="ascii">In ASCII, most characters are spelled with their pinyin or its initials, like 泛音 (which goes first): <text><r>泛音</r>名九挑六</text> or <text><r>fanyin</r>s9u6</text> or <text><r>fy</r>s9u6</text> → <jzp><r>fy</r>s9u6</jzp>. The main fingerings sit where your fingers rest on a QWERTY keyboard. The left hand's fingers are on the left, <text>s</text> 名, <text>d</text> 中 and <text>f</text> 食, with <text>v</text> 大 and <text>x</text> 跪 below. The right hand's strokes are on the right, <text>h</text> 托, <text>j</text> 抹, <text>k</text> 勾 and <text>l</text> 打, with <text>u</text> 挑, <text>i</text> 剔 and <text>o</text> 摘 above and <text>n</text> 劈 below.</li>
+      <li id="numbers">Hui and strings are numbers, and .5 shows as 半: <text>中<r>八五</r>勾五</text> or <text>d<r>8.5</r>k5</text> → <jzp>d<r>8.5</r>k5</jzp></li>
+      <li>A comma keeps a hui and a string apart: <text>名七<r>，</r>六</text> or <text>s7<r>,</r>6</text> → <jzp>s7,6</jzp></li>
+      <li id="chords">A chord puts <text>|</text> between its left and right sides. <text><r>撮</r>大九，六<r>｜</r>散三</text> or <text><r>C</r>v9,6<r>|</r>03</text> → <jzp><r>C</r>v9,6<r>|</r>03</jzp></li>
+      <li id="vertical">A word written down the side (上, 下, 泛起…) starts with a colon. Chinese is safest here, as some pinyin spellings are alike. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp>. A coming version of the font lets you leave the colon out: <a href="./vnext.html#vertical">see the next release</a>.</li>
     </ul>
 
-    <p>For numbers in hui position and string... well, just use numbers! Which numbers? Like <text>五</text> or <text>5</text>. You can also use <text>外</text> or <text>13+</text> for the <jzp>:wai</jzp> character, as well as <text>散</text> and <text>0</text> for the <jzp>:san</jzp> character.</p>
+    <details class="more" id="modifiers">
+      <summary>More rules: open strings, 外, 急 绰 注 and numbers</summary>
+      <ul>
+        <li>An open string is 散 or 0. <text><r>散</r>勾三</text> or <text><r>0</r>k3</text> → <jzp><r>0</r>k3</jzp></li>
+        <li>Past the 13th hui is 外 or 13+. <text>名<r>外</r>挑六</text> or <text>s<r>13+</r>u6</text> → <jzp>s<r>13+</r>u6</jzp></li>
+        <li>急 &gt;, 绰 / and 注 \ go after the hui. <text>名九<r>绰</r>勾六</text> or <text>s9<r>/</r>k6</text> → <jzp>s9<r>/</r>k6</jzp></li>
+        <li><text>名七六</text> or <text>s76</text> → <jzp>s76</jzp> 7.6 hui, no string.</li>
+        <li><text>名七六六</text> or <text>s766</text> → <jzp>s766</jzp> 7.6 hui, string 6.</li>
+        <li><text>历七六</text> or <text>U76</text> → <jzp>U76</jzp> strings 7 and 6: digits only make a decimal right after a left-hand finger.</li>
+        <li><text>名七点九</text> → <jzp>名七点九</jzp> In Chinese, 点 or 徽 between the digits also marks the decimal.</li>
+        <li>The next release reads 十一 to 十三 as hui 11 to 13, and adds 弦 to mark a string: <a href="./vnext.html#hui">see what's coming</a>.</li>
+        <li><text>就勾五</text> or <text>jiuk5</text> → <jzp>就勾五</jzp> 就 repeats the left hand of the character before.</li>
+        <li>Keep each character in one script: <text>勾3</text> or <text>k三</text> may show in a browser but not in Word.</li>
+      </ul>
+    </details>
 
-    <ul>
-      <li><text>名<r>九</r>勾五</text> or <text>s<r>9</r>k5</text> → <jzp>名<r>九</r>勾五</jzp></li>
-      <li><text>名<r>外</r>勾五</text> or <text>s<r>13+</r>k5</text> → <jzp>名<r>外</r>勾五</jzp></li>
-      <li><text><r>散</r>勾五</text> or <text><r>0</r>k5</text> → <jzp><r>散</r>勾五</jzp></li>
-    </ul>
+    <details class="more">
+      <summary>Using the font in Sibelius or MuseScore</summary>
+      <p>There the spacebar moves lyrics to the next note. End each character with <text>+</text> instead to give it its width, then press space to move on.</p>
+      <ul>
+        <li><text>勾七+</text> or <text>k7+</text> → <jzp>k7+</jzp></li>
+        <li><text>：泛起+名九挑六</text> or <text>:fanqi+s9u6</text> → <jzp>:fanqi+s9u6</jzp> one word, on one note.</li>
+      </ul>
+    </details>
 
-
-
-    <div class="alert alert-tip">
-      <strong>Note!</strong> Mixing and matching (e.g., <text>勾3</text> or <text>k三</text>) is not always supported, the text might render on Chrome but not in Word. 
-    </div>
-    
-    <p>Try it out below! Type in the box and the notation underneath follows as you type.</p>
-
-    <div class="alert alert-secondary jzp-example-container">
-      <small>Type here to preview text</small>
-      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />      
-      <div class="text-entry-examples">
-        <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名八勾三 中外挑五 大九抹挑七 ");''>中文</a>
-        <span> or </span>
-        <a href="javascript:void(0)" onClick='fillIn(this, "s8k3 d13+u5 v9ju7 ")''>ASCII</a>
-      </div>
-      <hr />
-      <div class="jzp jzp-example" contenteditable></div>
-    </div>
-
-    <h3 id="numbers">2. Numbers and Decimals</h3>
-    <p>If you are using ASCII, you can note a decimal by just writing 7.5, 7.6, etc.</p>
-    <p><small>Some of these rules change in the next release (十一 to 十三, 徽, 弦): <a href="./vnext.html#hui">see what's coming</a>.</small></p>
-    <p>If you are using Chinese, the font will treat the numbers different depending on if they are preceded by a left hand glyph or not. For example, if two numbers are follows a left hand, then that gets converted to decimals (s76 => s7.6), can put comma between (s7,6)</p>
-    <ul>
-      <li><text>名七六</text> and <text>s76</text> → 7.6 hui (no string) <jzp>s76</jzp></li>
-      <li><text>名七,六</text> and <text>s7,6</text> → 7 hui, string 6 <jzp>s7,6</jzp></li>
-      <li><text>名七六六</text> and <text>s766</text> → 7.6 hui, string 6 <jzp>s766</jzp></li>
-      <li><text>名十点一</text> and <text>s10.1</text> → 10.1 hui (no string) <jzp>s10.1</jzp></li>
-      <li><text>历七六</text> and <text>U76</text> → string 7, string 6 <jzp>U76</jzp> Here 76 is not converted into 7.6 since it's not preceded by a left hand glyph</li>
-    </ul>
-    <p>For Chinese, you can also use 点 and 徽 to indicate decimals For example, <text>名七点九</text> gives <jzp>名七点九</jzp>.</p>
-    <p>Here are some crazy examples:</p>
-    <ul>
-      <li><text>名十</text> gives <jzp>名十</jzp></li>
-      <li><text>名十二</text> gives <jzp>名十二</jzp> In the code this is represented as 10.2</li>
-      <li><text>名十二徽</text> gives <jzp>名十二徽</jzp> In the code this is represented as 12, though I don't know if visually it's all that different from 10.2 above.</li>
-      <li><text>名十，二</text> gives <jzp>名十，二</jzp> </li>
-      <li><text>名十二二</text> gives <jzp>名十二二</jzp></li>
-      <li><text>名十二二二</text> gives <jzp>名十二二二</jzp></li>
-    </ul>
-
-    <p>Anything that results in ".5" hui will be rendered with the <jzp>:ban</jzp> character.</p>
-
-    <ul>
-      <li><text>中<r>八半</r>勾五</text> gives <jzp>中<r>八半</r>勾五</jzp></li>
-      <li><text>中<r>八五</r>勾五</text> also gives <jzp>中<r>八五</r>勾五</jzp></li>
-      <li><text>d<r>8.5</r>k5</text> also also gives <jzp>d<r>8.5</r>k5</jzp></li>
-      <li><text>d<r>85</r>k5</text> also also also gives <jzp>d<r>85</r>k5</jzp> Do you see the difference? There's no period between 8 and 5, but the font still treats it as a decimal.</li>
-    </ul>
-
-    <p>Anything that's after the 13th hui will be rendered with the <jzp>:wai</jzp> character. You can use <text>13+</text> or <text>外</text> for the <jzp>:wai</jzp> character.</p>
-    <ul>
-      <li><text>名<r>外</r>挑六</text> and <text>s<r>13+</r>u6</text> gives <jzp>名<r>外</r>挑六</jzp></li>
-      <li><text>名<r>十三二</r>挑六</text> and <text>s<r>132</r>u6</text> gives <jzp>名<r>十三二</r>挑六</jzp></li>
-    </ul>
-
-    <p>You can use <text>散</text> or <text>0</text> to indicate an open string as in <text><r>0</r>k5</text> or <text><r>散</r>勾五</text> → <jzp><r>散</r>勾五</jzp></p>
-
-    
-    <p>You can use <text>就</text> or <text>jiu</text> to indicate a repeat from the previous character as in <text><r>jiu</r>k5</text> or <text><r>就</r>勾五</text> → <jzp><r>就</r>勾五</jzp></p>
-
-
-    <div class="alert alert-secondary jzp-example-container">
-      <small>Type here to preview text 
-      </small>
-      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <div class="text-entry-examples">
-        <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五 名7.5 名十二 名十二二 名十二徽 ");''>中文</a>
-        <span> or </span>
-        <a href="javascript:void(0)" onClick='fillIn(this, "s75 s7,5 s755 s7.5 s12 s122 s12.2 ")''>ASCII</a>
-      </div>
-      <hr />
-      <div class="jzp jzp-example" contenteditable></div>
-    </div>
-
-    <h3 id="modifiers">3. Basic Modifiers</h3>
-    <p>There are a lot of modifiers in the font, but there a few that is positioned in funny places around a JianZiPu character. I'll show it with a <jzp>名九勾六</jzp> character</p>
-    <ul>
-      <li><text><r>泛音</r>名九勾六</text> or <text><r>fy</r>s9k6</text> → <jzp><r>泛音</r>名九勾六</jzp></li>
-      <li><text>名九<r>急</r>勾六</text> or <text>s9<r>></r>k6</text> → <jzp>名九<r>急</r>勾六</jzp></li>
-      <li><text>名九<r>绰</r>勾六</text> or <text>s9<r>/</r>k6</text> → <jzp>名九<r>绰</r>勾六</jzp></li>
-      <li><text>名九<r>注</r>勾六</text> or <text>s9<r>\</r>k6</text> → <jzp>名九<r>注</r>勾六</jzp></li>
-      <li><text>名九<r>绰注</r>勾六</text> or <text>s9<r>/\</r>k6</text> → <jzp>名九<r>绰注</r>勾六</jzp></li>
-    </ul>
-
-    <div class="alert alert-secondary jzp-example-container">
-      <small>Type here to preview text 
-      </small>
-      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <div class="text-entry-examples">
-        <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "泛音名九勾六 ");''>中文</a>
-        <span> or </span>
-        <a href="javascript:void(0)" onClick='fillIn(this, "fys9k6 fanyins9k6 ")''>ASCII</a>
-      </div>
-      <hr />
-      <div class="jzp jzp-example" contenteditable></div>
-    </div>
-
-    <h3 id="chords">4. Chords</h3>
-
-    <p>For the purpose of the font, a chord is anything where there's something on the left and right side, and generally takes up more space.</p>
-  
-    <p>Ex: <jzp>Cs9,6|3</jzp> or <jzp>B6|5</jzp> or <jzp>TT6|5</jzp></p>
-
-    <p>You start with a "chord" indicator, <text>撮</text> or <text>C</text>, and use the <text>|</text> to separate the left and right side.</p>
-
-    <ul>
-      <li><text>撮大九，六｜散三</text> or <text>Cv9,6|03</text> → <jzp>Cv9,6|03</jzp> Note you'll need to use a comma between the hui and the string, otherwise...</li>
-      <li><text>撮大九六｜散三</text> or <text>Cv96|03</text> → <jzp>撮大九六｜散三</jzp>.. you get this. And yes, the system is smart enough not to interpret 03 as 0.3.</li>
-    </ul>
-
-    <p>You can see the complete list of chords in the <a href="#glossary">glossary</a> below.</p>
-
-    <p>Here's a few "chords" for you to try out.</p>
-
-    <div class="alert alert-secondary jzp-example-container">
-      <small>Type here to preview text 
-      </small>
-      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <div class="text-entry-examples">
-        <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "撮大九，六｜散四 拨剌大九注六｜散五 ");''>中文</a>
-        <span> or </span>
-        <a href="javascript:void(0)" onClick='fillIn(this, "Cv9,6|04 BLv9\\6|05 ")''>ASCII</a>
-      </div>
-      <hr />
-      <div class="jzp jzp-example" contenteditable></div>
-    </div>
-
-    <!-- <div class="row" style="margin-bottom: 3rem">
-      <div class="col-md-6">
-        <label>JianZiPu</label>
-        <textarea class="jzp-entry jzp form-control" data-text-group="chords">撮大九，六｜散四 拨剌大九注六｜散五
-Cv9,6|02 BLv9\6|02
-        </textarea>
-      </div>
-      <div class="col-md-6">
-        <label>Text</label>
-        <textarea class="lat-entry form-control" data-text-group="chords"></textarea>
-      </div>
-    </div> -->
-
-
-    <h3 id="vertical">5. Vertical Texts</h3>
-    <p>Vertical texts are just a string of characters, and will be rendered vertically. You start with a vertical indicator, <text>：</text>. While the characters here have ASCII equivalents, you should probably use Chinese characters to avoid ambiguity with homonym pinyins. Also in general, it is more robust with Chinese characters.</p>
-    <ul>
-      <li><text>：上七九</text> or <text>:shang79</text> → <jzp>:shang79</jzp></li>
-      <li><text>：下六二</text> or <text>:xia62</text> → <jzp>:xia62</jzp></li>
-      <li><text>：分开</text> or <text>:fenkai</text> → <jzp>:fenkai</jzp> this is actually one character I squished together.</li>
-      <li><text>：泛止 ：泛起</text> or <text>:fanzhi :fanqi</text> → <jzp>:fanzhi :fanqi</jzp></li>
-      <li><text>：滚沸</text>or <text>:gunfu</text> → <jzp>:gunfu</jzp></li>
-    </ul>
-    <p>Please reference the <a href="#glossary">glossary</a> below for the complete list. There are quite a bit.</p>
-
-    <p>You can also embed some left handed glyphs with hui positions.</p>
-    <ul>
-      <li><text>：大八五轮七</text> or <text>:v8.5lun7</text> → <jzp>：大八五轮七</jzp></li>
-      <li><text>：大八五七</text> or <text>:v8.57</text> → <jzp>：大八五七</jzp></li>
-      <li><text>：大八五</text> or <text>:v8.5</text> → <jzp>：大八五</jzp> Note that <text>八五</text> is interpreted as 8.5</li>
-      <li><text>：大八,五</text> or <text>:v8,5</text> → <jzp>：大八,五</jzp> If you don't want <text>八五</text> to be interpreted as 8.5, then you can use a comma <text>八，五</text></li>
-    </ul>
-
-    <p>Here are some examples to try out.</p>
-
-    <div class="alert alert-secondary jzp-example-container">
-      <small>Type here to preview text 
-      </small>
-      <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <div class="text-entry-examples">
-        <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "：上六四 ：下七九 ：滚沸 ：泛止 ：泛起 ：名九，半轮六 ：名九半轮六  ");''>中文</a>
-        <span> or </span>
-        <a href="javascript:void(0)" onClick='fillIn(this, ":shang64 :xia79 :gunfu :fanzhi :fanqi :s9banlun6 :s9.5lun6 ")''>ASCII</a>
-      </div>
-      <hr />
-      <div class="jzp jzp-example" contenteditable></div>
-    </div>
-
-    <!-- <div class="row" style="margin-bottom: 3rem">
-      <div class="col-md-6">
-        <label>JianZiPu</label>
-        <textarea class="jzp-entry jzp form-control" data-text-group="verts">：上六四 ：下七九 ：滚沸 ：泛止 ：泛起 ：名九，半轮六 ：名九半轮六 
-:shang64 :xia79 :gunfu :fanzhi :fanqi :s9banlun6 </textarea>
-      </div>
-      <div class="col-md-6">
-        <label>Text</label>
-        <textarea class="lat-entry form-control" data-text-group="verts"></textarea>
-      </div>
-    </div> -->
-
-    <a name="glossary"></a>
-    <h3 id="glossary">6. Glossary</h3>
-    <div class="row">
-      <div class="col-md-2"></div>
-      <div class="col-md-8">
-        <label>Keyboard Map (Basic Glyphs)</label>
-        <img class="keyboard-map" src="./keyboard.png" width="100%" loading="lazy" alt="Keyboard map: the key that types each basic glyph on a computer keyboard"/>
-        <a class="keyboard-map-link" href="./keyboard.png" target="_blank" rel="noopener">Open the keyboard map (a picture of a computer keyboard, best on a big screen)</a>
-        <br /><br />
-      </div>
-      <div class="col-md-2"></div>
-    </div>
+    <h3 id="glossary">Glossary</h3>
+    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.</p>
     <div class="row">
       <div class="col">
         <div class="glossary-search" role="search">
@@ -1705,6 +1554,7 @@ Cv9,6|02 BLv9\6|02
     </div>
 
   </div>
+  <div class="scroll-rod bottom" aria-hidden="true"></div>
   <script>
 
     // Font loading detection: the notation shows once the JianZiPu font is in
@@ -1781,6 +1631,14 @@ Cv9,6|02 BLv9\6|02
 
         // Keep updating when the user types
         input.addEventListener("input", () => updateTargets(input));
+      });
+      // typing straight into the notation keeps the box above in step (the box may be a phone's textarea by then)
+      document.querySelectorAll(".jzp-example[contenteditable]").forEach(el => {
+        for (const [k, v] of [["autocorrect", "off"], ["autocapitalize", "off"], ["spellcheck", "false"], ["autocomplete", "off"]]) el.setAttribute(k, v);
+        el.addEventListener("input", () => {
+          const box = el.closest(".jzp-example-container").querySelector(".text-entry");
+          if (box) box.value = el.textContent;
+        });
       });
     });
 
@@ -1894,7 +1752,7 @@ Cv9,6|02 BLv9\6|02
       }
       addEventListener('scroll', track, { passive: true });
       track();
-      const field = (el) => el && el.matches && el.matches('input[type=text], textarea');
+      const field = (el) => el && el.matches && el.matches('input[type=text], textarea, [contenteditable]');
       document.addEventListener('focusin', (e) => { if (phone.matches && field(e.target)) document.body.classList.add('typing'); });
       document.addEventListener('focusout', () => setTimeout(() => { if (!field(document.activeElement)) document.body.classList.remove('typing'); }, 0));
       function phoneDemos() {
@@ -1907,7 +1765,6 @@ Cv9,6|02 BLv9\6|02
           box.addEventListener('input', () => updateTargets(box));
           input.replaceWith(box);
         });
-        document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
     })();
@@ -2010,6 +1867,17 @@ Cv9,6|02 BLv9\6|02
         status.textContent = !q ? '' : shown ? shown + (shown === 1 ? ' row' : ' rows') : 'No glossary row matches. Try the pinyin without tones, or one character.';
       }
       input.addEventListener('input', run);
+    })();
+  </script>
+  <script>
+    // an old link to a lesson (#modifiers) opens the fold that holds it now
+    (function () {
+      function openTarget() {
+        var el = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        var d = el && el.closest && el.closest('details.more');
+        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
+      }
+      openTarget(); window.addEventListener('hashchange', openTarget);
     })();
   </script>
 </body>

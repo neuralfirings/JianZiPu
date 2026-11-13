@@ -14,26 +14,53 @@
     /* the released font (what the main page and the download have) and the next release's preview build */
     @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
     @font-face { font-family: 'JZP-next'; src: url('./JianZiPu-vnext.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
-    body { font-family: "Eczar", "LXGW WenKai TC", serif; color: #222; }
+    /* The scroll: rice paper, calligraphy ink and one seal red (the JZP design system's tokens, the same names as the Builder's app.css) */
+    :root {
+      --bg-app: #f3f1ed; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
+      --bg-bar: #2e2a27; --on-bar: #f7f5f1; --on-bar-muted: #cfc9c2;
+      --ink: #2b2724; --ink-muted: #5c5650; --ink-faint: #78716a;
+      --border: #cdc7bf; --border-strong: #7c756e; --hairline: #ddd8d1;
+      --link: #0a5cbf; --accent: #a3352b; --on-accent: #ffffff; --target: #f1e7cf;
+      --well: rgba(80, 72, 64, 0.08);        /* the typed-spelling chips: a wash, so the paper shows through */
+      --bs-body-bg: var(--bg-app); --bs-body-color: var(--ink); --bs-emphasis-color: var(--ink);
+      --bs-border-color: var(--border); --bs-secondary-color: var(--ink-muted); --bs-link-color: var(--link); --bs-link-color-rgb: 10, 92, 191;
+    }
+    html { background: var(--bg-app); }
+    body {
+      color: var(--ink);
+      background-color: var(--bg-app);
+      background-image:
+        /* fibres and grain of the paper */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.26 0 0 0 0.9 -0.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.14'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.1'/%3E%3C/svg%3E"),
+        /* the soft mottling of old paper */
+        radial-gradient(ellipse 60% 40% at 18% 22%, rgba(120, 112, 104, 0.04), transparent 70%),
+        radial-gradient(ellipse 50% 35% at 82% 65%, rgba(120, 112, 104, 0.04), transparent 70%),
+        /* the scroll's edges, darker where the paper meets the mounting */
+        linear-gradient(90deg, rgba(100, 92, 84, 0.11), transparent 6%, transparent 94%, rgba(100, 92, 84, 0.11));
+      background-size: 360px 360px, 100% 1600px, 100% 1600px, 100% 100%;   /* the mottling repeats down the scroll */
+      background-repeat: repeat, repeat-y, repeat-y, no-repeat;
+    }
+    body { font-family: "Eczar", "LXGW WenKai TC", serif; }
+    a { color: var(--link); }
     .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
     h1 { font-weight: 600; }
     h2 { font-weight: 600; margin-top: 2.5rem; }
-    .lead-note { background: #f6f4ee; border: 1px solid #e4dfd2; border-radius: 6px; padding: 12px 16px; }
-    text, code.t { font-family: "Roboto Mono", "LXGW WenKai TC", monospace; background: #eee; color: #000; padding: 2px 6px; border-radius: 4px; font-size: .9em; white-space: nowrap; }
+    .lead-note { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; }
+    text, code.t { font-family: "Roboto Mono", "LXGW WenKai TC", monospace; background: var(--well); color: var(--ink); padding: 2px 6px; border-radius: 4px; font-size: .9em; white-space: nowrap; }
     table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid #333; background: #f3f1ec; vertical-align: bottom; }
-    table.cmp td { padding: 6px 10px; border-bottom: 1px solid #ddd; vertical-align: middle; }
-    table.cmp td.n { color: #888; text-align: right; width: 2.5em; font-size: .9em; }
+    table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid var(--border-strong); background: var(--bg-sunken); vertical-align: bottom; }
+    table.cmp td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+    table.cmp td.n { color: var(--ink-faint); text-align: right; width: 2.5em; font-size: .9em; }
     table.cmp td.typed { font-family: "LXGW WenKai TC", "Roboto Mono", serif; font-size: 1.15rem; white-space: nowrap; }
     td.now, td.next { font-size: 44px; line-height: 1.3; white-space: nowrap; }
-    td.now { font-family: 'JZP-now'; color: #888; }
+    td.now { font-family: 'JZP-now'; color: var(--ink-faint); }
     td.next { font-family: 'JZP-next'; }
     th.now, th.next { width: 7.5em; }
-    .muted { color: #888; }
-    .tryit { background: #fafafa; border: 1px solid #e4e4e4; border-radius: 6px; padding: 16px; }
+    .muted { color: var(--ink-muted); }
+    .tryit { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
     .tryit .out { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; align-items: center; margin-top: 12px; }
-    .tryit .out .lbl { color: #888; font-size: .9rem; }
-    .tryit .out .now { font-family: 'JZP-now'; font-size: 44px; color: #888; overflow-wrap: anywhere; }
+    .tryit .out .lbl { color: var(--ink-muted); font-size: .9rem; }
+    .tryit .out .now { font-family: 'JZP-now'; font-size: 44px; color: var(--ink-faint); overflow-wrap: anywhere; }
     .tryit .out .next { font-family: 'JZP-next'; font-size: 44px; overflow-wrap: anywhere; }
     @media (max-width: 759.98px) {
       td.now, td.next, .tryit .out .now, .tryit .out .next { font-size: 34px; }
