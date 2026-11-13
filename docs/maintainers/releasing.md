@@ -23,8 +23,18 @@ one looks like.
 ## Before you start
 
 - You need a one-time setup: see [setup.md](setup.md), "Your computer".
+- Get the latest main and rebuild the Builder app. `app/build/` isn't in git,
+  so `git pull` alone leaves you with the screens from your last build:
+
+  ```bash
+  git switch main && git pull
+  ```
+  ```bash
+  cd app && npm install && npm run build
+  ```
 - Start the local Builder (`cd builder && python3 -m jzpbuild.webserver`) and
-  open http://127.0.0.1:5713/release.
+  open http://127.0.0.1:5713/release. If it was already running, restart it
+  after the pull so it runs the new code too.
 - Sign in as the admin on Review. Without signing in, the Release screen can't
   see the Change Requests, and **Build candidate** and **Publish** stay greyed
   out.
@@ -332,6 +342,13 @@ to 500 fixed it.
 - you're not signed in as the admin (Review → Sign in; your local
   `builder/.env` needs `SUPABASE_URL` and `SUPABASE_ANON_KEY`);
 - kept changes are still waiting to be added.
+
+**I pulled, but the Builder doesn't show the latest changes.** Check that
+you're on main (`git branch --show-current`). Publish switches you back to main
+only when your copy is clean, so you may still be on the last release branch.
+Then rebuild the app (`cd app && npm install && npm run build`), because
+`app/build/` isn't in git, and restart the Builder. Changes to the font itself,
+such as new typing rules, also need a Build before a preview shows them.
 
 **"Save or put aside your changes first".** Start needs a clean copy. Run
 `git status`, then commit or `git stash` what's there.
