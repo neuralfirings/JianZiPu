@@ -325,10 +325,10 @@ def test_a_new_glyph_is_drawn_in_from_its_drawing_without_a_build():
     design = json.loads(json.dumps(DESIGN))
     design["areas"]["char"]["glyphs"].append("md_wang")
     rows = tp.rows_from(csv_records() + [{"glyph_name": "md_wang", "latin": "wang"}], design)
-    plain = tp.FONTS.get(font, rows, design)
-    assert plain.not_built == ["md_wang"] and plain.drawn == []
+    plain = tp.FONTS.get(font, rows, design)         # (a release's new glyphs aren't in it yet either)
+    assert "md_wang" in plain.not_built and plain.drawn == []
     p = tp.FONTS.get(font, rows, design, lambda n: SQUARE if n == "md_wang" else None)
-    assert p.drawn == ["md_wang"] and p.not_built == []
+    assert p.drawn == ["md_wang"] and "md_wang" not in p.not_built
     assert "md_wang" in tp.shape(p, ["wang"])[0]["glyphs"]
     assert "GPOS" in TTFont(io.BytesIO(p.font_bytes))       # the build's positioning, kept
     full = tp.FONTS.get(font, rows, design, lambda n: SQUARE if n == "md_wang" else None, gpos=True)
@@ -337,11 +337,11 @@ def test_a_new_glyph_is_drawn_in_from_its_drawing_without_a_build():
     assert "md_wang" in t.getGlyphOrder() and "md_wang" in t["cmap"].getBestCmap().values()
     # a drawing the build couldn't read either stays out, reported like a glyph with none
     bad = tp.FONTS.get(font, rows, design, lambda n: "<svg" if n == "md_wang" else None)
-    assert bad.not_built == ["md_wang"]
+    assert "md_wang" in bad.not_built and bad.drawn == []
 
 
 def fake_base_font(path):
-    """A stand-in for TW-Kai with only 推 and 出, a square each."""
+    """A stand-in for TW-Kai with only 淼 and 焱, a square each."""
     from fontTools.fontBuilder import FontBuilder
     from fontTools.pens.ttGlyphPen import TTGlyphPen
 
@@ -350,9 +350,9 @@ def fake_base_font(path):
         pen.moveTo((100, 100)); pen.lineTo((100, 900)); pen.lineTo((900, 900)); pen.lineTo((900, 100)); pen.closePath()
         return pen.glyph()
     fb = FontBuilder(1024, isTTF=True)
-    names = [".notdef", "uni63A8", "uni51FA"]
+    names = [".notdef", "uni6DFC", "uni7131"]
     fb.setupGlyphOrder(names)
-    fb.setupCharacterMap({0x63A8: "uni63A8", 0x51FA: "uni51FA"})
+    fb.setupCharacterMap({0x6DFC: "uni6DFC", 0x7131: "uni7131"})
     fb.setupGlyf({n: square() for n in names})
     fb.setupHorizontalMetrics({n: (1024, 100) for n in names})
     fb.setupHorizontalHeader(ascent=900, descent=-124)
@@ -366,15 +366,15 @@ def fake_base_font(path):
 def test_a_new_character_is_copied_in_from_the_base_font(tmp_path, monkeypatch):
     pytest.importorskip("uharfbuzz")
     font = config.SITE_FONT
-    # 推 and 出 aren't in the released font
-    rows = tp.rows_from([dict(r, simplified="推出") if r["glyph_name"] == "md_tang" else r for r in csv_records()], DESIGN)
+    # 淼 and 焱 aren't in the released font (and no glyph is spelled with them)
+    rows = tp.rows_from([dict(r, simplified="淼焱") if r["glyph_name"] == "md_tang" else r for r in csv_records()], DESIGN)
     monkeypatch.setattr(config, "SOURCE_FONT", tmp_path / "none.ttf")
     p = tp.FONTS.get(font, rows, DESIGN)
-    assert p.missing_chars == {"md_tang": ["推出"]} and p.lacking == {"推", "出"} and p.copied == []
+    assert p.missing_chars == {"md_tang": ["淼焱"]} and p.lacking == {"淼", "焱"} and p.copied == []
     monkeypatch.setattr(config, "SOURCE_FONT", fake_base_font(tmp_path / "TW-Kai-98.ttf"))
     p = tp.FONTS.get(font, rows, DESIGN)
-    assert p.copied == ["出", "推"] and p.missing_chars == {} and p.lacking == set()
-    assert "md_tang" in tp.shape(p, ["推出"])[0]["glyphs"]
+    assert p.copied == ["淼", "焱"] and p.missing_chars == {} and p.lacking == set()
+    assert "md_tang" in tp.shape(p, ["淼焱"])[0]["glyphs"]
 
 
 # ---------------------------------------------------------------- HTTP
@@ -431,7 +431,7 @@ def test_words_typed_through_unsaved_spellings_and_new_glyphs(monkeypatch):
     body = {"design": design, "words": ["s9wang5"], "svgs": {"md_wang": SQUARE},
             "rows": csv_records() + [{"glyph_name": "md_wang", "latin": "wang"}]}
     out = webserver.words_typed_payload(body, webserver._design_from(body))
-    assert out["drawn"] == ["md_wang"] and "md_wang" in out["words"][0]["glyphs"]
+    assert "md_wang" in out["drawn"] and "md_wang" in out["words"][0]["glyphs"]   # (and a release's new glyphs, from disk)
     del body["svgs"]                                        # no drawing: the letters stay letters
     out = webserver.words_typed_payload(body, webserver._design_from(body))
     assert "md_wang" not in out["words"][0]["glyphs"] and "w" in out["words"][0]["glyphs"]
@@ -446,16 +446,21 @@ def test_brackets_and_chinese_punctuation_are_spellings(field, value):
     assert [e for e in tp.issues(rows, {"md_x"})["errors"] if e["glyph"] == "md_x"] == []
 
 
+def without_brackets(recs: list[dict]) -> list[dict]:
+    """The spelling records minus any glyph spelled with [ ] 【 】, so a test's own glyph is the one that claims them."""
+    return [r for r in recs if not any(ch in (r.get(f) or "") for f in tp.ROW_FIELDS[2:] for ch in "[]【】")]
+
+
 def test_bracket_spellings_compile_and_type():
     """[ in Latin types its glyph, and so does 【 (which becomes [ first); a glyph that claims 【
     in Chinese takes it instead."""
     pytest.importorskip("uharfbuzz")
     from jzpbuild import features
-    rows = tp.rows_from(csv_records() + [{"glyph_name": "md_tang2", "latin": "["}], DESIGN)
+    rows = tp.rows_from(without_brackets(csv_records()) + [{"glyph_name": "md_tang2", "latin": "["}], DESIGN)
     fea = "\n".join(features.gen_gsub(rows, validate=False))
     assert "sub bracketleft by md_tang2;" in fea and "sub ch_bracketleft by bracketleft;" in fea
     assert fea.index("lookup c2j_bracket_symbols {") < fea.index("lookup l2j_liga {")
-    rows2 = tp.rows_from(csv_records() + [{"glyph_name": "md_tang2", "latin": "["}, {"glyph_name": "md_tang3", "simplified": "【"}], DESIGN)
+    rows2 = tp.rows_from(without_brackets(csv_records()) + [{"glyph_name": "md_tang2", "latin": "["}, {"glyph_name": "md_tang3", "simplified": "【"}], DESIGN)
     fea2 = "\n".join(features.gen_gsub(rows2, validate=False))
     assert "sub ch_bracketleft by bracketleft;" not in fea2 and "sub ch_bracketright by bracketright;" in fea2
     assert "ch_bracketleft" not in fea2.split("lookup c2j_char_symbols {")[1].split("}")[0]
@@ -464,7 +469,7 @@ def test_bracket_spellings_compile_and_type():
 
 def test_brackets_type_their_glyph():
     pytest.importorskip("uharfbuzz")
-    recs = [dict(r, latin="[") if r["glyph_name"] == "md_placeholder" else r for r in csv_records()]
+    recs = [dict(r, latin="[") if r["glyph_name"] == "md_placeholder" else r for r in without_brackets(csv_records())]
     p = tp.FONTS.get(config.SITE_FONT, tp.rows_from(recs, DESIGN), DESIGN)
     assert "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]
     assert "md_placeholder" in tp.shape(p, ["【"])[0]["glyphs"]      # 【 is [ to the font

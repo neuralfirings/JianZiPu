@@ -40,12 +40,6 @@ def next_version() -> str:
 # what the lessons on index.html say differently once the next release is out: (as today, as next), each
 # found exactly once (a test fails when index.html moves on and one no longer matches)
 CHANGES: list[tuple[str, str]] = [
-    # the example in the top box: vertical words without their colon
-    ("：大八五半轮七 ：上五一 ：进 ", "：大八五半轮七 上五一 进 "),
-    (":v8.5banlun7 :shang51 :jin ", ":v8.5banlun7 shang51 jin "),
-    # How to type: the vertical words
-    ("""<li id="vertical">A word written down the side (上, 下, 泛起…) starts with a colon. Chinese is safest here, as some pinyin spellings are alike. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp>. A coming version of the font lets you leave the colon out: <a href="./vnext.html#whats-new-vertical">see the next release</a>.</li>""",
-     """<li id="vertical">A word written down the side (上, 下, 泛起…) starts with a colon. Chinese is safest here, as some pinyin spellings are alike. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp>. A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息…) needs no colon: <text>上七九</text> or <text>shang79</text> → <jzp>shang79</jzp>.</li>"""),
     # More rules: the hui numbers
     ("""<li>The next release reads 十一 to 十三 as hui 11 to 13, and adds 弦 to mark a string: <a href="./vnext.html#whats-new-hui">see what's coming</a>.</li>""",
      """<li><text>名十二勾五</text> or <text>s12k5</text> → <jzp>s12k5</jzp> 十一 to 十三 are hui 11 to 13. 10.2 is <text>名十徽二</text> or <text>名十点二</text>.</li>
@@ -108,7 +102,6 @@ def whats_new(version: str) -> str:
     return f"""    <div class="whats-new">
     <h3 id="whats-new">What's new in {version}</h3>
     <ul>
-      <li id="whats-new-vertical"><strong>Vertical words without the colon.</strong> A word with a character only a vertical word can hold (上, 下, 分开, 少息…) stands up by itself: <text>shang34</text> → <jzp>shang34</jzp></li>
       <li id="whats-new-hui"><strong>十一 to 十三 are hui 11 to 13.</strong> 10.2 is <text>十徽二</text> or <text>十点二</text>: <text>名十二勾五</text> → <jzp>名十二勾五</jzp></li>
       <li><strong>徽 before 半轮 ends the number.</strong> 9, then 半轮: <text>名九徽半轮六</text> → <jzp>名九徽半轮六</jzp> (<text>名九半轮六</text> is still 9.5, then 轮)</li>
       <li id="whats-new-xian"><strong>弦 marks a string.</strong> Hui 9, string 7, not 9.7: <text>名九七弦</text> → <jzp>名九七弦</jzp></li>
@@ -120,7 +113,6 @@ def whats_new(version: str) -> str:
 
 def release_body(version: str, current: str) -> str:
     """The release notes: each change drawn in the released font beside the next one."""
-    vertical = [("shang34",), ("少息",)]
     hui = [("名九半轮六", "9.5", "轮", "6"), ("名九，半轮六", "9", "半轮", "6"), ("名九徽半轮六", "9", "半轮", "6"),
            ("名九半勾六", "9.5", "勾", "6"), ("名九徽半勾六", "9.5", "勾", "6"), ("名十二勾五", "12", "勾", "5"),
            ("名十二徽勾五", "12", "勾", "5"), ("名十徽勾五", "10", "勾", "5"), ("名十徽二勾五", "10.2", "勾", "5"),
@@ -136,10 +128,6 @@ def release_body(version: str, current: str) -> str:
     <h1>JianZiPu {version}</h1>
     <p class="vnext-banner"><small>Coming in the next release: not in the download yet. Each example is drawn in v{current} (grey, the font you can download now) and in v{version}.
       {_links(version).replace(f'<a href="./release-{version}.html">Release notes for {version}</a> · ', '')}</small></p>
-    <h3 id="vertical">Vertical words without the colon</h3>
-    <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
-      <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
-{t([], vertical)}
     <h3 id="hui">Hui numbers in Chinese</h3>
     <ul>
       <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>

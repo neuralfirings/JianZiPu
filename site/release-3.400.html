@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex">
   <meta property="og:image" content="https://xttzxfjcvenoossepgci.supabase.co/storage/v1/object/public/jianzipu/ogimage.jpg">
 
-  <title>JianZiPu 3.300 release notes</title>
+  <title>JianZiPu 3.400 release notes</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   
@@ -341,18 +341,10 @@
 <body>
   <div class="scroll-rod"></div>
   <div class="container whats-new">
-    <p><a href="./">← The JianZiPu font</a> · <a href="./vnext.html">The font page once 3.300 is out</a></p>
-    <h1>JianZiPu 3.300</h1>
-    <p class="vnext-banner"><small>Coming in the next release: not in the download yet. Each example is drawn in v3.200 (grey, the font you can download now) and in v3.300.
+    <p><a href="./">← The JianZiPu font</a> · <a href="./vnext.html">The font page once 3.400 is out</a></p>
+    <h1>JianZiPu 3.400</h1>
+    <p class="vnext-banner"><small>Coming in the next release: not in the download yet. Each example is drawn in v3.300 (grey, the font you can download now) and in v3.400.
       <a href="https://github.com/neuralfirings/JianZiPu/releases">All releases</a> · <a href="https://github.com/neuralfirings/JianZiPu">Contribute on GitHub</a></small></p>
-    <h3 id="vertical">Vertical words without the colon</h3>
-    <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
-      <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
-    <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
-        <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
-        <tr><td class="n">2</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
-    </table></div>
     <h3 id="hui">Hui numbers in Chinese</h3>
     <ul>
       <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
@@ -360,7 +352,7 @@
       <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
     </ul>
     <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
+        <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">v3.300</th><th class="next">v3.400</th></tr>
         <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
         <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
         <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
@@ -379,7 +371,7 @@
     <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it, whatever point comes first (<text>名九徽七弦</text> is 9, string 7).
       In a chord it closes the first half before the bar: <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
     <div class="cmp-scroll"><table class="cmp">
-        <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">v3.200</th><th class="next">v3.300</th></tr>
+        <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">v3.300</th><th class="next">v3.400</th></tr>
         <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
         <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
         <tr><td class="n">3</td><td class="typed">名九徽七弦</td><td>hui 9, string 7</td><td class="now">名九徽七弦</td><td class="next">名九徽七弦</td></tr>

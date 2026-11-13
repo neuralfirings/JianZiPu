@@ -92,6 +92,10 @@ def test_a_candidate_regenerates_the_glossary_and_scope_allows_only_that(repo):
     (repo / "builder" / "inputs" / "components.csv").write_text(CSV_HEAD + "lg_gou,,,k,,勾,,gōu\nlg_tiao,,,u,,挑,,tiāo\n")
     sec["rows"].append({"glyph": "lg_tiao"})            # the Builder's Glyphs > Glossary
     (repo / "site" / "glossary.json").write_text(json.dumps({"sections": {"2a": sec}}))
+    # a candidate that stopped at the tests left the page regenerated in the working tree: the next one goes ahead
+    assert release.regenerate_glossary(repo) and "site/index.html" in release.dirty_files(repo)
+    assert release.glossary_only("origin/main", None, repo=repo)
+    release._check_scope(repo, "release/3.200")
     candidate(repo)
     page = (repo / "site" / "index.html").read_text()
     assert "<td>挑</td>" in page and "<p>hand-written</p>" in page

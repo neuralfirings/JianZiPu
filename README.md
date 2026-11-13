@@ -72,8 +72,8 @@ history under the tag `fontforge-final`.
 
 ## License
 
-- **The font** is licensed under the SIL Open Font License 1.1 with Reserved Font Name
-  "JianZiPu" (see [OFL.txt](OFL.txt)). That covers everything in `builder/inputs/` (the glyph
+- **The font** is licensed under the SIL Open Font License 1.1, with no Reserved
+  Font Name (see [OFL.txt](OFL.txt)). That covers everything in `builder/inputs/` (the glyph
   outlines in `svg/`, `design.json`, `components.csv`, `edge_cases.fea`, `glyphRename.csv`,
   `layouts.json`), `site/JianZiPu.ttf`, `builder/tests/JianZiPu.ttf`, and any font built from them.
 - **The code** is licensed under the GNU General Public License v3 (see [LICENSE](LICENSE)):

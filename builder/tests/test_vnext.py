@@ -54,7 +54,7 @@ def test_it_is_the_font_page_with_the_next_release_in_it():
 
 
 def test_a_lesson_the_page_no_longer_has_is_reported():
-    page = config.SITE_INDEX.read_text(encoding="utf-8").replace("：上五一", "：上五二")
+    page = config.SITE_INDEX.read_text(encoding="utf-8").replace("The next release reads 十一", "The next release reads 十二")
     with pytest.raises(ValueError, match="update CHANGES"):
         vnext.render(page, "9.900")
 

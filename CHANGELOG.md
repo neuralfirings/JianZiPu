@@ -11,13 +11,26 @@ same text becomes the GitHub release notes.
 ## [Unreleased]
 
 ### Added
-- A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
-- Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). 【 】 typed in Chinese still become `[` `]` unless a glyph's Chinese spelling claims them, so a glyph spelled `[` answers to 【 too.
 - 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7, and so is `名九徽七弦` (弦 wins over a point before its number). In a chord it closes the first half: `撥大九四六弦|散五` is the same as `Bv9.4,6|05`.
 
 ### Changed
 - 十一, 十二 and 十三 typed in Chinese are always hui 11, 12 and 13 (they were 10.1, 10.2, 10.3): 10.2 is written `十徽二`, `十徽二分` or `十点二`. `十四` to `十九` are still 10.4 to 10.9.
 - 徽 before a 半 that starts a word ends the hui number, the way a comma does: `名九徽半轮六` is `名九，半轮六` (9 hui, then 半轮); `名九半轮六` is still 9.5, then 轮. Otherwise 徽 is still a decimal point (`名七徽六` is 7.6), 分 may close the decimal (`名十徽二分` is 10.2), and 徽 at the end just closes the number (`名十徽` is 10).
+
+## [3.300] - 2026-11-13
+
+### Added
+- New characters, with their spellings: 从 `cong`, 头 `tou`, 再 `zai`, 作 `zuo`, 【 `[`, 曲 `qu`, 终 (終) `zhong`, 又 `you`, 推出 `tc` / `tuichu`, 游吟 `youyin`. Together they write 从头再作, 从【再作 and 曲终.
+- 大 (thumb) can also be typed `da`, as well as `v`.
+- A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
+- Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). `[` and 【 now both type the new 【 mark; 】 typed in Chinese still becomes `]`.
+
+### Changed
+- The glossary on jianzipufont.com is reorganised: numbered sections (1.1, 1.2…), a new "Numbers for String and Hui" section, a Definition column, and more example words. Rows are renumbered and some section links changed (#glossary-1d, #glossary-3c and others are gone), so old links to a row or section may land somewhere else.
+- The license no longer reserves the name "JianZiPu": the font's copyright line and OFL.txt drop "with Reserved Font Name". A changed copy of the font may keep the name.
+
+### Fixed
+- Typing a word letter by letter in Chrome or Edge no longer leaves it half-built (`daiqi` set horizontally, `fenkai` or `zhua` in pieces) until the text is pasted again. Words starting with two letters drawn at the same width, such as `shang`, `ban` or `duan`, can still go wrong while typing in Chrome 153; pasted text is right.
 
 ## [3.200] - 2026-10-21
 

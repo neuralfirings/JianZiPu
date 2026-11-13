@@ -298,6 +298,9 @@ concatenated:
   be unique" above) before generating anything, so a bad CSV aborts here,
   before any lookup text is even built. Then, in order: `gen_classes()`
   builds every `@area_*` glyph class from `design.json`'s area membership;
+  `hold_words` (changes no glyph: it marks a run of typed characters unsafe to
+  break, so a browser that reshapes only the end of a word as you type
+  reshapes the whole word; see `gen_hold_words()`);
   the hand-written `edge_cases.fea` is spliced in verbatim; then
   `l2j_digit_liga` (Latin spellings that contain a digit, see below); then one lookup
   per input pathway — ASCII/decimal (`s2j_*`), latin (`l2j_*`), Chinese
