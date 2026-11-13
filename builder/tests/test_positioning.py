@@ -194,13 +194,26 @@ def test_emit_structure(design):
     row_rule = next(r for r in em.rules if r.shape.names == ["col", "c@1", "c@2"])
     assert row_rule.y_lookups[0] == [] and row_rule.y_lookups[1][0].startswith("cen_")
     assert row_rule.y_lookups[2][0].startswith("cur")
-    # x after a 1000-advance breaker is pen-relative
-    assert row_rule.x_lookups[1] == ["x_m700"]
+    # x after the colon is pen-relative, and the colon's advance less the space's width moves the
+    # pen: the space after a vertical word pays its width (emit.COLON_WIDTH), so here nothing
+    assert row_rule.x_lookups[1] == ["x_300"]
     # glyph on both sides of a pair (g_a1 is in a and c) gets both anchors
     pair = next(l for l in em.lines if l.startswith("  pos cursive g_a1 <anchor 0 ") and "<anchor 0 0>;" in l)
     assert pair
     # bucket "other" class for the a area
     assert "@pos_word__a__other = [ g_a2 ];" in text
+
+
+def test_vertical_word_width_stays_inside_the_word(design):
+    """Safari shapes a word and the space after it apart, so no rule may reach back over a word to
+    the space: the colon gives the space's width back, and only a colon or # typed straight after a
+    word, with no space, makes room for it."""
+    text = "\n".join(emit.gen_gpos(design).lines)
+    assert "@space_char' <0 0 -1000 0>" in text            # a # word's space, as before
+    assert "@new_word_char" not in text                      # but never a vertical word's
+    assert "    ignore pos @area_wild blank_colon';\n    pos blank_colon' <0 0 -1000 0>;" in text
+    assert "    pos blank_colon @area_wild numbersign' <0 0 1000 0>;" in text
+    assert "numbersign @area_wild numbersign', numbersign numbersign';" in text   # unless a # came first
 
 
 def test_big_lookups_are_broken_into_subtables(monkeypatch):

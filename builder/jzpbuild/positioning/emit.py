@@ -161,7 +161,7 @@ def build_rules(design: Design) -> tuple[list[Rule], list, _Registry]:
                     x_lk.append([reg.x(xoff)] if xoff else [])
                     if adv:                      # chain breaker: consumed, never attached
                         y_lk.append([])
-                        pen += adv
+                        pen += adv - (SPACE if COLON in design.areas[e.area].glyphs else 0)
                         root = True
                         continue
                     if root:
@@ -195,11 +195,35 @@ def _with_breaks(lines: list[str]) -> list[str]:
     return out
 
 
+# A vertical word's width (its colon area's advance) is paid out as the space after it, like every
+# other word's, never by a rule that reaches back over the word to the space: Safari and every
+# iPhone browser shape a word and the space after it apart, so such a rule never fires there and
+# the word came out a whole width too wide. So the colon gives back the space's width
+# (COLON_WIDTH below) and the positioning counts its advance less that width (build_rules). Only
+# a colon typed straight after a word, with no space, keeps its full advance: that word needs the
+# room, and the rule that sees it stays inside the run of text. Likewise a # straight after a
+# vertical word makes room for it, unless an earlier # in the same run already did (a # pulls the
+# parts after it back into its own width).
+COLON = "blank_colon"
+SPACE = config.UPEM          # the space's advance (base.py)
+_DEPTH = 10                  # how far back a rule looks, as in CLEANUP_RULES
+COLON_WIDTH = [
+    "  lookup colon_width {",
+    f"    ignore pos {WILD} {COLON}';",
+    f"    pos {COLON}' <0 0 -{SPACE} 0>;",
+    "    ignore pos " + ", ".join(" ".join(["numbersign"] + [WILD] * n + ["numbersign'"])
+                                  for n in range(_DEPTH, -1, -1)) + ";",
+    *(f"    pos {' '.join([COLON] + [WILD] * n)} numbersign' <0 0 {SPACE} 0>;"
+      for n in range(_DEPTH, -1, -1)),
+    "  } colon_width;",
+]
+
 CLEANUP_RULES = (
     # hide stray glyphs of half-formed words (up to 10 deep), and give space
-    # its advance back at word boundaries -- carried over from the classic build
+    # its advance back at word boundaries -- carried over from the classic build.
+    # Only a # word: a vertical word's space keeps its advance (COLON_WIDTH above).
     ("numbersign", WILD, "<-1000 0 0 0>"),
-    ("@new_word_char", "@space_char", "<0 0 -1000 0>"),
+    ("numbersign", "@space_char", "<0 0 -1000 0>"),
 )
 
 
@@ -214,6 +238,8 @@ def gen_gpos(design: Design) -> Emission:
     lines += _with_breaks([r.render("x") for r in rules])
     lines.append("} pos_x;")
     lines += ["", "feature kern {", "  lookup pos_y;", "  lookup pos_x;"]
+    if any(COLON in a.glyphs and a.advance for a in design.areas.values()):
+        lines += COLON_WIDTH
     for context, marked, value in CLEANUP_RULES:
         for n in range(10, -1, -1):
             tokens = " ".join([context] + [WILD] * n + [f"{marked}'"])

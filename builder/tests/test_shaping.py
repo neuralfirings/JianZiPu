@@ -122,6 +122,66 @@ def test_shaping_matches_current_font():
     assert compare_fonts(str(config.CURRENT_FONT), str(new)) == 0
 
 
+# Safari and every iPhone browser shape each word and each space on its own, so a line must come
+# out the same shaped a word at a time as shaped whole: no rule may reach over a word to its space.
+APART = [
+    "shang34 xia34 s9k3 s8k4", ":shang34 :xia34 s9k3", "上三四 下三四 名九勾三",
+    "s7.5>k5 jiul7 0k3 k3 fyd9u6 v5.6V5 s9c C03|s6,5 v7U43 :v8.5banlun7 :shang51 :jin ",
+    "名七半急勾五 就打七 散勾三 勾三 泛音中九挑六 大五六掩五 名九掐起 撮散三｜名六，五 大七历四三 ：大八五半轮七 ：上五一 ：进 ",
+    "Cv9,6|03 :shang34 C88|99", ":fanqi+s9u6 s9k3",
+]
+# A word's main glyph and where its pen starts, in units: each word one 1000-unit cell.
+SEPARATED = {
+    "s9k5 :shang34 d7u3": [0, 1000, 2000],
+    "s9k5:shang34 d7u3": [0, 1000, 2000],      # a colon with no space before it
+    ":shang34:xia34 d7u3": [0, 1000, 2000],
+    ":shang34#d7u3": [0, 1000],                # a # straight after a vertical word
+    ":shang34:xia34#d7u3": [0, 1000, 2000],
+    "#s9k5#:shang34#d7u3": [0, 1000, 2000],
+    "#s9k5:shang34#d7u3": [0, 1000, 2000],
+    "#:shang34#d7u3": [0, 1000],
+}
+MAIN = {"md_ming": 150, "md_zhong": 150, "md_shang": 325, "md_xia": 325}
+
+
+def _shape_whole(font: str, text: str):
+    out, pen = [], 0
+    for name, (xa, _, xo, yo) in shape(font, text):
+        out.append((name, pen + xo, yo))
+        pen += xa
+    return out, pen
+
+
+def _shape_apart(font: str, text: str):
+    import re
+    out, pen = [], 0
+    for part in re.findall(r" |[^ ]+", text):
+        glyphs, width = _shape_whole(font, part)
+        out += [(n, x + pen, y) for n, x, y in glyphs]
+        pen += width
+    return out, pen
+
+
+def _built_font():
+    import subprocess, tempfile
+    import pytest
+    if not config.SOURCE_FONT.exists():
+        pytest.skip("needs the base font (src_font/TW-Kai-98.ttf), which isn't in the repo")
+    out = Path(tempfile.mkdtemp()) / "JianZiPu.ttf"
+    subprocess.run([sys.executable, "-m", "jzpbuild", "-o", str(out), "--fea-out", ""],
+                   cwd=config.BUILDER_DIR, check=True)
+    return str(out)
+
+
+def test_words_shape_alone_as_in_a_line():
+    font = _built_font()
+    for text in APART:
+        assert _shape_apart(font, text) == _shape_whole(font, text), text
+    for text, cells in SEPARATED.items():
+        glyphs, _ = _shape_whole(font, text)
+        assert [x - MAIN[n] for n, x, _ in glyphs if n in MAIN] == cells, text
+
+
 if __name__ == "__main__":
     old = sys.argv[1] if len(sys.argv) > 2 else str(config.CURRENT_FONT)
     new = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
