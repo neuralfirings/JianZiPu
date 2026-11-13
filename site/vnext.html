@@ -3,17 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- a preview of the next release: not for search results; the main page is index.html -->
+  <!-- written by `cd builder && python3 -m jzpbuild.vnext` from index.html: edit those, not this -->
   <meta name="robots" content="noindex">
-  <title>JianZiPu Font: coming next</title>
+  <meta property="og:image" content="https://xttzxfjcvenoossepgci.supabase.co/storage/v1/object/public/jianzipu/ogimage.jpg">
+
+  <title>JianZiPu Font 3.300 (preview)</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Eczar:wght@400..800&family=LXGW+WenKai+TC:wght@300;400;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
+  
+  <script>document.documentElement.classList.add('fonts-loading');</script>
   <style>
-    /* the released font (what the main page and the download have) and the next release's preview build */
-    @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
-    @font-face { font-family: 'JZP-next'; src: url('./JianZiPu-vnext.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
+    /* until the JianZiPu font is in, notation would show as its raw spellings: keep it hidden, not the whole page */
+    .fonts-loading jzp, .fonts-loading .jzp, .fonts-loading .jzp-entry { visibility: hidden; }
+    @font-face {
+      font-family: 'JianZiPu';
+      src: url('./JianZiPu-vnext.ttf'); 
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap; /* avoids invisible text in Safari */
+      font-feature-settings: "kern", "liga"; /* required on Firefox */
+    }
     /* The scroll: rice paper, calligraphy ink and one seal red (the JZP design system's tokens, the same names as the Builder's app.css) */
     :root {
       --bg-app: #f3f1ed; --bg-panel: #f7f5f1; --bg-field: #fcfbf9; --bg-sunken: #e3ded8; --bg-hover: #e8e3dd;
@@ -40,110 +55,1898 @@
       background-size: 360px 360px, 100% 1600px, 100% 1600px, 100% 100%;   /* the mottling repeats down the scroll */
       background-repeat: repeat, repeat-y, repeat-y, no-repeat;
     }
-    body { font-family: "Eczar", "LXGW WenKai TC", serif; }
-    a { color: var(--link); }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
-    h1 { font-weight: 600; }
-    h2 { font-weight: 600; margin-top: 2.5rem; }
-    .lead-note { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; }
-    text, code.t { font-family: "Roboto Mono", "LXGW WenKai TC", monospace; background: var(--well); color: var(--ink); padding: 2px 6px; border-radius: 4px; font-size: .9em; white-space: nowrap; }
-    table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid var(--border-strong); background: var(--bg-sunken); vertical-align: bottom; }
-    table.cmp td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
-    table.cmp td.n { color: var(--ink-faint); text-align: right; width: 2.5em; font-size: .9em; }
-    table.cmp td.typed { font-family: "LXGW WenKai TC", "Roboto Mono", serif; font-size: 1.15rem; white-space: nowrap; }
-    td.now, td.next { font-size: 44px; line-height: 1.3; white-space: nowrap; }
-    td.now { font-family: 'JZP-now'; color: var(--ink-faint); }
-    td.next { font-family: 'JZP-next'; }
-    th.now, th.next { width: 7.5em; }
-    .muted { color: var(--ink-muted); }
-    .tryit { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
-    .tryit .out { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; align-items: center; margin-top: 12px; }
-    .tryit .out .lbl { color: var(--ink-muted); font-size: .9rem; }
-    .tryit .out .now { font-family: 'JZP-now'; font-size: 44px; color: var(--ink-faint); overflow-wrap: anywhere; }
-    .tryit .out .next { font-family: 'JZP-next'; font-size: 44px; overflow-wrap: anywhere; }
-    @media (max-width: 759.98px) {
-      td.now, td.next, .tryit .out .now, .tryit .out .next { font-size: 34px; }
-      .scroll { overflow-x: auto; }
+    /* the scroll's rods (天杆 at the top, 地杆 at the bottom) */
+    .scroll-rod { height: 10px; background: linear-gradient(180deg, #c9c2ba, #e2ddd7 40%, #bdb5ac 75%, #a9a097); border-bottom: 1px solid #958c83; }
+    .scroll-rod.bottom { margin-top: 48px; border-top: 1px solid #958c83; border-bottom: 0; }
+    /* the title row: the seal and the title centred on each other, the v2 link at the top right */
+    .title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .title-row h1 { margin: 0; }
+    .title-row .v2-link { margin-left: auto; align-self: flex-start; font-size: 12px; }
+    /* the seal beside the title: 减字谱 in reversed type, once on the page */
+    .seal { display: inline-flex; writing-mode: vertical-rl; align-items: center; justify-content: center; flex: none; padding: 6px 3px;
+      background: var(--accent); color: var(--bg-panel); font-family: "LXGW WenKai TC", "Kaiti SC", "KaiTi", "STKaiti", serif; font-size: 1rem; line-height: 1.1; letter-spacing: 0.05em;
+      border-radius: 3px 2px 4px 2px; box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px rgba(246, 242, 234, 0.65); }
+    body {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
     }
+    a { color: var(--link); }
+    h1, h2, h3, h4 { color: var(--ink); }
+    .text-muted { color: var(--ink-muted) !important; }
+    .table { --bs-table-bg: transparent; --bs-table-color: var(--ink); --bs-table-border-color: var(--hairline); }
+    .table thead th { border-bottom: 1px solid var(--ink); }
+    .form-control { background-color: var(--bg-field); border-color: var(--border-strong); color: var(--ink); }
+    .form-control:focus { background-color: var(--bg-field); color: var(--ink); }
+    hr { border-color: var(--border); opacity: 1; }
+    .table {
+      font-family: "Eczar", "Averia Serif Libre", "Libre Baskerville", "LXGW WenKai TC", serif;
+    }
+    text {
+      background-color: var(--well);
+      color: var(--ink);
+      padding: 5px;
+      border-radius: 5px;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code',  monospace;
+      font-size: 0.8rem;
+    }
+    .alert-tip text {
+      background-color: var(--bg-panel);
+    }
+    txs {
+      display: block;
+      font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
+      font-size: 1rem;
+      word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
+      /* background-color: #eee;
+      padding: 3px;
+      margin: 2px;
+      border-radius: 5px; */
+    }
+    /* the glossary's row IDs (1, 2, 3… down the page), generated with the tables: a link to the row */
+    td.gid, th.gid { white-space: nowrap; }
+    .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
+    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
+    /* the glossary's search box (script at the end of the page) */
+    [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
+    .glossary-search { margin: 8px 0 16px; }
+    .glossary-search input { max-width: 420px; }
+    .glossary-search label { text-transform: none; }
+    .glossary-search p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.875rem; min-height: 1.3em; }
+    html { scroll-padding-top: 96px; }   /* a linked row or heading lands below the sticky download bar */
+    jzp {
+      font-size: 2.5rem;
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+    }
+    text r {
+      font-weight: bold;
+    }
+    r {
+      color: var(--accent);
+    }
+    h3 {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid var(--ink);
+    }
+    .jzp {
+      font-family: 'JianZiPu', 'Arial', sans-serif;
+      line-height: 1.5em;
+      word-break: keep-all;   /* don't break between Han characters */
+      white-space: pre-wrap;    /* still wrap at spaces and hyphens */
+      padding-right: 3rem; /* to prevent characters from being cut off */
+    }
+    .text-entry {
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    .jzp-entry {
+      font-family: 'JianZiPu', 'LXGW WenKai TC', 'Arial',sans-serif;
+      font-size: 3rem;
+      height: 100%;
+    }
+    .jzp-example {
+      font-family: 'JianZiPu', 'LXGW WenKai TC', 'Arial',sans-serif;
+      font-size: 3rem;
+      min-height: 6rem;
+      position: relative;
+      overflow: visible;    
+      white-space: pre-wrap; 
+      padding: 10px 1.5em 10px 10px;
+    }
+    .jzp-example-container {
+      background-color: rgba(255, 255, 255, 0.55);   /* reads as #faf9f7 on the paper */
+      border: 1px solid var(--border);
+      color: var(--ink);
+      position: relative;
+      border-radius: 0px;
+    }
+    .jzp-example-container input {
+      border-radius: 50px;
+    }
+    .lat-entry, .text-entry {
+      font-family: "Roboto Mono", "M PLUS 1 Code",  monospace;
+      font-size: 1.2rem;
+      height: 100%;
+    }
+
+    label {
+      font-weight: 500;
+      text-transform: capitalize;
+      display: block;
+    }
+    .container {
+      margin-top: 20px;
+    }
+    .row {
+      margin: 20px 0;
+    }
+    .col-md-6 {
+      margin-bottom: 40px;
+    }
+    .alert-tip {
+      border-radius: 0px;
+      border-right: 0px;
+      border-left: solid 5px var(--ink);
+      border-top: 0px;
+      border-bottom: 0px;
+      background-color: var(--bg-sunken);
+      color: var(--ink);
+    }
+
+    /* Floating download button */
+    .floating-download-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .floating-download-btn:hover {
+      /* transform: translateY(-2px); */
+      /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); */
+    }
+
+    .btn-primary {
+      background-color: var(--ink);
+      border-color: var(--ink);
+      border-radius: 3px;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--ink);
+      border-color: var(--ink);
+      border-radius: 5px;
+    }
+
+    .btn-download-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 10px 20px;
+    }
+    .download-bar {
+      background-color: var(--bg-bar);
+      text-align: center;
+      padding: 10px 0;
+    }
+    .download-bar a {
+      color: var(--on-bar);
+    }
+    .download-bar .font-version {
+      display: block;
+      color: var(--on-bar-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .download-bar .font-version a {
+      color: var(--on-bar-muted);
+      text-decoration: underline;
+    }
+    /* the "send me the font" form (EmailOctopus) */
+    .signup-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px 20px; background: var(--bg-panel); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); }
+    .signup-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+    .signup-close { display: flex; justify-content: flex-end; margin: 0 0 4px; }
+    .signup-dialog h1, .signup-dialog h2, .signup-dialog h3 { margin-top: 0; padding-top: 0; border-top: 0; } /* not the page's section headings */
+    .signup-done { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+    .signup-done[hidden] { display: none; }
+    .signup-done p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink-muted); text-align: center; }
+    .signup-download { display: block; padding: 14px 16px; background: var(--ink); color: var(--bg-panel); text-align: center; font-size: 1.1rem; text-decoration: none; border-radius: 2px; }
+    .signup-download:hover, .signup-download:focus-visible { background: #45403b; color: var(--bg-panel); }
+    .signup-download:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .text-entry-examples {
+      font-size: 0.8em
+    }
+
+    /* ---- On a phone (narrower than 760px). A computer keeps the layout above. ---- */
+    .contents, .font-version-top { display: none; }
+    @media (max-width: 759.98px) {
+      html { scroll-padding-top: 72px; }
+      /* the spellings people read and copy, and the one rule everyone needs */
+      text { font-size: 15px; padding: 3px 6px; line-height: 2; }
+      /* a result glyph moves to the next line rather than running off the edge; glyphs inside sentences sit in the line */
+      li jzp { display: inline-block; max-width: 100%; }
+      p jzp, .alert-tip jzp { font-size: 1.6em; line-height: 1.2; }
+      /* tap targets */
+      .text-entry-examples a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; margin: 4px 2px; border: 1px solid var(--border-strong); border-radius: 22px; background: var(--bg-field); color: var(--ink); text-decoration: none; font-weight: 600; }
+      .v2-link a, .font-version-top a { display: inline-block; padding: 10px 2px; }
+      .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-muted); }
+      /* the demo: a box that wraps instead of a one-line field */
+      textarea.text-entry { resize: none; line-height: 1.4; }
+      /* the glossary's tables fit the screen: slimmer cell padding, and a long spelling may break when it must */
+      .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
+      .table td { overflow-wrap: anywhere; }
+      txs { word-break: normal; }
+      /* the sticky bar: one slim row, the contents on the left and the download button on the right */
+      /* pinned to the top from the first screen, so Contents and Download are always in reach */
+      body { padding-top: 56px; }
+      .download-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 1020; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; }
+      .download-bar .font-version { display: none; }
+      .download-bar .download { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; flex: none; margin-left: auto; border-radius: 4px; background: var(--on-bar); color: var(--ink); font-weight: 600; text-decoration: none; }
+      .contents { display: block; flex: 1 1 auto; min-width: 0; color: var(--on-bar); }
+      .contents summary { display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
+      .contents summary::-webkit-details-marker { display: none; }
+      .contents summary::after { content: "▾"; color: var(--on-bar-muted); }
+      .contents[open] summary::after { content: "▴"; }
+      .contents-label { color: var(--on-bar-muted); font-size: 14px; }
+      .contents-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+      .contents nav { position: absolute; left: 0; right: 0; top: 100%; max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: 4px 0; background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+      .contents nav a { display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: var(--ink); text-decoration: none; border-left: 3px solid transparent; }
+      .contents nav a.sub { padding-left: 32px; color: var(--ink-muted); }
+      .contents nav a[aria-current="true"] { border-left-color: var(--accent); background: var(--bg-hover); font-weight: 600; }
+      .download-name { display: none; }
+      /* while a demo box has the keyboard, the bar steps aside so the notation stays in view */
+      body.typing .download-bar { display: none; }
+    }
+
+    /* "How to type": five rules, then the folded extras */
+    .rules { padding-left: 1.2rem; margin-bottom: 8px; }
+    .rules li, details.more li { margin: 4px 0; }
+    .rules jzp, details.more jzp { font-size: 2rem; }
+    details.more { margin: 4px 0 8px; }
+    details.more summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
+    details.more[open] summary { margin-bottom: 8px; }
+    @media (max-width: 759.98px) {
+      details.more summary { padding: 10px 0; }   /* a 44px tap target that keeps its open/closed marker */
+    }
+    .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
+    .glossary-subdesc { margin-bottom: .25rem; }
+    /* vnext.html: today's font, beside the next one in What's new */
+    @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
+    .vnext-banner { background: var(--target); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+    .whats-new table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .whats-new table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid var(--border-strong); background: var(--bg-sunken); vertical-align: bottom; }
+    .whats-new table.cmp td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+    .whats-new td.n { color: var(--ink-faint); text-align: right; width: 2.5em; font-size: .9em; }
+    .whats-new td.typed { font-family: "LXGW WenKai TC", "Roboto Mono", serif; font-size: 1.15rem; white-space: nowrap; }
+    .whats-new td.now, .whats-new td.next { font-size: 44px; line-height: 1.3; white-space: nowrap; }
+    .whats-new td.now { font-family: 'JZP-now'; color: var(--ink-faint); }
+    .whats-new td.next { font-family: 'JianZiPu'; }
+    .whats-new .cmp-scroll { overflow-x: auto; }
+    @media (max-width: 759.98px) { .whats-new td.now, .whats-new td.next { font-size: 34px; } }
   </style>
+  
+  <!-- "Send me the font": an EmailOctopus sign-up form (docs/maintainers/setup.md, EmailOctopus).
+       Its id is the one in the form's embed code, eocampaign1.com/form/<id>.js. Empty: the Download
+       button downloads the font straight away. -->
+  <script>window.EO_FORM_ID = 'dc6d7afe-dd52-11f1-978b-43af410d7c6e';</script>
 </head>
 <body>
-<div class="wrap">
-  <p><a href="./">← JianZiPu font</a></p>
-  <h1>Coming in the next release</h1>
-  <p class="lead-note">These changes are in the next version of the font, after <span id="version">the released one</span>. They aren't in the download yet:
-    this page uses a preview build of the next font, shown beside today's. <strong>Today</strong> is the font you can download now (grey);
-    <strong>Next</strong> is how the next release will write the same input.</p>
 
-  <h2 id="vertical">1. Vertical words without the colon</h2>
-  <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
-    <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
-  <div class="scroll"><table class="cmp">
-    <tr><th></th><th>Typed</th><th class="now">Today</th><th class="next">Next</th></tr>
-    <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
-    <tr><td class="n">2</td><td class="typed">上三四</td><td class="now">上三四</td><td class="next">上三四</td></tr>
-    <tr><td class="n">3</td><td class="typed">xia79</td><td class="now">xia79</td><td class="next">xia79</td></tr>
-    <tr><td class="n">4</td><td class="typed">分开</td><td class="now">分开</td><td class="next">分开</td></tr>
-    <tr><td class="n">5</td><td class="typed">退</td><td class="now">退</td><td class="next">退</td></tr>
-    <tr><td class="n">6</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
-    <tr><td class="n">7</td><td class="typed">带起</td><td class="now">带起</td><td class="next">带起</td></tr>
-  </table></div>
+  <div class="scroll-rod" aria-hidden="true"></div>
+  <div id="top">
+    <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
+      <div class="title-row">
+        <span class="seal" aria-hidden="true">减字谱</span>
+        <h1>JianZiPu Font (v3)</h1>
+        <small class="v2-link"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
+      </div>
+      
+      <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
+      <p class="vnext-banner"><small>A preview of this page once JianZiPu 3.300 is out, its notation drawn in a preview build of 3.300. <a href="#whats-new">What's new in 3.300</a> · <a href="./">The page for today's font</a>. The download is still today's font.</small></p>
 
-  <h2 id="hui">2. Hui numbers in Chinese</h2>
-  <ul>
-    <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
-    <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
-    <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
-  </ul>
-  <div class="scroll"><table class="cmp">
-    <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">Today</th><th class="next">Next</th></tr>
-    <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
-    <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
-    <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
-    <tr><td class="n">4</td><td class="typed">名九半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九半勾六</td><td class="next">名九半勾六</td></tr>
-    <tr><td class="n">5</td><td class="typed">名九徽半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九徽半勾六</td><td class="next">名九徽半勾六</td></tr>
-    <tr><td class="n">6</td><td class="typed">名十二勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二勾五</td><td class="next">名十二勾五</td></tr>
-    <tr><td class="n">7</td><td class="typed">名十二徽勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二徽勾五</td><td class="next">名十二徽勾五</td></tr>
-    <tr><td class="n">8</td><td class="typed">名十徽勾五</td><td>10</td><td>勾</td><td>5</td><td class="now">名十徽勾五</td><td class="next">名十徽勾五</td></tr>
-    <tr><td class="n">9</td><td class="typed">名十徽二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二勾五</td><td class="next">名十徽二勾五</td></tr>
-    <tr><td class="n">10</td><td class="typed">名十徽二分勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二分勾五</td><td class="next">名十徽二分勾五</td></tr>
-    <tr><td class="n">11</td><td class="typed">名十点二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十点二勾五</td><td class="next">名十点二勾五</td></tr>
-    <tr><td class="n">12</td><td class="typed">名七六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七六挑五</td><td class="next">名七六挑五</td></tr>
-    <tr><td class="n">13</td><td class="typed">名七徽六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七徽六挑五</td><td class="next">名七徽六挑五</td></tr>
-  </table></div>
+      <small class="font-version-top" id="font-version-top"></small>
 
-  <h2 id="xian">3. 弦 marks a string</h2>
-  <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it. In a chord it closes the first half before the bar:
-    <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
-  <div class="scroll"><table class="cmp">
-    <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">Today</th><th class="next">Next</th></tr>
-    <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
-    <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
-    <tr><td class="n">3</td><td class="typed">撥大九四六弦|散五</td><td>撥: thumb, hui 9.4, string 6 | open string 5</td><td class="now">撥大九四六弦|散五</td><td class="next">撥大九四六弦|散五</td></tr>
-    <tr><td class="n">4</td><td class="typed">撥大九四弦|散五</td><td>撥: thumb, hui 9, string 4 | open string 5</td><td class="now">撥大九四弦|散五</td><td class="next">撥大九四弦|散五</td></tr>
-  </table></div>
-
-  <h2 id="try">Try it</h2>
-  <div class="tryit">
-    <label for="try-input" class="form-label">Type here to compare today's font with the next one</label>
-    <input id="try-input" type="text" class="form-control" autocorrect="off" autocapitalize="off" spellcheck="false"
-      value="shang34 名九徽半轮六 名十二勾五 名十徽二勾五 撥大九四六弦|散五">
-    <div class="out">
-      <span class="lbl">Today</span><div class="now" id="try-now"></div>
-      <span class="lbl">Next</span><div class="next" id="try-next"></div>
+      <div class="alert alert-secondary jzp-example-container">
+        <small>Type here to preview. Press space after each character, or type # before it.</small>
+        <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <div class="text-entry-examples">
+          <span>See example in </span>
+          <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七半急勾五 就打七 散勾三 勾三 泛音中九挑六 大五六掩五 名九掐起 撮散三｜名六，五 大七历四三 ：大八五半轮七 上五一 进 ");''>中文</a>
+          <span> or </span>
+          <a href="javascript:void(0)" onClick='fillIn(this, "s7.5>k5 jiul7 0k3 k3 fyd9u6 v5.6V5 s9c C03|s6,5 v7U43 :v8.5banlun7 shang51 jin ")''>ASCII</a>
+        </div>
+        <hr />
+        <div class="jzp jzp-example" contenteditable></div>
+      </div>
     </div>
   </div>
+  <div class="sticky-top download-bar" style="margin-top: 0px">
+    <details class="contents">
+      <summary><span class="contents-label">Contents</span> <span class="contents-now">Introduction</span></summary>
+      <nav aria-label="Contents">
+        <a href="#top">Introduction</a>
+        <a href="#whats-new">What's new in 3.300</a>
+        <a href="#how-to-type">How to type</a>
+        <a href="#glossary">Glossary</a>
+        <!-- glossary nav: the glossary's contents links, generated like the glossary -->
+        <a class="sub" href="#glossary-left">Left hand</a>
+        <a class="sub" href="#glossary-right">Right hand</a>
+        <a class="sub" href="#glossary-symbols">General symbols</a>
+        <a class="sub" href="#glossary-uncategorized">Uncategorized</a>
+        <!-- /glossary nav -->
+      </nav>
+    </details>
+    <a class="download" id="download-font" href="./JianZiPu.ttf" download>
+      Download<span class="download-name"> JianZiPu Font</span>
+    </a>
+    <small class="font-version" id="font-version"></small>
+  </div>
+  <div class="container">
+    <div class="whats-new">
+    <h3 id="whats-new">What's new in 3.300</h3>
+    <p>Each example drawn in today's font (grey) and in 3.300.</p>
+    <h4 id="whats-new-vertical">Vertical words without the colon</h4>
+    <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
+      <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th class="now">Today</th><th class="next">Next</th></tr>
+        <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
+        <tr><td class="n">2</td><td class="typed">上三四</td><td class="now">上三四</td><td class="next">上三四</td></tr>
+        <tr><td class="n">3</td><td class="typed">xia79</td><td class="now">xia79</td><td class="next">xia79</td></tr>
+        <tr><td class="n">4</td><td class="typed">分开</td><td class="now">分开</td><td class="next">分开</td></tr>
+        <tr><td class="n">5</td><td class="typed">退</td><td class="now">退</td><td class="next">退</td></tr>
+        <tr><td class="n">6</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
+        <tr><td class="n">7</td><td class="typed">带起</td><td class="now">带起</td><td class="next">带起</td></tr>
+    </table></div>
+    <h4 id="whats-new-hui">Hui numbers in Chinese</h4>
+    <ul>
+      <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
+      <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
+      <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
+    </ul>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">Today</th><th class="next">Next</th></tr>
+        <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
+        <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
+        <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
+        <tr><td class="n">4</td><td class="typed">名九半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九半勾六</td><td class="next">名九半勾六</td></tr>
+        <tr><td class="n">5</td><td class="typed">名九徽半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九徽半勾六</td><td class="next">名九徽半勾六</td></tr>
+        <tr><td class="n">6</td><td class="typed">名十二勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二勾五</td><td class="next">名十二勾五</td></tr>
+        <tr><td class="n">7</td><td class="typed">名十二徽勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二徽勾五</td><td class="next">名十二徽勾五</td></tr>
+        <tr><td class="n">8</td><td class="typed">名十徽勾五</td><td>10</td><td>勾</td><td>5</td><td class="now">名十徽勾五</td><td class="next">名十徽勾五</td></tr>
+        <tr><td class="n">9</td><td class="typed">名十徽二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二勾五</td><td class="next">名十徽二勾五</td></tr>
+        <tr><td class="n">10</td><td class="typed">名十徽二分勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二分勾五</td><td class="next">名十徽二分勾五</td></tr>
+        <tr><td class="n">11</td><td class="typed">名十点二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十点二勾五</td><td class="next">名十点二勾五</td></tr>
+        <tr><td class="n">12</td><td class="typed">名七六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七六挑五</td><td class="next">名七六挑五</td></tr>
+        <tr><td class="n">13</td><td class="typed">名七徽六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七徽六挑五</td><td class="next">名七徽六挑五</td></tr>
+    </table></div>
+    <h4 id="whats-new-xian">弦 marks a string</h4>
+    <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it. In a chord it closes the first half before the bar:
+      <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
+    <div class="cmp-scroll"><table class="cmp">
+        <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">Today</th><th class="next">Next</th></tr>
+        <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
+        <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
+        <tr><td class="n">3</td><td class="typed">撥大九四六弦|散五</td><td>撥: thumb, hui 9.4, string 6 | open string 5</td><td class="now">撥大九四六弦|散五</td><td class="next">撥大九四六弦|散五</td></tr>
+        <tr><td class="n">4</td><td class="typed">撥大九四弦|散五</td><td>撥: thumb, hui 9, string 4 | open string 5</td><td class="now">撥大九四弦|散五</td><td class="next">撥大九四弦|散五</td></tr>
+    </table></div>
+    </div>
 
-  <p class="muted" style="margin-top: 2rem"><small>A preview: the next release can still change before it's published. <a href="./">Back to the font page</a>.</small></p>
-</div>
-<script>
-  // the released version, for the note at the top
-  fetch('./version.json').then((r) => r.json()).then((v) => { if (v && v.version) document.getElementById('version').textContent = v.version; }).catch(() => {});
-  const input = document.getElementById('try-input');
-  const show = () => { document.getElementById('try-now').textContent = input.value; document.getElementById('try-next').textContent = input.value; };
-  input.addEventListener('input', show);
-  show();
-</script>
+    <h3 id="how-to-type">How to type</h3>
+    <ul class="rules">
+      <li id="basic-layout">Type each character the way you read it, in 中文 or ASCII. A character has no width of its own, so press <strong>space</strong> after it: <text>名九勾五 中七挑三</text> or <text>s9k5 d7u3</text> → <jzp>s9k5 d7u3</jzp>. Or type <strong>#</strong> before it: <text>#名九勾五#中七挑三</text> or <text>#s9k5#d7u3</text> → <jzp>#s9k5#d7u3</jzp></li>
+      <li id="ascii">In ASCII, most characters are spelled with their pinyin or its initials, like 泛音 (which goes first): <text><r>泛音</r>名九挑六</text> or <text><r>fanyin</r>s9u6</text> or <text><r>fy</r>s9u6</text> → <jzp><r>fy</r>s9u6</jzp>. The main fingerings sit where your fingers rest on a QWERTY keyboard. The left hand's fingers are on the left, <text>s</text> 名, <text>d</text> 中 and <text>f</text> 食, with <text>v</text> 大 and <text>x</text> 跪 below. The right hand's strokes are on the right, <text>h</text> 托, <text>j</text> 抹, <text>k</text> 勾 and <text>l</text> 打, with <text>u</text> 挑, <text>i</text> 剔 and <text>o</text> 摘 above and <text>n</text> 劈 below.</li>
+      <li id="numbers">Hui and strings are numbers, and .5 shows as 半: <text>中<r>八五</r>勾五</text> or <text>d<r>8.5</r>k5</text> → <jzp>d<r>8.5</r>k5</jzp></li>
+      <li>A comma keeps a hui and a string apart: <text>名七<r>，</r>六</text> or <text>s7<r>,</r>6</text> → <jzp>s7,6</jzp></li>
+      <li id="chords">A chord puts <text>|</text> between its left and right sides. <text><r>撮</r>大九，六<r>｜</r>散三</text> or <text><r>C</r>v9,6<r>|</r>03</text> → <jzp><r>C</r>v9,6<r>|</r>03</jzp></li>
+      <li id="vertical">A word written down the side (上, 下, 泛起…) starts with a colon. Chinese is safest here, as some pinyin spellings are alike. <text><r>：</r>上七九</text> or <text><r>:</r>shang79</text> → <jzp>:shang79</jzp>. A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息…) needs no colon: <text>上七九</text> or <text>shang79</text> → <jzp>shang79</jzp>.</li>
+    </ul>
+
+    <details class="more" id="modifiers">
+      <summary>More rules: open strings, 外, 急 绰 注 and numbers</summary>
+      <ul>
+        <li>An open string is 散 or 0. <text><r>散</r>勾三</text> or <text><r>0</r>k3</text> → <jzp><r>0</r>k3</jzp></li>
+        <li>Past the 13th hui is 外 or 13+. <text>名<r>外</r>挑六</text> or <text>s<r>13+</r>u6</text> → <jzp>s<r>13+</r>u6</jzp></li>
+        <li>急 &gt;, 绰 / and 注 \ go after the hui. <text>名九<r>绰</r>勾六</text> or <text>s9<r>/</r>k6</text> → <jzp>s9<r>/</r>k6</jzp></li>
+        <li><text>名七六</text> or <text>s76</text> → <jzp>s76</jzp> 7.6 hui, no string.</li>
+        <li><text>名七六六</text> or <text>s766</text> → <jzp>s766</jzp> 7.6 hui, string 6.</li>
+        <li><text>历七六</text> or <text>U76</text> → <jzp>U76</jzp> strings 7 and 6: digits only make a decimal right after a left-hand finger.</li>
+        <li><text>名七点九</text> → <jzp>名七点九</jzp> In Chinese, 点 or 徽 between the digits also marks the decimal.</li>
+        <li><text>名十二勾五</text> or <text>s12k5</text> → <jzp>s12k5</jzp> 十一 to 十三 are hui 11 to 13. 10.2 is <text>名十徽二</text> or <text>名十点二</text>.</li>
+        <li><text>名九徽半轮六</text> or <text>s9,banlun6</text> → <jzp>s9,banlun6</jzp> 徽 before a word that starts with 半 ends the number: 9, then 半轮. Without it, <text>名九半轮六</text> is 9.5, then 轮.</li>
+        <li><text>名九七弦</text> or <text>s9,7</text> → <jzp>s9,7</jzp> 弦 marks a string: hui 9, string 7, not 9.7. In a chord it closes the first half: <text>撥大九四六弦｜散五</text> or <text>Bv9.4,6|05</text> → <jzp>Bv9.4,6|05</jzp></li>
+        <li><text>就勾五</text> or <text>jiuk5</text> → <jzp>就勾五</jzp> 就 repeats the left hand of the character before.</li>
+        <li>Keep each character in one script: <text>勾3</text> or <text>k三</text> may show in a browser but not in Word.</li>
+      </ul>
+    </details>
+
+    <details class="more">
+      <summary>Using the font in Sibelius or MuseScore</summary>
+      <p>There the spacebar moves lyrics to the next note. End each character with <text>+</text> instead to give it its width, then press space to move on.</p>
+      <ul>
+        <li><text>勾七+</text> or <text>k7+</text> → <jzp>k7+</jzp></li>
+        <li><text>：泛起+名九挑六</text> or <text>:fanqi+s9u6</text> → <jzp>:fanqi+s9u6</jzp> one word, on one note.</li>
+      </ul>
+    </details>
+
+    <h3 id="glossary">Glossary</h3>
+    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.</p>
+    <div class="row">
+      <div class="col">
+        <div class="glossary-search" role="search">
+          <label for="glossary-search">Search the glossary</label>
+          <input id="glossary-search" type="search" class="form-control" autocomplete="off" spellcheck="false"
+            placeholder="k, gou, 勾, a definition, or a section such as chords" />
+          <p id="glossary-search-status" aria-live="polite"></p>
+        </div>
+        <!-- glossary all: generated from site/glossary.json and builder/inputs/components.csv (the Builder's Glossary view; cd builder && python3 -m jzpbuild.glossary); edit those, not this -->
+        <h4 id="glossary-left">1: Left Hand</h4>
+        <label id="glossary-1a">1a: Left Hand Finger</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="1">
+            <td class="gid"><a href="#1">1</a></td>
+            <td>s</td>
+            <td>名</td>
+            <td>míng</td>
+            <td>
+              <txs><r>名</r>九勾三</txs>
+              <txs><r>s</r>9k3</txs>
+            </td>
+            <td><jzp><r>s</r>9k3</jzp></td>
+          </tr>
+          <tr id="2">
+            <td class="gid"><a href="#2">2</a></td>
+            <td>d</td>
+            <td>中</td>
+            <td>zhōng</td>
+            <td>
+              <txs><r>中</r>九勾三</txs>
+              <txs><r>d</r>9k3</txs>
+            </td>
+            <td><jzp><r>d</r>9k3</jzp></td>
+          </tr>
+          <tr id="3">
+            <td class="gid"><a href="#3">3</a></td>
+            <td>f</td>
+            <td>食</td>
+            <td>shí</td>
+            <td>
+              <txs><r>食</r>九勾三</txs>
+              <txs><r>f</r>9k3</txs>
+            </td>
+            <td><jzp><r>f</r>9k3</jzp></td>
+          </tr>
+          <tr id="4">
+            <td class="gid"><a href="#4">4</a></td>
+            <td>v</td>
+            <td>大</td>
+            <td>dà</td>
+            <td>
+              <txs><r>大</r>九勾三</txs>
+              <txs><r>v</r>9k3</txs>
+            </td>
+            <td><jzp><r>v</r>9k3</jzp></td>
+          </tr>
+          <tr id="5">
+            <td class="gid"><a href="#5">5</a></td>
+            <td>x</td>
+            <td>跪</td>
+            <td>guì</td>
+            <td>
+              <txs><r>跪</r>五四勾三</txs>
+              <txs><r>x</r>5.4k3</txs>
+            </td>
+            <td><jzp><r>x</r>5.4k3</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-1b">1b: Speed mods &amp; mods related to 韵 production</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="6">
+            <td class="gid"><a href="#6">6</a></td>
+            <td>/</td>
+            <td><span class="nw">绰</span>, <span class="nw">綽</span></td>
+            <td>chuò</td>
+            <td>
+              <txs>名九<r>绰</r>勾三</txs>
+              <txs>名九<r>綽</r>勾三</txs>
+              <txs>s9<r>/</r>k3</txs>
+            </td>
+            <td><jzp>s9<r>/</r>k3</jzp></td>
+          </tr>
+          <tr id="7">
+            <td class="gid"><a href="#7">7</a></td>
+            <td>&gt;</td>
+            <td>急</td>
+            <td>jí</td>
+            <td>
+              <txs>名九<r>急</r>勾三</txs>
+              <txs>s9<r>&gt;</r>k3</txs>
+            </td>
+            <td><jzp>s9<r>&gt;</r>k3</jzp></td>
+          </tr>
+          <tr id="8">
+            <td class="gid"><a href="#8">8</a></td>
+            <td>\</td>
+            <td><span class="nw">注</span>, <span class="nw">註</span></td>
+            <td>zhù</td>
+            <td>
+              <txs>名九<r>注</r>勾三</txs>
+              <txs>名九<r>註</r>勾三</txs>
+              <txs>s9<r>\</r>k3</txs>
+            </td>
+            <td><jzp>s9<r>\</r>k3</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-1c">1c: Left Hand Techniques</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="9">
+            <td class="gid"><a href="#9">9</a></td>
+            <td>V</td>
+            <td>掩</td>
+            <td>yǎn</td>
+            <td>
+              <txs>名九<r>掩</r>六</txs>
+              <txs>s9<r>V</r>6</txs>
+            </td>
+            <td><jzp>s9<r>V</r>6</jzp></td>
+          </tr>
+          <tr id="10">
+            <td class="gid"><a href="#10">10</a></td>
+            <td>c</td>
+            <td>掐起</td>
+            <td>qiā qǐ</td>
+            <td>
+              <txs>名八<r>掐起</r></txs>
+              <txs>s8<r>c</r></txs>
+            </td>
+            <td><jzp>s8<r>c</r></jzp></td>
+          </tr>
+          <tr id="11">
+            <td class="gid"><a href="#11">11</a></td>
+            <td><span class="nw">fanyin</span>, <span class="nw">fy</span></td>
+            <td>泛音</td>
+            <td>fànyīn</td>
+            <td>
+              <txs><r>泛音</r>名九挑六</txs>
+              <txs><r>fanyin</r>s9u6</txs>
+              <txs><r>fy</r>s9u6</txs>
+            </td>
+            <td><jzp><r>fanyin</r>s9u6</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-1d">1d: Special Cases</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="12">
+            <td class="gid"><a href="#12">12</a></td>
+            <td>0</td>
+            <td>散</td>
+            <td>sàn</td>
+            <td>
+              <txs><r>散</r>勾五</txs>
+              <txs><r>0</r>k5</txs>
+            </td>
+            <td><jzp><r>0</r>k5</jzp></td>
+          </tr>
+          <tr id="13">
+            <td class="gid"><a href="#13">13</a></td>
+            <td>jiu</td>
+            <td>就</td>
+            <td>jiù</td>
+            <td>
+              <txs><r>就</r>勾五</txs>
+              <txs><r>jiu</r>k5</txs>
+            </td>
+            <td><jzp><r>jiu</r>k5</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-1d-v">1d-v: Special Cases, vertical</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="14">
+            <td class="gid"><a href="#14">14</a></td>
+            <td>daiqi</td>
+            <td>带起</td>
+            <td>dài qǐ</td>
+            <td>
+              <txs>带起</txs>
+              <txs>daiqi</txs>
+            </td>
+            <td><jzp>带起</jzp></td>
+          </tr>
+          <tr id="15">
+            <td class="gid"><a href="#15">15</a></td>
+            <td>duiqi</td>
+            <td>对起</td>
+            <td>duì qǐ</td>
+            <td>
+              <txs>对起</txs>
+              <txs>duiqi</txs>
+            </td>
+            <td><jzp>对起</jzp></td>
+          </tr>
+          <tr id="16">
+            <td class="gid"><a href="#16">16</a></td>
+            <td>zhuaqi</td>
+            <td>抓起</td>
+            <td>zhuā qǐ</td>
+            <td>
+              <txs>抓起</txs>
+              <txs>zhuaqi</txs>
+            </td>
+            <td><jzp>抓起</jzp></td>
+          </tr>
+          <tr id="17">
+            <td class="gid"><a href="#17">17</a></td>
+            <td>pieqi</td>
+            <td>撇起</td>
+            <td>piē qǐ</td>
+            <td>
+              <txs>撇起</txs>
+              <txs>pieqi</txs>
+            </td>
+            <td><jzp>撇起</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-1e">1e: Left Hand Vibratos and Slides</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="18">
+            <td class="gid"><a href="#18">18</a></td>
+            <td>tui</td>
+            <td>退</td>
+            <td>tuì</td>
+            <td>
+              <txs>退</txs>
+              <txs>tui</txs>
+            </td>
+            <td><jzp>退</jzp></td>
+          </tr>
+          <tr id="19">
+            <td class="gid"><a href="#19">19</a></td>
+            <td>jin</td>
+            <td><span class="nw">进</span>, <span class="nw">進</span></td>
+            <td>jìn</td>
+            <td>
+              <txs>进</txs>
+              <txs>進</txs>
+              <txs>jin</txs>
+            </td>
+            <td><jzp>进</jzp></td>
+          </tr>
+          <tr id="20">
+            <td class="gid"><a href="#20">20</a></td>
+            <td>fu4</td>
+            <td>復</td>
+            <td>fù</td>
+            <td>
+              <txs>復</txs>
+              <txs>fu4</txs>
+            </td>
+            <td><jzp>復</jzp></td>
+          </tr>
+          <tr id="21">
+            <td class="gid"><a href="#21">21</a></td>
+            <td>zhuang</td>
+            <td>撞</td>
+            <td>zhuàng</td>
+            <td>
+              <txs>撞</txs>
+              <txs>zhuang</txs>
+            </td>
+            <td><jzp>撞</jzp></td>
+          </tr>
+          <tr id="22">
+            <td class="gid"><a href="#22">22</a></td>
+            <td>yin</td>
+            <td>吟</td>
+            <td>yín</td>
+            <td>
+              <txs>吟</txs>
+              <txs>yin</txs>
+            </td>
+            <td><jzp>吟</jzp></td>
+          </tr>
+          <tr id="23">
+            <td class="gid"><a href="#23">23</a></td>
+            <td>nao</td>
+            <td>猱</td>
+            <td>náo</td>
+            <td>
+              <txs>猱</txs>
+              <txs>nao</txs>
+            </td>
+            <td><jzp>猱</jzp></td>
+          </tr>
+          <tr id="24">
+            <td class="gid"><a href="#24">24</a></td>
+            <td>zhangyin</td>
+            <td>长吟</td>
+            <td>zhǎng yín</td>
+            <td>
+              <txs>长吟</txs>
+              <txs>zhangyin</txs>
+            </td>
+            <td><jzp>长吟</jzp></td>
+          </tr>
+          <tr id="25">
+            <td class="gid"><a href="#25">25</a></td>
+            <td>xi4yin</td>
+            <td>细吟</td>
+            <td>xì yín</td>
+            <td>
+              <txs>细吟</txs>
+              <txs>xi4yin</txs>
+            </td>
+            <td><jzp>细吟</jzp></td>
+          </tr>
+          <tr id="26">
+            <td class="gid"><a href="#26">26</a></td>
+            <td>dingyin</td>
+            <td>定吟</td>
+            <td>dìng yín</td>
+            <td>
+              <txs>定吟</txs>
+              <txs>dingyin</txs>
+            </td>
+            <td><jzp>定吟</jzp></td>
+          </tr>
+          <tr id="27">
+            <td class="gid"><a href="#27">27</a></td>
+            <td>xiaoyin</td>
+            <td>小吟</td>
+            <td>xiǎo yín</td>
+            <td>
+              <txs>小吟</txs>
+              <txs>xiaoyin</txs>
+            </td>
+            <td><jzp>小吟</jzp></td>
+          </tr>
+          <tr id="28">
+            <td class="gid"><a href="#28">28</a></td>
+            <td>fenkai</td>
+            <td><span class="nw">分开</span>, <span class="nw">分開</span></td>
+            <td>fēnkāi</td>
+            <td>
+              <txs>分开</txs>
+              <txs>分開</txs>
+              <txs>fenkai</txs>
+            </td>
+            <td><jzp>分开</jzp></td>
+          </tr>
+          <tr id="29">
+            <td class="gid"><a href="#29">29</a></td>
+            <td>yinghe</td>
+            <td><span class="nw">应合</span>, <span class="nw">應合</span></td>
+            <td>yīng hé</td>
+            <td>
+              <txs>应合</txs>
+              <txs>應合</txs>
+              <txs>yinghe</txs>
+            </td>
+            <td><jzp>应合</jzp></td>
+          </tr>
+          <tr id="30">
+            <td class="gid"><a href="#30">30</a></td>
+            <td>tang</td>
+            <td>淌</td>
+            <td></td>
+            <td>
+              <txs>淌</txs>
+              <txs>tang</txs>
+            </td>
+            <td><jzp>淌</jzp></td>
+          </tr>
+        </table>
+
+        <h4 id="glossary-right">2: Right Hand</h4>
+        <label id="glossary-2a">2a: Basic Right Hand</label>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="31">
+            <td class="gid"><a href="#31">31</a></td>
+            <td>n</td>
+            <td>劈</td>
+            <td>pī</td>
+            <td>
+              <txs>散<r>劈</r>五</txs>
+              <txs>0<r>n</r>5</txs>
+            </td>
+            <td><jzp>0<r>n</r>5</jzp></td>
+          </tr>
+          <tr id="32">
+            <td class="gid"><a href="#32">32</a></td>
+            <td>h</td>
+            <td>托</td>
+            <td>tuō</td>
+            <td>
+              <txs>散<r>托</r>五</txs>
+              <txs>0<r>h</r>5</txs>
+            </td>
+            <td><jzp>0<r>h</r>5</jzp></td>
+          </tr>
+          <tr id="33">
+            <td class="gid"><a href="#33">33</a></td>
+            <td>j</td>
+            <td>抹</td>
+            <td>mǒ</td>
+            <td>
+              <txs>散<r>抹</r>五</txs>
+              <txs>0<r>j</r>5</txs>
+            </td>
+            <td><jzp>0<r>j</r>5</jzp></td>
+          </tr>
+          <tr id="34">
+            <td class="gid"><a href="#34">34</a></td>
+            <td>u</td>
+            <td>挑</td>
+            <td>tiāo</td>
+            <td>
+              <txs>散<r>挑</r>五</txs>
+              <txs>0<r>u</r>5</txs>
+            </td>
+            <td><jzp>0<r>u</r>5</jzp></td>
+          </tr>
+          <tr id="35">
+            <td class="gid"><a href="#35">35</a></td>
+            <td>k</td>
+            <td>勾</td>
+            <td>gōu</td>
+            <td>
+              <txs>散<r>勾</r>五</txs>
+              <txs>0<r>k</r>5</txs>
+            </td>
+            <td><jzp>0<r>k</r>5</jzp></td>
+          </tr>
+          <tr id="36">
+            <td class="gid"><a href="#36">36</a></td>
+            <td>i</td>
+            <td>剔</td>
+            <td>tī</td>
+            <td>
+              <txs>散<r>剔</r>五</txs>
+              <txs>0<r>i</r>5</txs>
+            </td>
+            <td><jzp>0<r>i</r>5</jzp></td>
+          </tr>
+          <tr id="37">
+            <td class="gid"><a href="#37">37</a></td>
+            <td>l</td>
+            <td>打</td>
+            <td>dǎ</td>
+            <td>
+              <txs>散<r>打</r>五</txs>
+              <txs>0<r>l</r>5</txs>
+            </td>
+            <td><jzp>0<r>l</r>5</jzp></td>
+          </tr>
+          <tr id="38">
+            <td class="gid"><a href="#38">38</a></td>
+            <td>o</td>
+            <td>摘</td>
+            <td>zhāi</td>
+            <td>
+              <txs>散<r>摘</r>五</txs>
+              <txs>0<r>o</r>5</txs>
+            </td>
+            <td><jzp>0<r>o</r>5</jzp></td>
+          </tr>
+          <tr id="39">
+            <td class="gid"><a href="#39">39</a></td>
+            <td>ju</td>
+            <td>抹挑</td>
+            <td>mǒ tiāo</td>
+            <td>
+              <txs>散<r>抹挑</r>五</txs>
+              <txs>0<r>ju</r>5</txs>
+            </td>
+            <td><jzp>0<r>ju</r>5</jzp></td>
+          </tr>
+          <tr id="40">
+            <td class="gid"><a href="#40">40</a></td>
+            <td>ki</td>
+            <td>勾剔</td>
+            <td>gōu tī</td>
+            <td>
+              <txs>散<r>勾剔</r>五</txs>
+              <txs>0<r>ki</r>5</txs>
+            </td>
+            <td><jzp>0<r>ki</r>5</jzp></td>
+          </tr>
+          <tr id="41">
+            <td class="gid"><a href="#41">41</a></td>
+            <td>lo</td>
+            <td>打摘</td>
+            <td>dǎ zhāi</td>
+            <td>
+              <txs>散<r>打摘</r>五</txs>
+              <txs>0<r>lo</r>5</txs>
+            </td>
+            <td><jzp>0<r>lo</r>5</jzp></td>
+          </tr>
+          <tr id="42">
+            <td class="gid"><a href="#42">42</a></td>
+            <td>U</td>
+            <td><span class="nw">历</span>, <span class="nw">歴</span></td>
+            <td>lì</td>
+            <td>
+              <txs>散<r>历</r>六五</txs>
+              <txs>散<r>歴</r>六五</txs>
+              <txs>0<r>U</r>65</txs>
+            </td>
+            <td><jzp>0<r>U</r>65</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-2b">2b: Chords</label>
+        <div class="glossary-subdesc">
+          <p>These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a <text>|</text>.</p>
+          <p>ex: <text>Cs9,3|05</text> or <text>撮名九,三｜散五</text> will make <jzp>Cs9,3|05</jzp></p>
+        </div>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="43">
+            <td class="gid"><a href="#43">43</a></td>
+            <td>C</td>
+            <td>撮</td>
+            <td>cuō</td>
+            <td>
+              <txs><r>撮</r>中八，七<r>｜</r>散五</txs>
+              <txs><r>C</r>d8,7<r>|</r>05</txs>
+            </td>
+            <td><jzp><r>C</r>d8,7<r>|</r>05</jzp></td>
+          </tr>
+          <tr id="44">
+            <td class="gid"><a href="#44">44</a></td>
+            <td>DC</td>
+            <td>大撮</td>
+            <td>dà cuō</td>
+            <td>
+              <txs><r>大撮</r>中八，七<r>｜</r>散二</txs>
+              <txs><r>DC</r>d8,7<r>|</r>02</txs>
+            </td>
+            <td><jzp><r>DC</r>d8,7<r>|</r>02</jzp></td>
+          </tr>
+          <tr id="45">
+            <td class="gid"><a href="#45">45</a></td>
+            <td>FC</td>
+            <td>反撮</td>
+            <td>fǎn cuō</td>
+            <td>
+              <txs><r>反撮</r>中八，七<r>｜</r>散二</txs>
+              <txs><r>FC</r>d8,7<r>|</r>02</txs>
+            </td>
+            <td><jzp><r>FC</r>d8,7<r>|</r>02</jzp></td>
+          </tr>
+          <tr id="46">
+            <td class="gid"><a href="#46">46</a></td>
+            <td>B</td>
+            <td><span class="nw">拨</span>, <span class="nw">撥</span></td>
+            <td>bō</td>
+            <td>
+              <txs><r>拨</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>撥</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>B</r>d7,7<r>|</r>06</txs>
+            </td>
+            <td><jzp><r>B</r>d7,7<r>|</r>06</jzp></td>
+          </tr>
+          <tr id="47">
+            <td class="gid"><a href="#47">47</a></td>
+            <td>L</td>
+            <td>剌</td>
+            <td>là</td>
+            <td>
+              <txs><r>剌</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>L</r>d7,7<r>|</r>06</txs>
+            </td>
+            <td><jzp><r>L</r>d7,7<r>|</r>06</jzp></td>
+          </tr>
+          <tr id="48">
+            <td class="gid"><a href="#48">48</a></td>
+            <td>BL</td>
+            <td><span class="nw">拨剌</span>, <span class="nw">撥剌</span></td>
+            <td>bō là</td>
+            <td>
+              <txs><r>拨剌</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>撥剌</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>BL</r>d7,7<r>|</r>06</txs>
+            </td>
+            <td><jzp><r>BL</r>d7,7<r>|</r>06</jzp></td>
+          </tr>
+          <tr id="49">
+            <td class="gid"><a href="#49">49</a></td>
+            <td>TT</td>
+            <td><span class="nw">双弹</span>, <span class="nw">雙彈</span></td>
+            <td>shuāng dàn</td>
+            <td>
+              <txs><r>双弹</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>雙彈</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>TT</r>d7,7<r>|</r>06</txs>
+            </td>
+            <td><jzp><r>TT</r>d7,7<r>|</r>06</jzp></td>
+          </tr>
+          <tr id="50">
+            <td class="gid"><a href="#50">50</a></td>
+            <td>TTT</td>
+            <td><span class="nw">三弹</span>, <span class="nw">三彈</span></td>
+            <td>sān dàn</td>
+            <td>
+              <txs><r>三弹</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>三彈</r>中七，七<r>｜</r>散六</txs>
+              <txs><r>TTT</r>d7,7<r>|</r>06</txs>
+            </td>
+            <td><jzp><r>TTT</r>d7,7<r>|</r>06</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-2c">2c: Other Right Hand Strum Techniques</label>
+        <div class="glossary-subdesc">
+          <p><u>For use in Vertical Layout only</u><br /><small>preface these with <text>:</text> and best use Chinese characters to avoid ambiguity with homonym pinyins</small></p>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="51">
+            <td class="gid"><a href="#51">51</a></td>
+            <td>:lun</td>
+            <td><span class="nw">:轮</span>, <span class="nw">:輪</span></td>
+            <td>lún</td>
+            <td>
+              <txs>:轮</txs>
+              <txs>:輪</txs>
+              <txs>:lun</txs>
+            </td>
+            <td><jzp>:轮</jzp></td>
+          </tr>
+          <tr id="52">
+            <td class="gid"><a href="#52">52</a></td>
+            <td><span class="nw">:banlun</span>, <span class="nw">:bl</span></td>
+            <td><span class="nw">:半轮</span>, <span class="nw">:半輪</span></td>
+            <td>bàn lún</td>
+            <td>
+              <txs>:半轮</txs>
+              <txs>:半輪</txs>
+              <txs>:banlun</txs>
+              <txs>:bl</txs>
+            </td>
+            <td><jzp>:半轮</jzp></td>
+          </tr>
+          <tr id="53">
+            <td class="gid"><a href="#53">53</a></td>
+            <td>dayuan</td>
+            <td><span class="nw">打圆</span>, <span class="nw">打圓</span></td>
+            <td>dǎ yuán</td>
+            <td>
+              <txs>打圆</txs>
+              <txs>打圓</txs>
+              <txs>dayuan</txs>
+            </td>
+            <td><jzp>打圆</jzp></td>
+          </tr>
+          <tr id="54">
+            <td class="gid"><a href="#54">54</a></td>
+            <td>gun</td>
+            <td><span class="nw">滚</span>, <span class="nw">滾</span></td>
+            <td>gǔn</td>
+            <td>
+              <txs>滚</txs>
+              <txs>滾</txs>
+              <txs>gun</txs>
+            </td>
+            <td><jzp>滚</jzp></td>
+          </tr>
+          <tr id="55">
+            <td class="gid"><a href="#55">55</a></td>
+            <td>fu</td>
+            <td>沸</td>
+            <td>fèi</td>
+            <td>
+              <txs>沸</txs>
+              <txs>fu</txs>
+            </td>
+            <td><jzp>沸</jzp></td>
+          </tr>
+          <tr id="56">
+            <td class="gid"><a href="#56">56</a></td>
+            <td>beisuo</td>
+            <td>背璅</td>
+            <td>bèi suǒ</td>
+            <td>
+              <txs>背璅</txs>
+              <txs>beisuo</txs>
+            </td>
+            <td><jzp>背璅</jzp></td>
+          </tr>
+          <tr id="57">
+            <td class="gid"><a href="#57">57</a></td>
+            <td>duansuo</td>
+            <td>短璅</td>
+            <td>duǎn suǒ</td>
+            <td>
+              <txs>短璅</txs>
+              <txs>duansuo</txs>
+            </td>
+            <td><jzp>短璅</jzp></td>
+          </tr>
+          <tr id="58">
+            <td class="gid"><a href="#58">58</a></td>
+            <td>zhangsuo</td>
+            <td>长璅</td>
+            <td>zhǎng suǒ</td>
+            <td>
+              <txs>长璅</txs>
+              <txs>zhangsuo</txs>
+            </td>
+            <td><jzp>长璅</jzp></td>
+          </tr>
+          <tr id="59">
+            <td class="gid"><a href="#59">59</a></td>
+            <td><span class="nw">diejuan</span>, <span class="nw">dj</span></td>
+            <td><span class="nw">叠蠲</span>, <span class="nw">疊蠲</span></td>
+            <td>dié juān</td>
+            <td>
+              <txs>叠蠲</txs>
+              <txs>疊蠲</txs>
+              <txs>diejuan</txs>
+              <txs>dj</txs>
+            </td>
+            <td><jzp>叠蠲</jzp></td>
+          </tr>
+          <tr id="60">
+            <td class="gid"><a href="#60">60</a></td>
+            <td><span class="nw">yanlou</span>, <span class="nw">yl</span></td>
+            <td><span class="nw">圆搂</span>, <span class="nw">圓摟</span></td>
+            <td>yuán lǒu</td>
+            <td>
+              <txs>圆搂</txs>
+              <txs>圓摟</txs>
+              <txs>yanlou</txs>
+              <txs>yl</txs>
+            </td>
+            <td><jzp>圆搂</jzp></td>
+          </tr>
+          <tr id="61">
+            <td class="gid"><a href="#61">61</a></td>
+            <td><span class="nw">banfu</span>, <span class="nw">bf</span></td>
+            <td>半扶</td>
+            <td>bàn fú</td>
+            <td>
+              <txs>半扶</txs>
+              <txs>banfu</txs>
+              <txs>bf</txs>
+            </td>
+            <td><jzp>半扶</jzp></td>
+          </tr>
+          <tr id="62">
+            <td class="gid"><a href="#62">62</a></td>
+            <td><span class="nw">quanfu</span>, <span class="nw">qf</span></td>
+            <td>全扶</td>
+            <td>quán fú</td>
+            <td>
+              <txs>全扶</txs>
+              <txs>quanfu</txs>
+              <txs>qf</txs>
+            </td>
+            <td><jzp>全扶</jzp></td>
+          </tr>
+        </table>
+
+        <h4 id="glossary-symbols">3. General Symbols (Vertical Layout Only)</h4>
+        <div class="glossary-desc">
+          <p>Preface with <text>:</text> to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.</p>
+        </div>
+        <label id="glossary-3a">3a: Related to Score</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+        </table>
+        <label id="glossary-3b">3b: Related to Notes</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="63">
+            <td class="gid"><a href="#63">63</a></td>
+            <td>fan</td>
+            <td>泛</td>
+            <td>fàn</td>
+            <td>
+              <txs>泛</txs>
+              <txs>fan</txs>
+            </td>
+            <td><jzp>泛</jzp></td>
+          </tr>
+          <tr id="64">
+            <td class="gid"><a href="#64">64</a></td>
+            <td>zhi</td>
+            <td>止</td>
+            <td>zhì</td>
+            <td>
+              <txs>止</txs>
+              <txs>zhi</txs>
+            </td>
+            <td><jzp>止</jzp></td>
+          </tr>
+          <tr id="65">
+            <td class="gid"><a href="#65">65</a></td>
+            <td>qi</td>
+            <td>起</td>
+            <td>qǐ</td>
+            <td>
+              <txs>起</txs>
+              <txs>qi</txs>
+            </td>
+            <td><jzp>起</jzp></td>
+          </tr>
+          <tr id="66">
+            <td class="gid"><a href="#66">66</a></td>
+            <td>fanqi</td>
+            <td>泛起</td>
+            <td>fàn qǐ</td>
+            <td>
+              <txs>泛起</txs>
+              <txs>fanqi</txs>
+            </td>
+            <td><jzp>泛起</jzp></td>
+          </tr>
+          <tr id="67">
+            <td class="gid"><a href="#67">67</a></td>
+            <td>fanzhi</td>
+            <td>泛止</td>
+            <td>fàn zhì</td>
+            <td>
+              <txs>泛止</txs>
+              <txs>fanzhi</txs>
+            </td>
+            <td><jzp>泛止</jzp></td>
+          </tr>
+          <tr id="68">
+            <td class="gid"><a href="#68">68</a></td>
+            <td>ru</td>
+            <td>如</td>
+            <td>rú</td>
+            <td>
+              <txs>如</txs>
+              <txs>ru</txs>
+            </td>
+            <td><jzp>如</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-3c">3c: Related to String &amp; Hui Number</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="69">
+            <td class="gid"><a href="#69">69</a></td>
+            <td>:1..:13</td>
+            <td>:一..:十三</td>
+            <td></td>
+            <td>
+              <txs>:一 :十三</txs>
+              <txs>:1 :13</txs>
+            </td>
+            <td><jzp>:一</jzp> <jzp>:十三</jzp></td>
+          </tr>
+          <tr id="70">
+            <td class="gid"><a href="#70">70</a></td>
+            <td><span class="nw">:wai</span>, <span class="nw">:13+</span></td>
+            <td>:外</td>
+            <td>wài</td>
+            <td>
+              <txs>:外</txs>
+              <txs>:wai</txs>
+              <txs>:13+</txs>
+            </td>
+            <td><jzp>:外</jzp></td>
+          </tr>
+          <tr id="71">
+            <td class="gid"><a href="#71">71</a></td>
+            <td><span class="nw">:0</span>, <span class="nw">san</span></td>
+            <td>:散</td>
+            <td>sàn</td>
+            <td>
+              <txs>:散</txs>
+              <txs>:0</txs>
+              <txs>san</txs>
+            </td>
+            <td><jzp>:散</jzp></td>
+          </tr>
+          <tr id="72">
+            <td class="gid"><a href="#72">72</a></td>
+            <td>ban</td>
+            <td>半</td>
+            <td>bàn</td>
+            <td>
+              <txs>半</txs>
+              <txs>ban</txs>
+            </td>
+            <td><jzp>半</jzp></td>
+          </tr>
+          <tr id="73">
+            <td class="gid"><a href="#73">73</a></td>
+            <td>:jiu</td>
+            <td>:就</td>
+            <td>jiù</td>
+            <td>
+              <txs>:就</txs>
+              <txs>:jiu</txs>
+            </td>
+            <td><jzp>:就</jzp></td>
+          </tr>
+          <tr id="74">
+            <td class="gid"><a href="#74">74</a></td>
+            <td>shang</td>
+            <td>上</td>
+            <td>shàng</td>
+            <td>
+              <txs>上</txs>
+              <txs>shang</txs>
+            </td>
+            <td><jzp>上</jzp></td>
+          </tr>
+          <tr id="75">
+            <td class="gid"><a href="#75">75</a></td>
+            <td>xia</td>
+            <td>下</td>
+            <td>xià</td>
+            <td>
+              <txs>下</txs>
+              <txs>xia</txs>
+            </td>
+            <td><jzp>下</jzp></td>
+          </tr>
+          <tr id="76">
+            <td class="gid"><a href="#76">76</a></td>
+            <td>zhi4</td>
+            <td>至</td>
+            <td>zhì</td>
+            <td>
+              <txs>至</txs>
+              <txs>zhi4</txs>
+            </td>
+            <td><jzp>至</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-3d">3d: Related to position</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+        </table>
+        <label id="glossary-3e">3e: related to expression</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="77">
+            <td class="gid"><a href="#77">77</a></td>
+            <td>vxi</td>
+            <td>大息</td>
+            <td>dà xī</td>
+            <td>
+              <txs>大息</txs>
+              <txs>vxi</txs>
+            </td>
+            <td><jzp>大息</jzp></td>
+          </tr>
+          <tr id="78">
+            <td class="gid"><a href="#78">78</a></td>
+            <td>shaoxi</td>
+            <td>少息</td>
+            <td>shǎo xī</td>
+            <td>
+              <txs>少息</txs>
+              <txs>shaoxi</txs>
+            </td>
+            <td><jzp>少息</jzp></td>
+          </tr>
+        </table>
+        <label id="glossary-3x">3x: Placeholder for Future/Unknown Characters</label>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+          <tr id="79">
+            <td class="gid"><a href="#79">79</a></td>
+            <td>*</td>
+            <td></td>
+            <td></td>
+            <td>
+              <txs>*</txs>
+            </td>
+            <td><jzp>*</jzp></td>
+          </tr>
+        </table>
+
+        <h4 id="glossary-uncategorized">4: Uncategorized</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="gid" width="6%">ID</th>
+              <th width="17%">ASCII</th>
+              <th width="17%">中文</th>
+              <th width="17%">拼音</th>
+              <th width="22%">Input</th>
+              <th width="21%">Output</th>
+            </tr>
+          </thead>
+        </table>
+        <!-- /glossary all -->
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <hr />
+        <p><a href="/contact">Contact me</a> if you want more characters or glyphs added to the font, have questions, feedback, or if you want to collaborate.</p>
+        <p><small class="text-muted">JianZiPu font &copy; 2021–2026 Nancy Yi Liang, Nellodee LLC &middot; <a href="https://github.com/neuralfirings/JianZiPu/blob/main/OFL.txt">SIL Open Font License 1.1</a> (<a href="https://openfontlicense.org">about the OFL</a>) &middot; derived in part from <a href="https://www.cns11643.gov.tw">TW-Kai (CNS11643)</a>, &copy; 2023 Ministry of Digital Affairs, Taiwan &middot; <a href="https://github.com/neuralfirings/JianZiPu">source on GitHub</a></small></p>
+      </div>
+    </div>
+
+  </div>
+  <div class="scroll-rod bottom" aria-hidden="true"></div>
+  <script>
+
+    // Font loading detection: the notation shows once the JianZiPu font is in
+    document.addEventListener("DOMContentLoaded", () => {
+      function hideLoading() {
+        document.documentElement.classList.remove('fonts-loading');
+      }
+      
+      // Check if Font Loading API is supported
+      if ('fonts' in document) {
+        // Wait for all fonts to be loaded
+        document.fonts.ready.then(() => {
+          // Additional check to ensure JianZiPu font is actually loaded
+          const testElement = document.createElement('span');
+          testElement.style.fontFamily = 'JianZiPu, Arial, sans-serif';
+          testElement.style.fontSize = '16px';
+          testElement.style.position = 'absolute';
+          testElement.style.visibility = 'hidden';
+          testElement.textContent = '名'; // Test character
+          document.body.appendChild(testElement);
+          
+          // Check if the font is actually loaded by measuring text width
+          const fallbackWidth = testElement.offsetWidth;
+          testElement.style.fontFamily = 'Arial, sans-serif';
+          const fallbackWidth2 = testElement.offsetWidth;
+          
+          // If widths are different, the font loaded successfully
+          if (fallbackWidth !== fallbackWidth2) {
+            document.body.removeChild(testElement);
+            hideLoading();
+          } else {
+            // Font not loaded yet, wait a bit more
+            setTimeout(() => {
+              document.body.removeChild(testElement);
+              hideLoading();
+            }, 1000);
+          }
+        }).catch(() => {
+          // Fallback if fonts.ready fails
+          setTimeout(hideLoading, 2000);
+        });
+      } else {
+        // Fallback for browsers without Font Loading API
+        setTimeout(hideLoading, 2000);
+      }
+      
+      // Fallback timeout to ensure loading indicator doesn't stay forever
+      setTimeout(hideLoading, 5000);
+    });
+    // jzp-example-container fillInDefault
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".fillInDefault").forEach(btn => {
+        btn.click();
+      });
+    });
+
+    function fillIn(btn, text) {
+      const txtEntry = btn.closest(".jzp-example-container").querySelector(".text-entry")
+      txtEntry.value = text;
+      updateTargets(txtEntry);
+    }
+
+    function updateTargets(input) {
+      const inputValue = input.value;
+      const target = input.closest(".jzp-example-container").querySelector(".jzp-example")//getAttribute("data-jzp-class");
+      target.textContent = inputValue;
+    }
+
+    // Attach listeners and update on load
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".text-entry").forEach(input => {
+        // Update once on load
+        updateTargets(input);
+
+        // Keep updating when the user types
+        input.addEventListener("input", () => updateTargets(input));
+      });
+      // typing straight into the notation keeps the box above in step (the box may be a phone's textarea by then)
+      document.querySelectorAll(".jzp-example[contenteditable]").forEach(el => {
+        for (const [k, v] of [["autocorrect", "off"], ["autocapitalize", "off"], ["spellcheck", "false"], ["autocomplete", "off"]]) el.setAttribute(k, v);
+        el.addEventListener("input", () => {
+          const box = el.closest(".jzp-example-container").querySelector(".text-entry");
+          if (box) box.value = el.textContent;
+        });
+      });
+    });
+
+
+    // Function to update textareas pairs (.jzp-entry & .latin-entry) in real time
+    function updateFromSource(source, target) {
+      target.value = source.value;
+    }
+
+    // Function to get the target textarea for a given source
+    function getTargetTextarea(source) {
+      const group = source.getAttribute('data-text-group');
+      const isJzp = source.classList.contains('jzp-entry');
+      const targetClass = isJzp ? '.lat-entry' : '.jzp-entry';
+      return document.querySelector(`${targetClass}[data-text-group="${group}"]`);
+    }
+
+    // Function to add event listeners to a textarea
+    function addEventListeners(textarea) {
+      textarea.addEventListener('input', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+      textarea.addEventListener('paste', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+      textarea.addEventListener('keyup', () => {
+        const target = getTargetTextarea(textarea);
+        if (target) updateFromSource(textarea, target);
+      });
+    }
+
+    // Add event listeners to all textareas
+    document.querySelectorAll('.jzp-entry, .lat-entry').forEach(addEventListeners);
+
+        // Initialize all textareas with existing content
+    document.querySelectorAll('.jzp-entry').forEach(jzpTextarea => {
+      const target = getTargetTextarea(jzpTextarea);
+      if (target) updateFromSource(jzpTextarea, target);
+    });
+
+    // Apply the function to all jzp elements on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('jzp').forEach(function(element) {
+        if (element.innerHTML.at(-1) !== ' ') {
+          element.innerHTML = element.innerHTML + ' '; 
+        }
+      });
+    });
+  </script>
+  <script>
+    // The released version (site/version.json, written by each release): "Version 3.200 · Release notes · Older versions"
+    fetch('./version.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v) => {
+        if (!v || !v.version) return;
+        const link = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text, target: '_blank', rel: 'noopener' });
+        for (const el of [document.getElementById('font-version'), document.getElementById('font-version-top')]) {
+          el.append(`Version ${v.version}` + (v.date ? `, ${new Date(v.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}` : '') + ' · ');
+          if (v.notes_url) { el.append(link(v.notes_url, 'Release notes'), ' · '); }
+          el.append(link('https://github.com/neuralfirings/JianZiPu/releases', 'Older versions'));
+        }
+      })
+      .catch(() => {});
+  </script>
+  <script>
+    // Safari -- removes <r> tags from <jzp> -- causes formatting issues
+    (function () {
+      const ua = navigator.userAgent;
+      const isWebKit = /AppleWebKit/.test(ua);
+      const isChromiumFamily = /(Chrome|Chromium|Edg|OPR|Brave|CriOS|EdgiOS)/.test(ua);
+      const isiOS = /iP(ad|hone|od)/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+      const isDesktopSafari = /Safari/.test(ua) && !isChromiumFamily;
+      const isSafariEngine = isWebKit && (isiOS || isDesktopSafari);
+    
+      if (isSafariEngine) {
+        function stripR() {
+          document.querySelectorAll("jzp").forEach(el => {
+            el.innerHTML = el.innerHTML
+              .replaceAll("<r>", "")
+              .replaceAll("</r>", "");
+          });
+        }
+    
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", stripR, { once: true });
+        } else {
+          stripR();
+        }
+      }
+    })();
+    </script>
+
+  <script>
+    // On a phone: the contents line names the section you're in; picking one closes it; the bar steps
+    // aside while you type; the demo boxes wrap; the preview under them can't be edited by accident
+    (function () {
+      const phone = window.matchMedia('(max-width: 759.98px)');
+      const menu = document.querySelector('.contents');
+      const now = document.querySelector('.contents-now');
+      const links = [...menu.querySelectorAll('nav a')];
+      links.forEach((a) => a.addEventListener('click', () => { menu.open = false; }));
+      const targets = links.map((a) => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+      function track() {
+        let cur = targets[0];
+        for (const t of targets) if (t.getBoundingClientRect().top < 90) cur = t;
+        links.forEach((a) => a.removeAttribute('aria-current'));
+        const on = links.find((a) => a.getAttribute('href') === '#' + cur.id);
+        if (on) { on.setAttribute('aria-current', 'true'); now.textContent = on.textContent; }
+      }
+      addEventListener('scroll', track, { passive: true });
+      track();
+      const field = (el) => el && el.matches && el.matches('input[type=text], textarea, [contenteditable]');
+      document.addEventListener('focusin', (e) => { if (phone.matches && field(e.target)) document.body.classList.add('typing'); });
+      document.addEventListener('focusout', () => setTimeout(() => { if (!field(document.activeElement)) document.body.classList.remove('typing'); }, 0));
+      function phoneDemos() {
+        if (!phone.matches) return;
+        document.querySelectorAll('input.text-entry').forEach((input) => {
+          const box = document.createElement('textarea');
+          for (const a of input.attributes) if (a.name !== 'type') box.setAttribute(a.name, a.value);
+          box.rows = 2;
+          box.value = input.value;
+          box.addEventListener('input', () => updateTargets(box));
+          input.replaceWith(box);
+        });
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
+    })();
+  </script>
+  <dialog id="get-the-font" class="signup-dialog" aria-label="Get the JianZiPu font">
+    <form method="dialog" class="signup-close"><button class="btn-close" aria-label="Close"></button></form>
+    <div id="eo-form"></div>
+    <!-- shown once the form has taken the address: the font right away, as the MailerLite pop-up did -->
+    <div id="signup-done" class="signup-done" hidden>
+      <a class="signup-download" href="./JianZiPu.ttf" download>Download JianZiPu Font</a>
+      <p>The link is in your inbox too. Not there in a few minutes? Check your spam folder, or <a href="https://guqintabs.com/contact" target="_blank" rel="noopener">write to me</a> and I&rsquo;ll send you the font the old-fashioned way.</p>
+    </div>
+  </dialog>
+  <script>
+    // Download: the EmailOctopus form in a dialog, which emails the font's link (EmailOctopus sends it,
+    // an automation on the form's tag). The form's script loads the first time it opens. Without a
+    // form id, or with no <dialog> support, the link downloads the font straight away.
+    (function () {
+      const link = document.getElementById('download-font');
+      const dialog = document.getElementById('get-the-font');
+      const id = (window.EO_FORM_ID || '').trim();
+      if (!link || !dialog || !id || typeof dialog.showModal !== 'function') return;
+      let loaded = false;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!loaded) {
+          const s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://eocampaign1.com/form/' + encodeURIComponent(id) + '.js';
+          s.dataset.form = id;
+          document.getElementById('eo-form').appendChild(s);
+          loaded = true;
+        }
+        dialog.showModal();
+      });
+      // a click on the dimmed page around the form closes it
+      dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+      // Signed up: EmailOctopus swaps its email box for its thank-you message. Once a box that was
+      // there has gone, the Download button shows under the message.
+      const box = document.getElementById('eo-form');
+      const done = document.getElementById('signup-done');
+      let seen = false;
+      const check = () => {
+        const email = box.querySelector('input[type="email"], input[name*="mail" i]');
+        const shown = !!email && email.getClientRects().length > 0;
+        if (shown) seen = true;
+        else if (seen) { done.hidden = false; observer.disconnect(); }
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+    })();
+  </script>
+  <script>
+    // Glossary search: shows the rows whose ASCII, 中文, 拼音 or Definition holds the search (tone marks,
+    // case and spaces don't count, so "banfu" finds bàn fú), or every row of a section whose title holds
+    // it. The examples column isn't searched: nearly every example has 勾 in it. The Builder's
+    // Check the glossary dialog searches the same way (app/src/lib/glossarySearch.ts).
+    (function () {
+      var input = document.getElementById('glossary-search');
+      var status = document.getElementById('glossary-search-status');
+      if (!input) return;
+      var norm = function (t) { return (t || '').normalize('NFD').replace(/[̀-ͯ\s]/g, '').toLowerCase(); };
+      var isTable = function (e) { return e.tagName === 'TABLE' && e.querySelector('td.gid'); };
+      // each column holding glossary tables, cut into blocks: a table and everything since the one
+      // before it (its titles and notes); text after a column's last table belongs to no table
+      var blocks = [], loose = [], heads = [], cols = [];
+      document.querySelectorAll('table').forEach(function (t) {
+        if (isTable(t) && cols.indexOf(t.parentElement) < 0) cols.push(t.parentElement);
+      });
+      cols.forEach(function (col) {
+        var pending = [];
+        Array.prototype.forEach.call(col.children, function (e) {
+          if (e.classList.contains('glossary-search')) return;
+          if (e.tagName === 'H4') { heads.push({ h: e, blocks: [] }); loose = loose.concat(pending); pending = []; }
+          else if (isTable(e)) {
+            var b = { table: e, intro: pending, title: norm(pending.filter(function (x) { return /^(LABEL|U)$/.test(x.tagName); })
+              .map(function (x) { return x.textContent; }).join(' ')) };
+            blocks.push(b); if (heads.length) heads[heads.length - 1].blocks.push(b); pending = [];
+          } else pending.push(e);
+        });
+        loose = loose.concat(pending);
+      });
+      function run() {
+        var q = norm(input.value), shown = 0;
+        blocks.forEach(function (b) {
+          var whole = !!q && b.title.indexOf(q) >= 0;
+          b.any = false;
+          Array.prototype.forEach.call(b.table.rows, function (tr) {
+            if (!tr.querySelector('td.gid')) return;
+            var cells = Array.prototype.slice.call(tr.cells, 1, tr.cells.length - 1);
+            var hit = !q || whole || cells.some(function (c) { return norm(c.textContent).indexOf(q) >= 0; });
+            tr.hidden = !hit;
+            if (hit) { b.any = true; shown++; }
+          });
+          b.table.hidden = !b.any;
+          b.intro.forEach(function (e) { e.hidden = !b.any; });
+        });
+        heads.forEach(function (x) { x.h.hidden = !!q && !x.blocks.some(function (b) { return b.any; }); });
+        loose.forEach(function (e) { e.hidden = !!q; });
+        status.textContent = !q ? '' : shown ? shown + (shown === 1 ? ' row' : ' rows') : 'No glossary row matches. Try the pinyin without tones, or one character.';
+      }
+      input.addEventListener('input', run);
+    })();
+  </script>
+  <script>
+    // an old link to a lesson (#modifiers) opens the fold that holds it now
+    (function () {
+      function openTarget() {
+        var el = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        var d = el && el.closest && el.closest('details.more');
+        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
+      }
+      openTarget(); window.addEventListener('hashchange', openTarget);
+    })();
+  </script>
 </body>
 </html>

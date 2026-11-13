@@ -26,6 +26,7 @@ cd builder && python3 -m jzpbuild -o /path/to/JianZiPu.ttf  # write the font som
 cd builder && python3 -m jzpbuild.release status            # releases: start <version> | candidate | publish (the Builder's Release screen runs these)
 cd builder && python3 -m jzpbuild --classic_pos  # legacy positioning from inputs/layouts.json + gpos.py (parity only)
 cd builder && python3 -m jzpbuild.glossary       # rewrite the glossary tables in site/index.html from components.csv + site/glossary.json (--check: CI-style)
+cd builder && python3 -m jzpbuild.vnext --font   # site/vnext.html: the font page after the next release (preview font, its glossary, What's new); --check: CI-style
 
 # Tests
 cd builder && python3 tests/test_shaping.py NEW.ttf  # shaping regression vs tests/JianZiPu.ttf (golden)
