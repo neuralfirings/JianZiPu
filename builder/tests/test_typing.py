@@ -489,6 +489,10 @@ HUI_AND_STRING = {
     "名十一": ["md_ming", "md_11"], "名十三": ["md_ming", "md_13"], "跪十一剔二": ["md_gui", "md_11", "lg_ti", "md_2"],
     "名十一二": ["md_ming", "md_11.2"], "名十四": ["md_ming", "md_10.4"], "名十半": ["md_ming", "md_10.5"],
     "名九七弦": ["md_ming", "md_9", "md_7"],                          # string 7, not 9.7
+    # a chord: 弦 closes its first half before the bar (撥: thumb, hui 9.4, string 6 | open string 5), as Bv9.4,6|05
+    "撥大九四六弦|散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
+    "撥大九四六弦｜散五": ["xl_bo", "md_da", "md_9.4", "md_6", "blank_bar", "md_san", "md_5"],
+    "撥大九四弦|散五": ["xl_bo", "md_da", "md_9", "md_4", "blank_bar", "md_san", "md_5"],
     "名九七": ["md_ming", "md_9.7"],
 }
 
