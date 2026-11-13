@@ -282,8 +282,6 @@
       .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
       .table td { overflow-wrap: anywhere; }
       txs { word-break: normal; }
-      /* the notation preview: a tap puts the cursor in the box above it */
-      .jzp-example { cursor: text; }
       /* the sticky bar: one slim row, the contents on the left and the download button on the right */
       /* pinned to the top from the first screen, so Contents and Download are always in reach */
       body { padding-top: 56px; }
@@ -1632,6 +1630,14 @@
         // Keep updating when the user types
         input.addEventListener("input", () => updateTargets(input));
       });
+      // typing straight into the notation keeps the box above in step (the box may be a phone's textarea by then)
+      document.querySelectorAll(".jzp-example[contenteditable]").forEach(el => {
+        for (const [k, v] of [["autocorrect", "off"], ["autocapitalize", "off"], ["spellcheck", "false"], ["autocomplete", "off"]]) el.setAttribute(k, v);
+        el.addEventListener("input", () => {
+          const box = el.closest(".jzp-example-container").querySelector(".text-entry");
+          if (box) box.value = el.textContent;
+        });
+      });
     });
 
 
@@ -1744,7 +1750,7 @@
       }
       addEventListener('scroll', track, { passive: true });
       track();
-      const field = (el) => el && el.matches && el.matches('input[type=text], textarea');
+      const field = (el) => el && el.matches && el.matches('input[type=text], textarea, [contenteditable]');
       document.addEventListener('focusin', (e) => { if (phone.matches && field(e.target)) document.body.classList.add('typing'); });
       document.addEventListener('focusout', () => setTimeout(() => { if (!field(document.activeElement)) document.body.classList.remove('typing'); }, 0));
       function phoneDemos() {
@@ -1756,17 +1762,6 @@
           box.value = input.value;
           box.addEventListener('input', () => updateTargets(box));
           input.replaceWith(box);
-        });
-        // the notation isn't edited in place on a phone; a tap on it puts the cursor at the end of the box above
-        document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => {
-          el.removeAttribute('contenteditable');
-          el.addEventListener('click', () => {
-            const box = el.closest('.jzp-example-container').querySelector('.text-entry');
-            if (!box) return;
-            box.focus();
-            const end = box.value.length;
-            try { box.setSelectionRange(end, end); } catch (e) {}
-          });
         });
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
