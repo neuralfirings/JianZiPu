@@ -44,7 +44,9 @@ up: `python3 -m jzpbuild.webserver` and open http://127.0.0.1:5713/.
 `jzpbuild/webserver.py` is a stdlib-only local HTTP server (no extra
 dependency). It serves the built Builder app (`app/build/`, SPA fallback)
 at `/`, `inputs/` and `tests/` as static files (`/inputs/svg/...`,
-`/JianZiPu.ttf`, which is the latest UI build when there is one), and the JSON API the app uses:
+`/JianZiPu.ttf`, which is the latest UI build when there is one), the font page `site/` at
+`/site/` (as jianzipufont.com serves it, so a pull request's Railway preview shows that branch's
+page and builder.jianzipufont.com/site shows main's), and the JSON API the app uses:
 
 ```bash
 cd builder

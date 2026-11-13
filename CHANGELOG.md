@@ -10,6 +10,9 @@ same text becomes the GitHub release notes.
 
 ## [Unreleased]
 
+### Fixed
+- On iPhone and in Safari, a vertical word (`shang34`, `:xia79`…) followed by a space no longer leaves an extra character's width of space after it. A colon typed straight after a word with no space (`s9k3:shang34`) now makes room for that word instead of drawing over it, and so does `#` after a vertical word. A vertical word with nothing after it now takes no width of its own, like every other word.
+
 ## [3.300] - 2026-11-13
 
 ### Added

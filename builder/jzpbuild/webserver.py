@@ -53,6 +53,8 @@ API (all JSON):
   GET  /api/build/status           {state, log, started, finished, ok, build, builds} (the caller's builds)
   GET  /api/builds/<id>/JianZiPu.ttf   that exact build (?download=1 sets Content-Disposition)
   GET  /JianZiPu.ttf               the latest build (cache-busted by the client)
+  GET  /site/…                     the font page (site/) as jianzipufont.com serves it, to preview a branch's
+                                   page (a pull request's Railway preview, or builder.jianzipufont.com for main)
   GET  /api/release/status         local only: {git: branch, version, candidates, dirty…, job: the last step's log}
   POST /api/release/start          local only: {version} -> branch release/<version> from origin/main
   POST /api/release/candidate      local only: {notes, message} -> commit, build into site/, tag vX-rc.N, push
@@ -806,6 +808,9 @@ def request_problem(method: str, headers, hosted_mode: bool) -> tuple[int, str] 
     return None
 
 
+SITE_PREFIX = "/site"                 # where the font page (site/) is served, see Handler._serve_site
+
+
 def _safe_path(path: str) -> bool:
     """False for a URL path that tries to leave the folder it names: a `..` or `.` segment
     (also percent-encoded), a backslash or a NUL. Such a request gets a 404 before any
@@ -948,6 +953,50 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
         return True
 
+    def _redirect(self, location: str):
+        self.send_response(301)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _serve_site(self, path: str) -> bool:
+        """/site/...: the font page folder (site/), as Cloudflare Pages serves it at jianzipufont.com,
+        so a branch's page can be seen on its pull request preview before it merges. A folder needs
+        its slash (the page's links are relative: ./JianZiPu.ttf is the released font in site/, not
+        this server's build) and serves its index.html; links from the site's root (/help.md) are
+        moved under /site. Never a file outside site/, nor a hidden one (.x, Cloudflare's _headers)."""
+        if path != SITE_PREFIX and not path.startswith(SITE_PREFIX + "/"):
+            return False
+        query = urlparse(self.path).query
+        root = config.SITE_DIR.resolve()
+        rel = unquote(path[len(SITE_PREFIX):]).strip("/")
+        target = (root / rel).resolve()
+        hidden = any(part.startswith((".", "_")) for part in rel.split("/"))
+        if hidden or not target.is_relative_to(root) or not target.exists():
+            self._json({"ok": False, "error": "not found"}, 404)
+            return True
+        if target.is_dir():
+            if not path.endswith("/"):
+                self._redirect(path + "/" + (f"?{query}" if query else ""))
+                return True
+            target = target / "index.html"
+            if not target.is_file():
+                self._json({"ok": False, "error": "not found"}, 404)
+                return True
+        ctype = self.guess_type(str(target))
+        if ctype.startswith("text/") and "charset" not in ctype:
+            ctype += "; charset=utf-8"           # help.md and llms.txt hold Chinese
+        body = target.read_bytes()
+        if ctype.startswith("text/html"):
+            body = re.sub(rb'(\b(?:href|src)=")/(?!/)', rb"\1" + SITE_PREFIX.encode() + b"/", body)
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+        return True
+
     # -- routes
     def do_GET(self):
         if self._refused("GET"):
@@ -996,6 +1045,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"ok": False, "error": str(err)}, 503)
         except Exception as err:  # noqa: BLE001
             return self._fail(err)
+        if self._serve_site(path):
+            return
         if path == "/JianZiPu.ttf":
             font = BUILD.latest_for(MAIN if SETTINGS.hosted else "local") or (
                 config.OUTPUT_FONT if config.OUTPUT_FONT.exists() else None)
