@@ -884,7 +884,10 @@ def write(path: Path | None = None, csv_path: Path | None = None, sections_path:
     """Rewrite the page's glossary tables; True when the file changed."""
     path = path or config.SITE_INDEX
     old = path.read_text(encoding="utf-8")
-    new = render(old, load_rows(csv_path), load_sections(sections_path), load_groups(sections_path))
+    rows = load_rows(csv_path)
+    # the colon the page's font (beside it) adds by itself isn't written: as render(page) with nothing else does
+    new = render(old, rows, load_sections(sections_path), load_groups(sections_path),
+                 vertical_only=site_vertical_only(path.with_name(config.SITE_FONT.name), rows))
     if new != old:
         path.write_text(new, encoding="utf-8")
     return new != old
@@ -898,7 +901,7 @@ def main(argv=None) -> int:
         rows, sections, groups = load_rows(), load_sections(), load_groups()
         problems = missing(rows, sections) + missing_layout(sections, groups)
         page = config.SITE_INDEX.read_text(encoding="utf-8")
-        new = render(page, rows, sections, groups)
+        new = render(page, rows, sections, groups, vertical_only=site_vertical_only(rows=rows))
     except GlossaryError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
