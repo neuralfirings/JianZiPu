@@ -118,9 +118,11 @@ again.
 
 - A Pages project connected to this repository, with production branch `main`,
   no build command, and output directory `site`.
-- `site/_headers` keeps caches short: `version.json` is never cached and
-  `JianZiPu.ttf` for an hour, so people get a new release soon after it
-  deploys.
+- `site/_headers` makes browsers check `JianZiPu.ttf` and `version.json` on
+  every visit (`Cache-Control: no-cache`; an unchanged file is a short "not
+  modified" reply), so people get a new release as soon as it deploys. A
+  release replaces the font at the same URL, so a longer cache would keep the
+  old font in browsers that saw it before.
 
 ## EmailOctopus
 

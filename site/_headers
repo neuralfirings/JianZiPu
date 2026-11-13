@@ -8,9 +8,11 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
-# A release replaces these files in place; keep caches short so people get the new font soon.
+# A release replaces these files in place, at the same URL, so a browser must ask each time whether
+# they changed (no-cache: it keeps its copy, and an unchanged file is a short "not modified" reply).
+# With max-age, a browser went on using the old font for up to that long after a release.
 /JianZiPu.ttf
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
 /version.json
   Cache-Control: no-cache
 
