@@ -19,64 +19,55 @@
     "\"hidden\": true on a subtitle or a section title (the Builder's eye switch) leaves it off the page; its glyphs count as left out on purpose."
   ],
   "groups": [
-    {"id": "left", "title": "1: Left Hand", "nav": "Left hand", "sections": ["1a", "1b", "1c", "1d", "1d-v", "1e"]},
-    {"id": "right", "title": "2: Right Hand", "nav": "Right hand", "sections": ["2a", "2b", "2c"]},
-    {"id": "symbols", "title": "3. General Symbols (Vertical Layout Only)", "nav": "General symbols", "description": "Preface with `:` to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.", "sections": ["3a", "3b", "3c", "3d", "3e", "3x"]},
-    {"id": "uncategorized", "title": "4: Uncategorized", "nav": "Uncategorized", "sections": ["4"]},
-    {"id": "hidden", "title": "99: Hidden in Glossary", "sections": ["99"]}
+    {"id": "left", "title": "1. Left Hand", "nav": "Left hand", "sections": ["1a", "1b", "1c", "1e"]},
+    {"id": "right", "title": "2. Right Hand", "nav": "Right hand", "sections": ["2a", "2b", "2c"]},
+    {"id": "3", "title": "3. Numbers for String and Hui", "description": "NOTE: You can also use decimals for hui numbers", "sections": ["s1"]},
+    {"id": "symbols", "title": "4. Other", "nav": "General symbols", "description": "These are used in vertical layouts. Option to preface with `:` to write the character by itself. Best use Chinese characters to avoid ambiguity with homonym pinyins.", "sections": ["3a", "3e", "3x"]},
+    {"id": "uncategorized", "title": "5. Uncategorized", "nav": "Uncategorized", "sections": []},
+    {"id": "hidden", "title": "Hidden", "hidden": true, "sections": []}
   ],
   "sections": {
     "1a": {
-      "title": "1a: Left Hand Finger",
+      "title": "1.1. Which Finger to Use",
       "usage": ["{}9k3", "{}九勾三"],
       "rows": [
-        {"glyph": "md_ming"},
-        {"glyph": "md_zhong"},
-        {"glyph": "md_shi"},
-        {"glyph": "md_da"},
-        {"glyph": "md_gui", "usage": ["{}5.4k3", "{}五四勾三"]}
+        {"glyph": "md_ming", "meaning": "ring finger, or 4th finger"},
+        {"glyph": "md_zhong", "meaning": "middle finger, or 3rd finger"},
+        {"glyph": "md_shi", "meaning": "index finger, or 2nd finger"},
+        {"glyph": "md_da", "meaning": "thumb, or 1st finger", "usage": ["{}7k3", "{}七勾三"]},
+        {"glyph": "md_gui", "meaning": "kneel, or 4th finger curled (uses knuckle)", "usage": ["{}4k3", "{}四勾三"]}
       ]
     },
     "1b": {
-      "title": "1b: Speed mods & mods related to 韵 production",
+      "title": "1.2. Speed",
       "usage": ["s9{}k3", "名九{}勾三"],
+      "description": "The characters affect the 韵 (yùn) or rhythm",
       "rows": [
-        {"glyph": "mod_chuo"},
-        {"glyph": "mod_ji"},
-        {"glyph": "mod_zhu"}
+        {"glyph": "mod_ji", "meaning": "play note quickly"}
       ]
     },
     "1c": {
-      "title": "1c: Left Hand Techniques",
-      "usage": ["s9{}6", "名九{}六"],
+      "title": "1.3. Left Hand Techniques",
       "rows": [
-        {"glyph": "lg_yan"},
-        {"glyph": "lg_qiaqi", "usage": ["s8{}", "名八{}"]},
-        {"glyph": "mod_fanyin", "usage": ["{}s9u6", "{}名九挑六"]}
-      ]
-    },
-    "1d": {
-      "title": "1d: Special Cases",
-      "usage": ["{}k5", "{}勾五"],
-      "rows": [
-        {"glyph": "md_san"},
-        {"glyph": "md_jiu"}
-      ]
-    },
-    "1d-v": {
-      "title": "1d-v: Special Cases, vertical",
-      "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
-      "rows": [
-        {"word": "带起", "glyphs": ["md_dai", "md_qi"]},
+        {"glyph": "lg_yan", "meaning": "hit the string with force with thumb, bam!", "usage": ["s9{}6", "名九{}六"]},
+        {"glyph": "lg_qiaqi", "meaning": "pluck with left thumb inward while holding down hui", "usage": ["s9{}", "名九{}"]},
+        {"glyph": "mod_fanyin", "meaning": "lightly tap instead of pressing down, plays a harmonic", "usage": ["{}s9u6", "{}名九挑六"]},
+        {"word": "泛起", "glyphs": ["md_fan", "md_qi"], "meaning": "subsequent section are all fanyin", "usage": ["fanqi", "泛起"], "typed": "fanqi"},
+        {"word": "泛止", "glyphs": ["md_fan", "md_zhi"], "meaning": "stop playing fanyin notes", "usage": ["fanzhi", "泛止"]},
+        {"word": "带起", "glyphs": ["md_dai", "md_qi"], "meaning": "pluck inwards with left hand (usually ring finger)", "usage": ["s9k6 daiqi", "名九勾六 带起"]},
         {"word": "对起", "glyphs": ["md_dui", "md_qi"]},
-        {"word": "抓起", "glyphs": ["md_zhua", "md_qi"]},
-        {"word": "撇起", "glyphs": ["md_pie", "md_qi"]}
+        {"word": "抓起", "glyphs": ["md_zhua", "md_qi"], "usage": ["v9k6 zhuaqi", "大九勾六 抓起"]},
+        {"word": "撇起", "glyphs": ["md_pie", "md_qi"]},
+        {"glyph": "tui1chu1_md", "meaning": "push out to pluck with left hand (usually middle finger)", "usage": ["d9k6 {}", "中九勾六 {}"]}
       ]
     },
     "1e": {
-      "title": "1e: Left Hand Vibratos and Slides",
-      "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
+      "title": "1.4. Vibratos and Slides",
       "rows": [
+        {"glyph": "mod_chuo", "usage": ["s9{}k3", "名九{}勾三"], "typed": "/"},
+        {"glyph": "md_shang", "meaning": "slide up to hui 6.4", "usage": ["{}64", "{}六四"]},
+        {"glyph": "mod_zhu", "meaning": "slide down into this note", "usage": ["s9{}k3", "名九{}勾三"], "typed": "\\"},
+        {"glyph": "md_xia", "meaning": "slide down to hui 7.9", "usage": ["{}79", "{}七九"]},
         {"glyph": "md_tui"},
         {"glyph": "md_jin"},
         {"glyph": "md_fu"},
@@ -89,11 +80,12 @@
         {"word": "小吟", "glyphs": ["md_xiao", "md_yin"]},
         {"glyph": "md_fenkai"},
         {"glyph": "md_yinghe"},
-        {"glyph": "md_tang"}
+        {"glyph": "md_tang"},
+        {"glyph": "you2yin2_md", "meaning": "wandering vibrato, larger and slower", "typed": "游吟"}
       ]
     },
     "2a": {
-      "title": "2a: Basic Right Hand",
+      "title": "2.1. Basic Right Hand",
       "usage": ["0{}5", "散{}五"],
       "rows": [
         {"glyph": "lg_pi"},
@@ -106,18 +98,18 @@
         {"glyph": "lg_zhai"},
         {"glyph": "lg_motiao"},
         {"glyph": "lg_gouti"},
-        {"glyph": "lg_dazhai"},
-        {"glyph": "lg_li", "usage": ["0{}65", "散{}六五"]}
+        {"glyph": "lg_dazhai", "usage": ["0{}4", "散{}四"]},
+        {"glyph": "lg_li"}
       ]
     },
     "2b": {
-      "title": "2b: Chords",
+      "title": "2.2. Chords and Multi-Note",
       "usage": ["{}d7,7<r>|</r>06", "{}中七，七<r>｜</r>散六"],
       "description": "These notes are written with strings noted on the right and left. Preface the character with the chord key, and then separate the right v. left with a `|`.\n\nex: `Cs9,3|05` or `撮名九,三｜散五` will make <jzp>Cs9,3|05</jzp>",
       "rows": [
-        {"glyph": "xl_cuo", "usage": ["{}d8,7<r>|</r>05", "{}中八，七<r>｜</r>散五"]},
-        {"glyph": "xl_dacuo", "usage": ["{}d8,7<r>|</r>02", "{}中八，七<r>｜</r>散二"]},
-        {"glyph": "xl_fancuo", "usage": ["{}d8,7<r>|</r>02", "{}中八，七<r>｜</r>散二"]},
+        {"glyph": "xl_cuo"},
+        {"glyph": "xl_dacuo"},
+        {"glyph": "xl_fancuo"},
         {"glyph": "xl_bo"},
         {"glyph": "xl_la"},
         {"glyph": "xl_bola"},
@@ -126,88 +118,68 @@
       ]
     },
     "2c": {
-      "title": "2c: Other Right Hand Strum Techniques",
+      "title": "2.3. Other Right Hand Techniques",
       "description": "<u>For use in Vertical Layout only</u>\n<small>preface these with `:` and best use Chinese characters to avoid ambiguity with homonym pinyins</small>",
       "rows": [
-        {"glyph": "lg_lun"},
-        {"glyph": "lg_banlun"},
-        {"glyph": "md_dayuan"},
-        {"glyph": "md_gun"},
-        {"glyph": "md_fu2"},
-        {"word": "背璅", "glyphs": ["md_bai", "md_suo"]},
-        {"word": "短璅", "glyphs": ["md_duan", "md_suo"]},
+        {"glyph": "lg_lun", "meaning": "pluck a string with the ring, middle and index finger out in quick succession", "usage": ["s9{}7", "名九{}七"], "typed": "lun"},
+        {"glyph": "lg_banlun", "meaning": "pluck a string with the ring, middle out in quick succession", "usage": ["s9<r>bl</r>7", "名九，{}七"], "typed": "banlun"},
+        {"glyph": "md_dayuan", "usage": ["{}", "{}"]},
+        {"glyph": "md_gun", "usage": ["{}", "{}"]},
+        {"glyph": "md_fu2", "usage": ["{}", "{}"]},
+        {"word": "背璅", "glyphs": ["md_bai", "md_suo"], "usage": ["beisuo", "背璅"]},
+        {"word": "短璅", "glyphs": ["md_duan", "md_suo"], "usage": ["duansuo", "短璅"]},
         {"word": "长璅", "glyphs": ["md_chang", "md_suo"]},
         {"glyph": "md_diejuan"},
         {"glyph": "md_yuanlou"},
         {"glyph": "md_banfu"},
-        {"glyph": "md_quanfu"}
+        {"glyph": "md_quanfu"},
+        {"glyph": "md_ru", "meaning": "notes played as one", "usage": ["{}1", "{}一"]}
+      ]
+    },
+    "s1": {
+      "title": "",
+      "rows": [
+        {"glyph": "md_san", "usage": ["{}勾五", "{}k5"]},
+        {"glyph": "md_jiu", "usage": ["{}勾五", "{}k5"]},
+        {"glyph": "md_1", "usage": ["x{}k{}", "跪{}勾{}"]},
+        {"glyph": "md_2", "usage": ["x{}k{}", "跪{}勾{}"]},
+        {"glyph": "md_3", "usage": ["x{}k{}", "跪{}勾{}"]},
+        {"glyph": "md_4", "usage": ["x{}k{}", "跪{}勾{}"]},
+        {"glyph": "md_5", "usage": ["x{}k{}", "跪{}勾{}"]},
+        {"glyph": "md_6", "usage": ["s{}k{}", "名{}勾{}"]},
+        {"glyph": "md_7", "usage": ["s{}k{}", "名{}勾{}"]},
+        {"glyph": "md_8", "usage": ["s{}k5", "名{}勾五"]},
+        {"glyph": "md_9", "usage": ["s{}k5", "名{}勾五"]},
+        {"glyph": "md_10", "usage": ["s{}k5", "名{}勾五"]},
+        {"glyph": "md_11", "usage": ["{}", "{}"]},
+        {"glyph": "md_12", "usage": ["{}", "{}"]},
+        {"glyph": "md_13", "usage": ["{}", "{}"]},
+        {"glyph": "md_wai", "usage": ["s{}k5", "名{}勾五"]},
+        {"glyph": "md_ban", "usage": ["{}", "{}"]},
+        {"glyph": "md_zhi4", "usage": ["{}", "{}"]}
       ]
     },
     "3a": {
-      "title": "3a: Related to Score",
-      "rows": []
-    },
-    "3b": {
-      "title": "3b: Related to Notes",
+      "title": "4.1. Repeats and Score Labels",
       "rows": [
-        {"glyph": "md_fan"},
-        {"glyph": "md_zhi"},
-        {"glyph": "md_qi"},
-        {"word": "泛起", "glyphs": ["md_fan", "md_qi"]},
-        {"word": "泛止", "glyphs": ["md_fan", "md_zhi"]},
-        {"glyph": "md_ru"}
+        {"word": "从【再作", "glyphs": ["cong2_md", "bracket_left_md", "zai4_md", "zuo4_md"], "meaning": "start from the bracket symbol", "usage": ["cong[zaizuo", "从【再作"]},
+        {"glyph": "tou2_md", "meaning": "start from the beginning", "usage": ["cong{}zaizuo", "从{}再作"], "typed": "tou"},
+        {"glyph": "you4_md", "meaning": "again", "usage": ["{}shang56", "{}上五六"], "typed": "you"},
+        {"word": "曲终", "glyphs": ["qu3_md", "zhong1_var2_md"], "meaning": "marks end of the piece", "typed": "quzhong"}
       ]
-    },
-    "3c": {
-      "title": "3c: Related to String & Hui Number",
-      "rows": [
-        {"glyph": "md_1"},
-        {"glyph": "md_2"},
-        {"glyph": "md_3"},
-        {"glyph": "md_4"},
-        {"glyph": "md_5"},
-        {"glyph": "md_6"},
-        {"glyph": "md_7"},
-        {"glyph": "md_8"},
-        {"glyph": "md_9"},
-        {"glyph": "md_10"},
-        {"glyph": "md_11"},
-        {"glyph": "md_12"},
-        {"glyph": "md_13"},
-        {"glyph": "md_wai"},
-        {"glyph": "md_san"},
-        {"glyph": "md_ban"},
-        {"glyph": "md_jiu"},
-        {"glyph": "md_shang"},
-        {"glyph": "md_xia"},
-        {"glyph": "md_zhi4"}
-      ]
-    },
-    "3d": {
-      "title": "3d: Related to position",
-      "rows": []
     },
     "3e": {
-      "title": "3e: related to expression",
+      "title": "4.2. Rests",
       "rows": [
-        {"word": "大息", "glyphs": ["md_da", "md_xi"]},
-        {"word": "少息", "glyphs": ["md_shao", "md_xi"]}
+        {"word": "大息", "glyphs": ["md_da", "md_xi"], "meaning": "longer pause, like a sigh", "typed": ":daxi"},
+        {"word": "少息", "glyphs": ["md_shao", "md_xi"], "meaning": "short pause, like a little sigh"}
       ]
     },
     "3x": {
-      "title": "3x: Placeholder for Future/Unknown Characters",
+      "title": "Placeholder for Future/Unknown Characters",
       "rows": [
-        {"glyph": "md_placeholder"}
+        {"glyph": "md_placeholder", "meaning": "If there's a character that isn't part of the font, this is just a placeholder"}
       ]
-    },
-    "4": {
-      "title": "4: Uncategorized",
-      "rows": []
-    },
-    "99": {
-      "title": "99: Hidden in Glossary",
-      "hidden": true,
-      "rows": []
     }
   }
 }

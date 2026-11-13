@@ -2,7 +2,7 @@ glyph_name,vert_variant,common,latin,latin_alt,simplified,traditional,pinyin
 md_ming,,,s,,名,,míng
 md_zhong,,,d,,中,,zhōng
 md_shi,,,f,,食,,shí
-md_da,,,v,,大,,dà
+md_da,,,v,da,大,,dà
 md_gui,,,x,,跪,,guì
 md_san,md_san2,0,,,散,,sàn
 md_1,,1,,,一,,yī
@@ -87,3 +87,13 @@ md_diejuan,,,diejuan,dj,叠蠲,疊蠲,dié juān
 md_dayuan,,,dayuan,,打圆,打圓,dǎ yuán
 md_yuanlou,,,yanlou,yl,圆搂,圓摟,yuán lǒu
 md_tang,,,tang,,淌,,
+bracket_left_md,,,[,,【,【,
+cong2_md,,,cong,,从,从,cóng
+qu3_md,,,qu,,曲,曲,qǔ
+tou2_md,,,tou,,头,頭,tóu
+tui1chu1_md,,,tc,tuichu,推出,推出,tuīchū
+you2yin2_md,,,youyin,,游吟,游吟,yóuyín
+you4_md,,,you,,又,又,yòu
+zai4_md,,,zai,,再,再,zài
+zhong1_var2_md,,,zhong,,终,終,zhōng
+zuo4_md,,,zuo,,作,作,zuò

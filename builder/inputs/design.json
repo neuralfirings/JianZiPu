@@ -250,11 +250,11 @@
       ]
     },
     "char": {
-      "label": "Character",
       "size": [
         350,
         350
       ],
+      "label": "Character",
       "glyphs": [
         "md_san",
         "md_1",
@@ -318,7 +318,17 @@
         "md_zhong",
         "md_shi",
         "md_da",
-        "md_gui"
+        "md_gui",
+        "cong2_md",
+        "tou2_md",
+        "you4_md",
+        "zai4_md",
+        "zuo4_md",
+        "tui1chu1_md",
+        "you2yin2_md",
+        "bracket_left_md",
+        "qu3_md",
+        "zhong1_var2_md"
       ]
     },
     "chord": {
