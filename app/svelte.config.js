@@ -15,9 +15,10 @@ const config = {
       directives: {
         'default-src': ['self'],
         'script-src': ['self', 'wasm-unsafe-eval'],
-        'style-src': ['self', 'unsafe-inline'],
+        // font.emtech.cc + Google Fonts: the Chinese webfonts (lib/webfonts.ts)
+        'style-src': ['self', 'unsafe-inline', 'https://font.emtech.cc', 'https://fonts.googleapis.com'],
         'img-src': ['self', 'data:', 'blob:'],
-        'font-src': ['self', 'data:', 'blob:'],
+        'font-src': ['self', 'data:', 'blob:', 'https://font.emtech.cc', 'https://fonts.gstatic.com'],
         'connect-src': ['self', 'https://*.supabase.co', 'https://formspree.io'],
         'worker-src': ['self', 'blob:'],
         'object-src': ['none'],
