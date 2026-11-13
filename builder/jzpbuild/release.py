@@ -81,7 +81,8 @@ def glossary_only(base: str, head: str | None, repo: Path = REPO) -> bool:
     old = git("show", f"{mb}:{GLOSSARY_PAGE}", repo=repo, check=False)
     new = git("show", f"{head}:{GLOSSARY_PAGE}", repo=repo, check=False) if head else \
         (repo / GLOSSARY_PAGE).read_text(encoding="utf-8") if (repo / GLOSSARY_PAGE).exists() else ""
-    return glossary.strip_generated(old) == glossary.strip_generated(new)
+    # git() trims its output, so the committed page has lost its last newline and the working tree's hasn't
+    return glossary.strip_generated(old).strip() == glossary.strip_generated(new).strip()
 
 
 def parse_version(v: str) -> tuple[int, int]:
