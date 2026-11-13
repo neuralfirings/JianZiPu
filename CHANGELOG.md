@@ -16,7 +16,8 @@ same text becomes the GitHub release notes.
 - 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7.
 
 ### Changed
-- 徽 typed in Chinese ends the hui number, the way a comma does: `名九徽半轮六` is `名九，半轮六` (9 hui, then 半轮) and `名十徽` is 10. A decimal after 徽 is written with 分: `名十徽二分` is 10.2 (`名十点二` still is too). Before, 徽 was a decimal point, so `名七徽六` gave 7.6; it now gives 7, then string 6.
+- 十一, 十二 and 十三 typed in Chinese are always hui 11, 12 and 13 (they were 10.1, 10.2, 10.3): 10.2 is written `十徽二`, `十徽二分` or `十点二`. `十四` to `十九` are still 10.4 to 10.9.
+- 徽 before a 半 that starts a word ends the hui number, the way a comma does: `名九徽半轮六` is `名九，半轮六` (9 hui, then 半轮); `名九半轮六` is still 9.5, then 轮. Otherwise 徽 is still a decimal point (`名七徽六` is 7.6), 分 may close the decimal (`名十徽二分` is 10.2), and 徽 at the end just closes the number (`名十徽` is 10).
 
 ## [3.200] - 2026-10-21
 

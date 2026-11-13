@@ -473,16 +473,21 @@ def test_brackets_type_their_glyph():
     assert "md_jiu" in tp.shape(p, ["【"])[0]["glyphs"] and "md_placeholder" in tp.shape(p, ["["])[0]["glyphs"]
 
 
-# 徽 ends the hui number (a decimal after it takes 分), and 弦 marks a string
+# 徽 a decimal point (分 may close it) or, alone, the end of the number; 十一–十三 whole; 弦 marks a string
 HUI_AND_STRING = {
-    "名十二徽勾五": ["md_ming", "md_12", "lg_gou", "md_5"],          # s12k5
-    "名十徽二分勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],       # s10.2k5
-    "名十徽勾五": ["md_ming", "md_10", "lg_gou", "md_5"],
-    "名十点二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],          # 点 is still a decimal point
-    "名九徽半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],          # the same as 名九，半轮六
+    "名九半轮六": ["md_ming", "md_9.5", "lg_lun", "md_6"],            # 9.5 first, without 徽
     "名九，半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],
-    "名七徽六分挑五": ["md_ming", "md_7.6", "lg_tiao", "md_5"],
-    "名七徽六挑五": ["md_ming", "md_7", "md_6", "lg_tiao", "md_5"],     # no 分: 7, then string 6
+    "名九徽半轮六": ["md_ming", "md_9", "lg_banlun", "md_6"],          # 徽 before 半轮: 9, then 半轮
+    "名九徽半勾六": ["md_ming", "md_9.5", "lg_gou", "md_6"],
+    "名十二勾五": ["md_ming", "md_12", "lg_gou", "md_5"],             # s12k5
+    "名十二徽勾五": ["md_ming", "md_12", "lg_gou", "md_5"],
+    "名十徽勾五": ["md_ming", "md_10", "lg_gou", "md_5"],
+    "名十徽二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],          # s10.2k5
+    "名十徽二分勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],
+    "名十点二勾五": ["md_ming", "md_10.2", "lg_gou", "md_5"],
+    "名七徽六挑五": ["md_ming", "md_7.6", "lg_tiao", "md_5"],
+    "名十一": ["md_ming", "md_11"], "名十三": ["md_ming", "md_13"], "跪十一剔二": ["md_gui", "md_11", "lg_ti", "md_2"],
+    "名十一二": ["md_ming", "md_11.2"], "名十四": ["md_ming", "md_10.4"], "名十半": ["md_ming", "md_10.5"],
     "名九七弦": ["md_ming", "md_9", "md_7"],                          # string 7, not 9.7
     "名九七": ["md_ming", "md_9.7"],
 }
@@ -504,7 +509,8 @@ def test_hui_ends_the_number_and_xian_marks_a_string(built_font):
 def test_the_rules_for_hui_and_xian_are_generated():
     from jzpbuild import features
     fea = "\n".join(features.gen_gsub())
-    assert "ch_hui" not in fea.split("@area_period_subs = [")[1].split("]")[0]       # 徽 isn't a decimal point
-    assert "sub ch_10 ch_hui ch_2 ch_fen by md_10.2;" in fea and "sub md_12 ch_hui by md_12;" in fea
-    assert "ignore sub @area_left ch_10 [ " in fea and "' ch_hui;" in fea          # 十二徽 stays twelve
+    assert "ch_hui" in fea.split("@area_period_subs = [")[1].split("]")[0]           # 徽 is a decimal point
+    assert "sub ch_10 @area_period_subs ch_2 ch_fen by md_10.2;" in fea and "sub md_12 ch_hui by md_12;" in fea
+    assert "sub ch_hui' ch_ban" in fea and "by comma;" in fea                       # 徽 before 半轮: a comma
+    assert "sub @area_left ch_10 ch_2' by md_10.2;" not in fea                      # 十二 is twelve
     assert "sub md_7 ch_xian by md_7;" in fea and "lookup string_marks;" in fea

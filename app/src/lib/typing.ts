@@ -54,7 +54,7 @@ export function decimalPatterns(g: string): string[] {
   if (!m) return [];
   const [n, d] = [+m[1], m[2]];
   if (d === 'blank') return [`${n}.`];   // no Chinese spelling reaches the blank decimal (七徽, 七点 give md_7)
-  return [`${n}.${d}`, `${n}点${d}`, `${CN[n]}点${CN[+d]}`, `${CN[n]}徽${CN[+d]}分`];   // 徽 alone ends the number: 七徽六 is 7, then 6
+  return [`${n}.${d}`, `${n}点${d}`, `${CN[n]}点${CN[+d]}`, `${CN[n]}徽${CN[+d]}`];
 }
 
 /** vertical form -> its horizontal partner. */

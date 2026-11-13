@@ -38,9 +38,10 @@ CORPUS = [
     ":shang", ":xia", ":zhi4", "shang34", "lun3shang",
     # Chinese input
     "名七半急勾五", "名七五", "大九挑五", "中十点二抹一",
-    "散挑三", "跪十一剔二", "食外勾一", "名九，半轮六",
+    # (跪十一剔二 and 名十一 left: 十一 is hui 11 now, 10.1 in the golden; test_typing checks them)
+    "散挑三", "食外勾一", "名九，半轮六",
     "泛音名七挑五", "大撮", "反撮", "抹挑", "打摘", "勾剔",
-    "名十一二", "名十一", "名七点六挑五",
+    "名十一二", "名七徽六挑五", "名七点六挑五",
     # traditional
     "綽", "註", "歴", "雙彈", "撥剌",
     # words with blanks / placeholders / advance

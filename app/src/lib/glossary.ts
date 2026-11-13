@@ -203,7 +203,7 @@ const hasHan = (t: string) => /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\u
 /** How glyph `g` is written in a language: its spellings there, main first (a position decimal by its pattern). */
 function spellingsIn(t: T.Typing, g: string, zh: boolean): string[] {
   const m = /^md_(\d+)\.(\d)$/.exec(g);
-  if (m) return zh ? [`${CN[+m[1]]}点${CN[+m[2]]}`, `${CN[+m[1]]}徽${CN[+m[2]]}分`] : [`${m[1]}.${m[2]}`];
+  if (m) return zh ? [`${CN[+m[1]]}点${CN[+m[2]]}`, `${CN[+m[1]]}徽${CN[+m[2]]}`] : [`${m[1]}.${m[2]}`];
   const s = T.get(t, g);
   const own = zh ? [s.simplified, s.traditional] : [s.latin, s.latin_alt, s.common];
   const shown = zh ? [T.shown(t, g, 'simplified').value, T.shown(t, g, 'traditional').value] : [T.shown(t, g, 'latin').value, T.shown(t, g, 'latin_alt').value];
@@ -250,8 +250,6 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     // the glyph's spelling the text starts with, and what's left (a comma the font swallowed: 7, → md_7)
     const spelled = gs.length === 1 ? spellingsIn(t, gs[0], zh).find((sp) => gr.text.startsWith(sp)) ?? '' : '';
     const rest = spelled ? gr.text.slice(spelled.length) : gs.length ? '' : gr.text;
-    // 十一 十二 十三 as a position: two numerals after a finger read as a decimal (名十二 is 名 10.2), 徽 keeps them whole
-    const hui = (g: string) => (!zh && /^md_1[123]$/.test(g) && !/^[徽点點]/.test(punct(rest, zh)) ? '徽' : '');
     const num = gs.length === 1 && /^md_\d+$/.test(norm(gs[0]));
     if (glyph && gs.map(norm).includes(glyph)) {
       // the row's glyph: {} (its main spelling, and the page lists each spelling) unless another of its
@@ -259,7 +257,7 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
       const main = spellingsIn(t, gs[0], zh)[0];
       src.push({ text: (spelled && spelled !== main ? `<r>${esc(spelled)}</r>` : '{}') + esc(rest), w: false });
       const sh = spellingsIn(t, gs[0], !zh)[0] ?? '';
-      parts.push({ text: '{}' + hui(gs[0]) + esc(punct(rest, zh)), shown: sh + hui(gs[0]) + punct(rest, zh), num });
+      parts.push({ text: '{}' + esc(punct(rest, zh)), shown: sh + punct(rest, zh), num });
       continue;
     }
     const w = !glyph && gs.length > 0 && gs.every((g) => need.includes(norm(g)));
@@ -267,7 +265,7 @@ export function usageFrom(text: string, typed: { glyphs: string[]; texts: string
     if (!gs.length) { parts.push({ text: esc(punct(gr.text, zh)), shown: punct(gr.text, zh), num: false }); continue; }
     const made = gs.map((g) => spellingsIn(t, g, !zh)[0]);
     if (made.some((x) => !x)) { missing.push(gr.text); continue; }
-    const tx = made.join('') + (gs.length === 1 ? hui(gs[0]) : '') + punct(rest, zh);
+    const tx = made.join('') + punct(rest, zh);
     parts.push({ text: esc(tx), shown: tx, num, w });
   }
   // the word's own pieces in red, when there's more to the example than the word (s9k6 daiqi, not :daiqi)

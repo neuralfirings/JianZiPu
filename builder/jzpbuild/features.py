@@ -40,9 +40,10 @@ def hui_ch(n: int) -> str:
         return f"ch_{n}"
     return f"ch_10 ch_{n - 10}"
 
-# 。 点 點: a decimal point (十点二 = 10.2). 徽 isn't one: it ends the hui number (十徽 = 10, 名九徽半轮
-# = 9 then 半轮), and a decimal after it is written with 分 (十徽二分 = 10.2).
-PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad"]
+# 。 点 點 徽: a decimal point (十点二 = 十徽二 = 10.2), and alone at the end of the number they end it
+# (十徽 = 10, 十二徽 = 12). 分 may close the decimal (十徽二分 = 10.2). Before a word starting with 半
+# (半轮, 半扶), 徽 ends the number instead (名九徽半轮 = 9 then 半轮; 名九半轮 is still 9.5 then 轮).
+PERIOD_SUBS = ["ch_period", "ch_dian", "ch_dian_trad", "ch_hui"]
 HUI_END = "ch_hui"          # 徽
 FEN = "ch_fen"              # 分
 # 弦 絃 after a number: it's a string (名九七弦 = hui 9, string 7, not 9.7)
@@ -194,9 +195,9 @@ def gen_s2j_lat_ch_period_liga() -> list[str]:
         parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
                  for tok, h in hui_sequence(hui_ascii)]
         lines.append("  " + "  ".join(parts))
-    # 10徽2分 -> md_10.2
+    # 10徽2分 -> md_10.2 (分 closing the decimal)
     for d in range(1, 10):
-        parts = [f"sub {tok} {HUI_END} {DIGIT[d]} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ascii)]
+        parts = [f"sub {tok} @area_period_subs {DIGIT[d]} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ascii)]
         lines.append("  " + "  ".join(parts))
     lines.append("} s2j_lat_ch_period_liga;")
     return lines
@@ -354,6 +355,17 @@ def gen_c2j_char_left(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
     return lines
 
 
+def gen_c2j_hui_before_word(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
+    """徽 before a word that starts with 半 (半轮, 半扶…) ends the hui number, as a comma does: 名九徽半轮六
+    is 9, then 半轮 (名九，半轮六), where 徽半 would otherwise be .5. Runs before the decimal lookups."""
+    seconds = sorted({c2g[v[1]] for r in rows for v in (r.simplified, r.traditional)
+                      if len(v) >= 2 and v[0] == "半" and v[1] in c2g})
+    lines = ["lookup c2j_hui_before_word {"]
+    lines += [f"  sub {HUI_END}' ch_ban {g} by comma;" for g in seconds] or ["  sub ch_hui' ch_ban ch_hui by ch_hui;"]
+    lines.append("} c2j_hui_before_word;")
+    return lines
+
+
 def gen_c2j_char_deci_period_liga() -> list[str]:
     """Chinese hui + period-like char (+ optional Chinese decimal)."""
     lines = ["lookup c2j_char_deci_period_liga {"]
@@ -365,9 +377,9 @@ def gen_c2j_char_deci_period_liga() -> list[str]:
         parts = [f"sub {tok} @area_period_subs {dd} by md_{h}.{target};"
                  for tok, h in hui_sequence(hui_ch)]
         lines.append("  " + "  ".join(parts))
-    # hui + 徽 + decimal + 分 (十徽二分 -> md_10.2)
+    # hui + period char + decimal + 分 (十徽二分 -> md_10.2: 分 closes the decimal)
     for d in range(1, 10):
-        parts = [f"sub {tok} {HUI_END} {hui_ch(d)} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ch)]
+        parts = [f"sub {tok} @area_period_subs {hui_ch(d)} {FEN} by md_{h}.{d};" for tok, h in hui_sequence(hui_ch)]
         lines.append("  " + "  ".join(parts))
     lines.append("} c2j_char_deci_period_liga;")
     return lines
@@ -402,10 +414,11 @@ def gen_c2j_char_deci_liga_parts() -> list[str]:
 
     lines.append("lookup c2j_char_deci_liga_part3 {")
     lines.append(f"  ignore sub @area_left ch_10 [ {decs} ]' {XIAN};")
-    # 十二徽: twelve (徽 ends it), not 10.2; hui_and_commas then takes the 徽
-    lines.append(f"  ignore sub @area_left ch_10 [ {decs} ]' {HUI_END};")
+    # 十 + a decimal: 十四 … 十九 and 十半 (10.4, 10.5). 十一 十二 十三 are hui 11, 12, 13 (c2j_char_liga):
+    # 10.2 is written 十徽二 or 十点二
     for dd, target in decimals(hui_ch):
-        lines.append(f"  sub @area_left ch_10 {dd}' by md_10.{target};")
+        if dd not in ("ch_1", "ch_2", "ch_3"):
+            lines.append(f"  sub @area_left ch_10 {dd}' by md_10.{target};")
     lines.append("} c2j_char_deci_liga_part3;")
 
     lines.append("lookup c2j_char_deci_liga_part4 {")
@@ -598,6 +611,7 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         "  # chinese input",
         "  lookup c2j_char_symbols;",
         "  lookup c2j_char_left;",
+        "  lookup c2j_hui_before_word; # 名九徽半轮 = 名九，半轮",
         "  lookup c2j_char_deci_period_liga;",
         "  lookup c2j_char_deci_liga_part1;",
         "  lookup c2j_char_deci_liga_part2;",
@@ -663,6 +677,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_l2j_single(rows), [""],
         gen_c2j_char_symbols(),
         gen_c2j_char_left(rows, c2g),
+        gen_c2j_hui_before_word(rows, c2g),
         gen_c2j_char_deci_period_liga(),
         gen_c2j_char_deci_liga_parts(),
         gen_c2j_liga(rows, c2g, "simplified", "c2j_char_liga"),

@@ -444,9 +444,10 @@ font) are the two columns the build actually reads; two more,
 - `type=load_bearing` — the `glyph_name` is referenced as a literal string
   constant somewhere in `features.py` or `edge_cases.fea` (e.g. `ch_1`
   through `ch_10` in `hui_ch()`, `ch_ban`/`ch_wai` for the special hui
-  values, `PERIOD_SUBS` (。 点 點, decimal points), `HUI_END` (徽, which ends
-  a hui number: 十徽 = 10, 名九徽半轮 = 9 then 半轮), `FEN` (分, closing a
-  decimal after 徽: 十徽二分 = 10.2), `XIAN` (弦/絃, marking the number before
+  values, `PERIOD_SUBS` (。 点 點 徽, decimal points: 十徽二 = 10.2; alone at
+  the end they close the number, 十徽 = 10; 徽 before a 半 that starts a word
+  ends it, 名九徽半轮 = 9 then 半轮), `HUI_END` (徽), `FEN` (分, which may close
+  a decimal: 十徽二分 = 10.2), `XIAN` (弦/絃, marking the number before
   it as a string: 名九七弦 = hui 9, string 7), `ch_v`/`ch_cuo` in
   `edge_cases.fea`'s `ch_dc_sub`). Renaming or removing one of these rows
   breaks the build unless the matching Python/`.fea` literal is updated too —
