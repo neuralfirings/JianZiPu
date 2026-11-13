@@ -56,8 +56,12 @@
     /* the scroll's rods (天杆 at the top, 地杆 at the bottom) */
     .scroll-rod { height: 10px; background: linear-gradient(180deg, #c9c2ba, #e2ddd7 40%, #bdb5ac 75%, #a9a097); border-bottom: 1px solid #958c83; }
     .scroll-rod.bottom { margin-top: 48px; border-top: 1px solid #958c83; border-bottom: 0; }
+    /* the title row: the seal and the title centred on each other, the v2 link at the top right */
+    .title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .title-row h1 { margin: 0; }
+    .title-row .v2-link { margin-left: auto; align-self: flex-start; font-size: 12px; }
     /* the seal beside the title: 减字谱 in reversed type, once on the page */
-    .seal { display: inline-flex; writing-mode: vertical-rl; align-items: center; justify-content: center; margin: 4px 14px 0 0; padding: 6px 3px; float: left;
+    .seal { display: inline-flex; writing-mode: vertical-rl; align-items: center; justify-content: center; flex: none; padding: 6px 3px;
       background: var(--accent); color: var(--bg-panel); font-family: "LXGW WenKai TC", "Kaiti SC", "KaiTi", "STKaiti", serif; font-size: 1rem; line-height: 1.1; letter-spacing: 0.05em;
       border-radius: 3px 2px 4px 2px; box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px rgba(246, 242, 234, 0.65); }
     body {
@@ -320,12 +324,11 @@
   <div class="scroll-rod" aria-hidden="true"></div>
   <div id="top">
     <div class="container" style="margin-top: 0px; margin-bottom: 0px; padding-top: 20px; padding-bottom: 20px">
-      <div>
+      <div class="title-row">
         <span class="seal" aria-hidden="true">减字谱</span>
-        <h1 style="float: left">JianZiPu Font (v3)</h1>
-        <small class="v2-link" style="font-size:12px; float: right"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
+        <h1>JianZiPu Font (v3)</h1>
+        <small class="v2-link"><a href="https://guqintabs.com/jianzipu/v2/index.html">looking for v2?</a></small>
       </div>
-      <div style="clear: both"></div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
 
