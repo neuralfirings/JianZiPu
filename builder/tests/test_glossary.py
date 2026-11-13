@@ -253,15 +253,40 @@ def shipped(**extra) -> list[dict]:
     return recs + [{"glyph_name": g, **r} for g, r in extra.items()]
 
 
-def with_rows(**extra) -> dict[str, dict]:
-    """The shipped sections with `extra` rows added at the end of a section, by section id."""
-    secs = glossary.load_sections()
-    return glossary.with_rows(secs, {sid: secs[sid]["rows"] + rs for sid, rs in extra.items()})
+def drawings(**svgs):
+    """The drawings the Builder's check draws in, as it finds them locally: `svgs` by glyph name, else
+    inputs/svg/<name>.svg, so a release's new glyphs (not in the released font yet) are drawn in too."""
+    from jzpbuild import webserver
+    return webserver.svg_source({"svgs": svgs})
+
+
+def test_layout(shown=(), hidden=()) -> tuple[dict, dict[str, list]]:
+    """The shipped section titles and subtitles plus a section title of the test's own: subtitle 9x with
+    the example s9{}6 holding `shown`, and 9y, switched off, holding `hidden`. As the Builder sends
+    them (`layout`, `glossary`), so the tests don't hang on how the shipped glossary is laid out."""
+    layout = {"groups": glossary.load_groups() + [{"id": "test", "title": "Test", "sections": ["9x", "9y"]}],
+              "sections": {**{sid: {k: v for k, v in sec.items() if k != "rows"} for sid, sec in glossary.load_sections().items()},
+                           "9x": {"title": "9x: Test", "usage": ["s9{}6", "名九{}六"]},
+                           "9y": {"title": "9y: Hidden", "hidden": True}}}
+    return layout, {"9x": list(shown), "9y": list(hidden)}
+
+
+test_layout.__test__ = False     # a helper, not a test
+
+
+def laid_out(shown=(), hidden=()) -> dict:
+    """check()'s `sections` and `groups` for test_layout()."""
+    secs, groups = glossary.with_layout(glossary.load_sections(), *test_layout(shown, hidden))
+    return {"sections": secs, "groups": groups}
+
+
+# a new glyph's spellings no shipped glyph has, in characters the released font hasn't got
+NEW = {"latin": "mz", "simplified": "淼焱", "pinyin": "miǎoyàn"}
 
 
 def test_the_check_passes_the_shipped_files():
     pytest.importorskip("uharfbuzz")
-    out = glossary.check(glossary.records(shipped()))
+    out = glossary.check(glossary.records(shipped()), svg=drawings())
     assert out["ok"] and out["problems"] == [] and out["typing"] == [] and out["not_built"] == []
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     secs = glossary.load_sections()
@@ -274,11 +299,10 @@ def test_the_check_passes_the_shipped_files():
 
 def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
     pytest.importorskip("uharfbuzz")
-    new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū"}
-    out = glossary.check(glossary.records(shipped(md_foo=new, md_bar={"latin": "zz"})), sections=with_rows(
-        **{"1c": [g("md_foo", "Push the string out")], "99": [g("md_bar")]}))
-    t = next(t for t in out["tables"] if t["id"] == "1c")
-    assert "<td>tc</td>" in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
+    out = glossary.check(glossary.records(shipped(md_foo=NEW, md_bar={"latin": "zz"})), svg=drawings(),
+                         **laid_out([g("md_foo", "Push the string out")], [g("md_bar")]))
+    t = next(t for t in out["tables"] if t["id"] == "9x")
+    assert "<td>mz</td>" in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
     assert out["not_built"] == ["md_bar", "md_foo"] and out["typing"] == []   # not a false alarm: Build, then check
     assert out["problems"] == []
 
@@ -289,21 +313,19 @@ SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d=
 def test_the_check_draws_a_new_glyph_in_from_its_drawing(monkeypatch, tmp_path):
     pytest.importorskip("uharfbuzz")
     monkeypatch.setattr(config, "SOURCE_FONT", tmp_path / "none.ttf")   # no base font to copy 出 推 from
-    new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū"}
-    out = glossary.check(glossary.records(shipped(md_foo=new)), svg=lambda n: SQUARE if n == "md_foo" else None,
-                         sections=with_rows(**{"1c": [g("md_foo")]}))
-    assert out["ok"] and out["drawn"] == ["md_foo"] and out["not_built"] == [] and out["typing"] == []
-    assert out["missing_chars"] == ["出", "推"]         # characters only a Build adds: its examples wait
+    out = glossary.check(glossary.records(shipped(md_foo=NEW)), svg=drawings(md_foo=SQUARE), **laid_out([g("md_foo")]))
+    assert out["ok"] and "md_foo" in out["drawn"] and out["not_built"] == [] and out["typing"] == []
+    assert {"淼", "焱"} <= set(out["missing_chars"])     # characters only a Build adds: its examples wait
     assert out["font_key"] and typing_preview.FONTS.by_key(out["font_key"]).font_bytes
 
 
 def test_the_check_reports_what_a_release_would_stop_on():
-    out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc"})), sections=with_rows(**{"1c": [g("md_foo")]}))
+    out = glossary.check(glossary.records(shipped(md_foo={"latin": "mz"})), **laid_out([g("md_foo")]))
     assert not out["ok"] and "needs an ASCII and a Chinese spelling" in out["error"]
 
 
 def test_the_check_reports_a_new_glyph_with_no_row():
-    out = glossary.check(glossary.records(shipped(md_foo={"latin": "tc", "simplified": "推出"})))
+    out = glossary.check(glossary.records(shipped(md_foo={"latin": "mz", "simplified": "淼焱"})))
     assert out["ok"] and any(p.startswith("md_foo") and "no row in the glossary" in p for p in out["problems"])
 
 
@@ -347,19 +369,18 @@ def test_http_check_locally_and_online(monkeypatch):
         monkeypatch.setattr(webserver, "SETTINGS", s)
         monkeypatch.setattr(webserver, "AUTH", auth)
         assert post({"rows": shipped()})[0] == 401
-        new = {"latin": "tc", "simplified": "推出", "pinyin": "tuīchū"}
-        secs = glossary.load_sections()
-        rows_ = {"1c": secs["1c"]["rows"] + [g("md_foo")]}
+        new = NEW
+        layout, rows_ = test_layout([g("md_foo")])
         assert post({"rows": shipped(), "glossary": {"9z": []}}, "tok-a")[1]["ok"] is False
         status, res = post({"rows": shipped(md_foo=new)}, "tok-a")       # no row for it yet: reported
         assert any(p.startswith("md_foo") for p in res["problems"])
-        status, res = post({"rows": shipped(md_foo=new), "glossary": rows_}, "tok-a")
+        status, res = post({"rows": shipped(md_foo=new), "layout": layout, "glossary": rows_}, "tok-a")
         assert status == 200 and res["ok"] and res["not_built"] == ["md_foo"]
-        assert any("<td>tc</td>" in t["html"] for t in res["tables"])
+        assert any("<td>mz</td>" in t["html"] for t in res["tables"])
         assert font(res["font_url"]) and font("/api/glossary/font")
         # the draft's drawing of it comes with the request: drawn in, typed, and the tables' font has it
-        status, res = post({"rows": shipped(md_foo=new), "glossary": rows_, "svgs": {"md_foo": SQUARE}}, "tok-a")
-        assert status == 200 and res["drawn"] == ["md_foo"] and res["not_built"] == [] and res["typing"] == []
+        status, res = post({"rows": shipped(md_foo=new), "layout": layout, "glossary": rows_, "svgs": {"md_foo": SQUARE}}, "tok-a")
+        assert status == 200 and "md_foo" in res["drawn"] and res["not_built"] == [] and res["typing"] == []
         assert res["font_url"].startswith("/api/preview-fonts/") and font(res["font_url"])
     finally:
         srv.shutdown()
@@ -378,12 +399,15 @@ def test_a_hidden_section_has_no_table_and_leaves_its_glyphs_out_on_purpose():
     assert [sorted(ex) for _, ex in glossary.examples(out, r, sec)] == [sorted(["0k5", "散勾五"])]
 
 
-def test_the_shipped_sections_include_uncategorized_and_hidden():
-    secs = glossary.load_sections()
-    assert {k: v for k, v in secs["4"].items() if k != "rows"} == {"title": "4: Uncategorized"}
-    assert {k: v for k, v in secs["99"].items() if k != "rows"} == {"title": "99: Hidden in Glossary", "hidden": True}
+def test_the_shipped_section_titles_are_on_the_page_unless_hidden():
+    secs, groups = glossary.load_sections(), glossary.load_groups()
     text = config.SITE_INDEX.read_text(encoding="utf-8")
-    assert '<h4 id="glossary-uncategorized">4: Uncategorized</h4>' in text and "99: Hidden" not in text
+    for grp in groups:
+        shown = not grp.get("hidden") and any(not glossary.is_hidden(secs[sid]) for sid in grp["sections"])
+        assert (f'<h4 id="glossary-{grp["id"]}">' in text) == shown, grp["id"]
+    for sid, sec in secs.items():
+        if glossary.is_hidden(sec):
+            assert f'<label id="glossary-{sid}">' not in text, sid
 
 
 def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
@@ -396,8 +420,9 @@ def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
 
 def test_the_shipped_glossary_has_its_words():
     secs = glossary.load_sections()
-    words = [e.word for sid, sec in secs.items() for e in glossary.entries(sid, sec) if e.word]
-    assert len(words) == 15 and "少息" in words
+    words = [e for sid, sec in secs.items() for e in glossary.entries(sid, sec) if e.word]
+    rows_ = glossary.load_rows()
+    assert words and all(e.glyphs and set(e.glyphs) <= set(rows_) for e in words)
     assert not (config.INPUTS_DIR / "words.csv").exists()
 
 
@@ -472,7 +497,8 @@ def test_the_builders_titles_and_subtitles_are_checked():
 
 def test_the_shipped_glossary_has_its_section_titles():
     groups = glossary.load_groups()
-    assert [g["id"] for g in groups] == ["left", "right", "symbols", "uncategorized", "hidden"]
+    ids = [g["id"] for g in groups]
+    assert ids and len(set(ids)) == len(ids)
     assert glossary.missing_layout(glossary.load_sections(), groups) == []
     text = config.SITE_INDEX.read_text(encoding="utf-8")
     assert "<!-- glossary all" in text and "<!-- glossary nav" in text and "<!-- glossary 1a" not in text

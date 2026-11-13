@@ -20,6 +20,8 @@ from jzpbuild import config, webserver  # noqa: E402
 
 SQUARE = '<svg viewBox="0 0 350 350" xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100v100h-100z" fill="black"/></svg>'
 BAD = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M10 10h100"/></svg>'
+# a glossary.json frozen for the save tests (site/glossary.json's titles and sections change with releases)
+GLOSSARY_FIXTURE = Path(__file__).resolve().parent / "data" / "glossary.json"
 
 
 @pytest.fixture
@@ -346,7 +348,7 @@ def test_hosted_server_puts_the_pr_icon_in_the_page(tmp_path, monkeypatch):
 
 def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatch):
     f = tmp_path / "glossary.json"
-    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    f.write_text(GLOSSARY_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
     p = webserver.glyphs_payload()
     secs = {s["id"]: s for s in p["glossary_sections"]}
@@ -369,7 +371,7 @@ def test_the_glossary_rows_are_listed_and_saved_with_a_hash(tmp_path, monkeypatc
 
 def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, monkeypatch):
     f = tmp_path / "glossary.json"
-    f.write_text(config.GLOSSARY_SECTIONS.read_text(encoding="utf-8"), encoding="utf-8")
+    f.write_text(GLOSSARY_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setattr(config, "GLOSSARY_SECTIONS", f)
     p = webserver.glyphs_payload()
     groups = p["glossary_groups"]
