@@ -88,7 +88,8 @@
     txs {
       display: block;
       font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
-      font-size: 0.7rem;
+      font-size: 1rem;
+      word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
       /* background-color: #eee;
       padding: 3px;
       margin: 2px;
@@ -264,7 +265,6 @@
       html { scroll-padding-top: 72px; }
       /* the spellings people read and copy, and the one rule everyone needs */
       text { font-size: 15px; padding: 3px 6px; line-height: 2; }
-      txs { font-size: 14px; }
       /* a result glyph moves to the next line rather than running off the edge; glyphs inside sentences sit in the line */
       li jzp { display: inline-block; max-width: 100%; }
       p jzp, .alert-tip jzp { font-size: 1.6em; line-height: 1.2; }
