@@ -14,6 +14,9 @@ same text becomes the GitHub release notes.
 - A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
 - Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). 【 】 typed in Chinese still become `[` `]` unless a glyph's Chinese spelling claims them, so a glyph spelled `[` answers to 【 too.
 
+### Changed
+- The license no longer reserves the name "JianZiPu": the font's copyright line and OFL.txt drop "with Reserved Font Name". A changed copy of the font may keep the name.
+
 ## [3.200] - 2026-10-21
 
 ### Changed

@@ -1,4 +1,4 @@
-"""The font's name table: copyright with the Reserved Font Name and the TW-Kai credit, the OFL
+"""The font's name table: copyright with the TW-Kai credit, the OFL
 license fields, and who made it.
 
 Run:  cd builder && python3 -m pytest tests/test_names.py
@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from jzpbuild import base, config  # noqa: E402
 
 EXPECTED = {
-    0: 'Copyright 2021-2026 Nancy Yi Liang, Nellodee LLC, with Reserved Font Name "JianZiPu". '
+    0: 'Copyright 2021-2026 Nancy Yi Liang, Nellodee LLC. '
        "Portions derived from TW-Kai ((c) 2023 Ministry of Digital Affairs, Taiwan, CNS11643, "
        "Open Government Data License, version 1.0).",
     8: "Nellodee LLC",
