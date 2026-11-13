@@ -418,6 +418,30 @@ def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
     assert glossary.missing(r, sec) == []                             # 少 and 息 are shown in the word
 
 
+def test_write_and_the_command_leave_out_the_colon_the_pages_font_adds(tmp_path, monkeypatch):
+    """A release's font may set 少 vertically by itself: the page then writes 少息 without its colon,
+    whether the candidate (write()) or `python3 -m jzpbuild.glossary` writes it, as render(page) checks."""
+    csv_ = tmp_path / "components.csv"
+    csv_.write_text(",".join(FIELDS) + "\nmd_shao,,,shao,,少,,shǎo\nmd_xi,,,xi,,息,,xī\n", encoding="utf-8")
+    secs = tmp_path / "glossary.json"
+    secs.write_text(json.dumps({"groups": [{"id": "other", "title": "Other", "sections": ["3e"]}],
+                                "sections": {"3e": vertical("3e", w("少息", "md_shao", "md_xi"))}}), encoding="utf-8")
+    index = tmp_path / "index.html"
+    asked = []
+    monkeypatch.setattr(glossary, "site_vertical_only", lambda font=None, rows=None: asked.append(font) or frozenset({"md_shao"}))
+    index.write_text(page("3e"), encoding="utf-8")
+    assert glossary.write(index, csv_, secs) and "<td>shaoxi</td>" in index.read_text(encoding="utf-8")
+    assert asked == [tmp_path / "JianZiPu.ttf"]                     # the font beside the page
+    monkeypatch.setattr(config, "SITE_INDEX", index)
+    monkeypatch.setattr(config, "COMPONENTS_CSV", csv_)
+    monkeypatch.setattr(config, "GLOSSARY_SECTIONS", secs)
+    index.write_text(page("3e"), encoding="utf-8")
+    assert glossary.main(["--check"]) == 1 and glossary.main([]) == 0
+    assert "<td>shaoxi</td>" in index.read_text(encoding="utf-8") and glossary.main(["--check"]) == 0
+    monkeypatch.setattr(glossary, "site_vertical_only", lambda font=None, rows=None: frozenset())   # an older font
+    assert glossary.write(index, csv_, secs) and "<td>:shaoxi</td>" in index.read_text(encoding="utf-8")
+
+
 def test_the_shipped_glossary_has_its_words():
     secs = glossary.load_sections()
     words = [e for sid, sec in secs.items() for e in glossary.entries(sid, sec) if e.word]
