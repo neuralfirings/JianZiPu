@@ -3,7 +3,8 @@
   //   owner  — Nancy reviewing a tester's draft or .zip: Keep / Skip, pick conflicts, Apply
   //   import — a tester opening a .zip into their own draft: the same, into their draft
   //   mine   — a tester's "Your changes" (against what the draft started from): Undo this change
-  //            puts one item, or one spacing rule, back the way the draft started
+  //            puts one item, or one spacing rule, back the way the draft started; Add a note
+  //            writes a few words on a change, which go with it into a Change Request
   //   sent   — a Change Request as it was sent (read-only, against what it started from)
   //   decide — an admin's review of a Change Request: Keep / Skip each change, saved on the
   //            request (nothing is applied; kept changes go into a release candidate later)
@@ -102,6 +103,9 @@
     const m = applyMerge(items, keep, current);
     const label = mode === 'owner' ? `From ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}` : `Import ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}`;
     app.applyChanges(label, m);
+    // an imported draft's notes on the changes taken come along (an owner's Builder keeps none)
+    const notes = bundle.manifest.notes ?? {};
+    if (mode === 'import') for (const it of m.applied) if (notes[it.id] && !app.notes[it.id]) app.setNote(it.id, notes[it.id]);
     onapplied?.({ count: m.applied.length, message: commitMessage(m.applied) });
   }
 
@@ -165,6 +169,14 @@
     return hunks(lineDiff(pretty(it.conflict ? it.current : it.base), pretty(it.theirs)), 2);
   }
   const m = $derived(bundle.manifest);
+  /** The note on a change: Your changes' own (as it is now), else the one the draft or request carries. */
+  const noteOf = (it: Item) => (mode === 'mine' ? app.notes[it.id] : m.notes?.[it.id]) ?? '';
+  /** Your changes: the changes whose note box is open (it stays open while it's emptied). */
+  let writing = $state<Record<string, boolean>>({});
+  const noteBy = $derived(mode === 'mine' || mode === 'sent' ? 'Your note' : m.author.name ? `${m.author.name}'s note` : 'Their note');
+  const canNote = (it: Item) => mode === 'mine' && !lockOf(it);
+  /** The note box just opened with Add a note takes the typing (not the ones already written). */
+  const focusIf = (el: HTMLElement, on: boolean) => { if (on) el.focus(); };
 </script>
 
 {#if sending}<SendRequestDialog items={sendable} onclose={() => (sending = false)} />{/if}
@@ -225,6 +237,7 @@
               <a class="pill info" href="/requests#{l.id}"><I.Lock size={14} />Sent {day(l.sent)} · {l.title}</a>
               <button class="sm" aria-disabled="true" data-tip={lockTip(it)}><I.Undo size={14} /> Undo this change</button>
             {:else if mode === 'mine'}
+              {#if !noteOf(it) && !writing[it.id]}<button class="sm" onclick={() => (writing = { ...writing, [it.id]: true })}><I.Note size={14} /> Add a note</button>{/if}
               <button class="sm" onclick={() => undoItem(it)}><I.Undo size={14} /> Undo this change</button>
             {/if}
             {#if !readOnly && !it.conflict}
@@ -234,6 +247,19 @@
               </div>
             {/if}
           </div>
+          {#if canNote(it) && (noteOf(it) || writing[it.id])}
+            <label class="note">
+              <span class="nlabel"><I.Note size={14} /> Note</span>
+              <textarea rows="2" maxlength="2000" value={noteOf(it)} use:focusIf={!noteOf(it)}
+                oninput={(e) => app.setNote(it.id, e.currentTarget.value)}
+                placeholder="Why you made this change, in your own words. It goes with the change in a Change Request, and can end up in the release notes."></textarea>
+            </label>
+          {:else if noteOf(it)}
+            <div class="note">
+              <span class="nlabel"><I.Note size={14} /> {noteBy}</span>
+              <p>{noteOf(it)}</p>
+            </div>
+          {/if}
           {#if asking === it.id}
             <div class="banner draft" role="alert">
               <span class="ic"><I.Warn /></span>
@@ -428,6 +454,10 @@
   .donelist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-panel); }
   .donelist li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--hairline); }
   .donelist li:last-child { border-bottom: 0; }
+  .note { display: flex; flex-direction: column; gap: var(--space-2); border-left: 2px solid var(--border-strong); padding-left: var(--space-4); }
+  .note p { margin: 0; white-space: pre-wrap; max-width: 70ch; }
+  .note textarea { font: inherit; width: 100%; max-width: 70ch; resize: vertical; }
+  .nlabel { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--t-small); font-weight: 600; color: var(--ink-muted); }
   .desc { font-size: var(--t-small); color: var(--ink-muted); border-left: 2px solid var(--border); padding-left: var(--space-3); margin: var(--space-2) 0; }
   .desc :global(text) { font-family: var(--font-mono); background: var(--bg-sunken); padding: 0 3px; border-radius: 3px; }
 </style>

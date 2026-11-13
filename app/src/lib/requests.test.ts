@@ -69,6 +69,12 @@ describe('draft request', () => {
 });
 
 describe('snapshot', () => {
+  it('carries the notes of the chosen changes only', () => {
+    const b = draft();
+    b.manifest.notes = { 'design:area:hui': 'Wider box', 'design:area:left': 'Renamed', 'glyph:gone': 'x' };
+    expect(snapshot(b, font, ['design:area:hui']).bundle.manifest.notes).toEqual({ 'design:area:hui': 'Wider box' });
+    expect(snapshot(b, font, ['glyph:md_new']).bundle.manifest.notes).toBeUndefined();
+  });
   it('carries only the chosen changes, on the draft base', () => {
     const b = draft();
     expect(draftItems(b, font).map((i) => i.id)).toEqual(['glyph:md_7', 'glyph:md_new', 'spelling:md_7', 'spelling:md_new', 'design:area:left', 'design:area:hui']);

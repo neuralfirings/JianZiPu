@@ -80,7 +80,8 @@ Then **Save**, which writes `builder/inputs/`.
 The changelog entry is filled in from the lines code changes queued under
 `## [Unreleased]` in `CHANGELOG.md` (see [A fix that doesn't come from a Change
 Request](#a-fix-that-doesnt-come-from-a-change-request)), then the requests'
-titles and credits ("thanks to Mei Chen"). A second candidate starts from the
+titles and credits ("thanks to Mei Chen"), each followed by the notes its
+author wrote on the changes you kept, one indented line each. A second candidate starts from the
 first one's entry. Edit it before you build. It becomes the `CHANGELOG.md` section
 and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
 `### Changed`, `### Fixed`, `### Removed`.

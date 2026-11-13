@@ -59,6 +59,15 @@ describe('changes queued for the next release', () => {
     expect(releaseNotes([req({})], queued)).toBe('### Added\n\n- `shang34` gives the same as `:shang34`\n\n### Changed\n\n- Hui spacing (thanks to Mei Chen)\n');
     expect(releaseNotes([], queued)).toBe('### Added\n\n- `shang34` gives the same as `:shang34`\n');
   });
+  it('puts the notes on kept changes under the request, one line each', () => {
+    const r = req({});
+    r.bundle.manifest.notes = { 'design:area:hui': 'Room for 十三徽\nwithout crowding', 'design:area:left': 'Skipped, so not listed' };
+    expect(releaseNotes([r])).toBe('### Changed\n\n- Hui spacing (thanks to Mei Chen)\n  - Room for 十三徽 without crowding\n');
+    // a second candidate: the request is there already, its notes too
+    const previous = releaseNotes([r]);
+    expect(releaseNotes([r, req({ id: 'r2', title: 'New glyph 歴', credit: '' })], '', previous)).toBe(
+      '### Changed\n\n- Hui spacing (thanks to Mei Chen)\n  - Room for 十三徽 without crowding\n- New glyph 歴\n');
+  });
   it("a second candidate keeps the first one's entry and adds only what's new", () => {
     const previous = '### Added\n\n- `shang34` gives the same as `:shang34`\n\n### Changed\n\n- Hui spacing (thanks to Mei Chen)';
     const later = '### Fixed\n\n- chord spacing';

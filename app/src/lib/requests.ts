@@ -91,7 +91,7 @@ export function draftItems(draft: Bundle, fontSvgs: SvgMap): Item[] {
   return diffBundle(draft, { design: draft.base.design, typing: draft.base.typing, svgs: startSvgs(draft, fontSvgs) });
 }
 
-/** A bundle with only the chosen changes of a draft, on the same base: what a request carries. */
+/** A bundle with only the chosen changes of a draft, on the same base, and their notes: what a request carries. */
 export function snapshot(draft: Bundle, fontSvgs: SvgMap, chosen: string[]): { bundle: Bundle; itemIds: string[] } {
   const items = draftItems(draft, fontSvgs);
   const keep = Object.fromEntries(items.map((i) => [i.id, chosen.includes(i.id)]));
@@ -103,12 +103,14 @@ export function snapshot(draft: Bundle, fontSvgs: SvgMap, chosen: string[]): { b
     glossary: baseGlossary, glossaryLayout: baseLayout });
   const svgs: SvgMap = { ...start, ...m.svgWrites };
   for (const n of m.svgDeletes) delete svgs[n];
+  const itemIds = m.applied.map((i) => i.id);
+  const notes = Object.fromEntries(itemIds.filter((id) => draft.manifest.notes?.[id]).map((id) => [id, draft.manifest.notes![id]]));
   const bundle = makeBundle({
     design: m.design, typing: m.typing, svgs, baseDesign: draft.base.design, baseTyping: draft.base.typing,
     baseSvgs: { ...fontSvgs, ...draft.base.svgs }, base: draft.manifest.base, author: draft.manifest.author,
-    glossary: m.glossary, baseGlossary, glossaryLayout: m.glossaryLayout, baseGlossaryLayout: baseLayout
+    glossary: m.glossary, baseGlossary, glossaryLayout: m.glossaryLayout, baseGlossaryLayout: baseLayout, notes
   });
-  return { bundle, itemIds: m.applied.map((i) => i.id) };
+  return { bundle, itemIds };
 }
 
 /** What a build of a request's changes needs (POST /api/build): the font plus only those changes. */

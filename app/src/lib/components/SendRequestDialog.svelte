@@ -3,6 +3,7 @@
   // you changed and why, and how you'd like to be credited. Before it goes: the draft is saved,
   // the chosen spellings mustn't clash, and a font built from just those changes must build.
   // Once sent, those changes are locked in the draft until the request is withdrawn or declined.
+  // The notes written on single changes (Your changes) go with them; the list shows them.
   // Save as draft keeps the form (ticks, title, notes, credit) with the tester's draft in Supabase,
   // to finish later, here or on another computer; it opens again from where it was.
   import * as I from '$lib/icons';
@@ -116,7 +117,8 @@
         {#each items as it (it.id)}
           <li><label><input type="checkbox" checked={chosen[it.id]} onchange={(e) => toggle(it, (e.target as HTMLInputElement).checked)} />
             <span class="mono">{nameOf(it)}</span> <span class="tag {it.status}">{it.status}</span>
-            {#if it.kind === 'design'}<span class="muted small">{it.summary.join(' · ')}</span>{/if}</label></li>
+            {#if it.kind === 'design'}<span class="muted small">{it.summary.join(' · ')}</span>{/if}</label>
+            {#if app.notes[it.id]}<p class="inote small"><I.Note size={14} /> {app.notes[it.id]}</p>{/if}</li>
         {/each}
       </ul>
     </fieldset>
@@ -159,5 +161,7 @@
   .field .muted { font-weight: 400; }
   .tag.added { color: var(--status-saved); border-color: currentColor; }
   .tag.deleted { color: var(--status-danger); border-color: currentColor; }
+  .inote { margin: 0; padding-left: var(--space-7); color: var(--ink-muted); white-space: pre-wrap; }
+  .inote :global(svg) { vertical-align: -2px; }
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
 </style>

@@ -40,19 +40,29 @@ function sections(md: string): Map<string, string[]> {
   return out;
 }
 
+/** A request's changelog lines: its title with the credit, then the notes its author wrote on
+ *  the changes that were kept (Your changes), one indented line each. */
+export function requestLines(r: ChangeRequest): string[] {
+  const notes = r.bundle.manifest.notes ?? {};
+  const kept = keptIds(r).map((id) => notes[id]?.trim()).filter((t): t is string => !!t);
+  return [`- ${r.title.trim()}${r.credit.trim() ? ` (thanks to ${r.credit.trim()})` : ''}`,
+    ...[...new Set(kept)].map((t) => `  - ${t.replace(/\s*\n\s*/g, ' ')}`)];
+}
+
 /** The changelog entry (Keep a Changelog) for a release: what this release's last candidate wrote
  *  (`previous`, on a second candidate), the lines code changes queued under Unreleased
- *  (`queued`), and the requests in it with their credit, each line once. */
+ *  (`queued`), and the requests in it with their credit and notes, each request once. */
 export function releaseNotes(reqs: ChangeRequest[], queued = '', previous = ''): string {
-  const lines = reqs.map((r) => `- ${r.title.trim()}${r.credit.trim() ? ` (thanks to ${r.credit.trim()})` : ''}`);
-  if (!queued.trim() && !previous.trim()) return lines.length ? `### Changed\n\n${lines.join('\n')}\n` : '### Changed\n\n- ';
+  const blocks = reqs.map(requestLines);
+  if (!queued.trim() && !previous.trim()) return blocks.length ? `### Changed\n\n${blocks.flat().join('\n')}\n` : '### Changed\n\n- ';
   const all = sections(previous);
-  const add = (head: string, line: string) => {
+  // a request's title line already there (an earlier candidate) brings its notes with it
+  const add = (head: string, [line, ...more]: string[]) => {
     if ([...all.values()].some((ls) => ls.includes(line))) return;
-    all.set(head, [...(all.get(head) ?? []), line]);
+    all.set(head, [...(all.get(head) ?? []), line, ...more]);
   };
-  for (const [head, ls] of sections(queued)) ls.forEach((l) => add(head, l));
-  lines.forEach((l) => add('Changed', l));
+  for (const [head, ls] of sections(queued)) ls.forEach((l) => add(head, [l]));
+  blocks.forEach((b) => add('Changed', b));
   return [...all].filter(([, ls]) => ls.length).map(([head, ls]) => (head ? `### ${head}\n\n` : '') + ls.join('\n')).join('\n\n') + '\n';
 }
 

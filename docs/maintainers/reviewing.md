@@ -18,8 +18,8 @@ tester (online Builder)                 maintainer (local Builder)
 The Builder's own help, the "Change Requests" section at `/help#requests`, is
 the tester's guide. In short:
 
-- On Your changes (`/review?mine`), they undo single changes, or choose **Send
-  Change Request…**. They tick which changes go, then add a title, notes, and
+- On Your changes (`/review?mine`), they undo single changes, write a note on
+  any change (**Add a note**), or choose **Send Change Request…**. They tick which changes go, then add a title, notes, and
   how they'd like to be credited. **Save as draft** keeps an unfinished request
   for later.
 - Before a request goes, the Builder saves the draft, checks the spellings
@@ -40,7 +40,8 @@ the tester's guide. In short:
    filter shows the rest.
 3. **Review** a request. You see:
    - at the top: who sent it, their notes, and how they want to be credited;
-   - then each change, before and after: glyphs drawn over each other,
+   - then each change, with the tester's note on it if they wrote one, before
+     and after: glyphs drawn over each other,
      spellings side by side, design changes with sample words and the JSON, and
      glossary sections with their rows before and after (a section is kept or
      skipped whole, in the draft's order).

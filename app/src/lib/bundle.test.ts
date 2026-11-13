@@ -72,6 +72,15 @@ describe('draft bundle', () => {
     expect(() => validate({ ...b, svgs: { '../x': 'y' } })).toThrow(/Bad glyph name/);
     expect(() => fromZip(new Uint8Array([1, 2, 3]))).toThrow(/not a .zip/);
   });
+  it('keeps the notes on single changes, through JSON and zip, and drops empty ones', () => {
+    const b = makeBundle({ design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base,
+      notes: { 'design:area:hui': '  Wider for 十三徽  ', 'glyph:md_7': '   ' } });
+    expect(b.manifest.notes).toEqual({ 'design:area:hui': 'Wider for 十三徽' });
+    expect(fromJson(toJson(b)).manifest.notes).toEqual(b.manifest.notes);
+    expect(fromZip(toZip(b)).manifest.notes).toEqual(b.manifest.notes);
+    expect(validate({ ...b, manifest: { ...b.manifest, notes: { a: 3, b: 'ok' } } }).manifest.notes).toEqual({ b: 'ok' });
+    expect('notes' in makeBundle({ design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base, notes: {} }).manifest).toBe(false);
+  });
   it('an untouched draft is empty', () => {
     const b = makeBundle({ design: design(), typing: {}, svgs: baseSvgs, baseDesign: design(), baseTyping: {}, baseSvgs, base });
     expect(isEmptyBundle(b)).toBe(true);

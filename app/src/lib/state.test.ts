@@ -191,6 +191,32 @@ describe('hosted draft', () => {
     app.requests = [];
   });
 
+  it('keeps notes on single changes with the draft, not as undo steps; a sent change\'s note stays', async () => {
+    await app.load();
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    await app.save();
+    app.setNote('design:area:left', 'Room for 十三徽');
+    expect(app.dirty).toBe(true);
+    expect(app.undoStack.length).toBe(1);                              // the resize only
+    expect(app.bundle().manifest.notes).toEqual({ 'design:area:left': 'Room for 十三徽' });
+    expect(await app.save()).toBe(true);
+    expect(app.dirty).toBe(false);
+    await app.load();
+    expect(app.notes).toEqual({ 'design:area:left': 'Room for 十三徽' });
+    // an unsaved note survives a reload of the page
+    app.setNote('design:area:left', 'Room for 十三徽, and 七徽');
+    await app.load();
+    expect(app.notes['design:area:left']).toBe('Room for 十三徽, and 七徽');
+    app.setNote('design:area:left', '');
+    expect(app.notes).toEqual({});
+    app.discard();
+    expect(app.notes['design:area:left']).toBe('Room for 十三徽');
+    app.requests = [{ id: 'r1', title: 'Wider left', status: 'sent', item_ids: ['design:area:left'], decisions: {}, created_at: '2026-10-20T10:00:00Z' } as never];
+    app.setNote('design:area:left', 'changed after sending');
+    expect(app.notes['design:area:left']).toBe('Room for 十三徽');      // went with the request
+    app.requests = [];
+  });
+
   it('refuses to overwrite a draft saved elsewhere unless told to', async () => {
     await app.load();
     store.draft = { text: '', stamp: 'other' };

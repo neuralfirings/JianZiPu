@@ -24,8 +24,13 @@ export type Manifest = {
   author: { id?: string; name?: string };
   updated: string;
   note?: string;
+  /** The author's notes on single changes, by change id (merge.ts: "design:layout:chord_l",
+   *  "glyph:lg_gou"…), written on Your changes. They travel with the change into a Change Request
+   *  and the release notes. */
+  notes?: ItemNotes;
   svgs: { added: string[]; changed: string[]; deleted: string[] };
 };
+export type ItemNotes = Record<string, string>;
 export type Bundle = {
   manifest: Manifest;
   design: Design;
@@ -56,14 +61,16 @@ export function makeBundle(o: {
   design: Design; typing: T.Typing; svgs: SvgMap;
   baseDesign: Design; baseTyping: T.Typing; baseSvgs: SvgMap; base: BaseVersion;
   glossary?: GlossaryRows; baseGlossary?: GlossaryRows; glossaryLayout?: GlossaryLayout; baseGlossaryLayout?: GlossaryLayout;
-  author?: Manifest['author']; note?: string; now?: Date;
+  author?: Manifest['author']; note?: string; notes?: ItemNotes; now?: Date;
 }): Bundle {
   const d = diffSvgs(o.baseSvgs, o.svgs);
+  const notes = cleanNotes(o.notes);
   const pick = (m: SvgMap, names: string[]) => Object.fromEntries(names.map((n) => [n, m[n]]));
   return {
     manifest: {
       format: BUNDLE_FORMAT, kind: 'jzp-draft', base: o.base, author: o.author ?? {},
-      updated: (o.now ?? new Date()).toISOString(), ...(o.note ? { note: o.note } : {}), svgs: d
+      updated: (o.now ?? new Date()).toISOString(), ...(o.note ? { note: o.note } : {}),
+      ...(notes ? { notes } : {}), svgs: d
     },
     design: clone(o.design),
     typing: clone(o.typing),
@@ -92,6 +99,14 @@ export function isEmptyBundle(b: Bundle): boolean {
     && (!b.glossaryLayout || changedLayout(b.base.glossaryLayout ?? b.glossaryLayout, b.glossaryLayout).length === 0);
 }
 
+/** Notes with something in them (trimmed), or undefined when there are none. */
+export function cleanNotes(x: unknown): ItemNotes | undefined {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return undefined;
+  const out: ItemNotes = {};
+  for (const [id, t] of Object.entries(x as Record<string, unknown>)) if (typeof t === 'string' && t.trim()) out[id] = t.trim();
+  return Object.keys(out).length ? out : undefined;
+}
+
 // ---------------------------------------------------------------- checks
 
 /** A draft this app can't open. `newer`: made by a newer Builder (a reload may bring that one). */
@@ -114,6 +129,9 @@ export function validate(x: unknown): Bundle {
     if (typeof b.svgs[n] !== 'string') throw new BundleError(`The draft lists ${n} but has no file for it.`);
   }
   const out: Bundle = { ...b, typing: b.typing ?? {}, svgs: cleanAll(b.svgs ?? {}), base: { design: b.base.design, typing: b.base.typing ?? {}, svgs: cleanAll(b.base.svgs ?? {}) } };
+  const notes = cleanNotes(m.notes);
+  out.manifest = { ...m };
+  if (notes) out.manifest.notes = notes; else delete out.manifest.notes;
   // a draft from before the glossary was its own file holds `words` (a list): its glossary is the font's
   delete (out as { words?: unknown }).words;
   const g = cleanRows(b.glossary), bg = cleanRows(b.base.glossary);

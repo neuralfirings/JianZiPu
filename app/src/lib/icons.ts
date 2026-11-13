@@ -59,6 +59,8 @@ export { default as Lock } from '@lucide/svelte/icons/lock';               // he
 // Change Requests
 export { default as Send } from '@lucide/svelte/icons/send';
 export { default as Withdraw } from '@lucide/svelte/icons/undo-2';
+/** a note on one change (Your changes), read with the change in a request and the release notes */
+export { default as Note } from '@lucide/svelte/icons/message-square-text';
 
 // layout rules
 export { default as Vertical } from '@lucide/svelte/icons/move-vertical';

@@ -6,7 +6,7 @@
 // Hosted (pilot) mode: everything above is the signed-in tester's draft; Save uploads it
 // to Supabase (drafts.ts) instead of writing files, and saves itself every 30 s.
 import { api, type BaseInfo, type BuildInputs, type Design, type GlyphRow, type Stats } from './api';
-import { BundleError, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type SvgMap } from './bundle';
+import { BundleError, cleanNotes, diffSvgs, isEmptyBundle, makeBundle, type BaseVersion, type Bundle, type ItemNotes, type SvgMap } from './bundle';
 import { deleteDraft, DraftConflict, draftStamp, loadDraft, loadRequestDraft, saveDraft, saveRequestDraft } from './drafts';
 import { hosted } from './hosted.svelte';
 import { applyMerge, fontUpdateItems, unitOf, type Item } from './merge';
@@ -119,6 +119,10 @@ class DesignState {
   requests = $state<ChangeRequest[]>([]);
   /** A Change Request written but not sent yet (hosted), kept with the draft. */
   requestDraft = $state<RequestDraft | null>(null);
+  /** Notes on single changes (Your changes), by change id, and as saved with the draft. Not undo
+   *  steps: a note is words about a change, not the change. */
+  notes = $state<ItemNotes>({});
+  savedNotesJson = $state('{}');
 
   /** Draft items (merge.ts ids) a Change Request holds, so they can't be edited or undone. */
   get locks(): Record<string, Lock> {
@@ -175,6 +179,15 @@ class DesignState {
     const c = hosted.client, uid = hosted.user?.id;
     if (c && uid) this.requests = await myRequests(c, uid);
   }
+  /** Write (or with empty text, drop) the note on one change. A sent change's note went with it. */
+  setNote(id: string, text: string) {
+    if (this.lockOf(id)) { pilot.say(this.lockMessage(id)); return; }
+    const { [id]: _, ...rest } = this.notes;
+    const next = text.trim() ? { ...rest, [id]: text } : rest;
+    if (JSON.stringify(next) === JSON.stringify(this.notes)) return;
+    this.notes = next;
+    this.persistDraft();
+  }
   /** Refuse an edit that would change a locked item, saying why. */
   private refuses(next: Partial<Changes>): boolean {
     const id = this.lockedBy(next);
@@ -194,8 +207,11 @@ class DesignState {
   get svgsDirty() {
     return Object.keys(this.pendingSvgs).length > 0;
   }
+  get notesDirty() {
+    return JSON.stringify(this.notes) !== this.savedNotesJson;
+  }
   get dirty() {
-    return this.designDirty || this.typingDirty || this.svgsDirty || this.glossaryDirty;
+    return this.designDirty || this.typingDirty || this.svgsDirty || this.glossaryDirty || this.notesDirty;
   }
   /** Number of unsaved edits for the header chip. */
   get unsavedCount() {
@@ -330,7 +346,9 @@ class DesignState {
   }
 
   /** Make (design, typing, svgs, glossary) the saved state and the current one, with no history. */
-  private setSaved(design: Design, typing: T.Typing, svgs: SvgMap, glossary: GlossaryRows = this.mainGlossary, layout: GlossaryLayout = this.mainLayout) {
+  private setSaved(design: Design, typing: T.Typing, svgs: SvgMap, glossary: GlossaryRows = this.mainGlossary, layout: GlossaryLayout = this.mainLayout, notes: ItemNotes = {}) {
+    this.notes = clone(notes);
+    this.savedNotesJson = JSON.stringify(notes);
     this.savedJson = JSON.stringify(design);
     this.savedTypingJson = JSON.stringify(typing);
     this.savedGlossaryJson = JSON.stringify(glossary);
@@ -371,12 +389,12 @@ class DesignState {
     this.draftStamp = got.stamp;
     const svgs = { ...this.mainSvgs, ...b.svgs };
     for (const n of b.manifest.svgs.deleted) delete svgs[n];
-    this.setSaved(b.design, b.typing, svgs, b.glossary ?? this.mainGlossary, b.glossaryLayout ?? this.mainLayout);
+    this.setSaved(b.design, b.typing, svgs, b.glossary ?? this.mainGlossary, b.glossaryLayout ?? this.mainLayout, b.manifest.notes ?? {});
   }
 
   /** Edits that never reached the files or the draft (crash, offline, closed tab). */
   private restoreBuffer() {
-    let buf: { hash?: string; stamp?: string | null; design: Design; changes: string[]; csvHash?: string; typing?: T.Typing; svgs?: PendingSvgs; glossaryHash?: string; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout } | null = null;
+    let buf: { hash?: string; stamp?: string | null; design: Design; changes: string[]; csvHash?: string; typing?: T.Typing; svgs?: PendingSvgs; glossaryHash?: string; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout; notes?: ItemNotes } | null = null;
     try {
       const raw = localStorage.getItem(this.draftKey);
       buf = raw ? JSON.parse(raw) : null;
@@ -392,11 +410,14 @@ class DesignState {
     const glossary = buf.glossary && !Array.isArray(buf.glossary) && sameGlossary ? buf.glossary : null;
     const layout = sameGlossary ? cleanLayout(buf.glossaryLayout) ?? null : null;
     const svgs = buf.svgs ?? {};
+    const notes = hosted.isHosted && buf.notes ? cleanNotes(buf.notes) ?? {} : null;
     const differs = JSON.stringify(buf.design) !== this.savedJson
       || (typing && JSON.stringify(typing) !== this.savedTypingJson) || Object.keys(svgs).length > 0
       || (glossary && JSON.stringify(glossary) !== this.savedGlossaryJson)
-      || (layout && JSON.stringify(layout) !== this.savedLayoutJson);
+      || (layout && JSON.stringify(layout) !== this.savedLayoutJson)
+      || (notes && JSON.stringify(notes) !== this.savedNotesJson);
     if (!differs) return;
+    if (notes) this.notes = notes;
     this.design = buf.design;
     if (typing) this.typing = typing;
     if (glossary) this.glossary = glossary;
@@ -607,6 +628,7 @@ class DesignState {
     this.typing = JSON.parse(this.savedTypingJson);
     this.glossary = JSON.parse(this.savedGlossaryJson);
     this.glossaryLayout = JSON.parse(this.savedLayoutJson);
+    this.notes = JSON.parse(this.savedNotesJson);
     this.setPending({});
     this.paused = null;
     this.changes = [];
@@ -622,7 +644,7 @@ class DesignState {
         localStorage.setItem(this.draftKey, JSON.stringify({
           hash: this.diskHash, stamp: this.draftStamp, design: this.design, changes: this.changes,
           csvHash: this.csvHash, typing: this.typing, svgs: this.pendingSvgs, glossaryHash: this.glossaryHash, glossary: this.glossary,
-          glossaryLayout: this.glossaryLayout
+          glossaryLayout: this.glossaryLayout, notes: this.notes
         }));
       } else {
         localStorage.removeItem(this.draftKey);
@@ -726,6 +748,7 @@ class DesignState {
         this.savedLayoutJson = JSON.stringify(this.glossaryLayout);
         this.mainLayout = clone(this.glossaryLayout);
       }
+      this.savedNotesJson = JSON.stringify(this.notes);
       this.changes = [];
       this.lastSaved = new Date();
       this.conflict = null;
@@ -755,7 +778,7 @@ class DesignState {
       glossaryLayout: this.glossaryLayout, baseGlossaryLayout: b.glossaryLayout ?? this.mainLayout,
       // glyphs the draft never touched ride the font: their base is the font's current file
       baseSvgs: { ...this.mainSvgs, ...b.svgs }, base: b.version,
-      author: hosted.user ? { id: hosted.user.id, name: hosted.user.name || hosted.firstName } : {}, note
+      author: hosted.user ? { id: hosted.user.id, name: hosted.user.name || hosted.firstName } : {}, note, notes: this.notes
     });
   }
 
@@ -792,6 +815,7 @@ class DesignState {
       this.savedTypingJson = JSON.stringify(this.typing);
       this.savedGlossaryJson = JSON.stringify(this.glossary);
       this.savedLayoutJson = JSON.stringify(this.glossaryLayout);
+      this.savedNotesJson = JSON.stringify(this.notes);
       this.savedSvgs = this.svgs;
       this.pendingSvgs = {};
       this.changes = [];
