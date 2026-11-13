@@ -278,6 +278,12 @@
       .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-muted); }
       /* the demo: a box that wraps instead of a one-line field */
       textarea.text-entry { resize: none; line-height: 1.4; }
+      /* the glossary's tables fit the screen: slimmer cell padding, and a long spelling may break when it must */
+      .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
+      .table td { overflow-wrap: anywhere; }
+      txs { word-break: normal; }
+      /* the notation preview: a tap puts the cursor in the box above it */
+      .jzp-example { cursor: text; }
       /* the sticky bar: one slim row, the contents on the left and the download button on the right */
       /* pinned to the top from the first screen, so Contents and Download are always in reach */
       body { padding-top: 56px; }
@@ -1751,7 +1757,17 @@
           box.addEventListener('input', () => updateTargets(box));
           input.replaceWith(box);
         });
-        document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
+        // the notation isn't edited in place on a phone; a tap on it puts the cursor at the end of the box above
+        document.querySelectorAll('.jzp-example[contenteditable]').forEach((el) => {
+          el.removeAttribute('contenteditable');
+          el.addEventListener('click', () => {
+            const box = el.closest('.jzp-example-container').querySelector('.text-entry');
+            if (!box) return;
+            box.focus();
+            const end = box.value.length;
+            try { box.setSelectionRange(end, end); } catch (e) {}
+          });
+        });
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
     })();
