@@ -17,6 +17,9 @@ same text becomes the GitHub release notes.
 ### Changed
 - The license no longer reserves the name "JianZiPu": the font's copyright line and OFL.txt drop "with Reserved Font Name". A changed copy of the font may keep the name.
 
+### Fixed
+- Typing a word letter by letter in Chrome or Edge no longer leaves it half-built (`daiqi` set horizontally, `fenkai` or `zhua` in pieces) until the text is pasted again. Words starting with two letters drawn at the same width, such as `shang`, `ban` or `duan`, can still go wrong while typing in Chrome 153; pasted text is right.
+
 ## [3.200] - 2026-10-21
 
 ### Changed
