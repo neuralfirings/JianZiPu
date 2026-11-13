@@ -10,11 +10,16 @@ same text becomes the GitHub release notes.
 
 ## [Unreleased]
 
+## [3.300] - 2026-11-13
+
 ### Added
+- New characters, with their spellings: 从 `cong`, 头 `tou`, 再 `zai`, 作 `zuo`, 【 `[`, 曲 `qu`, 终 (終) `zhong`, 又 `you`, 推出 `tc` / `tuichu`, 游吟 `youyin`. Together they write 从头再作, 从【再作 and 曲终.
+- 大 (thumb) can also be typed `da`, as well as `v`.
 - A word with a character only a vertical word can hold (上, 下, 分开…) is set vertically without typing the colon: `shang34` gives the same as `:shang34`.
-- Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). 【 】 typed in Chinese still become `[` `]` unless a glyph's Chinese spelling claims them, so a glyph spelled `[` answers to 【 too.
+- Spellings can use `[` and `]` (Latin) and Chinese punctuation such as 【 】 《 》 (简体/繁體). `[` and 【 now both type the new 【 mark; 】 typed in Chinese still becomes `]`.
 
 ### Changed
+- The glossary on jianzipufont.com is reorganised: numbered sections (1.1, 1.2…), a new "Numbers for String and Hui" section, a Definition column, and more example words. Rows are renumbered and some section links changed (#glossary-1d, #glossary-3c and others are gone), so old links to a row or section may land somewhere else.
 - The license no longer reserves the name "JianZiPu": the font's copyright line and OFL.txt drop "with Reserved Font Name". A changed copy of the font may keep the name.
 
 ### Fixed
