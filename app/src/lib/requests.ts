@@ -96,12 +96,17 @@ export function snapshot(draft: Bundle, fontSvgs: SvgMap, chosen: string[]): { b
   const items = draftItems(draft, fontSvgs);
   const keep = Object.fromEntries(items.map((i) => [i.id, chosen.includes(i.id)]));
   const start = startSvgs(draft, fontSvgs);
-  const m = applyMerge(items, keep, { design: draft.base.design, typing: draft.base.typing, svgs: start });
+  // the glossary the draft started from (a draft from before the glossary has none: nothing to carry)
+  const baseGlossary = draft.glossary ? draft.base.glossary ?? draft.glossary : undefined;
+  const baseLayout = draft.glossaryLayout ? draft.base.glossaryLayout ?? draft.glossaryLayout : undefined;
+  const m = applyMerge(items, keep, { design: draft.base.design, typing: draft.base.typing, svgs: start,
+    glossary: baseGlossary, glossaryLayout: baseLayout });
   const svgs: SvgMap = { ...start, ...m.svgWrites };
   for (const n of m.svgDeletes) delete svgs[n];
   const bundle = makeBundle({
     design: m.design, typing: m.typing, svgs, baseDesign: draft.base.design, baseTyping: draft.base.typing,
-    baseSvgs: { ...fontSvgs, ...draft.base.svgs }, base: draft.manifest.base, author: draft.manifest.author
+    baseSvgs: { ...fontSvgs, ...draft.base.svgs }, base: draft.manifest.base, author: draft.manifest.author,
+    glossary: m.glossary, baseGlossary, glossaryLayout: m.glossaryLayout, baseGlossaryLayout: baseLayout
   });
   return { bundle, itemIds: m.applied.map((i) => i.id) };
 }
