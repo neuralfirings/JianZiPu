@@ -166,6 +166,22 @@ After that:
 
 You can delete the `release/3.300` branch on GitHub. The tags keep its history.
 
+### The "coming next" page
+
+`site/vnext.html` previews the next release beside today's font, with a preview
+build committed next to it (`site/JianZiPu-vnext.ttf`). While a change waits
+for a release, rebuild that font when the rules change, in the pull request that
+changes them:
+
+```bash
+cd builder && python3 -m jzpbuild -o ../site/JianZiPu-vnext.ttf --fea-out ""
+```
+
+Once the release is out, its changes are no longer "next": move what the page
+explains into `site/index.html` (the numbers section, the vertical words), and
+take the published items off `vnext.html`, or leave just the link on the font
+page out until something new is coming.
+
 ## Versions
 
 A version is `MAJOR.MINOR`, and the minor part always has three digits: 3.100,

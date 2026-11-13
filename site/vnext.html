@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- a preview of the next release: not for search results; the main page is index.html -->
+  <meta name="robots" content="noindex">
+  <title>JianZiPu Font: coming next</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Eczar:wght@400..800&family=LXGW+WenKai+TC:wght@300;400;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* the released font (what the main page and the download have) and the next release's preview build */
+    @font-face { font-family: 'JZP-now'; src: url('./JianZiPu.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
+    @font-face { font-family: 'JZP-next'; src: url('./JianZiPu-vnext.ttf'); font-display: swap; font-feature-settings: "kern", "liga"; }
+    body { font-family: "Eczar", "LXGW WenKai TC", serif; color: #222; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-weight: 600; }
+    h2 { font-weight: 600; margin-top: 2.5rem; }
+    .lead-note { background: #f6f4ee; border: 1px solid #e4dfd2; border-radius: 6px; padding: 12px 16px; }
+    text, code.t { font-family: "Roboto Mono", "LXGW WenKai TC", monospace; background: #eee; color: #000; padding: 2px 6px; border-radius: 4px; font-size: .9em; white-space: nowrap; }
+    table.cmp { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    table.cmp th { text-align: left; font-weight: 600; padding: 6px 10px; border-bottom: 2px solid #333; background: #f3f1ec; vertical-align: bottom; }
+    table.cmp td { padding: 6px 10px; border-bottom: 1px solid #ddd; vertical-align: middle; }
+    table.cmp td.n { color: #888; text-align: right; width: 2.5em; font-size: .9em; }
+    table.cmp td.typed { font-family: "LXGW WenKai TC", "Roboto Mono", serif; font-size: 1.15rem; white-space: nowrap; }
+    td.now, td.next { font-size: 44px; line-height: 1.3; white-space: nowrap; }
+    td.now { font-family: 'JZP-now'; color: #888; }
+    td.next { font-family: 'JZP-next'; }
+    th.now, th.next { width: 7.5em; }
+    .muted { color: #888; }
+    .tryit { background: #fafafa; border: 1px solid #e4e4e4; border-radius: 6px; padding: 16px; }
+    .tryit .out { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; align-items: center; margin-top: 12px; }
+    .tryit .out .lbl { color: #888; font-size: .9rem; }
+    .tryit .out .now { font-family: 'JZP-now'; font-size: 44px; color: #888; overflow-wrap: anywhere; }
+    .tryit .out .next { font-family: 'JZP-next'; font-size: 44px; overflow-wrap: anywhere; }
+    @media (max-width: 759.98px) {
+      td.now, td.next, .tryit .out .now, .tryit .out .next { font-size: 34px; }
+      .scroll { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p><a href="./">← JianZiPu font</a></p>
+  <h1>Coming in the next release</h1>
+  <p class="lead-note">These changes are in the next version of the font, after <span id="version">the released one</span>. They aren't in the download yet:
+    this page uses a preview build of the next font, shown beside today's. <strong>Today</strong> is the font you can download now (grey);
+    <strong>Next</strong> is how the next release will write the same input.</p>
+
+  <h2 id="vertical">1. Vertical words without the colon</h2>
+  <p>A word with a character only a vertical word can hold (上, 下, 退, 分开, 少息, 带起…) is set vertically without typing the colon:
+    <text>shang34</text> gives the same as <text>:shang34</text>. The colon still works, and words that need it to stand vertically (<text>:lun</text>, <text>:0</text>) still do.</p>
+  <div class="scroll"><table class="cmp">
+    <tr><th></th><th>Typed</th><th class="now">Today</th><th class="next">Next</th></tr>
+    <tr><td class="n">1</td><td class="typed">shang34</td><td class="now">shang34</td><td class="next">shang34</td></tr>
+    <tr><td class="n">2</td><td class="typed">上三四</td><td class="now">上三四</td><td class="next">上三四</td></tr>
+    <tr><td class="n">3</td><td class="typed">xia79</td><td class="now">xia79</td><td class="next">xia79</td></tr>
+    <tr><td class="n">4</td><td class="typed">分开</td><td class="now">分开</td><td class="next">分开</td></tr>
+    <tr><td class="n">5</td><td class="typed">退</td><td class="now">退</td><td class="next">退</td></tr>
+    <tr><td class="n">6</td><td class="typed">少息</td><td class="now">少息</td><td class="next">少息</td></tr>
+    <tr><td class="n">7</td><td class="typed">带起</td><td class="now">带起</td><td class="next">带起</td></tr>
+  </table></div>
+
+  <h2 id="hui">2. Hui numbers in Chinese</h2>
+  <ul>
+    <li><strong>十一, 十二 and 十三 are always hui 11, 12 and 13.</strong> 10.2 is written <text>十徽二</text>, <text>十徽二分</text> or <text>十点二</text>. 十四 to 十九 and 十半 are still 10.4 to 10.9 and 10.5.</li>
+    <li><strong>徽 is a decimal point, as 点 is:</strong> <text>十徽二</text> is 10.2 and <text>七徽六</text> is 7.6. 分 may close the decimal (<text>十徽二分</text>). 徽 with nothing after it closes the number: <text>十徽</text> is 10.</li>
+    <li><strong>徽 before a 半 that starts a word ends the number</strong>, as a comma does: <text>名九徽半轮六</text> is 9, then 半轮. Without 徽, 9.5 comes first: <text>名九半轮六</text> is 9.5, then 轮.</li>
+  </ul>
+  <div class="scroll"><table class="cmp">
+    <tr><th></th><th>Typed</th><th>Hui</th><th>Right hand</th><th>String</th><th class="now">Today</th><th class="next">Next</th></tr>
+    <tr><td class="n">1</td><td class="typed">名九半轮六</td><td>9.5</td><td>轮</td><td>6</td><td class="now">名九半轮六</td><td class="next">名九半轮六</td></tr>
+    <tr><td class="n">2</td><td class="typed">名九，半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九，半轮六</td><td class="next">名九，半轮六</td></tr>
+    <tr><td class="n">3</td><td class="typed">名九徽半轮六</td><td>9</td><td>半轮</td><td>6</td><td class="now">名九徽半轮六</td><td class="next">名九徽半轮六</td></tr>
+    <tr><td class="n">4</td><td class="typed">名九半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九半勾六</td><td class="next">名九半勾六</td></tr>
+    <tr><td class="n">5</td><td class="typed">名九徽半勾六</td><td>9.5</td><td>勾</td><td>6</td><td class="now">名九徽半勾六</td><td class="next">名九徽半勾六</td></tr>
+    <tr><td class="n">6</td><td class="typed">名十二勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二勾五</td><td class="next">名十二勾五</td></tr>
+    <tr><td class="n">7</td><td class="typed">名十二徽勾五</td><td>12</td><td>勾</td><td>5</td><td class="now">名十二徽勾五</td><td class="next">名十二徽勾五</td></tr>
+    <tr><td class="n">8</td><td class="typed">名十徽勾五</td><td>10</td><td>勾</td><td>5</td><td class="now">名十徽勾五</td><td class="next">名十徽勾五</td></tr>
+    <tr><td class="n">9</td><td class="typed">名十徽二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二勾五</td><td class="next">名十徽二勾五</td></tr>
+    <tr><td class="n">10</td><td class="typed">名十徽二分勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十徽二分勾五</td><td class="next">名十徽二分勾五</td></tr>
+    <tr><td class="n">11</td><td class="typed">名十点二勾五</td><td>10.2</td><td>勾</td><td>5</td><td class="now">名十点二勾五</td><td class="next">名十点二勾五</td></tr>
+    <tr><td class="n">12</td><td class="typed">名七六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七六挑五</td><td class="next">名七六挑五</td></tr>
+    <tr><td class="n">13</td><td class="typed">名七徽六挑五</td><td>7.6</td><td>挑</td><td>5</td><td class="now">名七徽六挑五</td><td class="next">名七徽六挑五</td></tr>
+  </table></div>
+
+  <h2 id="xian">3. 弦 marks a string</h2>
+  <p>弦 (or 絃) after a number marks it as a string, and keeps it from joining the number before it. In a chord it closes the first half before the bar:
+    <text>撥大九四六弦|散五</text> is 撥 with the thumb at hui 9.4 on string 6, and the open string 5, the same as <text>Bv9.4,6|05</text>.</p>
+  <div class="scroll"><table class="cmp">
+    <tr><th></th><th>Typed</th><th>Reads as</th><th class="now">Today</th><th class="next">Next</th></tr>
+    <tr><td class="n">1</td><td class="typed">名九七</td><td>hui 9.7</td><td class="now">名九七</td><td class="next">名九七</td></tr>
+    <tr><td class="n">2</td><td class="typed">名九七弦</td><td>hui 9, string 7</td><td class="now">名九七弦</td><td class="next">名九七弦</td></tr>
+    <tr><td class="n">3</td><td class="typed">撥大九四六弦|散五</td><td>撥: thumb, hui 9.4, string 6 | open string 5</td><td class="now">撥大九四六弦|散五</td><td class="next">撥大九四六弦|散五</td></tr>
+    <tr><td class="n">4</td><td class="typed">撥大九四弦|散五</td><td>撥: thumb, hui 9, string 4 | open string 5</td><td class="now">撥大九四弦|散五</td><td class="next">撥大九四弦|散五</td></tr>
+  </table></div>
+
+  <h2 id="try">Try it</h2>
+  <div class="tryit">
+    <label for="try-input" class="form-label">Type here to compare today's font with the next one</label>
+    <input id="try-input" type="text" class="form-control" autocorrect="off" autocapitalize="off" spellcheck="false"
+      value="shang34 名九徽半轮六 名十二勾五 名十徽二勾五 撥大九四六弦|散五">
+    <div class="out">
+      <span class="lbl">Today</span><div class="now" id="try-now"></div>
+      <span class="lbl">Next</span><div class="next" id="try-next"></div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 2rem"><small>A preview: the next release can still change before it's published. <a href="./">Back to the font page</a>.</small></p>
+</div>
+<script>
+  // the released version, for the note at the top
+  fetch('./version.json').then((r) => r.json()).then((v) => { if (v && v.version) document.getElementById('version').textContent = v.version; }).catch(() => {});
+  const input = document.getElementById('try-input');
+  const show = () => { document.getElementById('try-now').textContent = input.value; document.getElementById('try-next').textContent = input.value; };
+  input.addEventListener('input', show);
+  show();
+</script>
+</body>
+</html>

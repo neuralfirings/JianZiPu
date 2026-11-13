@@ -275,6 +275,7 @@
       <div style="clear: both"></div>
       
       <p>The JianZiPu font system is designed for rendering traditional Chinese guqin notation 减字谱 or JianZiPu. The font supports Chinese characters and ASCII input.</p>
+      <p class="vnext-link"><small><a href="./vnext.html">Coming in the next release</a>: vertical words without the colon, and new ways to write hui numbers in Chinese (徽, 十一 to 十三, 弦).</small></p>
 
       <small class="font-version-top" id="font-version-top"></small>
       <small class="text-muted space-rule">Remember: Use the spacebar to advance between characters for proper notation spacing!</small>
@@ -378,22 +379,21 @@
 
     <h3 id="numbers">2. Numbers and Decimals</h3>
     <p>If you are using ASCII, you can note a decimal by just writing 7.5, 7.6, etc.</p>
+    <p><small>Some of these rules change in the next release (十一 to 十三, 徽, 弦): <a href="./vnext.html#hui">see what's coming</a>.</small></p>
     <p>If you are using Chinese, the font will treat the numbers different depending on if they are preceded by a left hand glyph or not. For example, if two numbers are follows a left hand, then that gets converted to decimals (s76 => s7.6), can put comma between (s7,6)</p>
     <ul>
       <li><text>名七六</text> and <text>s76</text> → 7.6 hui (no string) <jzp>s76</jzp></li>
       <li><text>名七,六</text> and <text>s7,6</text> → 7 hui, string 6 <jzp>s7,6</jzp></li>
       <li><text>名七六六</text> and <text>s766</text> → 7.6 hui, string 6 <jzp>s766</jzp></li>
-      <li><text>名十一</text> and <text>s11</text> → 11 hui (no string) <jzp>s11</jzp>: 十一, 十二 and 十三 are always hui 11 to 13</li>
-      <li><text>名十徽一</text> and <text>s10.1</text> → 10.1 hui (no string) <jzp>s10.1</jzp></li>
+      <li><text>名十点一</text> and <text>s10.1</text> → 10.1 hui (no string) <jzp>s10.1</jzp></li>
       <li><text>历七六</text> and <text>U76</text> → string 7, string 6 <jzp>U76</jzp> Here 76 is not converted into 7.6 since it's not preceded by a left hand glyph</li>
     </ul>
-    <p>For Chinese, you can also use 点 or 徽 as the decimal point. For example, <text>名七点九</text> and <text>名七徽九</text> both give <jzp>名七点九</jzp>, and <text>名十徽二</text> (or <text>名十徽二分</text>) gives 10.2. 徽 with nothing after it just closes the number: <text>名十徽</text> is 10. Before a 半 that starts a word, 徽 ends the number: <text>名九徽半轮六</text> is the same as <text>名九，半轮六</text> (9 hui, then 半轮), while <text>名九半轮六</text> is 9.5, then 轮. 弦 after a number marks it as a string: <text>名九七弦</text> is 9 hui, string 7, not 9.7.</p>
+    <p>For Chinese, you can also use 点 and 徽 to indicate decimals For example, <text>名七点九</text> gives <jzp>名七点九</jzp>.</p>
     <p>Here are some crazy examples:</p>
     <ul>
       <li><text>名十</text> gives <jzp>名十</jzp></li>
-      <li><text>名十二</text> gives <jzp>名十二</jzp> In the code this is represented as 12</li>
-      <li><text>名十徽二</text> gives <jzp>名十徽二</jzp> In the code this is represented as 10.2</li>
-      <li><text>名十二徽</text> gives <jzp>名十二徽</jzp> Also 12: 徽 at the end just closes the number</li>
+      <li><text>名十二</text> gives <jzp>名十二</jzp> In the code this is represented as 10.2</li>
+      <li><text>名十二徽</text> gives <jzp>名十二徽</jzp> In the code this is represented as 12, though I don't know if visually it's all that different from 10.2 above.</li>
       <li><text>名十，二</text> gives <jzp>名十，二</jzp> </li>
       <li><text>名十二二</text> gives <jzp>名十二二</jzp></li>
       <li><text>名十二二二</text> gives <jzp>名十二二二</jzp></li>
@@ -426,7 +426,7 @@
       <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
       <div class="text-entry-examples">
         <span>See example in </span>
-        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五 名7.5 名十二 名十徽二 名十二二 名十二徽 ");''>中文</a>
+        <a href="javascript:void(0)" class="fillInDefault" onClick='fillIn(this, "名七五 名七，五 名七五五 名七徽五 名7.5 名十二 名十二二 名十二徽 ");''>中文</a>
         <span> or </span>
         <a href="javascript:void(0)" onClick='fillIn(this, "s75 s7,5 s755 s7.5 s12 s122 s12.2 ")''>ASCII</a>
       </div>
