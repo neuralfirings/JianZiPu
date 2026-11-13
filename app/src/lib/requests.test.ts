@@ -82,6 +82,28 @@ describe('snapshot', () => {
     // compared with its base, the snapshot is exactly the chosen items
     expect(draftItems(bundle, font).map((i) => i.id).sort()).toEqual([...itemIds].sort());
   });
+  it('carries the chosen glossary sections and titles, and only those', () => {
+    const rows = { '1a': [{ glyph: 'md_ming' }], '1b': [{ glyph: 'md_7' }] };
+    const lay = { groups: [{ id: '1', title: '1: Left Hand', sections: ['1a', '1b'] }],
+      sections: { '1a': { title: '1a: Left Hand Finger' }, '1b': { title: '1b: Hui' } } };
+    const b = makeBundle({
+      design: design(), typing: {}, svgs: font, baseDesign: design(), baseTyping: {}, baseSvgs: font,
+      base: { commit: 'abc', design_hash: 'd0', csv_hash: 'c0' },
+      glossary: { '1a': [{ glyph: 'md_ming', meaning: 'ring finger' }], '1b': [{ glyph: 'md_7', meaning: 'seventh hui' }] },
+      baseGlossary: rows,
+      glossaryLayout: { groups: [{ ...lay.groups[0], title: '1. Left Hand' }],
+        sections: { '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1.2. Hui' } } },
+      baseGlossaryLayout: lay
+    });
+    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glossary:1a', 'glossary:1b', 'glossary-titles']);
+    const { bundle, itemIds } = snapshot(b, font, ['glossary:1a', 'glossary-titles']);
+    expect(itemIds).toEqual(['glossary:1a', 'glossary-titles']);
+    expect(bundle.glossary).toEqual({ '1a': [{ glyph: 'md_ming', meaning: 'ring finger' }], '1b': [{ glyph: 'md_7' }] });
+    expect(bundle.glossaryLayout!.sections).toEqual({ '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1b: Hui' } });
+    expect(bundle.glossaryLayout!.groups[0].title).toBe('1. Left Hand');
+    // what Review sees in the request: exactly the chosen items
+    expect(draftItems(bundle, font).map((i) => i.id).sort()).toEqual([...itemIds].sort());
+  });
   it('builds as the font plus those changes', () => {
     const { bundle } = snapshot(draft(), font, ['glyph:md_7']);
     expect(buildInputs(bundle, font)).toMatchObject({ svgs: { md_7: SVG('M1 1h20v20z') }, deleted: [] });

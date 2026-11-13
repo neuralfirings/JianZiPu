@@ -89,7 +89,7 @@ WIN_ASCENT, WIN_DESCENT = 1100, 500
 
 NAMES = {
     "copyright": (
-        'Copyright 2021-2026 Nancy Yi Liang, Nellodee LLC, with Reserved Font Name "JianZiPu". '
+        'Copyright 2021-2026 Nancy Yi Liang, Nellodee LLC. '
         "Portions derived from TW-Kai ((c) 2023 Ministry of Digital Affairs, Taiwan, CNS11643, "
         "Open Government Data License, version 1.0)."
     ),

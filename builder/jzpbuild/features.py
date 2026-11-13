@@ -14,6 +14,8 @@ below is the one place that order is spelled out.
 
 import contextvars
 
+from fontTools.agl import UV2AGL
+
 from . import config
 from .data import (
     GlyphRow, load_components, load_char_to_glyph_name_rows, load_design,
@@ -524,6 +526,34 @@ def gen_auto_colon() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# whole words while typing
+
+
+def typed_glyphs(c2g: dict[str, str]) -> list[str]:
+    """Every glyph a spelling can be typed with: printable ASCII but the space, and the
+    characters of the Chinese spellings (the same characters base.py keeps)."""
+    ascii_names = [UV2AGL[u] for u in config.BASE_KEEP_CODEPOINTS if u > 0x20 and u in UV2AGL]
+    return list(dict.fromkeys(ascii_names + sorted(set(c2g.values()))))
+
+
+def gen_hold_words(c2g: dict[str, str]) -> list[str]:
+    """Changes no glyph; it tells the shaper that a word can't be split. HarfBuzz marks every
+    match of a contextual rule unsafe to break, so a run of typed characters is unsafe to break
+    anywhere inside it. Without this, a browser that reshapes only the end of a word as you
+    type (Chrome keeps the shaped `sh` of `shan` when the `g` comes) shows `shang` as
+    md_ming + lg_tuo + `ang` instead of md_shang, and `daiqi` horizontally.
+
+    Chrome 153 still splits a run whose glyphs are one per character with a single advance
+    (`sh`, `ba`: two zero-width glyphs): it stores such a run compactly and treats every
+    offset in it as safe to break, whatever the font says (ShapeResult::
+    CachedPreviousSafeToBreakOffset). Later Chromium only does that for fixed-pitch fonts."""
+    return ["lookup hold_words { # no substitution: a typed word is unsafe to break",
+            f"  @typed = [ {' '.join(typed_glyphs(c2g))} ];",
+            "  ignore sub @typed' @typed;",
+            "} hold_words;"]
+
+
+# ---------------------------------------------------------------------------
 # feature block
 
 
@@ -536,6 +566,9 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         "  sub J i a lg_pi' Z lg_ti P lg_tiao by n;",
         "  sub J i a n Z lg_ti' P lg_tiao by i;",
         "  sub J i a n Z i P lg_tiao' by u;",
+        "",
+        "  # whole words while typing (see gen_hold_words)",
+        "  lookup hold_words;",
         "",
         "  # some special symbols",
         "  sub underscore by blank;",
@@ -616,6 +649,8 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
          "languagesystem hani dflt;",
          "languagesystem latn dflt;", ""],
         gen_classes(rows), [""],
+        # the first lookup: it reads the characters as typed
+        gen_hold_words(c2g), [""],
         edge_cases, [""],
         # defined before the number lookups: lookups run in definition order
         gen_c2j_bracket_symbols(rows),
