@@ -202,6 +202,54 @@ def test_missing_files_are_404_but_screens_get_the_app(server, app_build):
         assert status == 200 and body.startswith(b"<!doctype html><title>app"), p
 
 
+@pytest.fixture
+def site_dir(tmp_path, monkeypatch):
+    d = tmp_path / "site"
+    (d / "help").mkdir(parents=True)
+    (d / "index.html").write_text('<a href="./JianZiPu.ttf">x</a><a href="/help/">h</a>'
+                                  '<script src="https://cdn.example/x.js"></script><a href="//cdn.example/y">y</a>',
+                                  encoding="utf-8")
+    (d / "help" / "index.html").write_text('<link href="/help.md"><a href="/">home</a>', encoding="utf-8")
+    (d / "help.md").write_text("# 减字谱", encoding="utf-8")
+    (d / "JianZiPu.ttf").write_bytes(b"released font")
+    (d / "_headers").write_text("/*\n  X-Frame-Options: SAMEORIGIN", encoding="utf-8")
+    monkeypatch.setattr(config, "SITE_DIR", d)
+    return d
+
+
+def raw_get_headers(base, path):
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", path)
+    r = c.getresponse()
+    out = r.status, dict(r.getheaders()), r.read()
+    c.close()
+    return out
+
+
+def test_site_is_served_under_site(server, app_build, site_dir):
+    """/site is the font page folder as jianzipufont.com serves it, for a pull request's preview."""
+    status, headers, body = raw_get_headers(server, "/site")
+    assert status == 301 and headers["Location"] == "/site/"          # its links are relative
+    assert raw_get_headers(server, "/site?x=1")[1]["Location"] == "/site/?x=1"
+    status, headers, body = raw_get_headers(server, "/site/")
+    assert status == 200 and headers["Content-Type"] == "text/html; charset=utf-8"
+    # links from the site's root move under /site; relative and other hosts' links stay
+    assert body.decode() == ('<a href="./JianZiPu.ttf">x</a><a href="/site/help/">h</a>'
+                             '<script src="https://cdn.example/x.js"></script><a href="//cdn.example/y">y</a>')
+    assert raw_get_headers(server, "/site/JianZiPu.ttf")[2] == b"released font"
+    assert raw_get_headers(server, "/site/help")[1]["Location"] == "/site/help/"
+    assert raw_get_headers(server, "/site/help/")[2] == b'<link href="/site/help.md"><a href="/site/">home</a>'
+    status, headers, body = raw_get_headers(server, "/site/help.md")
+    assert headers["Content-Type"].endswith("charset=utf-8") and body.decode() == "# 减字谱"
+    for p in ("/site/_headers", "/site/nope.html", "/site/%2e%2e/builder/pyproject.toml", "/site/../VERSION"):
+        assert raw_get(server, p)[0] == 404, p
+    # the Builder's own paths are untouched
+    assert raw_get(server, "/sitemap.xml")[0] == 404
+    assert raw_get(server, "/layouts")[1].startswith(b"<!doctype html><title>app")
+
+
 def test_safe_path():
     assert webserver._safe_path("/glyphs/md_9/edit")
     assert webserver._safe_path("/_app/immutable/x.js")
