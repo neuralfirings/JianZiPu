@@ -45,6 +45,8 @@
     if (g && `glyph:${g}` in next) next[`glyph:${g}`] = true;
     chosen = next;
   }
+  /** Tick or untick every change (a new glyph and its spellings stay together either way). */
+  const setAll = (v: boolean) => (chosen = Object.fromEntries(items.map((i) => [i.id, v])));
 
   /** Build a font from the chosen changes only; resolves with the failure, or null. */
   async function buildCheck(inputs: ReturnType<typeof buildInputs>): Promise<string | null> {
@@ -113,6 +115,10 @@
 
     <fieldset>
       <legend>Changes to send <span class="muted">{picked.length} of {items.length}</span></legend>
+      <div class="all">
+        <button class="quiet sm" onclick={() => setAll(true)} disabled={step !== 'form' || picked.length === items.length}>Select all</button>
+        <button class="quiet sm" onclick={() => setAll(false)} disabled={step !== 'form' || !picked.length}>Clear all</button>
+      </div>
       <ul class="pick">
         {#each items as it (it.id)}
           <li><label><input type="checkbox" checked={chosen[it.id]} onchange={(e) => toggle(it, (e.target as HTMLInputElement).checked)} />
@@ -151,6 +157,7 @@
   .send h3, .send p { margin: 0; }
   fieldset { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin: 0; }
   legend { padding: 0 var(--space-2); font-weight: 600; }
+  .all { display: flex; gap: var(--space-2); margin: 0 0 var(--space-3) calc(-1 * var(--space-3)); }
   .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 220px; overflow: auto; }
   .pick label { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
   .mono { font-family: var(--font-mono); font-size: var(--t-small); }
