@@ -295,10 +295,66 @@
       .font-version-top { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-muted); }
       /* the demo: a box that wraps instead of a one-line field */
       textarea.text-entry { resize: none; line-height: 1.4; }
-      /* the glossary's tables fit the screen: slimmer cell padding, and a long spelling may break when it must */
-      .table > :not(caption) > * > * { padding-left: 3px; padding-right: 3px; }
-      .table td { overflow-wrap: anywhere; }
-      txs { word-break: normal; }
+      /* the glossary on a phone: each row is a dictionary entry instead of seven squeezed columns.
+         glossary.py writes the same table for both; the cells are placed by position:
+         1 ID, 2 ASCII, 3 中文, 4 拼音, 5 Input, 6 Output, 7 Definition (only when a row in the table has one).
+           带起  dài qǐ · daiqi                       12     no labels: the type says what each one is
+           pluck inwards with left hand (usually ring finger)
+           ┌ 名九勾六 带起        →        𝄞 ┐      the example on a slip of paper: the arrow in its middle,
+           └ s9k6 daiqi                     ┘      the glyph always at the right edge */
+      .table, .table > tbody { display: block; }
+      .table > thead { display: none; }
+      .table > tbody > tr, .table > tr {
+        position: relative;
+        display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 0;
+        /* inset 12px from the paper's edges on both sides; the extra 1.75rem on the right keeps the heading clear of the ID */
+        padding: 16px calc(1.75rem + 12px) 18px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .table > tbody > tr[hidden], .table > tr[hidden], .table[hidden] { display: none; }
+      .table > :not(caption) > * > td { padding: 0; border: 0; background: none; box-shadow: none; }
+      /* a line break before the example, for rows without a definition */
+      .table > tbody > tr::before, .table > tr::before { content: ""; order: 6; flex-basis: 100%; height: 0; }
+      /* the heading reads like a dictionary headword: the Chinese term leads, then its pinyin, then a faint dot and
+         the ASCII spelling in quiet monospace (the example below shows it again); the ID small and faint, top right */
+      .table td:nth-child(1) { position: absolute; top: 24px; right: 12px; line-height: 1; }
+      .table td:nth-child(1), .table td:nth-child(1) a { font-size: 0.7rem; color: var(--ink-faint); text-decoration: none; }
+      .table td:nth-child(3) { order: 1; font-size: 1.35rem; line-height: 1.2; }
+      /* 中文: "绰, 綽" shows as 绰 · 綽 */
+      .table td:nth-child(3):has(> .nw + .nw) { font-size: 0; }
+      .table td:nth-child(3) > .nw { font-size: 1.35rem; }
+      .table td:nth-child(3) > .nw + .nw::before { content: "·"; margin: 0 0.25em; color: var(--ink-faint); }
+      .table td:nth-child(4) { order: 2; color: var(--ink-muted); }
+      .table td:nth-child(2) { order: 3; font-family: 'Roboto Mono', monospace; font-size: 0.9rem; color: var(--ink-muted); }
+      .table td:nth-child(2)::before { content: "·"; margin-right: 10px; font-family: Eczar, serif; color: var(--ink-faint); }
+      /* two ASCII spellings ("v, da") show as v / da; the comma between them is sized away */
+      .table td:nth-child(2):has(> .nw + .nw) { font-size: 0; }
+      .table td:nth-child(2):has(> .nw + .nw)::before, .table td:nth-child(2) > .nw { font-size: 0.9rem; }
+      .table td:nth-child(2) > .nw + .nw::before { content: "/"; margin: 0 0.35em; color: var(--ink-faint); }
+      /* the definition, right under its heading, as wide as the entry */
+      .table td.meaning { order: 5; flex-basis: calc(100% + 1.75rem); margin: 4px -1.75rem 0 0; line-height: 1.45; }
+      .table td.meaning:empty { display: none; }
+      /* the example: one slip, the typed spellings on the left, → and the glyph on the right */
+      .table td:nth-child(5), .table td:nth-child(6) {
+        align-self: stretch; margin-top: 10px; background: var(--bg-panel);
+        border: 1px solid var(--hairline);
+      }
+      .table td:nth-child(5) {
+        order: 7; flex: 1 1 0; min-width: 0; margin-right: -10px;   /* meets the glyph's half: no gap */
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 5px 0 5px 10px; border-right: 0; border-radius: 4px 0 0 4px;
+      }
+      .table td:nth-child(5) txs { font-size: 0.95rem; line-height: 1.45; }
+      .table td:nth-child(6) {
+        /* the same flex as Input, so the two halves are as wide as each other and the arrow, at the
+           start of this half, sits in the middle of the slip; a wide glyph takes the room it needs */
+        order: 8; flex: 1 1 0; margin-right: -1.75rem;
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        padding: 0 10px 0 0; border-left: 0; border-radius: 0 4px 4px 0;
+      }
+      .table td:nth-child(6)::before { content: "→"; color: var(--ink-faint); transform: translateX(-50%); }
+      .table td:nth-child(6) jzp { font-size: 2.5rem; line-height: 1.6; padding-right: 0; white-space: pre; }   /* no wrapping, and the trailing space that gives a glyph its width stays */   /* room for a tall stack's ink */
+      txs { word-break: normal; overflow-wrap: anywhere; }
       /* the sticky bar: one slim row, the contents on the left and the download button on the right */
       /* pinned to the top from the first screen, so Contents and Download are always in reach */
       body { padding-top: 56px; }
