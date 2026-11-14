@@ -13,7 +13,7 @@
   import * as I from '$lib/icons';
   import type { Bundle } from '$lib/bundle';
   import type { Layout } from '$lib/api';
-  import { applyMerge, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
+  import { applyMerge, companions, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
   import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
@@ -75,10 +75,10 @@
   ]);
 
   function setAll(v: boolean) { picks = Object.fromEntries(items.map((i) => [i.id, v])); }
-  /** A glyph and its spelling row travel together. */
+  /** A new glyph, its spelling row and its place in an area travel together. */
   function pick(it: Item, v: boolean) {
     const next = { ...picks, [it.id]: v };
-    if (it.kind === 'glyph' && it.status === 'added') { const s = `spelling:${it.key}`; if (s in next && !items.find((i) => i.id === s)?.conflict) next[s] = v; }
+    if (it.kind === 'glyph' && it.status === 'added') for (const id of companions(items, it.key)) if (!items.find((i) => i.id === id)?.conflict) next[id] = v;
     picks = next;
   }
 
@@ -219,7 +219,7 @@
             {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             <span class="spacer"></span>
-            {#if it.kind === 'design' && it.unit.type === 'area' && !readOnly}<a href="/layouts?area={it.unit.name}">Open in Layouts</a>{/if}
+            {#if it.kind === 'design' && (it.unit.type === 'area' || it.unit.type === 'member') && !readOnly}<a href="/layouts?area={it.unit.name}{it.unit.glyph ? `&g=${it.unit.glyph}` : ''}">Open in Layouts</a>{/if}
             {#if lockOf(it)}
               {@const l = lockOf(it)!}
               <a class="pill info" href="/requests#{l.id}"><I.Lock size={14} />Sent {day(l.sent)} · {l.title}</a>
@@ -281,7 +281,7 @@
               {#if rulesOf(it).length}
                 <button class="link" onclick={() => (open = { ...open, [it.id + ':r']: !open[it.id + ':r'] })}>{open[it.id + ':r'] ? 'Hide' : 'Show'} the {rulesOf(it).length} spacing rule{rulesOf(it).length === 1 ? '' : 's'}</button>
               {/if}
-              <button class="link" onclick={() => (open = { ...open, [it.id]: !open[it.id] })}>{open[it.id] ? 'Hide' : 'Show'} JSON changes ({diffLines(it).filter((l) => l.op === '+' || l.op === '-').length} lines)</button>
+              {#if !(it.kind === 'design' && it.unit.type === 'member')}<button class="link" onclick={() => (open = { ...open, [it.id]: !open[it.id] })}>{open[it.id] ? 'Hide' : 'Show'} JSON changes ({diffLines(it).filter((l) => l.op === '+' || l.op === '-').length} lines)</button>{/if}
             </div>
             {#if open[it.id + ':r'] && it.kind === 'design'}
               <ul class="rules">

@@ -1,7 +1,8 @@
 // Three-way merge of a draft into the current font: base (what the draft started from),
 // theirs (the draft), current (the font as it is now). Each change is one reviewable item:
-// a glyph file, one glyph's spellings, one unit of design.json (an area, a word type, the
-// page center, the stroke weight, the sample sets), or one section of the glossary (its rows, whole). An item conflicts when the current font
+// a glyph file, one glyph's spellings, one unit of design.json (an area's settings, one glyph
+// joining or leaving an area, a word type, the page center, the stroke weight, the sample sets), or
+// one section of the glossary (its rows, whole). A new or removed area is one item, whole. An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
 import type { Area, Design, Layout, Relationship } from './api';
@@ -14,7 +15,9 @@ type Base = { id: string; status: Status; conflict: boolean };
 export type GlyphItem = Base & { kind: 'glyph'; key: string; base?: string; theirs?: string; current?: string };
 export type FieldChange = { field: T.SpellField; base: string; theirs: string; current: string; conflict: boolean };
 export type SpellingItem = Base & { kind: 'spelling'; key: string; fields: FieldChange[] };
-export type DesignUnit = { type: 'area' | 'layout' | 'center' | 'glyph_weight' | 'test_sets'; name?: string };
+/** `area`: an area's box, advance and label (and, for a new or removed area, its members too: the
+ *  item's value then has `glyphs`); `member`: one glyph in area `name` (value true, or undefined: not in it). */
+export type DesignUnit = { type: 'area' | 'member' | 'layout' | 'center' | 'glyph_weight' | 'test_sets'; name?: string; glyph?: string };
 export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
@@ -99,14 +102,56 @@ function units(d: Design): Map<string, { unit: DesignUnit; value: unknown }> {
   return m;
 }
 
-/** The value of one design unit ("area:left", "layout:standard", "center"…), undefined if absent. */
+/** An area without its members: what an area's own item holds. */
+export function areaSettings(a: Area | undefined): Omit<Area, 'glyphs'> | undefined {
+  if (!a) return undefined;
+  const { glyphs: _, ...rest } = a;
+  return rest;
+}
+/** The id of glyph `g` joining or leaving area `area`. */
+export const memberId = (area: string, g: string) => `design:member:${area}:${g}`;
+
+/** The value of one design unit, undefined if absent: "area:left" (its settings, without its
+ *  members), "member:left:md_x" (true when md_x is in it), "layout:standard", "center"… */
 export function unitOf(d: Design, key: string): unknown {
+  if (key.startsWith('member:')) {
+    const [, area, ...g] = key.split(':');
+    return d.areas[area]?.glyphs.includes(g.join(':')) ? true : undefined;
+  }
+  if (key.startsWith('area:')) return areaSettings(d.areas[key.slice(5)]);
   return units(d).get(key)?.value;
+}
+
+/** An area both sides have: its settings as one item, and each glyph that joins or leaves it as
+ *  one item of its own, so a Change Request can carry some new members and leave others. */
+function areaItems(name: string, b: Area, t: Area, c: Area | undefined): DesignItem[] {
+  const out: DesignItem[] = [];
+  const sb = areaSettings(b), st = areaSettings(t), sc = areaSettings(c);
+  if (!same(sb, st) && !same(st, sc)) {
+    const unit: DesignUnit = { type: 'area', name };
+    out.push({ id: `design:area:${name}`, kind: 'design', key: `area:${name}`, unit, label: unitLabel(unit, t),
+      summary: unitSummary(unit, { ...b, glyphs: [] }, { ...t, glyphs: [] }), status: 'changed', base: sb, theirs: st, current: sc, conflict: !same(sc, sb) });
+  }
+  const moved = [...t.glyphs.filter((g) => !b.glyphs.includes(g)), ...b.glyphs.filter((g) => !t.glyphs.includes(g))];
+  for (const g of moved) {
+    const inT = t.glyphs.includes(g), inC = !!c?.glyphs.includes(g);
+    if (inT === inC) continue;
+    const unit: DesignUnit = { type: 'member', name, glyph: g };
+    out.push({ id: memberId(name, g), kind: 'design', key: `member:${name}:${g}`, unit, label: unitLabel(unit, t),
+      summary: [inT ? 'adds it' : 'removes it'], status: inT ? 'added' : 'deleted',
+      base: inT ? undefined : true, theirs: inT ? true : undefined, current: inC || undefined, conflict: !c });
+  }
+  return out;
 }
 
 export function designItems(base: Design, theirs: Design, current: Design): DesignItem[] {
   const B = units(base), Th = units(theirs), C = units(current), out: DesignItem[] = [];
   for (const key of new Set([...B.keys(), ...Th.keys()])) {
+    const name = key.slice(5);
+    if (key.startsWith('area:') && base.areas[name] && theirs.areas[name]) {
+      out.push(...areaItems(name, base.areas[name], theirs.areas[name], current.areas[name]));
+      continue;
+    }
     const b = B.get(key)?.value, t = Th.get(key)?.value, c = C.get(key)?.value;
     if (same(b, t) || same(t, c)) continue;
     const unit = (Th.get(key) ?? B.get(key))!.unit;
@@ -120,6 +165,7 @@ export function designItems(base: Design, theirs: Design, current: Design): Desi
 
 export function unitLabel(u: DesignUnit, v?: Area | Layout): string {
   if (u.type === 'area') return `Area · ${(v as Area)?.label || u.name}`;
+  if (u.type === 'member') return `Area · ${(v as Area)?.label || u.name} · ${u.glyph}`;
   if (u.type === 'layout') return `Word type · ${(v as Layout)?.label ?? u.name}`;
   return { center: 'Page center', glyph_weight: 'Stroke weight', test_sets: 'Sample word sets' }[u.type];
 }
@@ -154,9 +200,22 @@ export function unitSummary(u: DesignUnit, b: unknown, t: unknown): string[] {
 const list = (gs: string[]) => (gs.length <= 4 ? gs.join(', ') : `${gs.slice(0, 3).join(', ')} and ${gs.length - 3} more`);
 const fmt = (v: unknown) => (v && typeof v === 'object' ? Object.values(v as object).join(', ') : String(v));
 
-/** The design summary the Import dialog shows (design.json only, no base). */
+/** The design summary the Import dialog shows (design.json only, no base): an area's new and
+ *  removed members on one line with its other changes. */
 export function designSummary(current: Design, file: Design): string[] {
-  return designItems(current, file, current).map((i) => `${i.label}: ${i.summary.join(', ')}`);
+  const out: string[] = [], areas = new Map<string, { label: string; parts: string[]; plus: string[]; minus: string[] }>();
+  for (const i of designItems(current, file, current)) {
+    if (i.unit.type !== 'area' && i.unit.type !== 'member') { out.push(`${i.label}: ${i.summary.join(', ')}`); continue; }
+    const name = i.unit.name!, a = areas.get(name) ?? { label: unitLabel({ type: 'area', name }, file.areas[name] ?? current.areas[name]), parts: [], plus: [], minus: [] };
+    areas.set(name, a);
+    if (i.unit.type === 'area') a.parts.push(...i.summary);
+    else (i.status === 'added' ? a.plus : a.minus).push(i.unit.glyph!);
+  }
+  for (const a of areas.values()) {
+    const parts = [...a.parts, ...(a.plus.length ? [`adds ${list(a.plus)}`] : []), ...(a.minus.length ? [`removes ${list(a.minus)}`] : [])];
+    out.push(`${a.label}: ${parts.join(', ')}`);
+  }
+  return out;
 }
 
 /** Bring the font's updates into a draft: the font's changes since the draft's base, as items to bring
@@ -195,7 +254,7 @@ export function updateSummary(items: Item[]): string {
   const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
   const fields = new Map<string, Set<string>>();
   let drawings = 0, sections = 0;
-  const design = new Map<string, number>();
+  const design = new Map<string, number>(), areas = new Set<string>();
   for (const it of items) {
     if (it.kind === 'glyph') drawings++;
     else if (it.kind === 'glossary' || it.kind === 'glossary-titles') sections++;
@@ -205,8 +264,11 @@ export function updateSummary(items: Item[]): string {
         if (!fields.has(noun)) fields.set(noun, new Set());
         fields.get(noun)!.add(it.key);
       }
+    } else if (it.unit.type === 'area' || it.unit.type === 'member') {
+      if (!areas.has(it.unit.name!)) design.set('area', (design.get('area') ?? 0) + 1);
+      areas.add(it.unit.name!);
     } else {
-      const w = it.unit.type === 'layout' ? 'word type' : it.unit.type === 'area' ? 'area' : 'design setting';
+      const w = it.unit.type === 'layout' ? 'word type' : 'design setting';
       design.set(w, (design.get(w) ?? 0) + 1);
     }
   }
@@ -264,8 +326,20 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
 function setUnit(d: Design, u: DesignUnit, v: unknown) {
   const val = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
   if (u.type === 'area') {
+    const a = d.areas[u.name!];
     if (val === undefined) delete d.areas[u.name!];
-    else d.areas[u.name!] = val as Area;
+    else if ('glyphs' in val) d.areas[u.name!] = val as Area;
+    else if (!a) d.areas[u.name!] = { ...val, glyphs: [] } as Area;
+    else {
+      // settings only: the area keeps its members (and its keys' order)
+      for (const k of Object.keys(a)) if (k !== 'glyphs' && !(k in val)) delete (a as Record<string, unknown>)[k];
+      Object.assign(a, val);
+    }
+  } else if (u.type === 'member') {
+    const a = d.areas[u.name!], g = u.glyph!;
+    if (!a) return;     // the area is gone: nothing to add the glyph to
+    if (val === undefined) a.glyphs = a.glyphs.filter((x) => x !== g);
+    else if (!a.glyphs.includes(g)) a.glyphs = [...a.glyphs, g];
   } else if (u.type === 'layout') {
     const i = d.layouts.findIndex((l) => l.name === u.name);
     if (val === undefined) { if (i >= 0) d.layouts.splice(i, 1); }
@@ -282,6 +356,17 @@ function setUnit(d: Design, u: DesignUnit, v: unknown) {
 export function withChanges(b: Bundle, cur: Current): Merged {
   const items = diffBundle(b, cur);
   return applyMerge(items, Object.fromEntries(items.map((i) => [i.id, true])), cur);
+}
+
+/** What travels with a new glyph when it is kept, skipped or sent: its spellings and its place in
+ *  each area it joins. (One of those kept on its own takes the new glyph along: `glyphOf`.) */
+export function companions(items: Item[], g: string): string[] {
+  return items.filter((i) => i.id === `spelling:${g}` || (i.kind === 'design' && i.unit.type === 'member' && i.unit.glyph === g && i.status === 'added')).map((i) => i.id);
+}
+/** The new glyph a spelling or area-member item belongs to, if the items add one. */
+export function glyphOf(items: Item[], it: Item): string | null {
+  const g = it.kind === 'spelling' ? it.key : it.kind === 'design' && it.unit.type === 'member' && it.status === 'added' ? it.unit.glyph! : null;
+  return g && items.find((i) => i.id === `glyph:${g}`)?.status === 'added' ? g : null;
 }
 
 /** Default choices: keep everything that doesn't conflict; conflicts keep the current font. */

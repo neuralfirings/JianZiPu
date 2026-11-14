@@ -7,7 +7,6 @@
   // Enter saves and moves down, Tab moves right, Esc puts the old value back; a pasted range
   // of cells (tab-separated, from a spreadsheet) fills down and across in one undo step.
   // Position decimals are typed by pattern: one folded, read-only group.
-  import { renaming } from '$lib/renaming.svelte';
   import { describeUses, leftOut, usesOf } from '$lib/glossary';
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
@@ -20,7 +19,7 @@
     sections, selected, onselect, onopen, onglossary, flat = false, showAreas = false, onnotice
   }: {
     sections: Section[]; selected: string | null; onselect: (g: string) => void;
-    /** a click on the row's drawing: show the glyph in the glyph panel */
+    /** a click on the row's drawing or name: show the glyph in the glyph panel (where it's renamed) */
     onopen?: (g: string) => void;
     /** a click on the Glossary column: show the glyph's row in that section in Glyphs > Glossary */
     onglossary?: (sid: string, glyph: string) => void;
@@ -89,8 +88,8 @@
           {@const partner = partnerOf[g]}
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
             <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
-            <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gnw"><button class="gn" data-tip="Rename {g}"
-              onclick={() => renaming.ask(g, { done: (_f, to) => onselect(to), undone: (f) => onselect(f) })}>{g}</button></span></td>
+            <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gnw"><button class="gn" data-tip="Show it in the glyph panel"
+              onclick={() => onopen?.(g)}>{g}</button></span></td>
             {#each COLS as f}
               <td data-f={f}>
                 {#if f === 'vert_variant' && partner}<span class="muted small" title="This is the vertical form of {partner}: typed after a colon"><I.PartnerOf size={12} /> of {partner}</span>
@@ -147,7 +146,7 @@
   .use { display: block; border: 0; background: transparent; padding: 0; min-height: 24px; height: auto; text-align: left; font-family: var(--font-serif); font-size: var(--t-caption); color: var(--ink-muted); cursor: pointer; white-space: nowrap; }
   .use:hover { color: var(--link); }
   .use.warn { color: var(--status-draft); }
-  .gn { font-family: var(--font-mono); font-size: var(--t-caption); border: 0; background: transparent; padding: 0; height: auto; cursor: text; text-decoration: underline dotted var(--border); text-underline-offset: 3px; }
+  .gn { font-family: var(--font-mono); font-size: var(--t-caption); border: 0; background: transparent; padding: 0; height: auto; cursor: pointer; }
   button.gn:hover { text-decoration-color: var(--link); color: var(--link); }
   .issue { color: var(--ink-muted); max-width: 280px; }
   .small { font-size: var(--t-caption); }

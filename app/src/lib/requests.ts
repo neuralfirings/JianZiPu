@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
-import { applyMerge, diffBundle, type Current, type Item } from './merge';
+import { applyMerge, designItems, diffBundle, type Current, type Item } from './merge';
 import * as T from './typing';
 
 export const TABLE = 'change_requests';
@@ -119,8 +119,29 @@ export function buildInputs(b: Bundle, fontSvgs: SvgMap): BuildInputs {
   return { design: b.design, rows: T.toRecords(b.typing), svgs: Object.fromEntries([...d.added, ...d.changed].map((n) => [n, svgs[n]])), deleted: d.deleted };
 }
 
+/** A request sent before an area's members were items of their own lists the area whole
+ *  ("design:area:char"). Read it as today's items: the area's settings when they changed, and each
+ *  glyph it added or removed, each with the decision the area had. A request sent since lists its
+ *  members itself, so one that lists none of an area's members while its bundle changes them is old. */
+export function upgradeItems<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  const areas = r.item_ids.filter((id) => id.startsWith('design:area:')).map((id) => id.slice(12));
+  if (!areas.length) return r;
+  const items = designItems(r.bundle.base.design, r.bundle.design, r.bundle.base.design);
+  let ids = [...r.item_ids];
+  const decisions = { ...r.decisions };
+  for (const a of areas) {
+    const members = items.filter((i) => i.unit.type === 'member' && i.unit.name === a).map((i) => i.id);
+    if (!members.length || members.some((m) => ids.includes(m))) continue;
+    const old = `design:area:${a}`, settings = items.some((i) => i.id === old), d = r.decisions[old];
+    ids = ids.flatMap((id) => (id === old ? [...(settings ? [old] : []), ...members] : [id]));
+    if (d) for (const m of members) decisions[m] = d;
+    if (!settings) delete decisions[old];
+  }
+  return { ...r, item_ids: ids, decisions };
+}
+
 type Row = Omit<ChangeRequest, 'bundle'> & { bundle: unknown };
-const fromRow = (r: Row): ChangeRequest => ({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
+const fromRow = (r: Row): ChangeRequest => upgradeItems({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
 
 export async function sendRequest(c: SupabaseClient, r: { title: string; notes: string; credit: string; bundle: Bundle; itemIds: string[] }): Promise<ChangeRequest> {
   const { data, error } = await c.from(TABLE).insert({

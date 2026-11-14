@@ -8,7 +8,7 @@
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
-  import type { Item } from '$lib/merge';
+  import { companions, glyphOf, type Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
@@ -37,13 +37,16 @@
 
   const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
   let picked = $derived(items.filter((i) => chosen[i.id]));
-  /** A new glyph and its spellings go together (Review keeps them together too). */
+  /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
-    if (it.kind === 'glyph' && it.status === 'added' && `spelling:${it.key}` in next) next[`spelling:${it.key}`] = v;
-    if (it.kind === 'spelling' && v && `glyph:${it.key}` in next && items.find((i) => i.id === `glyph:${it.key}`)?.status === 'added') next[`glyph:${it.key}`] = true;
+    if (it.kind === 'glyph' && it.status === 'added') for (const id of companions(items, it.key)) if (id in next) next[id] = v;
+    const g = v ? glyphOf(items, it) : null;
+    if (g && `glyph:${g}` in next) next[`glyph:${g}`] = true;
     chosen = next;
   }
+  /** Tick or untick every change (a new glyph and its spellings stay together either way). */
+  const setAll = (v: boolean) => (chosen = Object.fromEntries(items.map((i) => [i.id, v])));
 
   /** Build a font from the chosen changes only; resolves with the failure, or null. */
   async function buildCheck(inputs: ReturnType<typeof buildInputs>): Promise<string | null> {
@@ -112,6 +115,10 @@
 
     <fieldset>
       <legend>Changes to send <span class="muted">{picked.length} of {items.length}</span></legend>
+      <div class="all">
+        <button class="quiet sm" onclick={() => setAll(true)} disabled={step !== 'form' || picked.length === items.length}>Select all</button>
+        <button class="quiet sm" onclick={() => setAll(false)} disabled={step !== 'form' || !picked.length}>Clear all</button>
+      </div>
       <ul class="pick">
         {#each items as it (it.id)}
           <li><label><input type="checkbox" checked={chosen[it.id]} onchange={(e) => toggle(it, (e.target as HTMLInputElement).checked)} />
@@ -150,6 +157,7 @@
   .send h3, .send p { margin: 0; }
   fieldset { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin: 0; }
   legend { padding: 0 var(--space-2); font-weight: 600; }
+  .all { display: flex; gap: var(--space-2); margin: 0 0 var(--space-3) calc(-1 * var(--space-3)); }
   .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 220px; overflow: auto; }
   .pick label { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
   .mono { font-family: var(--font-mono); font-size: var(--t-small); }
