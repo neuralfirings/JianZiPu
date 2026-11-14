@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byId, changedLayout, cleanLayout, glossarySearchText, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { byId, changedLayout, cleanLayout, glossarySearchText, leftOut, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -169,5 +169,19 @@ describe("List view's search in the Glossary column", () => {
     expect(glossarySearchText(t, 'a', uses, sections)).toContain('3e: e');
     expect(glossarySearchText(t, 'b', uses, sections)).toBe('not in the glossary');
     expect(glossarySearchText(t, 'c', uses, sections)).toBe('');              // no spelling: nothing to show
+  });
+});
+
+describe('Not in the glossary (the Glossary view\'s list to drag from)', () => {
+  it('holds glyphs with spellings no row shows; a word, a hidden section or a vertical partner counts as in', () => {
+    const sp = (o: Record<string, string>) => ({ ...empty(), ...o });
+    const t: Typing = {
+      a: sp({ latin: 'k' }), b: sp({ simplified: '勾' }), c: sp({ pinyin: 'x' }), d: sp({ latin: 'd' }),
+      e: sp({ latin: 'e', vert_variant: 'f' }), f: sp({ latin: 'f' }), h: sp({ latin: 'h' })
+    };
+    const uses = usesOf({ '1a': [g('a')], '3e': [w('少息', 'h', 'x')], '99': [g('d')] }, sections);
+    const out = Object.keys(t).filter((x) => leftOut(t, x, uses, true));
+    expect(out).toEqual(['b', 'e']);           // c has only pinyin; f is e's vertical form; h is in a word, d in a hidden section
+    expect(Object.keys(t).filter((x) => leftOut(t, x, uses, false))).toEqual([]);   // no glossary at all: nothing asked for
   });
 });

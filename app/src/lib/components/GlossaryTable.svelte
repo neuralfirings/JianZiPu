@@ -5,13 +5,15 @@
   // too (Usage: type it in ASCII or Chinese and the other is made from the glyphs' spellings). Drag a
   // row by its grip to move it (a finger: press and hold the grip first); fold a section by its
   // title. + Add types a glyph or a word as in the font (unsaved spellings and new glyphs
-  // included). Every edit is one undo step, saved with Save.
+  // included). Every edit is one undo step, saved with Save. Above the sections, Not in the glossary
+  // lists the glyphs with spellings that no row shows (what the glossary check asks for); drag one into a
+  // section to add it there.
   import * as I from '$lib/icons';
   import { api, type WordPiece } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { Hold } from '$lib/hold';
   import * as T from '$lib/typing';
-  import { exampleHtml, exampleText, glyphsOfRow, isWord, mainSpellings, markdown, markWordIn, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, verticalTemplate,
+  import { exampleHtml, exampleText, glyphsOfRow, isWord, leftOut, mainSpellings, markdown, markWordIn, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, usesOf, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
   import Glyph from './Glyph.svelte';
@@ -89,6 +91,18 @@
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
   const pinyin = (r: GRow) => glyphsOfRow(r).map(pyOf).filter(Boolean).join(' ');
+  /** Not in the glossary: glyphs with spellings that no row shows (vertical forms count as their partner),
+   *  in the Glyphs screen's order; the search narrows it like the rows. Dragged as section OUT. */
+  const OUT = '~out';
+  let outGlyphs = $derived.by(() => {
+    if (!sections.length) return [];
+    const uses = usesOf(app.glossary, sections), t = q.trim().toLowerCase();
+    return app.glyphs.map((r) => r.glyph).filter((g) => leftOut(app.typing, g, uses, true)
+      && (!t || [g, ...asciiOf(g), ...zhOf(g), pyOf(g)].join(' ').toLowerCase().includes(t)));
+  });
+  let outFolded = $state(false);
+  /** The row a drag holds: a glossary row, or a glyph from Not in the glossary (a row of its own). */
+  const dragged = (sid: string, i: number): GRow | undefined => (sid === OUT ? (outGlyphs[i] ? { glyph: outGlyphs[i] } : undefined) : rowsOf(sid)[i]);
   /** A glyph the row names that isn't one any more (renamed or deleted elsewhere). */
   const lost = (r: GRow) => glyphsOfRow(r).filter((g) => !app.known.has(g) && !(g in app.typing) && !(g in app.svgs));
   /** Not in the saved file at this place: marked until Save. */
@@ -108,6 +122,7 @@
   let dropTitle = $state<string | null>(null);
   const untitledOf = (gid: string) => layout.groups.find((g) => g.id === gid)?.sections.find((id) => !layout.sections[id]?.title.trim());
   function move(from: { sid: string; index: number }, to: { sid: string; index: number }) {
+    if (from.sid === OUT) { addOut(from.index, to); return; }
     const r = rowsOf(from.sid)[from.index];
     if (!r) return;
     if (to.sid.startsWith('new:')) {                 // straight under a section title: a subtitle without a title, first
@@ -509,6 +524,30 @@
     finally { busy = null; }
   }
 
+  /** A glyph from Not in the glossary dropped into a section (or straight under a section title). */
+  function addOut(index: number, to: { sid: string; index: number }) {
+    const g = outGlyphs[index];
+    if (!g) return;
+    const r: GRow = { glyph: g };
+    if (to.sid.startsWith('new:')) {
+      const gid = to.sid.slice(4), grp = layout.groups.find((x) => x.id === gid)!, id = newId('', taken());
+      const near = grp.sections.map((x) => sections.find((y) => y.id === x)).find((x) => x && x.title);
+      app.editGlossaryLayout(`Add ${g} under ${grp.title}`, (l, rows) => {
+        l.sections[id] = { title: '', ...(near?.usage ? { usage: near.usage } : {}) };
+        l.groups.find((x) => x.id === gid)!.sections.unshift(id);
+        rows[id] = [r];
+        return { layout: l, rows };
+      });
+      onnotice?.(`Added ${g} under ${grp.title}, with no subtitle.`, true);
+    } else {
+      const why = refuse(app.glossary, r, sec(to.sid));
+      if (why) { onnotice?.(why); return; }
+      edit(`Add ${g} to ${to.sid}`, (rows) => { const list = [...(rows[to.sid] ?? [])]; list.splice(to.index, 0, r); return { ...rows, [to.sid]: list }; });
+      onnotice?.(`Added ${g} to ${sec(to.sid).title || 'under its section title'}.`, true);
+    }
+    if (shownGlyph?.glyph === g && !shownGlyph.sid) shownGlyph = null;
+  }
+
   // a glyph from List view's "not in the glossary": which section to put it in
   let target = $state('');
   function addFocused() {
@@ -536,7 +575,7 @@
   function grab(e: PointerEvent, sid: string, index: number) {
     if (e.button !== 0) return;
     e.preventDefault();
-    const name = rowName(rowsOf(sid)[index]);
+    const name = rowName(dragged(sid, index)!);
     const begin = () => { drag = { sid, index, x: e.clientX, y: e.clientY, name }; drop = null; };
     const hold = e.pointerType === 'mouse' ? null : new Hold({ onlift: begin, ontap: () => {} });
     if (hold) hold.down(e.clientX, e.clientY); else begin();
@@ -686,7 +725,7 @@
   const gapBefore = (sid: string, i: number) => !!drag && drop?.sid === sid && drop.index === i;
   const okDrop = $derived.by(() => {
     if (!drag || !drop || drop.sid === drag.sid || drop.sid.startsWith('new:')) return true;
-    return !refuse(app.glossary, rowsOf(drag.sid)[drag.index], sec(drop.sid));
+    return !refuse(app.glossary, dragged(drag.sid, drag.index)!, sec(drop.sid));
   });
 </script>
 
@@ -892,6 +931,30 @@
     </div>
   {/if}
 
+  {#if outGlyphs.length}
+    <section class="outs" aria-labelledby="g-out">
+      <h2 id="g-out">
+        <button class="quiet fold gfold" onclick={() => (outFolded = !outFolded)} aria-expanded={!outFolded} aria-controls="gc-out">
+          {#if outFolded}<I.Folded size={18} />{:else}<I.Unfolded size={18} />{/if}<span class="gt">Not in the glossary</span></button>
+        <span class="count">({outGlyphs.length} {outGlyphs.length === 1 ? 'glyph' : 'glyphs'})</span>
+        <span class="pill draft"><I.Warn size={12} /> the glossary check asks for these</span>
+      </h2>
+      {#if !outFolded}
+        <p class="small muted">Glyphs with spellings that no entry shows. Drag one by its grip into a section, or onto a section title to put it straight under it.</p>
+        <ul class="outlist" id="gc-out">
+          {#each outGlyphs as g, i (g)}
+            <li class:on={shownGlyph?.sid === '' && shownGlyph.glyph === g} class:lifted={drag?.sid === OUT && drag.index === i}>
+              <button class="quiet g" onpointerdown={(e) => grab(e, OUT, i)}
+                aria-label="Drag {g} into a section" data-tip="Drag into a section · a finger: press and hold first"><I.Grip size={14} /></button>
+              <button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={24} /></button>
+              <span class="oname"><span class="mono">{g}</span> <span class="mono muted">{asciiOf(g).join(', ')}</span> <span class="zh">{zhOf(g).join(', ')}</span></span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  {/if}
+
   {#each layout.groups as g (g.id)}
     {@const subs = g.sections.map((id) => sections.find((x) => x.id === id)).filter((x) => !!x)}
     {#if !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
@@ -1089,10 +1152,19 @@
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (max-width: 759.98px) {
     .scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
-    .act .ic, .grip .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
+    .act .ic, .grip .g, .outlist .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
     .c-grip { width: 40px; } .c-act { width: 112px; }
     .add input { width: 100%; }
   }
+  .outs { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: 1px solid var(--border); }
+  .outs h2 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .outs p { margin: 0; }
+  .outlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-1) var(--space-4); max-height: 240px; overflow: auto; }
+  .outlist li { display: flex; align-items: center; gap: var(--space-2); min-width: 0; border-radius: var(--radius-sm); }
+  .outlist li.on { background: var(--sel-bg); }
+  .outlist li.lifted { opacity: .4; }
+  .outlist .g { width: 24px; min-height: 24px; height: 24px; padding: 0; cursor: grab; touch-action: none; color: var(--ink-muted); }
+  .oname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-small); }
   .grp { display: flex; flex-direction: column; gap: var(--space-4); padding-top: var(--space-2); }
   .grp + .grp { border-top: 1px solid var(--border); padding-top: var(--space-5); }
   /* 26 px and 18 px as asked: between the type scale's steps (--t-heading 22, --t-title 32; --t-panel 16) */
