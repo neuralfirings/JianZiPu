@@ -42,7 +42,8 @@
   --font-serif-tc: "Literata Variable", "Literata", var(--font-cjk-tc), Georgia, serif;
   --font-display: "EB Garamond Variable", "EB Garamond", var(--font-cjk), Georgia, serif;
   --font-sans-cjk: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", monospace;
+  /* spellings: Latin in a system mono, Chinese in the same fonts as everywhere else */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", var(--font-cjk), monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {

@@ -12,10 +12,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- TW-Kai (全字庫正楷體, the font JianZiPu's characters come from) from emfont as "CNSKai": the browser fetches
-       only the pieces for characters on the page. Its stylesheet is ~250 KB, so it loads in the background
-       (media="print" until it's in) instead of holding up the page; until then Chinese shows in LXGW WenKai TC. -->
+       only the pieces for characters on the page. TW-Kai draws its characters smaller in the em than most Chinese
+       fonts, so the script reads emfont's stylesheet and adds size-adjust to every piece (the same as the
+       Builder's lib/webfonts.ts). It runs in the background: until it's in, Chinese shows in LXGW WenKai TC. -->
   <link rel="preconnect" href="https://font.emtech.cc" crossorigin>
-  <link href="https://font.emtech.cc/css/CNSKai/400" rel="stylesheet" media="print" onload="this.media='all'">
+  <script>
+    (function () {
+      var CSS = 'https://font.emtech.cc/css/CNSKai/400', SIZE = '110%';
+      function plain() { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = CSS; document.head.appendChild(l); }
+      fetch(CSS).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (css) {
+        var st = document.createElement('style');
+        st.textContent = css.replace(/@font-face\s*\{/g, '@font-face { size-adjust: ' + SIZE + ';');
+        document.head.appendChild(st);
+      }).catch(plain);
+    })();
+  </script>
   <noscript><link href="https://font.emtech.cc/css/CNSKai/400" rel="stylesheet"></noscript>
   
   <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
@@ -89,7 +100,7 @@
       color: var(--ink);
       padding: 5px;
       border-radius: 5px;
-      font-family: 'Roboto Mono', 'M PLUS 1 Code',  monospace;
+      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code',  monospace;
       font-size: 0.8rem;
     }
     .alert-tip text {
@@ -97,7 +108,7 @@
     }
     txs {
       display: block;
-      font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace;
+      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace;
       font-size: 1rem;
       word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
       /* background-color: #eee;
@@ -108,7 +119,7 @@
     /* the glossary's row IDs (1, 2, 3… down the page), generated with the tables: a link to the row */
     td.gid, th.gid { white-space: nowrap; }
     .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
-    td.gid a { font-family: 'Roboto Mono', 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    td.gid a { font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
     tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
     /* the glossary's search box (script at the end of the page) */
     [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
@@ -171,7 +182,7 @@
       border-radius: 50px;
     }
     .lat-entry, .text-entry {
-      font-family: "Roboto Mono", "M PLUS 1 Code",  monospace;
+      font-family: "Roboto Mono", "CNSKai", "M PLUS 1 Code", monospace;
       font-size: 1.2rem;
       height: 100%;
     }
