@@ -8,7 +8,7 @@
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
-  import type { Item } from '$lib/merge';
+  import { companions, glyphOf, type Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
@@ -37,11 +37,12 @@
 
   const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
   let picked = $derived(items.filter((i) => chosen[i.id]));
-  /** A new glyph and its spellings go together (Review keeps them together too). */
+  /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
-    if (it.kind === 'glyph' && it.status === 'added' && `spelling:${it.key}` in next) next[`spelling:${it.key}`] = v;
-    if (it.kind === 'spelling' && v && `glyph:${it.key}` in next && items.find((i) => i.id === `glyph:${it.key}`)?.status === 'added') next[`glyph:${it.key}`] = true;
+    if (it.kind === 'glyph' && it.status === 'added') for (const id of companions(items, it.key)) if (id in next) next[id] = v;
+    const g = v ? glyphOf(items, it) : null;
+    if (g && `glyph:${g}` in next) next[`glyph:${g}`] = true;
     chosen = next;
   }
 

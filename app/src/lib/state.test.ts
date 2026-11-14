@@ -191,6 +191,29 @@ describe('hosted draft', () => {
     app.requests = [];
   });
 
+  it('a sent new member of an area locks that member only: the area takes others, and its box stays editable', async () => {
+    await app.load();
+    app.edit('Add md_a, md_b', (d) => { d.areas.left.glyphs.push('md_a', 'md_b'); });
+    app.requests = [{ id: 'r1', title: 'md_a', status: 'sent', item_ids: ['design:member:left:md_a'], decisions: {}, created_at: '2026-10-20T10:00:00Z' } as never];
+    app.edit('Add md_c', (d) => { d.areas.left.glyphs.push('md_c'); });
+    app.edit('Area left: resize', (d) => { d.areas.left.size = [380, 350]; });
+    app.edit('Drop md_b', (d) => { d.areas.left.glyphs = d.areas.left.glyphs.filter((g) => g !== 'md_b'); });
+    expect(app.design!.areas.left).toMatchObject({ size: [380, 350], glyphs: ['md_ming', 'md_a', 'md_c'] });
+    app.edit('Drop md_a', (d) => { d.areas.left.glyphs = d.areas.left.glyphs.filter((g) => g !== 'md_a'); });
+    expect(app.design!.areas.left.glyphs).toContain('md_a');           // refused
+    expect(app.lockMessage('design:member:left:md_a')).toMatch(/^md_a in the area Left hand is in your Change Request "md_a", sent /);
+    app.requests = [];
+  });
+
+  it('a sent new area holds its members too', async () => {
+    await app.load();
+    app.edit('New area', (d) => { d.areas.char = { label: 'Character', size: [350, 350], glyphs: ['md_a'] }; });
+    app.requests = [{ id: 'r1', title: 'Character', status: 'sent', item_ids: ['design:area:char'], decisions: {}, created_at: '2026-10-20T10:00:00Z' } as never];
+    app.edit('Add md_b', (d) => { d.areas.char.glyphs.push('md_b'); });
+    expect(app.design!.areas.char.glyphs).toEqual(['md_a']);           // refused
+    app.requests = [];
+  });
+
   it('refuses to overwrite a draft saved elsewhere unless told to', async () => {
     await app.load();
     store.draft = { text: '', stamp: 'other' };
