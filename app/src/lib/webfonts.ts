@@ -10,7 +10,7 @@ export const WENKAI_CSS = 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+
 // TW-Kai draws its characters smaller in the em than most Chinese fonts (about 0.83 em tall against
 // LXGW WenKai TC's 0.90), so they looked small beside the Latin text. Every one of emfont's pieces
 // gets this size-adjust, which scales CNSKai alone wherever it's used. The font page uses the same value.
-export const CNSKAI_SIZE = '110%';
+export const CNSKAI_SIZE = '130%';
 
 /** emfont's stylesheet with size-adjust added to each @font-face. */
 export const withSizeAdjust = (css: string, size = CNSKAI_SIZE) => css.replace(/@font-face\s*\{/g, `@font-face { size-adjust: ${size};`);
