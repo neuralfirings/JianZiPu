@@ -134,6 +134,7 @@ class DesignState {
     if (kind === 'spelling') return `The spellings of ${rest.join(':')}`;
     if (kind === 'glossary') return `The glossary section ${this.glossarySections.find((s) => s.id === rest.join(':'))?.title ?? rest.join(':')}`;
     if (rest[0] === 'area') return `The area ${this.areaLabel(name)}`;
+    if (rest[0] === 'member') return `${rest.slice(2).join(':')} in the area ${this.areaLabel(rest[1])}`;
     if (rest[0] === 'layout') return `The word type ${this.design?.layouts.find((l) => l.name === name)?.label ?? name}`;
     return { center: 'The page center', glyph_weight: 'The stroke weight', test_sets: 'The sample word sets' }[rest[0]] ?? 'That';
   }
@@ -148,6 +149,9 @@ class DesignState {
     for (const id of Object.keys(this.locks)) {
       const [kind, ...rest] = id.split(':'), key = rest.join(':');
       if (kind === 'design' && next.design && !same(unitOf(this.design, key), unitOf(next.design, key))) return id;
+      // a new area went out whole, its members with it
+      if (kind === 'design' && next.design && key.startsWith('area:') && this.draftBase && !this.draftBase.design.areas[key.slice(5)]
+        && !same(this.design.areas[key.slice(5)], next.design.areas[key.slice(5)])) return id;
       if (kind === 'spelling' && next.typing && !same(T.get(this.typing, key), T.get(next.typing, key))) return id;
       if (kind === 'glossary' && ((next.glossary && !same(this.glossary[key] ?? [], next.glossary[key] ?? []))
         || (next.glossaryLayout && !same(this.glossaryLayout.sections[key], next.glossaryLayout.sections[key])))) return id;

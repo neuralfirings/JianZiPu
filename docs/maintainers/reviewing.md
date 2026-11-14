@@ -45,7 +45,12 @@ the tester's guide. In short:
      glossary sections with their rows before and after (a section is kept or
      skipped whole, in the draft's order).
 4. Choose **Keep** or **Skip** for each change, or **Keep all**. A new glyph
-   and its spellings go together.
+   goes together with its spellings and its place in an area. An area's box,
+   advance and label are one change, and each glyph that joins or leaves the
+   area is a change of its own, so you can keep some new members and skip
+   others (a new or removed area is one change, members and all). A request
+   sent before this split lists an area whole; Review shows it as these
+   changes, each with the decision the area had.
 5. If you like, write a reply. The tester sees it on Your Change Requests and in
    the email.
 6. **Save decisions.** The request becomes **In review** and its author gets an
