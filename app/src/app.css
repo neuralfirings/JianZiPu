@@ -34,11 +34,16 @@
 
   /* type: title 32, heading 22, panel-title 16, body 14, label 13, small 12, caption 11 */
   --t-caption: 11px; --t-small: 12px; --t-label: 13px; --t-body: 14px; --t-panel: 16px; --t-heading: 22px; --t-title: 32px;
-  --font-serif: "Literata Variable", "Literata", "Noto Serif SC", "Songti SC", "Source Han Serif SC", Georgia, serif;
-  --font-serif-tc: "Literata Variable", "Literata", "Noto Serif TC", "Songti TC", "Source Han Serif TC", Georgia, serif;
-  --font-display: "EB Garamond Variable", "EB Garamond", "Noto Serif SC", "Songti SC", "Source Han Serif SC", Georgia, serif;
+  /* Chinese: TW-Kai (as emfont's "CNSKai"), then LXGW WenKai TC (both loaded by lib/webfonts.ts), the same
+     order as the font page; the system fonts after them cover offline use and the moment before they load */
+  --font-cjk: "CNSKai", "LXGW WenKai TC", "Noto Serif SC", "Songti SC", "Source Han Serif SC";
+  --font-cjk-tc: "CNSKai", "LXGW WenKai TC", "Noto Serif TC", "Songti TC", "Source Han Serif TC";
+  --font-serif: "Literata Variable", "Literata", var(--font-cjk), Georgia, serif;
+  --font-serif-tc: "Literata Variable", "Literata", var(--font-cjk-tc), Georgia, serif;
+  --font-display: "EB Garamond Variable", "EB Garamond", var(--font-cjk), Georgia, serif;
   --font-sans-cjk: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", monospace;
+  /* spellings: Latin in a system mono, Chinese in the same fonts as everywhere else */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", var(--font-cjk), monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {

@@ -6,6 +6,7 @@
   import { setLucideProps } from '@lucide/svelte/context';
   import * as I from '$lib/icons';
   import { installTooltips } from '$lib/tooltip';
+  import { loadWebfonts } from '$lib/webfonts';
   import { installPhone, openedAnyway, phone, screenOnPhone, screenTitle } from '$lib/phone.svelte';
   import NeedsComputer from '$lib/components/NeedsComputer.svelte';
   import { page } from '$app/state';
@@ -55,6 +56,7 @@
 
   onMount(() => {
     void start();
+    loadWebfonts();
     const offTips = installTooltips();
     const offPhone = installPhone();
     // a phone's keyboard: while a field has it, the tabs and Save bar step aside, and (iOS, which
