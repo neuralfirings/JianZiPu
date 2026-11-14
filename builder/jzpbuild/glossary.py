@@ -547,14 +547,14 @@ def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> st
     meaning = any(r.meaning for r in body)
     widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
-    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("ASCII", "中文", "拼音"), widths)]
+    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("中文", "ASCII", "拼音"), widths)]   # Chinese first: the term a player reads
     lines += [f'      <th width="{widths[4]}%">Input</th>', f'      <th width="{widths[5]}%">Output</th>']
     lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
     lines += ["    </tr>", "  </thead>"]
     for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
-        lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.ascii}</td>",
-                  f"    <td>{r.chinese}</td>", f"    <td>{r.pinyin}</td>",
+        lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.chinese}</td>",
+                  f"    <td>{r.ascii}</td>", f"    <td>{r.pinyin}</td>",
                   f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>",
                   *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), "  </tr>"]
     lines.append("</table>")
