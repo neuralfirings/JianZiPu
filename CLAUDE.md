@@ -132,7 +132,8 @@ toasts, dialogs, drags); sentence case, no emoji, no exclamation marks.
   `.banner.info|draft|danger|saved` (with a `<span class="ic">` icon), `.toast`, `.modal-bg` + `.modal`
   (dialog), `.float` (menus, popovers).
 - Fonts are self-hosted from `@fontsource-variable/{literata,eb-garamond}` (imported in
-  `routes/+layout.svelte`); Chinese falls back to Noto Serif SC / Songti.
+  `routes/+layout.svelte`); Chinese is TW-Kai (emfont's "CNSKai") then LXGW WenKai TC, loaded by
+  `lib/webfonts.ts` (`--font-cjk`; the same order as the font page), with Noto Serif SC / Songti as the offline fallback.
 - Icons are Lucide (`@lucide/svelte`), imported only through `app/src/lib/icons.ts`, which names each
   one by its job (`<I.Close />`, `<I.Folded />`, `<I.Warn />`…); 16px / 1.5px is set once in
   `routes/+layout.svelte`, square caps in `app.css`. Use those names instead of text symbols

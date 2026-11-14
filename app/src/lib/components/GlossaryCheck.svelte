@@ -147,7 +147,7 @@
   .gloss :global(th) { font-weight: 600; }
   .gloss :global(td.gid a) { pointer-events: none; color: var(--ink-muted); font-family: var(--font-mono); font-size: var(--t-caption); text-decoration: none; }
   .gloss :global(.nw) { white-space: nowrap; }
-  .gloss :global(jzp) { font-family: var(--jzp-family), serif; font-size: 2.25rem; line-height: 1.5; word-break: keep-all; white-space: pre-wrap; }
+  .gloss :global(jzp) { font-family: var(--jzp-family), var(--font-cjk), serif; font-size: 2.25rem; line-height: 1.5; word-break: keep-all; white-space: pre-wrap; }
   .gloss :global(txs) { display: block; font-family: var(--font-mono); font-size: var(--t-caption); }
   .gloss :global(r) { color: var(--accent); }
 </style>

@@ -770,8 +770,8 @@
       </div>
       <div class="scroll" id="gb-{s.id}">
       <table class:usage>
-        <colgroup><col class="c-grip" /><col class="c-a" /><col class="c-z" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
-        <thead><tr><th></th><th>ASCII</th><th>中文</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's default example, with this row's glyph in it, until you give the row its own." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th class="out" title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
+        <colgroup><col class="c-grip" /><col class="c-z" /><col class="c-a" /><col class="c-p" /><col class="c-in" /><col class="c-out" /><col class="c-m" /><col class="c-act" /></colgroup>
+        <thead><tr><th></th><th>中文</th><th>ASCII</th><th>拼音</th><th title={usage ? "How to type the example word the page shows for it, its glyph in red: click a line to type it, in ASCII or Chinese; the other is made from the glyphs' spellings. Faded: the section's default example, with this row's glyph in it, until you give the row its own." : "How to type what the page shows for it, on its own after a colon: click a line to type another, in ASCII or Chinese; the other is made from the glyphs' spellings."}>Input</th><th class="out" title="The Input as the font sets it">Output</th><th>Definition</th><th></th></tr></thead>
         <tbody>
           {#each shown as { r, i } (rowKey(r) + i)}
             {@const gone = lost(r)}
@@ -795,8 +795,8 @@
                   {#if rowNote?.sid === s.id && rowNote.i === i}<span class="small bad" role="status"><I.Problem size={12} /> {rowNote.text}</span>{/if}
                 </td>
               {:else}
-              <td class="mono">{ascii(r, s)}</td>
               <td class="zh">{chinese(r, s)}</td>
+              <td class="mono">{ascii(r, s)}</td>
               <td>{pinyin(r)}</td>
               {/if}
               <td class="use" class:def={shared(r, s)}>
@@ -907,7 +907,7 @@
 <div class="gloss" bind:this={root} class:dragging={!!drag || !!headDrag}>
   <p class="muted small intro">
     The font page's glossary, a section at a time, in page order. A row is one glyph, or a word written together (:少息);
-    its ASCII, 中文 and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
+    its 中文, ASCII and 拼音 come from the spellings. Drag a row by its grip to move it, within a section or to another.
     Fold a section or a subsection by its title. Save writes site/glossary.json; a release puts it on jianzipufont.com.
     <span class="folds">
       <button class="lnk" onclick={() => (gfolded = layout.groups.map((g) => g.id))}>Fold all sections</button> ·
