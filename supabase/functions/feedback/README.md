@@ -31,8 +31,9 @@ they left an email.
    Builder's admins (needed in a project without them); `FEEDBACK_FROM` sends from
    another address than `MAIL_FROM`;
    `FEEDBACK_ORIGINS` (comma-separated) lets other pages post, beyond
-   jianzipufont.com, its Cloudflare previews (`*.jianzipu.pages.dev`) and your own
-   computer.
+   jianzipufont.com, its Cloudflare previews (`*.jianzipu.pages.dev`), the Builder's
+   copy of the page (builder.jianzipufont.com/site, Railway previews
+   `jianzipu-*.up.railway.app`) and your own computer.
 3. **Deploy**: `supabase functions deploy feedback --no-verify-jwt` (visitors aren't
    signed in; `check.ts` decides what gets in). Or in the dashboard, without the CLI:
    - Make one file of it (the dashboard's editor can't reach `../notify/`):

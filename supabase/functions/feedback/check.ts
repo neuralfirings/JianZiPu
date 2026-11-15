@@ -67,13 +67,16 @@ export function parse(fd: FormData): Parsed {
   };
 }
 
-/** The pages that may post here: the font page, its Cloudflare previews, and a page served on your
+/** The pages that may post here: the font page, its Cloudflare previews, the Builder's copy of it
+ *  (builder.jianzipufont.com/site and a pull request's Railway preview), and a page served on your
  *  own computer; `extra` adds more (the FEEDBACK_ORIGINS secret, comma-separated). */
 export function originAllowed(origin: string | null, extra: string[] = []): boolean {
   if (!origin) return false;
   if (extra.includes(origin)) return true;
   return /^https:\/\/(www\.)?jianzipufont\.com$/.test(origin)
     || /^https:\/\/([a-z0-9-]+\.)?jianzipu\.pages\.dev$/.test(origin)
+    || origin === 'https://builder.jianzipufont.com'
+    || /^https:\/\/jianzipu-[a-z0-9-]+\.up\.railway\.app$/.test(origin)
     || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 }
 

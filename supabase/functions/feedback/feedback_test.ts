@@ -54,8 +54,10 @@ Deno.test('a link that is not a web address is left out, not refused', () => {
 
 Deno.test('only the font page, its previews and your own computer may post', () => {
   for (const o of ['https://jianzipufont.com', 'https://www.jianzipufont.com', 'https://jianzipu.pages.dev',
-    'https://claude-practical-goldberg-t0.jianzipu.pages.dev', 'http://127.0.0.1:8765', 'http://localhost:5173']) assert(originAllowed(o), o);
-  for (const o of [null, 'https://evil.example', 'https://jianzipufont.com.evil.example', 'https://jianzipu.pages.dev.evil.example', 'http://jianzipufont.com'])
+    'https://claude-practical-goldberg-t0.jianzipu.pages.dev', 'https://builder.jianzipufont.com', 'https://jianzipu-jianzipu-pr-91.up.railway.app',
+    'http://127.0.0.1:8765', 'http://localhost:5173']) assert(originAllowed(o), o);
+  for (const o of [null, 'https://evil.example', 'https://jianzipufont.com.evil.example', 'https://jianzipu.pages.dev.evil.example', 'http://jianzipufont.com',
+    'https://other.up.railway.app', 'https://jianzipu-x.up.railway.app.evil.example'])
     assert(!originAllowed(o), String(o));
   assert(originAllowed('https://guqintabs.com', ['https://guqintabs.com']));
 });
