@@ -7,7 +7,7 @@
   import type { Item } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { day, dismissUpdate, downloadZip, fontName, hhmm, markWelcomed, pilot } from '$lib/pilot.svelte';
-  import { updateSummary } from '$lib/merge';
+  import { glossaryWhat, updateSummary } from '$lib/merge';
   import SvgText from './SvgText.svelte';
   import GlossaryRowsDiff from './GlossaryRowsDiff.svelte';
   import { metaSummary, titlesSummary } from '$lib/glossary';
@@ -50,7 +50,7 @@
   }
   // "the 21 Oct font your draft started from"
   const started = $derived(`the ${app.draftBase?.version.date ? `${day(app.draftBase.version.date)} ` : ''}font your draft started from`);
-  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : i.kind === 'glossary' ? `the glossary section ${i.key}` : i.kind === 'glossary-titles' ? "the glossary's section titles" : `glyph ${i.key}`);
+  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : i.kind === 'glossary' ? `the glossary's ${glossaryWhat(i)}` : i.kind === 'glossary-titles' ? "the glossary's section titles" : `glyph ${i.key}`);
 </script>
 
 {#if pilot.dialog}

@@ -8,7 +8,7 @@
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
-  import { companions, glyphOf, type Item } from '$lib/merge';
+  import { companions, glyphOf, itemName, type Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
@@ -35,7 +35,7 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
-  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
+  const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
   /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {

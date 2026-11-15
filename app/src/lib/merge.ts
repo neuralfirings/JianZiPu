@@ -8,7 +8,7 @@
 import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
-import { changedSections, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
+import { changedSections, rowKey, rowName, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
 
 export type Status = 'added' | 'changed' | 'deleted';
 type Base = { id: string; status: Status; conflict: boolean };
@@ -32,6 +32,35 @@ export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | Glossa
 export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** What a glossary item changes, named by its rows rather than its subtitle's id (1b): the rows it
+ *  adds (ji2_md; ji2_md and bu4dong4_md; ji2_md and 2 more), takes out (without mod_ji) or edits;
+ *  failing those (a new order, a new title or description), the subtitle's title. */
+export function glossaryWhat(it: GlossaryItem): string {
+  const byKey = (rs: GRow[]) => new Map(rs.map((r) => [rowKey(r), r] as const));
+  const b = byKey(it.base), t = byKey(it.theirs);
+  const names = (keys: string[], from: Map<string, GRow>) => keys.map((k) => rowName(from.get(k)!));
+  const list = (ns: string[], pre = '') => pre + (ns.length === 1 ? ns[0] : ns.length === 2 ? `${ns[0]} and ${ns[1]}` : `${ns[0]} and ${ns.length - 1} more`);
+  const added = names([...t.keys()].filter((k) => !b.has(k)), t);
+  const removed = names([...b.keys()].filter((k) => !t.has(k)), b);
+  const edited = names([...t.keys()].filter((k) => b.has(k) && !same(b.get(k), t.get(k))), t);
+  const parts = [...(added.length ? [list(added)] : []), ...(removed.length ? [list(removed, 'without ')] : []), ...(edited.length ? [list(edited)] : [])];
+  if (parts.length) return parts.join(', ');
+  const title = it.meta?.theirs?.title || it.meta?.base?.title || it.key;
+  return same([...b.keys()], [...t.keys()]) ? title : `the order of ${title}`;
+}
+
+/** The subtitle a glossary item is in, as the page numbers it: its id and title (1b · Speed). */
+export const glossarySection = (it: GlossaryItem) => {
+  const title = it.meta?.theirs?.title || it.meta?.base?.title;
+  return title ? `${it.key} · ${title}` : it.key;
+};
+
+/** An item's name in a list of changes: Glyph · lg_gou, Spellings · lg_gou, Glossary · ji2_md… */
+export function itemName(i: Item): string {
+  return i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${glossaryWhat(i)}`
+    : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`;
+}
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
 const status = (base: unknown, theirs: unknown): Status => (base === undefined ? 'added' : theirs === undefined ? 'deleted' : 'changed');
 

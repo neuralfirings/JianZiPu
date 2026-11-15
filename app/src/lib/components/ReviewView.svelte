@@ -13,7 +13,7 @@
   import * as I from '$lib/icons';
   import type { Bundle } from '$lib/bundle';
   import type { Layout } from '$lib/api';
-  import { applyMerge, companions, diffBundle, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
+  import { applyMerge, companions, diffBundle, glossarySection, glossaryWhat, itemName, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
   import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
   import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
@@ -119,7 +119,7 @@
   let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id) && !inFont.has(i.id)) : []);
   let sending = $state(false);
   $effect(() => { if (send && mode === 'mine') sending = true; });
-  const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.key);
+  const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.kind === 'glossary' ? glossaryWhat(it) : it.key);
   /** A new glyph that spellings or areas still use: its id while "undo all of it?" is showing. */
   let asking = $state<string | null>(null);
   function usesText(g: string) {
@@ -214,10 +214,11 @@
       {#each sec.items as it (it.id)}
         <div class="item" class:skip={picks[it.id] === false && !readOnly} class:conflict={it.conflict && !readOnly}>
           <div class="ihead">
-            <b class="key">{it.kind === 'design' ? it.label : it.key}</b>
+            <b class="key">{nameOf(it)}</b>
             <span class="tag {it.status}">{it.status}</span>
             {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
+            {#if it.kind === 'glossary'}<span class="muted sum">in {glossarySection(it)}</span>{/if}
             <span class="spacer"></span>
             {#if it.kind === 'design' && (it.unit.type === 'area' || it.unit.type === 'member') && !readOnly}<a href="/layouts?area={it.unit.name}{it.unit.glyph ? `&g=${it.unit.glyph}` : ''}">Open in Layouts</a>{/if}
             {#if lockOf(it)}
@@ -338,7 +339,7 @@
           {#each done as it (it.id)}
             {@const r = released[it.id]}
             <li>
-              <b class="key">{it.kind === 'design' ? it.label : it.kind === 'spelling' ? `Spellings · ${it.key}` : it.kind === 'glossary' ? `Glossary · ${it.key}` : it.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${it.key}`}</b>
+              <b class="key">{itemName(it)}</b>
               <span class="tag {it.status}">{it.status}</span>
               {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
               <span class="spacer"></span>
