@@ -12,6 +12,7 @@ where the settings live. Secrets never go in this repository.
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
 | EmailOctopus | The "send me the font" email on the font page, and the email list shared with Guqin Tabs | emailoctopus.com, `site/index.html` |
+| Formspree | The Builder's invite and Feedback forms, and the font page's feedback form (the pencil on each glossary row) | formspree.io, `app/src/lib/forms.ts`, `site/index.html` |
 
 ## Your computer
 
@@ -73,6 +74,15 @@ bucket".
 
 The "Ask for an invite" and Feedback forms post to Formspree straight from the
 app (`app/src/lib/forms.ts`), so they need no setting.
+
+The font page's feedback form posts to Formspree too: the pencil by each glossary
+row's number and "Send feedback" at the foot of the page. Its form id is
+`window.FEEDBACK_FORM_ID` near the top of `site/index.html` (the `<id>` in
+formspree.io/f/<id>; not a secret, every visitor's browser posts to it). Empty: no
+pencils and no feedback link. Photos and drawings go as file uploads, which need a
+Formspree plan that allows them; without one, Formspree refuses them and the form
+offers to send the message alone. Each entry's subject says which row it's about,
+with a `row` field (number · 中文 · ASCII · 拼音 (section)) and a `link` to it.
 
 A failed deploy, or one that looks old (a build error that was fixed weeks
 ago), means Railway is serving an old image. Redeploy from Railway's

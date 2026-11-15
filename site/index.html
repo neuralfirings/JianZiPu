@@ -389,12 +389,101 @@
     }
     .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
     .glossary-subdesc { margin-bottom: .25rem; }
+
+    /* Feedback: a pencil on each glossary row and "Send feedback" at the foot of the page open one
+       short form (message, photos or a drawing, name, email), sent to Formspree (script at the end) */
+    .fb-row { border: 1px solid transparent; background: none; border-radius: 4px; padding: 2px 4px; margin-left: 2px;
+      color: var(--ink-faint); opacity: .6; cursor: pointer; vertical-align: middle; line-height: 0; }
+    .fb-row svg { width: 14px; height: 14px; }
+    tr:hover .fb-row, .fb-row:focus-visible { opacity: 1; color: var(--link); border-color: var(--border); background: var(--bg-field); }
+    tr.fb-picked { --bs-table-bg: var(--target); background-color: var(--target); }
+    .fb-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    @media (max-width: 759.98px) {
+      .fb-row { opacity: 1; color: var(--link); border-color: var(--border); background: var(--bg-field); padding: 7px; }   /* a finger-sized pencil */
+    }
+    #fb { border: 1px solid var(--border-strong); border-radius: 6px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto;
+      background: var(--bg-panel); color: var(--ink); box-shadow: 0 18px 50px rgba(43, 39, 36, .28); }
+    #fb::backdrop { background: rgba(43, 39, 36, .42); }
+    #fb, #fb * { box-sizing: border-box; }
+    #fb .fb-head { display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px 12px; border-bottom: 1px solid var(--hairline); }
+    #fb .fb-head h2 { font-size: 1.45rem; line-height: 1.2; margin: 0; font-weight: 600; text-wrap: balance; }
+    #fb .fb-head p { margin: 4px 0 0; font-size: .95rem; color: var(--ink-muted); }
+    #fb .fb-x { background: none; border: 1px solid transparent; border-radius: 4px; padding: 4px; color: var(--ink-muted); cursor: pointer; line-height: 0; margin-left: auto; }
+    #fb .fb-x:hover { border-color: var(--border); background: var(--bg-hover); }
+    #fb .fb-x svg { width: 20px; height: 20px; }
+    #fb .fb-body { padding: 16px 20px 6px; display: grid; gap: 18px; }
+    #fb .fb-ctx { display: flex; gap: 16px; align-items: center; background: var(--bg-field); border: 1px solid var(--border); border-radius: 4px; padding: 8px 14px; }
+    #fb .fb-ctx jzp { display: inline-block; min-width: 1.05em; font-size: 2.6rem; line-height: 1.2; }   /* a word has no advance of its own: give it its em */
+    #fb .fb-vals { font-size: .95rem; display: flex; flex-wrap: wrap; gap: 2px 14px; min-width: 0; }
+    #fb .fb-vals .k { color: var(--ink-faint); font-size: .8rem; margin-right: 4px; }
+    #fb .fb-vals .m { flex-basis: 100%; color: var(--ink-muted); }
+    #fb label.fb-f { display: grid; gap: 5px; text-transform: none; font-weight: 600; min-width: 0; }
+    #fb .fb-opt { font-weight: 400; color: var(--ink-faint); font-size: .875rem; }
+    #fb input[type=text], #fb input[type=email], #fb textarea { width: 100%; background: var(--bg-field); border: 1px solid var(--border-strong);
+      border-radius: 4px; padding: 8px 10px; font: inherit; font-weight: 400; font-size: 1rem; color: var(--ink); min-width: 0; }
+    #fb textarea { min-height: 110px; resize: vertical; line-height: 1.45; }
+    #fb .fb-hint { font-size: .875rem; color: var(--ink-muted); margin: 0; }
+    #fb .fb-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+    #fb .fb-tool { display: inline-flex; align-items: center; gap: 7px; background: var(--bg-field); border: 1px solid var(--border-strong); border-radius: 4px;
+      padding: 7px 14px; cursor: pointer; font-family: inherit; font-size: .95rem; font-weight: 400; text-transform: none; position: relative; color: var(--ink); }
+    #fb .fb-tool:hover { background: var(--bg-hover); }
+    #fb .fb-tool:focus-within { outline: 2px solid var(--link); outline-offset: 2px; }
+    #fb .fb-tool svg { width: 18px; height: 18px; }
+    #fb .fb-tool input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    #fb .fb-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+    #fb .fb-thumbs:empty { display: none; }
+    #fb .fb-thumb { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #fff; }
+    #fb .fb-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    #fb .fb-thumb span { position: absolute; left: 4px; bottom: 4px; font-size: .7rem; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; color: var(--ink-muted); }
+    #fb .fb-thumb button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--border-strong);
+      background: var(--bg-panel); cursor: pointer; display: grid; place-items: center; }
+    #fb .fb-thumb button svg { width: 14px; height: 14px; }
+    /* the drawing pad: a square of paper with a faint centre cross, like practice paper */
+    #fb .fb-pad { border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-field); padding: 10px; display: grid; gap: 8px; }
+    #fb .fb-pad canvas { width: 100%; aspect-ratio: 1; display: block; touch-action: none; cursor: crosshair; background-color: #fbf8f1;
+      border: 1px solid var(--border); border-radius: 3px; background-size: 50% 50%; background-position: center;
+      background-image: linear-gradient(var(--hairline) 1px, transparent 1px), linear-gradient(90deg, var(--hairline) 1px, transparent 1px); }
+    #fb .fb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    #fb .fb-bar .sp { flex: 1; }
+    #fb .fb-sizes { display: flex; gap: 4px; }
+    #fb .fb-sizes button { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-panel); cursor: pointer; display: grid; place-items: center; }
+    #fb .fb-sizes button[aria-pressed="true"] { border-color: var(--link); background: #e6eef9; }
+    #fb .fb-sizes i { display: block; border-radius: 50%; background: var(--ink); }
+    #fb .fb-who { background: var(--well); border-radius: 4px; padding: 12px 14px; display: grid; gap: 10px; }
+    #fb .fb-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    #fb .fb-trap { position: absolute; left: -9999px; width: 1px; height: 1px; }
+    #fb .fb-foot { padding: 14px 20px 18px; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; border-top: 1px solid var(--hairline); }
+    #fb .fb-why { flex: 1 1 200px; font-size: .875rem; color: var(--ink-muted); margin: 0; min-width: 0; }
+    #fb .fb-why.bad { color: var(--accent); }
+    #fb .fb-btn { border-radius: 4px; padding: 8px 18px; cursor: pointer; font: inherit; }
+    #fb .fb-btn.sm { padding: 5px 12px; font-size: .875rem; }
+    #fb .fb-btn.quiet { background: none; border: 1px solid var(--border-strong); color: var(--ink); }
+    #fb .fb-btn.quiet:hover { background: var(--bg-hover); }
+    #fb .fb-btn.primary { background: var(--ink); border: 1px solid var(--ink); color: var(--bg-panel); font-weight: 600; }
+    #fb .fb-btn.primary:hover { background: #45403b; }
+    #fb .fb-btn:disabled { opacity: .6; cursor: default; }
+    #fb .fb-done { padding: 22px 20px 8px; display: grid; gap: 12px; }
+    #fb .fb-done p { margin: 0; color: var(--ink-muted); }
+    #fb .fb-tick { width: 44px; height: 44px; border-radius: 50%; background: #e5efe3; color: #2f6b3a; display: grid; place-items: center; }
+    #fb .fb-tick svg { width: 24px; height: 24px; }
+    @media (max-width: 640px) {
+      #fb { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+      #fb .fb-head { position: sticky; top: 0; z-index: 1; background: var(--bg-panel); }
+      #fb .fb-foot { position: sticky; bottom: 0; background: var(--bg-panel); padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+      #fb .fb-why { flex-basis: 100%; }
+      #fb .fb-foot .primary { flex: 1; }
+    }
   </style>
   
   <!-- "Send me the font": an EmailOctopus sign-up form (docs/maintainers/setup.md, EmailOctopus).
        Its id is the one in the form's embed code, eocampaign1.com/form/<id>.js. Empty: the Download
        button downloads the font straight away. -->
   <script>window.EO_FORM_ID = 'dc6d7afe-dd52-11f1-978b-43af410d7c6e';</script>
+  <!-- Feedback (the pencil on each glossary row, "Send feedback" at the foot): a Formspree form,
+       formspree.io/f/<id>. Not a secret: every visitor's browser posts to it. Photos and drawings need
+       a Formspree plan with file uploads; without one, the form offers to send the message alone.
+       Empty: no pencils and no feedback link. -->
+  <script>window.FEEDBACK_FORM_ID = 'mjygdlbq';</script>
 </head>
 <body>
 
@@ -482,7 +571,7 @@
     </details>
 
     <h3 id="glossary">Glossary</h3>
-    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.</p>
+    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Use the pencil by its number to suggest a fix.</span></p>
     <div class="row">
       <div class="col">
         <div class="glossary-search" role="search">
@@ -1751,6 +1840,7 @@
     <div class="row">
       <div class="col">
         <hr />
+        <p class="fb-on" hidden>Found a mistake, or something missing? <button type="button" class="fb-link" data-fb-site>Send feedback</button>, with a photo or a drawing if it helps.</p>
         <p><a href="/contact">Contact me</a> if you want more characters or glyphs added to the font, have questions, feedback, or if you want to collaborate.</p>
         <p><small class="text-muted">JianZiPu font &copy; 2021–2026 Nancy Yi Liang, Nellodee LLC &middot; <a href="https://github.com/neuralfirings/JianZiPu/blob/main/OFL.txt">SIL Open Font License 1.1</a> (<a href="https://openfontlicense.org">about the OFL</a>) &middot; derived in part from <a href="https://www.cns11643.gov.tw">TW-Kai (CNS11643)</a>, &copy; 2023 Ministry of Digital Affairs, Taiwan &middot; <a href="https://github.com/neuralfirings/JianZiPu">source on GitHub</a></small></p>
       </div>
@@ -1758,6 +1848,275 @@
 
   </div>
   <div class="scroll-rod bottom" aria-hidden="true"></div>
+
+  <!-- Feedback: one short form for a glossary row (the pencil by its number) or the whole page
+       (Send feedback at the foot). Script below; styles under "Feedback" in the head. -->
+  <dialog id="fb" aria-labelledby="fb-title">
+    <form id="fb-form" novalidate>
+      <div class="fb-head">
+        <div><h2 id="fb-title">Send feedback</h2><p id="fb-sub"></p></div>
+        <button type="button" class="fb-x" data-fb-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="fb-body">
+        <div class="fb-ctx" id="fb-ctx" aria-label="The row you're writing about" hidden></div>
+        <label class="fb-f"><span id="fb-msg-label">What should change?</span><textarea id="fb-msg" name="message"></textarea></label>
+        <div style="display:grid;gap:10px">
+          <div class="fb-tools">
+            <label class="fb-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg>Add a photo
+              <input type="file" id="fb-photo" accept="image/*" multiple></label>
+            <button type="button" class="fb-tool" id="fb-draw-open" aria-expanded="false" aria-controls="fb-pad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></svg>Draw it</button>
+          </div>
+          <p class="fb-hint">Optional. A photo of a score or a book, or draw the glyph the way it should look.</p>
+          <div class="fb-pad" id="fb-pad" hidden>
+            <canvas id="fb-canvas" aria-label="Drawing area: draw with a mouse, pen or finger"></canvas>
+            <div class="fb-bar">
+              <div class="fb-sizes" role="group" aria-label="Brush size">
+                <button type="button" data-size="4" aria-label="Fine" aria-pressed="false"><i style="width:4px;height:4px"></i></button>
+                <button type="button" data-size="9" aria-label="Medium" aria-pressed="true"><i style="width:8px;height:8px"></i></button>
+                <button type="button" data-size="16" aria-label="Broad" aria-pressed="false"><i style="width:13px;height:13px"></i></button>
+              </div>
+              <span class="sp"></span>
+              <button type="button" class="fb-btn quiet sm" id="fb-undo">Undo</button>
+              <button type="button" class="fb-btn quiet sm" id="fb-clear">Clear</button>
+              <button type="button" class="fb-btn primary sm" id="fb-draw-done">Add drawing</button>
+            </div>
+          </div>
+          <div class="fb-thumbs" id="fb-thumbs"></div>
+        </div>
+        <div class="fb-who">
+          <div class="fb-two">
+            <label class="fb-f"><span>Name <span class="fb-opt">optional</span></span><input type="text" id="fb-name" autocomplete="name"></label>
+            <label class="fb-f"><span>Email <span class="fb-opt">optional</span></span><input type="email" id="fb-email" autocomplete="email"></label>
+          </div>
+          <p class="fb-hint">Leave an email if you'd like to hear back. It's never shown.</p>
+        </div>
+        <!-- Formspree's spam trap: people never see or fill it -->
+        <input class="fb-trap" type="text" id="fb-gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </div>
+      <div class="fb-foot">
+        <p class="fb-why" id="fb-why" aria-live="polite"></p>
+        <button type="button" class="fb-btn quiet" id="fb-plain" hidden>Send without pictures</button>
+        <button type="button" class="fb-btn quiet" data-fb-close>Cancel</button>
+        <button type="submit" class="fb-btn primary" id="fb-send">Send</button>
+      </div>
+    </form>
+    <div id="fb-done" hidden></div>
+  </dialog>
+  <script>
+    // Feedback: the pencil each glossary row gets here (in its ID cell, which the search skips), the
+    // form above, and sending it to Formspree (window.FEEDBACK_FORM_ID in the head) as multipart, so
+    // photos and drawings go along as files. A row's values are read from the page itself.
+    (function () {
+      var FORM = window.FEEDBACK_FORM_ID, dlg = document.getElementById('fb');
+      if (!FORM || !dlg || !dlg.showModal) return;
+      document.querySelectorAll('.fb-on').forEach(function (e) { e.hidden = false; });
+      var $ = function (id) { return document.getElementById(id); };
+      var form = $('fb-form'), why = $('fb-why'), send = $('fb-send'), plain = $('fb-plain');
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      var MAX_FILES = 5, MAX_BYTES = 25 * 1024 * 1024;
+      var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M21.17 6.81a1 1 0 0 0-3.98-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></svg>';
+      var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+      // ---- a pencil on every glossary row
+      document.querySelectorAll('td.gid').forEach(function (td) {
+        var tr = td.parentElement, n = td.textContent.trim();
+        var zh = cell(tr, '中文');
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'fb-row'; b.innerHTML = PEN;
+        b.title = 'Suggest a fix';
+        b.setAttribute('aria-label', 'Suggest a fix to row ' + n + (zh ? ', ' + zh.textContent.trim() : ''));
+        b.addEventListener('click', function () { open(tr); });
+        td.appendChild(b);
+      });
+      function cell(tr, name) {   // a row's cell under the column headed `name`
+        var heads = tr.closest('table').querySelectorAll('thead th');
+        for (var i = 0; i < heads.length; i++) if (heads[i].textContent.trim() === name) return tr.cells[i];
+        return null;
+      }
+      function sectionOf(tr) {    // the subtitle above the row's table, e.g. "1.2. Speed"
+        for (var e = tr.closest('table').previousElementSibling; e; e = e.previousElementSibling)
+          if (e.tagName === 'LABEL' || e.tagName === 'H4') return e.textContent.trim();
+        return '';
+      }
+      document.querySelectorAll('[data-fb-site]').forEach(function (b) { b.addEventListener('click', function () { open(null); }); });
+
+      // ---- photos and drawings
+      var files = [];
+      function drawThumbs() {
+        $('fb-thumbs').innerHTML = files.map(function (f, i) {
+          return '<div class="fb-thumb"><img src="' + f.url + '" alt="' + esc(f.name) + '"><span>' + f.kind + '</span>'
+            + '<button type="button" data-rm="' + i + '" aria-label="Remove ' + esc(f.name) + '">' + X + '</button></div>';
+        }).join('');
+      }
+      function addFile(blob, name, kind) {
+        if (files.length >= MAX_FILES) { say('Up to ' + MAX_FILES + ' pictures, please.', true); return; }
+        if (blob.size > MAX_BYTES) { say(name + ' is over 25 MB. Try a smaller photo.', true); return; }
+        files.push({ blob: blob, name: name, kind: kind, url: URL.createObjectURL(blob) }); drawThumbs();
+      }
+      $('fb-photo').addEventListener('change', function (e) {
+        Array.prototype.forEach.call(e.target.files, function (f) { if (/^image\//.test(f.type)) addFile(f, f.name, 'Photo'); });
+        e.target.value = '';
+      });
+      $('fb-thumbs').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-rm]'); if (!b) return;
+        URL.revokeObjectURL(files[+b.dataset.rm].url); files.splice(+b.dataset.rm, 1); drawThumbs();
+      });
+
+      // the pad: strokes kept as points (Undo takes one back), drawn in a 1000-unit square like the
+      // font's em; fast strokes thin out a little, as a brush does, and a pen's pressure counts
+      var canvas = $('fb-canvas'), ctx = canvas.getContext('2d'), strokes = [], cur = null, size = 9, INK = '#2b2724';
+      function fit() {
+        var w = canvas.clientWidth, dpr = window.devicePixelRatio || 1;
+        if (!w) return;
+        canvas.width = canvas.height = Math.round(w * dpr);
+        ctx.setTransform(dpr * w / 1000, 0, 0, dpr * w / 1000, 0, 0);
+        redraw();
+      }
+      function paint(c, s) {
+        var p = s.pts;
+        c.strokeStyle = c.fillStyle = INK; c.lineCap = c.lineJoin = 'round';
+        if (p.length === 1) { c.beginPath(); c.arc(p[0][0], p[0][1], s.size * 2.2, 0, 7); c.fill(); return; }
+        for (var i = 1; i < p.length; i++) {
+          c.lineWidth = s.size * 4.4 * (p[i - 1][2] + p[i][2]) / 2;
+          c.beginPath(); c.moveTo(p[i - 1][0], p[i - 1][1]); c.lineTo(p[i][0], p[i][1]); c.stroke();
+        }
+      }
+      function redraw() { ctx.clearRect(0, 0, 1000, 1000); strokes.forEach(function (s) { paint(ctx, s); }); }
+      function at(e) { var r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) * 1000 / r.width, (e.clientY - r.top) * 1000 / r.height]; }
+      canvas.addEventListener('pointerdown', function (e) {
+        canvas.setPointerCapture(e.pointerId);
+        var p = at(e);
+        cur = { size: size, pts: [[p[0], p[1], e.pointerType === 'pen' && e.pressure ? 0.4 + e.pressure : 1]] };
+        strokes.push(cur); redraw();
+      });
+      canvas.addEventListener('pointermove', function (e) {
+        if (!cur) return;
+        var p = at(e), last = cur.pts[cur.pts.length - 1], d = Math.hypot(p[0] - last[0], p[1] - last[1]);
+        if (d < 2) return;
+        var w = e.pointerType === 'pen' && e.pressure ? 0.4 + e.pressure : Math.max(0.55, Math.min(1.1, 1.15 - d / 120));
+        cur.pts.push([p[0], p[1], last[2] * 0.6 + w * 0.4]);
+        paint(ctx, { size: cur.size, pts: cur.pts.slice(-2) });
+      });
+      canvas.addEventListener('pointerup', function () { cur = null; });
+      canvas.addEventListener('pointercancel', function () { cur = null; });
+      dlg.querySelectorAll('[data-size]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          size = +b.dataset.size;
+          dlg.querySelectorAll('[data-size]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        });
+      });
+      $('fb-undo').addEventListener('click', function () { strokes.pop(); redraw(); });
+      $('fb-clear').addEventListener('click', function () { strokes = []; redraw(); });
+      function pad(on) {
+        $('fb-pad').hidden = !on; $('fb-draw-open').setAttribute('aria-expanded', String(on));
+        if (on) { fit(); canvas.scrollIntoView({ block: 'nearest' }); }
+      }
+      $('fb-draw-open').addEventListener('click', function () { pad($('fb-pad').hidden); });
+      $('fb-draw-done').addEventListener('click', function () {
+        if (!strokes.length) { say('Draw something first, or close the drawing with Draw it.', true); return; }
+        // the drawing as a 1000 px PNG, ink on white
+        var out = document.createElement('canvas'); out.width = out.height = 1000;
+        var o = out.getContext('2d'); o.fillStyle = '#ffffff'; o.fillRect(0, 0, 1000, 1000);
+        strokes.forEach(function (s) { paint(o, s); });
+        out.toBlob(function (blob) {
+          addFile(blob, 'drawing-' + (files.filter(function (f) { return f.kind === 'Drawing'; }).length + 1) + '.png', 'Drawing');
+          strokes = []; redraw(); pad(false); say('Drawing added.');
+        }, 'image/png');
+      });
+      window.addEventListener('resize', function () { if (!$('fb-pad').hidden) fit(); });
+
+      // ---- opening and closing
+      var row = null, rowText = '', lastFocus = null;
+      function say(t, bad) { why.textContent = t; why.classList.toggle('bad', !!bad); }
+      function open(tr) {
+        lastFocus = document.activeElement;
+        form.reset(); files = []; strokes = []; drawThumbs(); pad(false);
+        form.hidden = false; $('fb-done').hidden = true; plain.hidden = true; send.disabled = false; send.textContent = 'Send';
+        say('I read every message myself.');
+        document.querySelectorAll('tr.fb-picked').forEach(function (t) { t.classList.remove('fb-picked'); });
+        row = tr; rowText = '';
+        var ctxBox = $('fb-ctx');
+        if (tr) {
+          var n = tr.querySelector('td.gid').textContent.trim(), get = function (h) { var c = cell(tr, h); return c ? c.textContent.trim() : ''; };
+          var zh = get('中文'), ascii = get('ASCII'), py = get('拼音'), def = get('Definition'), out = cell(tr, 'Output'), sec = sectionOf(tr);
+          var j = out && out.querySelector('jzp');
+          tr.classList.add('fb-picked');
+          rowText = n + ' · ' + zh + ' · ' + ascii + ' · ' + py + (sec ? ' (' + sec + ')' : '');
+          $('fb-title').textContent = 'Suggest a fix to ' + zh;
+          $('fb-sub').textContent = 'Row ' + n + (sec ? ' in ' + sec : '');
+          $('fb-msg-label').textContent = 'What should change?';
+          $('fb-msg').placeholder = py ? 'e.g. The pinyin should be …, not ' + py : 'What is wrong, and what should it be?';
+          ctxBox.innerHTML = (j ? '<jzp>' + j.innerHTML + '</jzp>' : '') + '<div class="fb-vals">'
+            + '<span><span class="k">中文</span>' + esc(zh) + '</span><span><span class="k">ASCII</span>' + esc(ascii) + '</span>'
+            + (py ? '<span><span class="k">拼音</span>' + esc(py) + '</span>' : '') + (def ? '<span class="m">' + esc(def) + '</span>' : '') + '</div>';
+          ctxBox.hidden = false;
+        } else {
+          $('fb-title').textContent = 'Send feedback';
+          $('fb-sub').textContent = 'A typo, something missing, a glyph that looks wrong, an idea';
+          $('fb-msg-label').textContent = 'Your message';
+          $('fb-msg').placeholder = 'e.g. The font has no glyph for 猱 (náo). Here is how it looks in my score.';
+          ctxBox.hidden = true;
+        }
+        document.documentElement.style.overflow = 'hidden';
+        dlg.showModal(); dlg.scrollTop = 0;
+        $('fb-msg').focus();
+      }
+      dlg.addEventListener('close', function () {
+        document.documentElement.style.overflow = '';
+        document.querySelectorAll('tr.fb-picked').forEach(function (t) { t.classList.remove('fb-picked'); });
+        if (lastFocus) lastFocus.focus({ preventScroll: true });
+      });
+      dlg.addEventListener('click', function (e) {
+        if (e.target === dlg || e.target.closest('[data-fb-close]')) dlg.close();   // the backdrop, Cancel, the close button
+      });
+      $('fb-msg').addEventListener('input', function () { if (why.classList.contains('bad')) say(''); });
+
+      // ---- sending
+      function submit(withFiles) {
+        var msg = $('fb-msg').value.trim(), email = $('fb-email').value.trim();
+        if (!msg) { say(files.length ? 'Add a few words about the picture, so I know what to look at.' : 'Write what should change, so I know what to fix.', true); $('fb-msg').focus(); return; }
+        if (email && !$('fb-email').checkValidity()) { say("That email doesn't look right. Check it, or leave it empty.", true); $('fb-email').focus(); return; }
+        var fd = new FormData();
+        fd.append('_subject', row ? 'JianZiPu font page: fix to row ' + rowText.split(' · ').slice(0, 2).join(' ') : 'JianZiPu font page: feedback');
+        fd.append('form', row ? 'glossary row' : 'site');
+        if (row) { fd.append('row', rowText); fd.append('link', location.origin + location.pathname + '#' + row.id); }
+        fd.append('message', msg);
+        if ($('fb-name').value.trim()) fd.append('name', $('fb-name').value.trim());
+        if (email) fd.append('email', email);   // Formspree replies to this address
+        fd.append('_gotcha', $('fb-gotcha').value);
+        if (withFiles) files.forEach(function (f, i) { fd.append('picture-' + (i + 1), f.blob, f.name); });
+        send.disabled = true; plain.hidden = true; send.textContent = 'Sending…'; say('');
+        fetch('https://formspree.io/f/' + FORM, { method: 'POST', body: fd, headers: { Accept: 'application/json' } })
+          .then(function (r) {
+            if (r.ok) return done(withFiles ? files.length : 0, email);
+            return r.json().catch(function () { return null; }).then(function (j) {
+              var m = j && (j.errors ? j.errors.map(function (x) { return x.message; }).join(' ') : j.error);
+              fail(m ? 'Not sent: ' + m : 'Not sent: the form service answered ' + r.status + '. Try again in a minute.', withFiles);
+            });
+          })
+          .catch(function () { fail("Couldn't reach the form service. Check your connection and try again.", withFiles); });
+      }
+      function fail(text, withFiles) {
+        send.disabled = false; send.textContent = 'Try again'; say(text, true);
+        plain.hidden = !(withFiles && files.length);   // if the pictures were the problem, the words can still go
+      }
+      function done(pictures, email) {
+        var zh = row ? cell(row, '中文') : null;
+        $('fb-done').innerHTML = '<div class="fb-done" role="status">'
+          + '<div class="fb-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>'
+          + '<h2 id="fb-done-title" tabindex="-1">Sent. Thank you.</h2>'
+          + '<p>' + (row ? 'Your note on ' + esc(zh ? zh.textContent.trim() : 'the row') + ' (row ' + esc(row.id) + ')' : 'Your note')
+          + (pictures ? (pictures === 1 ? ' and its picture' : ' and its ' + pictures + ' pictures') : '')
+          + ' reached me. Corrections to the glossary go into the next version of the font.</p>'
+          + '<p>' + (email ? "I'll write to " + esc(email) + " if I have a question, or when it's in." : "You left no email, so I can't write back, but I read every message.") + '</p></div>'
+          + '<div class="fb-foot"><p class="fb-why"></p><button type="button" class="fb-btn primary" data-fb-close>Back to the page</button></div>';
+        form.hidden = true; $('fb-done').hidden = false;
+        dlg.querySelector('#fb-done [data-fb-close]').focus();
+      }
+      form.addEventListener('submit', function (e) { e.preventDefault(); submit(true); });
+      plain.addEventListener('click', function () { submit(false); });
+    })();
+  </script>
   <script>
 
     // Font loading detection: the notation shows once the JianZiPu font is in
