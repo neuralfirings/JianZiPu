@@ -78,8 +78,11 @@ export function diffBundle(b: Bundle, cur: Current): Item[] {
  *  and its section titles when it changed them (a draft from before the glossary file has no rows to
  *  give, one from before titles no titles). */
 export function glossaryItems(bundle: Bundle, cur: Pick<Current, 'glossary' | 'glossaryLayout'>): Item[] {
-  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows, curRows = cur.glossary ?? {};
-  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay, curLay = cur.glossaryLayout;
+  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows;
+  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay;
+  // no glossary to compare with: compare with where the draft started (never "the font has none",
+  // which would make every subtitle new and hide its rows from the other comparisons)
+  const curRows = cur.glossary ?? baseRows, curLay = cur.glossary === undefined && cur.glossaryLayout === undefined ? baseLay : cur.glossaryLayout;
   const metaOf = (l: GlossaryLayout | undefined, k: string) => l?.sections[k];
   const differ = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
   const ids = new Set([...changedSections(baseRows, rows), ...(lay ? Object.keys({ ...baseLay!.sections, ...lay.sections }).filter((k) => differ(metaOf(baseLay, k), metaOf(lay, k))) : [])]);

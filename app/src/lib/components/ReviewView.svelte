@@ -62,7 +62,7 @@
   /** Your changes: the ones the font has now (released, or made the same way in the font). They
    *  fold away at the bottom until the font's updates are brought into the draft. */
   let inFont = $derived(mode === 'mine' && app.mainDesign
-    ? inTheFont(items, bundle, { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs }) : new Set<string>());
+    ? inTheFont(items, bundle, { design: app.mainDesign, typing: app.mainTyping, svgs: app.mainSvgs, glossary: app.mainGlossary, glossaryLayout: app.mainLayout }) : new Set<string>());
   let done = $derived(items.filter((i) => inFont.has(i.id)));
   let released = $derived(mode === 'mine' ? releasedItems(app.requests) : {});
   let doneOpen = $state(false);

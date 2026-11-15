@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyMerge, glossaryItems, glossarySection, glossaryWhat, itemName, revertItems, type Current, type GlossaryItem, type GlossaryRowItem, type Item } from './merge';
-import { upgradeGlossary } from './requests';
+import { inTheFont, upgradeGlossary } from './requests';
 import type { Bundle } from './bundle';
 import type { GlossaryLayout, GlossaryRows, GRow } from './glossary';
 
@@ -11,7 +11,9 @@ const lay = (sections: Record<string, string>): GlossaryLayout => ({
 });
 /** A draft with only a glossary: its rows and titles now (`theirs`) and where it started (`base`). */
 const draft = (base: GlossaryRows, theirs: GlossaryRows, baseLay = lay({ '2b': 'Chords' }), theirsLay = baseLay) =>
-  ({ glossary: theirs, glossaryLayout: theirsLay, base: { glossary: base, glossaryLayout: baseLay } }) as unknown as Bundle;
+  ({ design: { areas: {}, layouts: [] }, typing: {}, svgs: {}, manifest: { svgs: { added: [], changed: [], deleted: [] } },
+     glossary: theirs, glossaryLayout: theirsLay,
+     base: { design: { areas: {}, layouts: [] }, typing: {}, svgs: {}, glossary: base, glossaryLayout: baseLay } }) as unknown as Bundle;
 const font = (glossary: GlossaryRows, glossaryLayout = lay({ '2b': 'Chords' })) => ({ design: { areas: {}, layouts: [] }, typing: {}, svgs: {}, glossary, glossaryLayout }) as unknown as Current;
 const keepAll = (items: Item[]) => Object.fromEntries(items.map((i) => [i.id, true]));
 const names = (rs?: GRow[]) => (rs ?? []).map((r) => ('glyph' in r ? r.glyph : r.word));
@@ -85,5 +87,15 @@ describe('the glossary, one row at a time', () => {
     expect(old.decisions).toEqual({ 'glossary-row:2b:g:qia1': 'keep', 'glossary-row:2b:g:qia2': 'keep' });
     const now = { bundle, item_ids: ['glossary-row:2b:g:qia1'], decisions: {} };
     expect(upgradeGlossary(now)).toEqual(now);                 // sent since: nothing to read differently
+  });
+
+  it('In the font now: only rows the font has, whether or not the font\'s glossary is passed', () => {
+    const bundle = draft(start, { '2b': [g('xl_cuo'), g('xl_dacuo'), g('qia1'), g('qia2')] });
+    const items = glossaryItems(bundle, font(start));
+    expect([...inTheFont(items, bundle, font(start))]).toEqual([]);
+    const without = { design: { areas: {}, layouts: [] }, typing: {}, svgs: {} } as unknown as Current;
+    expect([...inTheFont(items, bundle, without)]).toEqual([]);              // not "all of them"
+    const released = font({ '2b': [g('xl_cuo'), g('xl_dacuo'), g('qia1')] });
+    expect([...inTheFont(items, bundle, released)]).toEqual(['glossary-row:2b:g:qia1']);
   });
 });
