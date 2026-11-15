@@ -195,36 +195,59 @@ def _with_breaks(lines: list[str]) -> list[str]:
     return out
 
 
-# A vertical word's width (its colon area's advance) is paid out as the space after it, like every
-# other word's, never by a rule that reaches back over the word to the space: Safari and every
-# iPhone browser shape a word and the space after it apart, so such a rule never fires there and
-# the word came out a whole width too wide. So the colon gives back the space's width
-# (COLON_WIDTH below) and the positioning counts its advance less that width (build_rules). Only
-# a colon typed straight after a word, with no space, keeps its full advance: that word needs the
-# room, and the rule that sees it stays inside the run of text. Likewise a # straight after a
-# vertical word makes room for it, unless an earlier # in the same run already did (a # pulls the
-# parts after it back into its own width).
+# Widths. A word's parts are 0 wide and the space after the word is its width, as it always was.
+# A word with no space after it now takes its width itself (word_advance): its last part gets the
+# space's width, so `k5` is 1000, `k5 k5` 2000 and `k5  k5` 3000.
+#
+# Two things Safari and every iPhone browser do shape these rules (measured on an iPhone with test
+# fonts, 2026-11):
+#   - A typed space is drawn at the width the font file gives it, whatever a rule says; the rule
+#     only changes the measured width, so text is drawn in one place and measured in another. So
+#     no rule here changes a space: a rule changes the word, the colon or the #, and looks at the
+#     space after it, never the other way round.
+#   - Text is measured in pieces between the places a line may break. A word typed in Latin is one
+#     piece with the space after it, so a rule sees both. Between Chinese characters a line may
+#     break anywhere, so each one is measured alone; a part on its own must stay 0 wide or a word
+#     of three characters comes out three cells wide. That is why word_advance wants two parts
+#     (or a # and a part), and why a word typed in Chinese still needs a space or a # there
+#     unless the page sets `word-break: keep-all`.
+#
+# A vertical word's width (its colon area's advance) is likewise paid out as the space after it:
+# the colon gives back the space's width (COLON_WIDTH) and the positioning counts its advance
+# less that width (build_rules). Only a colon typed straight after a word, with no space, keeps
+# its full advance: it is that word's width, which word_advance leaves alone (a part with a part
+# after it is not the last one).
+#
+# A typed # is a blank cell on its own. In front of a word or a space it is 0 wide (HASH_WIDTH)
+# and moves nothing: `#k5` is `k5`, except that a # makes a word of one part take its width too.
 COLON = "blank_colon"
-SPACE = config.UPEM          # the space's advance (base.py)
-_DEPTH = 10                  # how far back a rule looks, as in CLEANUP_RULES
+SPACE = config.UPEM          # the space's advance (base.py); a lone # is as wide
+HASH = "numbersign"
 COLON_WIDTH = [
     "  lookup colon_width {",
     f"    ignore pos {WILD} {COLON}';",
     f"    pos {COLON}' <0 0 -{SPACE} 0>;",
-    "    ignore pos " + ", ".join(" ".join(["numbersign"] + [WILD] * n + ["numbersign'"])
-                                  for n in range(_DEPTH, -1, -1)) + ";",
-    *(f"    pos {' '.join([COLON] + [WILD] * n)} numbersign' <0 0 {SPACE} 0>;"
-      for n in range(_DEPTH, -1, -1)),
     "  } colon_width;",
 ]
+def word_advance(colon: bool) -> list[str]:
+    return [
+        "  lookup word_advance {",
+        f"    ignore pos {WILD}' {WILD};",            # not the word's last part
+        f"    ignore pos {WILD}' @space_char;",       # the space is the width
+        # a colon is not a part: 上 on its own gets one (features.gen_auto_colon) and must stay 0 wide
+        *([f"    ignore pos {COLON} {WILD}';"] if colon else []),
+        f"    pos {WILD} {WILD}' <0 0 {SPACE} 0>;",
+        f"    pos {HASH} {WILD}' <0 0 {SPACE} 0>;",
+        "  } word_advance;",
+    ]
 
-CLEANUP_RULES = (
-    # hide stray glyphs of half-formed words (up to 10 deep), and give space
-    # its advance back at word boundaries -- carried over from the classic build.
-    # Only a # word: a vertical word's space keeps its advance (COLON_WIDTH above).
-    ("numbersign", WILD, "<-1000 0 0 0>"),
-    ("numbersign", "@space_char", "<0 0 -1000 0>"),
-)
+
+HASH_WIDTH = [
+    "  lookup hash_width {",
+    f"    pos {HASH}' {WILD} <0 0 -{SPACE} 0>;",
+    f"    pos {HASH}' @space_char <0 0 -{SPACE} 0>;",
+    "  } hash_width;",
+]
 
 
 def gen_gpos(design: Design) -> Emission:
@@ -238,12 +261,10 @@ def gen_gpos(design: Design) -> Emission:
     lines += _with_breaks([r.render("x") for r in rules])
     lines.append("} pos_x;")
     lines += ["", "feature kern {", "  lookup pos_y;", "  lookup pos_x;"]
-    if any(COLON in a.glyphs and a.advance for a in design.areas.values()):
+    colon = any(COLON in a.glyphs and a.advance for a in design.areas.values())
+    if colon:
         lines += COLON_WIDTH
-    for context, marked, value in CLEANUP_RULES:
-        for n in range(10, -1, -1):
-            tokens = " ".join([context] + [WILD] * n + [f"{marked}'"])
-            lines.append(f"  pos {tokens} {value};")
+    lines += word_advance(colon) + HASH_WIDTH
     lines.append("} kern;")
     return Emission(lines=lines, rules=rules, skipped=skipped, pair_lookups=len(reg.pairs),
                     other_classes=dict(reg.other))

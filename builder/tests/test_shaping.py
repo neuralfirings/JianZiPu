@@ -122,8 +122,12 @@ def test_shaping_matches_current_font():
     assert compare_fonts(str(config.CURRENT_FONT), str(new)) == 0
 
 
-# Safari and every iPhone browser shape each word and each space on its own, so a line must come
-# out the same shaped a word at a time as shaped whole: no rule may reach over a word to its space.
+# Safari and every iPhone browser measure a line in pieces and draw it whole (measured on an iPhone
+# with test fonts, 2026-11; see positioning/emit.py):
+#   - measured: a piece runs to the next place a line may break, with the space after it. A word
+#     typed in Latin is one piece; every Chinese character is a piece of its own.
+#   - drawn: the whole line, but a typed space as wide as the font file says, whatever a rule says.
+# So a line must measure the same in pieces as whole, and no rule may change a space.
 APART = [
     "shang34 xia34 s9k3 s8k4", ":shang34 :xia34 s9k3", "上三四 下三四 名九勾三",
     "s7.5>k5 jiul7 0k3 k3 fyd9u6 v5.6V5 s9c C03|s6,5 v7U43 :v8.5banlun7 :shang51 :jin ",
@@ -141,6 +145,15 @@ SEPARATED = {
     "#s9k5:shang34#d7u3": [0, 1000, 2000],
     "#:shang34#d7u3": [0, 1000],
 }
+# A word with no space after it takes its width itself; a # is a blank cell only on its own.
+WIDTHS = {
+    "s9k5": 1000, "s9k5 s9k5": 2000, "s9k5  s9k5": 3000, "s9k5 s9k5 ": 2000, " s9k5": 2000,
+    ":shang34": 1000, ":shang34 s9k5": 2000, "s9k5 :shang34": 2000,
+    "#s9k5 #s9k5": 2000, "#s9k5#s9k5": 2000, "#5 #5": 2000, "s9k5 # s9k5": 3000, "s9k5 ## s9k5": 4000,
+    "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "名九勾五 名九勾五 ": 2000,
+    ":shang": 0, "上三四 上三四 ": 2000,
+    "5": 0,                                    # one part on its own: Safari measures 五 like this
+}
 MAIN = {"md_ming": 150, "md_zhong": 150, "md_shang": 325, "md_xia": 325}
 
 
@@ -152,14 +165,9 @@ def _shape_whole(font: str, text: str):
     return out, pen
 
 
-def _shape_apart(font: str, text: str):
+def _measured_in_pieces(font: str, text: str) -> int:
     import re
-    out, pen = [], 0
-    for part in re.findall(r" |[^ ]+", text):
-        glyphs, width = _shape_whole(font, part)
-        out += [(n, x + pen, y) for n, x, y in glyphs]
-        pen += width
-    return out, pen
+    return sum(_shape_whole(font, piece)[1] for piece in re.findall(r"(?:[^\x00-\x7f]|[!-~]+) ?| ", text))
 
 
 def _built_font():
@@ -173,13 +181,21 @@ def _built_font():
     return str(out)
 
 
-def test_words_shape_alone_as_in_a_line():
+def test_a_line_measures_in_pieces_as_whole():
     font = _built_font()
     for text in APART:
-        assert _shape_apart(font, text) == _shape_whole(font, text), text
+        glyphs, width = _shape_whole(font, text)
+        assert {xa for n, (xa, *_) in shape(font, text) if n == "space"} <= {1000}, text
+        # Chinese is checked by WIDTHS below: a spelling of two characters (掐起, 泛音) is measured a
+        # character at a time and keeps the base font's widths there, which no rule here can change
+        if text.isascii():
+            assert _measured_in_pieces(font, text) == width, text
     for text, cells in SEPARATED.items():
         glyphs, _ = _shape_whole(font, text)
         assert [x - MAIN[n] for n, x, _ in glyphs if n in MAIN] == cells, text
+    for text, width in WIDTHS.items():
+        assert _shape_whole(font, text)[1] == width, text
+        assert _measured_in_pieces(font, text) == width, text
 
 
 if __name__ == "__main__":
