@@ -151,8 +151,10 @@ WIDTHS = {
     ":shang34": 1000, ":shang34 s9k5": 2000, "s9k5 :shang34": 2000,
     "#s9k5 #s9k5": 2000, "#s9k5#s9k5": 2000, "#5 #5": 2000, "s9k5 # s9k5": 3000, "s9k5 ## s9k5": 4000,
     "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "名九勾五 名九勾五 ": 2000,
-    ":shang": 0, "上三四 上三四 ": 2000,
-    "5": 0,                                    # one part on its own: Safari measures 五 like this
+    "上三四 上三四 ": 2000,
+    # one part: its own width typed in Latin, none typed in Chinese (Safari measures 五 like this)
+    "s": 1000, "shang": 1000, ":shang": 1000, "5": 1000, "s s": 2000, "s9k5 5": 2000, "_": 1000, "|": 500,
+    "五": 0, "上": 0, "散": 0,
 }
 MAIN = {"md_ming": 150, "md_zhong": 150, "md_shang": 325, "md_xia": 325}
 

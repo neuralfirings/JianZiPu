@@ -227,6 +227,19 @@ def test_a_word_without_a_space_takes_its_width(design):
             "  } word_advance;") in text
 
 
+def test_one_part_takes_its_width_only_in_latin_text(design):
+    """`s` or `shang` on its own is 1000 wide, but 散 or 上 is not: Safari measures a word typed in
+    Chinese a character at a time, so the rule is left out of the Chinese script."""
+    lines = emit.gen_gpos(design).lines
+    at = lines.index("  script DFLT;")
+    assert "  lookup lone_part {" not in lines[:at]
+    assert lines[at + 1] == "  lookup lone_part {" and lines[-3:] == ["  script latn;", "  lookup lone_part;", "} kern;"]
+    assert not any("hani" in l for l in lines)
+    text = "\n".join(lines)
+    assert "    ignore pos [blank_colon]';\n    pos @area_wild' <0 0 1000 0>;" in text
+    assert "    pos blank_colon @area_wild' <0 0 1000 0>;" in text
+
+
 def test_a_hash_moves_nothing(design):
     """A # is a blank cell on its own and 0 wide before a word or a space; it no longer pulls the
     parts after it back, and the space after a # word keeps its width."""

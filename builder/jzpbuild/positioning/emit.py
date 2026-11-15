@@ -209,8 +209,9 @@ def _with_breaks(lines: list[str]) -> list[str]:
 #     piece with the space after it, so a rule sees both. Between Chinese characters a line may
 #     break anywhere, so each one is measured alone; a part on its own must stay 0 wide or a word
 #     of three characters comes out three cells wide. That is why word_advance wants two parts
-#     (or a # and a part), and why a word typed in Chinese still needs a space or a # there
-#     unless the page sets `word-break: keep-all`.
+#     (or a # and a part), why one part takes a width only in Latin text (lone_part), and why a
+#     word typed in Chinese still needs a space or a # there unless the page sets
+#     `word-break: keep-all`.
 #
 # A vertical word's width (its colon area's advance) is likewise paid out as the space after it:
 # the colon gives back the space's width (COLON_WIDTH) and the positioning counts its advance
@@ -242,6 +243,23 @@ def word_advance(colon: bool) -> list[str]:
     ]
 
 
+def lone_part(own_width: list[str]) -> list[str]:
+    """A word of one part typed in Latin (`s`, `shang`, which is a colon and a part) takes its width too. Only in a run of Latin
+    text: the same part typed in Chinese (散, 上) is what Safari sees when it measures a longer word a
+    character at a time, and there it must stay 0 wide. The colon and the bar have a width already."""
+    return [
+        "  lookup lone_part {",
+        f"    ignore pos {WILD}' {WILD};",
+        f"    ignore pos {WILD}' @space_char;",
+        *([f"    pos {COLON} {WILD}' <0 0 {SPACE} 0>;"] if COLON in own_width else []),   # shang = :shang
+        f"    ignore pos {WILD} {WILD}';",
+        f"    ignore pos {HASH} {WILD}';",              # word_advance did this one
+        *([f"    ignore pos [{' '.join(own_width)}]';"] if own_width else []),
+        f"    pos {WILD}' <0 0 {SPACE} 0>;",
+        "  } lone_part;",
+    ]
+
+
 HASH_WIDTH = [
     "  lookup hash_width {",
     f"    pos {HASH}' {WILD} <0 0 -{SPACE} 0>;",
@@ -265,6 +283,11 @@ def gen_gpos(design: Design) -> Emission:
     if colon:
         lines += COLON_WIDTH
     lines += word_advance(colon) + HASH_WIDTH
+    own_width = sorted({g for a in design.areas.values() if a.advance for g in a.glyphs})
+    for script in ("DFLT", "latn"):          # not hani: see lone_part
+        lines += [f"  script {script};", "  lookup lone_part" + (";" if script != "DFLT" else " {")]
+        if script == "DFLT":
+            lines[-1:] = lone_part(own_width)
     lines.append("} kern;")
     return Emission(lines=lines, rules=rules, skipped=skipped, pair_lookups=len(reg.pairs),
                     other_classes=dict(reg.other))
