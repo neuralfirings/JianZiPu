@@ -1,5 +1,7 @@
 -- Feedback from the font page (jianzipufont.com): the pencil by each glossary row's number and
--- "Send feedback" at the foot of the page. Run once in the SQL editor, after 001; safe to run again.
+-- "Send feedback" at the foot of the page. Run once in the SQL editor; safe to run again. It stands
+-- on its own: in the Builder's project (after 001) admins may also read and set statuses from a
+-- signed-in app; in any other project only the dashboard and the function (service key) reach it.
 --
 -- What it makes:
 --   feedback          one row per message: what it's about, the message, who sent it (if they said),
@@ -38,15 +40,18 @@ create index if not exists feedback_status_idx on public.feedback (status, creat
 create index if not exists feedback_sender_idx on public.feedback (sender, created_at desc);
 alter table public.feedback enable row level security;
 
-drop policy if exists "feedback: admins read" on public.feedback;
-create policy "feedback: admins read" on public.feedback for select to authenticated
-  using (public.is_admin());
-drop policy if exists "feedback: admins update" on public.feedback;
-create policy "feedback: admins update" on public.feedback for update to authenticated
-  using (public.is_admin()) with check (public.is_admin());
-drop policy if exists "feedback: admins delete" on public.feedback;
-create policy "feedback: admins delete" on public.feedback for delete to authenticated
-  using (public.is_admin());
+-- the Builder's admins (001_setup.sql's is_admin()), where this project has them; with no policy at
+-- all, the table is the dashboard's and the function's alone
+do $$ begin
+  if to_regprocedure('public.is_admin()') is not null then
+    execute 'drop policy if exists "feedback: admins read" on public.feedback';
+    execute 'create policy "feedback: admins read" on public.feedback for select to authenticated using (public.is_admin())';
+    execute 'drop policy if exists "feedback: admins update" on public.feedback';
+    execute 'create policy "feedback: admins update" on public.feedback for update to authenticated using (public.is_admin()) with check (public.is_admin())';
+    execute 'drop policy if exists "feedback: admins delete" on public.feedback';
+    execute 'create policy "feedback: admins delete" on public.feedback for delete to authenticated using (public.is_admin())';
+  end if;
+end $$;
 
 create or replace function public.feedback_touch() returns trigger
   language plpgsql as $$
@@ -64,7 +69,11 @@ create trigger feedback_touch before update on public.feedback
 insert into storage.buckets (id, name, public)
 values ('feedback', 'feedback', false)
 on conflict (id) do update set public = false;
--- the function writes with the service key; admins may read them (a signed link, the dashboard)
-drop policy if exists "feedback pictures: admins read" on storage.objects;
-create policy "feedback pictures: admins read" on storage.objects for select to authenticated
-  using (bucket_id = 'feedback' and public.is_admin());
+-- the function writes with the service key; the dashboard shows them; the Builder's admins may read
+-- them too, where this project has them
+do $$ begin
+  if to_regprocedure('public.is_admin()') is not null then
+    execute 'drop policy if exists "feedback pictures: admins read" on storage.objects';
+    execute 'create policy "feedback pictures: admins read" on storage.objects for select to authenticated using (bucket_id = ''feedback'' and public.is_admin())';
+  end if;
+end $$;

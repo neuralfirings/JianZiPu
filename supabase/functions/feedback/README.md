@@ -16,7 +16,8 @@ they left an email.
 
 ## Setting it up
 
-1. **The table and bucket**: run `supabase/006_feedback.sql` in the SQL editor.
+1. **The table and bucket**: run `supabase/006_feedback.sql` in the SQL editor. In the
+   Builder's project it also lets its admins read the table from a signed-in app.
 2. **Secrets**: it uses the Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`
    (`../notify/README.md`), so nothing new is needed. Optional:
 
@@ -26,12 +27,22 @@ they left an email.
    ```
 
    `FEEDBACK_SALT` keeps the hourly limit's hashes of senders' addresses from being
-   guessed; `FEEDBACK_FROM` sends from another address than `MAIL_FROM`;
+   guessed; `FEEDBACK_TO` (comma-separated) sends the emails there instead of to the
+   Builder's admins (needed in a project without them); `FEEDBACK_FROM` sends from
+   another address than `MAIL_FROM`;
    `FEEDBACK_ORIGINS` (comma-separated) lets other pages post, beyond
    jianzipufont.com, its Cloudflare previews (`*.jianzipu.pages.dev`) and your own
    computer.
 3. **Deploy**: `supabase functions deploy feedback --no-verify-jwt` (visitors aren't
-   signed in; `check.ts` decides what gets in).
+   signed in; `check.ts` decides what gets in). Or in the dashboard, without the CLI:
+   - Make one file of it (the dashboard's editor can't reach `../notify/`):
+     `deno bundle supabase/functions/feedback/index.ts -o feedback-index.ts`.
+   - Edge Functions → Deploy a new function → Via Editor. Name it `feedback`, paste
+     the file over `index.ts`, and deploy.
+   - In the function's settings, turn off **Enforce JWT verification** and save.
+     Left on, every message is refused before the function sees it.
+   - Edge Functions → Secrets: check `RESEND_API_KEY` and `MAIL_FROM` are there
+     (the Change Request emails set them), and add `FEEDBACK_SALT`.
 4. **The page**: set `window.FEEDBACK_URL` near the top of `site/index.html` to
    `https://<project>.supabase.co/functions/v1/feedback`. Until it's set, the page
    shows no pencils and no feedback link.

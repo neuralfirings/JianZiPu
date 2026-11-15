@@ -1,8 +1,8 @@
 // Supabase Edge Function: feedback from the font page (jianzipufont.com). The form posts here as
 // multipart (the message, the row it's about, an optional name and email, up to 5 pictures);
 // check.ts decides what's acceptable, this stores the pictures in the private `feedback` bucket and
-// the message in public.feedback (status 'new'), then emails the admins through Resend with the
-// pictures attached. Setup and secrets: README.md in this folder.
+// the message in public.feedback (status 'new'), then emails FEEDBACK_TO (or the Builder's admins)
+// through Resend with the pictures attached. Setup and secrets: README.md in this folder.
 import { LIMITS, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail } from './mail.ts';
 
@@ -32,9 +32,12 @@ async function upload(path: string, file: File) {
   if (!r.ok) throw new Error(`storage ${path}: HTTP ${r.status} ${await r.text()}`);
 }
 
-async function admins(): Promise<string[]> {
+/** Who gets the email: FEEDBACK_TO (comma-separated), else the Builder's admins, in its project. */
+async function recipients(): Promise<string[]> {
+  const to = env('FEEDBACK_TO').split(',').map((s) => s.trim()).filter(Boolean);
+  if (to.length) return to;
   const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email&role=eq.admin`, { headers: service });
-  if (!r.ok) throw new Error(`profiles: HTTP ${r.status}`);
+  if (!r.ok) throw new Error(`no FEEDBACK_TO, and no admins to send to (profiles: HTTP ${r.status})`);
   return (await r.json() as { email: string | null }[]).map((p) => p.email).filter((e): e is string => !!e);
 }
 
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
 
     // the message is kept; the email is a courtesy, so a failed send is logged, not the visitor's problem
     try {
-      const to = await admins();
+      const to = await recipients();
       if (to.length) {
         const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
         const m = feedbackMail({ entry: p.entry, pictures: paths.length, tableUrl: `https://supabase.com/dashboard/project/${ref}/editor` });
