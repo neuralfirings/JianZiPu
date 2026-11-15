@@ -17,8 +17,10 @@ they left an email.
 
 ## Setting it up
 
-1. **The table and bucket**: run `supabase/006_feedback.sql` in the SQL editor. In the
-   Builder's project it also lets its admins read the table from a signed-in app.
+1. **The table and bucket**: run `supabase/006_feedback.sql`, then `supabase/007_feedback_kind.sql`,
+   in the SQL editor. In the Builder's project 006 also lets its admins read the table from a
+   signed-in app. 007 adds `kind`: run it before deploying a function that sends it (one
+   deployed first saves messages without it, and logs that 007 is missing).
 2. **Secrets**: it uses the Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`
    (`../notify/README.md`), so nothing new is needed. Optional:
 
@@ -63,7 +65,9 @@ in Dashboard → Table Editor → `feedback`, newest first by `created_at`. Set
 | `wont_do` | Not changing it |
 | `need_info` | Asked the sender for more |
 
-`note` is yours, for anything else. The pictures are in Storage → `feedback`, one
+`kind` says what it is: `row` (the button on a glossary row), `page` (Feedback in the
+sticky bar, "Tell me", Send feedback) or `contact` (Contact me, which asks for an email
+and sends "Message from …" instead of "Feedback on …"). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
 folder per message (the message's `id`); `pictures` lists their paths.
 
 ## Changing it

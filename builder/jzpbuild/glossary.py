@@ -541,31 +541,43 @@ def section_rows(sid: str, sec: dict, rows: dict[str, dict]) -> list[Row]:
 
 def table_html(sid: str, sec: dict, rows: dict[str, dict], start: int = 1) -> str:
     """The section's table; its rows are numbered `start`, `start` + 1… (one count down the whole page).
-    A Definition column (the rows' "meaning") joins it, last, once any of its rows has one."""
+    Columns: ID | 中文 (simplified · traditional, the pinyin under it) | ASCII | Example (what to type →
+    the glyph) | Definition. The Definition column (the rows' "meaning") joins it, last, once any of
+    its rows has one. Each cell has a class (gid, zh, ascii, ex, meaning): the page's phone layout,
+    its search and its feedback form find them by it."""
     cls = "table table-sm" if default_example(sec) else "table"
     body = section_rows(sid, sec, rows)
     meaning = any(r.meaning for r in body)
-    widths = (13, 13, 13, 19, 18, 18) if meaning else (17, 17, 17, 0, 22, 21)
+    widths = (16, 12, 40, 26) if meaning else (22, 16, 56, 0)
     lines = [f'<table class="{cls}">', "  <thead>", "    <tr>", '      <th class="gid" width="6%">ID</th>']
-    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("中文", "ASCII", "拼音"), widths)]   # Chinese first: the term a player reads
-    lines += [f'      <th width="{widths[4]}%">Input</th>', f'      <th width="{widths[5]}%">Output</th>']
+    lines += [f'      <th width="{w}%">{h}</th>' for h, w in zip(("中文", "ASCII", "Example"), widths)]   # Chinese first: the term a player reads
     lines += ([f'      <th width="{widths[3]}%">Definition</th>'] if meaning else [])
     lines += ["    </tr>", "  </thead>"]
     for n, r in enumerate(body, start):
         rid = str(n)                  # by position: a row added above renumbers the ones below it
-        lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>', f"    <td>{r.chinese}</td>",
-                  f"    <td>{r.ascii}</td>", f"    <td>{r.pinyin}</td>",
-                  f"    <td>{_typed_cell(r.typed)}</td>", f"    <td>{r.usage}</td>",
+        lines += [f'  <tr id="{rid}">', f'    <td class="gid"><a href="#{rid}">{rid}</a></td>',
+                  f'    <td class="zh">{_zh_cell(r)}</td>', f'    <td class="ascii">{r.ascii}</td>',
+                  f'    <td class="ex">{_example_cell(r)}</td>',
                   *([f'    <td class="meaning">{r.meaning}</td>'] if meaning else []), "  </tr>"]
     lines.append("</table>")
     return "\n".join(INDENT + l if l else l for l in lines)
 
 
-def _typed_cell(lines: list[str]) -> str:
-    """The Input cell: each way to type the Output on a line of its own (Chinese, then ASCII)."""
-    if not lines:
-        return ""
-    return "\n" + "".join(f"{INDENT}      <txs>{x}</txs>\n" for x in lines) + f"{INDENT}    "
+def _zh_cell(r: Row) -> str:
+    """The 中文 cell: simplified · traditional (each kept on one line), then the pinyin, smaller."""
+    zh = r.chinese.replace('</span>, <span class="nw">', '</span><span class="sep"> · </span><span class="nw">')
+    return zh + (f'<span class="py">{r.pinyin}</span>' if r.pinyin else "")
+
+
+def _example_cell(r: Row) -> str:
+    """The Example cell: a slip with what to type (each way on a line of its own: Chinese, then ASCII),
+    an arrow, and the glyph the font draws for it."""
+    typed = "".join(f"{INDENT}        <txs>{x}</txs>\n" for x in r.typed)
+    return (f'\n{INDENT}      <div class="slip">\n'
+            f'{INDENT}      <div class="ex-in">\n{typed}{INDENT}      </div>\n'
+            f'{INDENT}      <span class="ex-arrow" aria-hidden="true">→</span>\n'
+            f'{INDENT}      <div class="ex-out">{r.usage}</div>\n'
+            f'{INDENT}      </div>\n{INDENT}    ')
 
 
 def missing(rows: dict[str, dict], sections: dict[str, dict]) -> list[str]:

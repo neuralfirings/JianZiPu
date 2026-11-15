@@ -69,11 +69,20 @@ Deno.serve(async (req) => {
     const id = crypto.randomUUID();
     const paths = p.pictures.map((pic, i) => `${id}/picture-${i + 1}.${pic.ext}`);
     for (let i = 0; i < paths.length; i++) await upload(paths[i], p.pictures[i].file);
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/feedback`, {
+    const insert = (row: Record<string, unknown>) => fetch(`${SUPABASE_URL}/rest/v1/feedback`, {
       method: 'POST', headers: { ...service, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ id, ...p.entry, pictures: paths, sender }),
+      body: JSON.stringify(row),
     });
-    if (!r.ok) throw new Error(`feedback insert: HTTP ${r.status} ${await r.text()}`);
+    let r = await insert({ id, ...p.entry, pictures: paths, sender });
+    if (!r.ok) {
+      const why = await r.text();
+      // a project where 007_feedback_kind.sql hasn't run yet has no kind column: keep the message all the same
+      if (!/kind/.test(why)) throw new Error(`feedback insert: HTTP ${r.status} ${why}`);
+      console.error('feedback: no kind column (run supabase/007_feedback_kind.sql); saved without it');
+      const { kind: _, ...rest } = p.entry;
+      r = await insert({ id, ...rest, pictures: paths, sender });
+      if (!r.ok) throw new Error(`feedback insert: HTTP ${r.status} ${await r.text()}`);
+    }
 
     // the message is kept; the email is a courtesy, so a failed send is logged, not the visitor's problem
     try {

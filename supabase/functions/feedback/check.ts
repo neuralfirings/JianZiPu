@@ -10,8 +10,12 @@ export const LIMITS = {
   perHour: 5,                        // messages from one network address in an hour
 };
 
-/** One message as it's stored (public.feedback, supabase/006_feedback.sql), less what the server adds. */
-export type Entry = { glossary_row: string | null; link: string | null; message: string; name: string | null; email: string | null };
+/** What a message is: about a glossary row, about the page, or a note to me (Contact me). */
+export type Kind = 'row' | 'page' | 'contact';
+export const KINDS: Kind[] = ['row', 'page', 'contact'];
+
+/** One message as it's stored (public.feedback, supabase/006 and 007), less what the server adds. */
+export type Entry = { kind: Kind; glossary_row: string | null; link: string | null; message: string; name: string | null; email: string | null };
 export type Picture = { file: File; ext: string };
 export type Parsed =
   | { ok: true; spam: false; entry: Entry; pictures: Picture[] }
@@ -40,6 +44,10 @@ export function parse(fd: FormData): Parsed {
   if (name.length > LIMITS.name) return bad(`Your name is over ${LIMITS.name} characters.`);
   if (email && (email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return bad("That email doesn't look right. Check it, or leave it empty.");
   if (row.length > LIMITS.row) return bad('The row it came from is too long to be one of the glossary’s.');
+  // the kind the page says, else what the fields show (a page from before kinds sends none)
+  const said = text(fd, 'kind') as Kind;
+  const kind: Kind = KINDS.includes(said) && (said !== 'row' || row) ? said : row ? 'row' : 'page';
+  if (kind === 'contact' && !email) return bad('Leave your email, so I can write back.');
   let goodLink: string | null = null;
   if (link) {
     try {
@@ -63,7 +71,7 @@ export function parse(fd: FormData): Parsed {
 
   return {
     ok: true, spam: false, pictures,
-    entry: { glossary_row: row || null, link: goodLink, message, name: name || null, email: email || null },
+    entry: { kind, glossary_row: kind === 'row' ? row : null, link: goodLink, message, name: name || null, email: email || null },
   };
 }
 

@@ -42,6 +42,7 @@ where the settings live. Secrets never go in this repository.
    | `004_change_requests.sql` | Change Requests, credit, `withdraw_change_request()` |
    | `005_request_drafts.sql` | unsent Change Requests saved with a draft |
    | `006_feedback.sql` | the font page's feedback (`feedback` table with a status, private `feedback` bucket) |
+   | `007_feedback_kind.sql` | each message's `kind`: a glossary row, the page, or Contact me |
 
 2. **Auth**, following the comments at the top of `001_setup.sql`:
    - Turn off sign-ups.
@@ -105,13 +106,16 @@ table (pictures in the `feedback` bucket) and emails the admins through Resend,
 pictures attached. `supabase/functions/feedback/README.md` has the full steps.
 In short:
 
-1. Run `supabase/006_feedback.sql`.
+1. Run `supabase/006_feedback.sql` and `supabase/007_feedback_kind.sql`.
 2. Deploy with `supabase functions deploy feedback --no-verify-jwt`. It uses the
    Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`; optionally set
    `FEEDBACK_SALT` to a long random string.
 3. Set `window.FEEDBACK_URL` near the top of `site/index.html` to
    `https://<project>.supabase.co/functions/v1/feedback` and merge. Until then
    the page shows no feedback buttons or links.
+
+"Contact me" on the page opens the same form, asks for an email, and is kept
+with `kind` = `contact`.
 
 Answer a message by replying to its email. Set its status in Table Editor →
 `feedback`: `new`, `read`, `ticket` (put the ticket's link in `ticket`),

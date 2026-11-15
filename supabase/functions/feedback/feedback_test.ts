@@ -15,7 +15,7 @@ Deno.test('a row message is taken, trimmed, with its pictures', () => {
   const p = parse(form({ message: '  The pinyin should be zhòng.  ', row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)',
     link: 'https://jianzipufont.com/#2', name: 'Lin', email: 'lin@example.com', _gotcha: '' }, [['picture-1', png()], ['picture-2', png(5, 'a.jpg', 'image/jpeg')]]));
   assert(p.ok && !p.spam);
-  assertEquals(p.entry, { glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2',
+  assertEquals(p.entry, { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2',
     message: 'The pinyin should be zhòng.', name: 'Lin', email: 'lin@example.com' });
   assertEquals(p.pictures.map((x) => x.ext), ['png', 'jpg']);
 });
@@ -23,7 +23,7 @@ Deno.test('a row message is taken, trimmed, with its pictures', () => {
 Deno.test('feedback on the page has no row; empty fields are null', () => {
   const p = parse(form({ message: 'The font has no 猱.' }));
   assert(p.ok && !p.spam);
-  assertEquals(p.entry, { glossary_row: null, link: null, message: 'The font has no 猱.', name: null, email: null });
+  assertEquals(p.entry, { kind: 'page', glossary_row: null, link: null, message: 'The font has no 猱.', name: null, email: null });
 });
 
 Deno.test('the spam trap passes quietly and keeps nothing', () => {
@@ -73,7 +73,7 @@ Deno.test('the sender is kept as a salted hash, the same each time', async () =>
 Deno.test('the email names the row, quotes the message, and says who to reply to', () => {
   assertEquals(rowName('2 · 中 · d · zhōng (1.1. Which Finger to Use)'), '中 (row 2)');
   const m = feedbackMail({
-    entry: { glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2', message: 'Should be <b>zhòng</b>.', name: 'Lin', email: 'lin@example.com' },
+    entry: { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2', message: 'Should be <b>zhòng</b>.', name: 'Lin', email: 'lin@example.com' },
     pictures: 2, tableUrl: 'https://supabase.com/dashboard/project/abc/editor',
   });
   assertEquals(m.subject, 'Feedback on 中 (row 2)');
@@ -85,8 +85,28 @@ Deno.test('the email names the row, quotes the message, and says who to reply to
 });
 
 Deno.test('feedback on the page, from someone who left nothing', () => {
-  const m = feedbackMail({ entry: { glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null }, pictures: 0, tableUrl: 'u' });
+  const m = feedbackMail({ entry: { kind: 'page', glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null }, pictures: 0, tableUrl: 'u' });
   assertEquals(m.subject, 'Feedback on the font page');
   assertStringIncludes(m.text, 'Someone who left no name or email wrote.');
   assertStringIncludes(m.text, 'no one to reply to');
+});
+
+Deno.test('Contact me: kept as contact, needs an email, and its email says so', () => {
+  assertEquals(parse(form({ message: 'Could I help?', kind: 'contact' })), { ok: false, status: 400, error: 'Leave your email, so I can write back.' });
+  const p = parse(form({ message: 'Could I help?', kind: 'contact', name: 'Lin', email: 'lin@example.com', row: '2 · 中' }));
+  assert(p.ok && !p.spam);
+  assertEquals(p.entry.kind, 'contact');
+  assertEquals(p.entry.glossary_row, null);                    // a note to you, not about a row
+  const m = feedbackMail({ entry: p.entry, pictures: 0, tableUrl: 'u' });
+  assertEquals(m.subject, "Message from Lin (the font page's Contact me)");
+  assertStringIncludes(m.text, 'Reply to this email to answer them.');
+});
+
+Deno.test('the kind comes from the page, else from whether there is a row', () => {
+  const kind = (f: Record<string, string>) => { const p = parse(form({ message: 'hi', ...f })); return p.ok && !p.spam ? p.entry.kind : null; };
+  assertEquals(kind({ row: '2 · 中' }), 'row');                  // a page from before kinds sends none
+  assertEquals(kind({}), 'page');
+  assertEquals(kind({ kind: 'row' }), 'page');                   // a row kind with no row is about the page
+  assertEquals(kind({ kind: 'nonsense', row: '2 · 中' }), 'row');
+  assertEquals(kind({ kind: 'page' }), 'page');
 });
