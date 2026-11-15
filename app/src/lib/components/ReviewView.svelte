@@ -71,7 +71,7 @@
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
     { title: 'Design', items: shown.filter((i) => i.kind === 'design') },
-    { title: 'Glossary', items: shown.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles') }
+    { title: 'Glossary', items: shown.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-row' || i.kind === 'glossary-titles') }
   ]);
 
   function setAll(v: boolean) { picks = Object.fromEntries(items.map((i) => [i.id, v])); }
@@ -86,7 +86,7 @@
     const g = applied.filter((i) => i.kind === 'glyph').map((i) => i.key);
     const sp = applied.filter((i) => i.kind === 'spelling').length;
     const d = applied.filter((i) => i.kind === 'design').map((i) => (i.kind === 'design' ? i.label.replace(/^Area · |^Word type · /, '') : ''));
-    const gl = applied.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-titles').length;
+    const gl = applied.filter((i) => i.kind === 'glossary' || i.kind === 'glossary-row' || i.kind === 'glossary-titles').length;
     const parts = [
       ...(g.length > 3 ? [`${g.length} glyphs`] : g),
       ...(sp ? [`${sp} spelling${sp === 1 ? '' : 's'}`] : []),
@@ -119,7 +119,7 @@
   let sendable = $derived(mode === 'mine' ? items.filter((i) => !app.lockOf(i.id) && !inFont.has(i.id)) : []);
   let sending = $state(false);
   $effect(() => { if (send && mode === 'mine') sending = true; });
-  const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.kind === 'glossary' ? glossaryWhat(it) : it.key);
+  const nameOf = (it: Item) => (it.kind === 'design' ? it.label : it.kind === 'glossary' || it.kind === 'glossary-row' ? glossaryWhat(it) : it.key);
   /** A new glyph that spellings or areas still use: its id while "undo all of it?" is showing. */
   let asking = $state<string | null>(null);
   function usesText(g: string) {
@@ -218,7 +218,7 @@
             <span class="tag {it.status}">{it.status}</span>
             {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
-            {#if it.kind === 'glossary'}<span class="muted sum">in {glossarySection(it)}</span>{/if}
+            {#if it.kind === 'glossary-row'}<span class="muted sum">in {glossarySection(it)}</span>{/if}
             <span class="spacer"></span>
             {#if it.kind === 'design' && (it.unit.type === 'area' || it.unit.type === 'member') && !readOnly}<a href="/layouts?area={it.unit.name}{it.unit.glyph ? `&g=${it.unit.glyph}` : ''}">Open in Layouts</a>{/if}
             {#if lockOf(it)}
@@ -266,8 +266,12 @@
                 {/each}
               </tbody>
             </table>
+          {:else if it.kind === 'glossary-row'}
+            <p class="muted small">{it.status === 'added' ? 'A new row' : it.status === 'deleted' ? 'Taken out' : 'Its definition or example changed'}. Kept or skipped on its own; a new row goes in between the same rows as in the draft.</p>
+            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base ? [it.base] : [] }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs ? [it.theirs] : [] },
+              ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current ? [it.current] : [] }] : [])]} />
           {:else if it.kind === 'glossary'}
-            <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...sectionSummary(it.base, it.theirs)].join(' · ')}. A subtitle is one item: you keep its rows (in the draft's order), title and description whole.</p>
+            <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...(it.whole ? sectionSummary(it.base, it.theirs) : it.order ? ['rows in a new order'] : [])].join(' · ')}. {it.whole ? 'A new or removed subtitle is one item: you keep its rows, title and description whole.' : 'Its rows, added or taken out, are items of their own.'}</p>
             {#if it.meta?.theirs?.description && it.meta.theirs.description !== it.meta.base?.description}
               <div class="desc">{@html markdown(it.meta.theirs.description)}</div>
             {/if}

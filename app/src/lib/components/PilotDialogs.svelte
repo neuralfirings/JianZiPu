@@ -50,7 +50,7 @@
   }
   // "the 21 Oct font your draft started from"
   const started = $derived(`the ${app.draftBase?.version.date ? `${day(app.draftBase.version.date)} ` : ''}font your draft started from`);
-  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : i.kind === 'glossary' ? `the glossary's ${glossaryWhat(i)}` : i.kind === 'glossary-titles' ? "the glossary's section titles" : `glyph ${i.key}`);
+  const what = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `${i.key} spellings` : i.kind === 'glossary' || i.kind === 'glossary-row' ? `the glossary's ${glossaryWhat(i)}` : i.kind === 'glossary-titles' ? "the glossary's section titles" : `glyph ${i.key}`);
 </script>
 
 {#if pilot.dialog}
@@ -113,6 +113,8 @@
                   <table class="cells"><tbody>
                     {#each it.fields.filter((f) => f.conflict) as f}<tr><th>{f.field}</th><td>yours: {f.current || '—'}</td><td>the font's: {f.theirs || '—'}</td></tr>{/each}
                   </tbody></table>
+                {:else if it.kind === 'glossary-row'}
+                  <GlossaryRowsDiff columns={[{ title: 'yours', rows: it.current ? [it.current] : [] }, { title: "the font's", rows: it.theirs ? [it.theirs] : [] }]} />
                 {:else if it.kind === 'glossary'}
                   {#if it.meta}<p class="muted small">{metaSummary(it.meta.base, it.meta.theirs).join(' · ')}</p>{/if}
                   <GlossaryRowsDiff columns={[{ title: 'yours', rows: it.current }, { title: "the font's", rows: it.theirs }]} />

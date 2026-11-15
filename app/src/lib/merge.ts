@@ -1,8 +1,9 @@
 // Three-way merge of a draft into the current font: base (what the draft started from),
 // theirs (the draft), current (the font as it is now). Each change is one reviewable item:
 // a glyph file, one glyph's spellings, one unit of design.json (an area's settings, one glyph
-// joining or leaving an area, a word type, the page center, the stroke weight, the sample sets), or
-// one section of the glossary (its rows, whole). A new or removed area is one item, whole. An item conflicts when the current font
+// joining or leaving an area, a word type, the page center, the stroke weight, the sample sets), one
+// row of the glossary added, taken out or edited, or a glossary subtitle's own settings and row order
+// (a new or removed subtitle: one item with its rows). A new or removed area is one item, whole. An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
 import type { Area, Design, Layout, Relationship } from './api';
@@ -22,43 +23,44 @@ export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
 };
-/** One subtitle of the glossary (site/glossary.json): its rows in order and, from a draft that has
- *  them, its title, kind, example and description (`meta`, undefined: not there), kept or skipped whole. */
+/** One subtitle of the glossary (site/glossary.json): its title, example and description (`meta`,
+ *  from a draft that has them; undefined: not there) and the order of its rows. `whole`: a subtitle
+ *  the draft adds or removes, or one the font has since removed: its rows come and go with it. Else
+ *  its rows are items of their own (GlossaryRowItem), and this one is its settings (`meta` changed)
+ *  and/or the order of the rows both sides keep (`order`). `base`, `theirs`, `current`: its rows. */
 export type GlossaryItem = Base & { kind: 'glossary'; key: string; base: GRow[]; theirs: GRow[]; current: GRow[];
-  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta } };
+  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta }; whole: boolean; order: boolean };
+/** One row of a glossary subtitle, added, taken out or edited (its meaning or example). `key`:
+ *  `<subtitle>:<row>` (row: rowKey(), g:<glyph> or w:<word>). `theirsOrder`, `baseOrder`: the
+ *  subtitle's rows on each side, to put a row back between the same neighbours. */
+export type GlossaryRowItem = Base & { kind: 'glossary-row'; key: string; section: string; row: string; title: string;
+  base?: GRow; theirs?: GRow; current?: GRow; baseOrder: string[]; theirsOrder: string[] };
 /** The glossary's section titles: their names, short names, descriptions and which subtitles each holds, whole. */
 export type GlossaryTitlesItem = Base & { kind: 'glossary-titles'; key: 'titles'; base: Group[]; theirs: Group[]; current: Group[] };
-export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryTitlesItem;
+export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryRowItem | GlossaryTitlesItem;
 export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
-/** What a glossary item changes, named by its rows rather than its subtitle's id (1b): the rows it
- *  adds (ji2_md; ji2_md and bu4dong4_md; ji2_md and 2 more), takes out (without mod_ji) or edits;
- *  failing those (a new order, a new title or description), the subtitle's title. */
-export function glossaryWhat(it: GlossaryItem): string {
-  const byKey = (rs: GRow[]) => new Map(rs.map((r) => [rowKey(r), r] as const));
-  const b = byKey(it.base), t = byKey(it.theirs);
-  const names = (keys: string[], from: Map<string, GRow>) => keys.map((k) => rowName(from.get(k)!));
-  const list = (ns: string[], pre = '') => pre + (ns.length === 1 ? ns[0] : ns.length === 2 ? `${ns[0]} and ${ns[1]}` : `${ns[0]} and ${ns.length - 1} more`);
-  const added = names([...t.keys()].filter((k) => !b.has(k)), t);
-  const removed = names([...b.keys()].filter((k) => !t.has(k)), b);
-  const edited = names([...t.keys()].filter((k) => b.has(k) && !same(b.get(k), t.get(k))), t);
-  const parts = [...(added.length ? [list(added)] : []), ...(removed.length ? [list(removed, 'without ')] : []), ...(edited.length ? [list(edited)] : [])];
-  if (parts.length) return parts.join(', ');
+/** What a glossary item changes, in words: a row's name (ji2_md, 带起); a subtitle's title (a new or
+ *  removed one, or its title, example or description), or "the order of" it. */
+export function glossaryWhat(it: GlossaryItem | GlossaryRowItem): string {
+  if (it.kind === 'glossary-row') return rowName((it.theirs ?? it.base)!);
   const title = it.meta?.theirs?.title || it.meta?.base?.title || it.key;
-  return same([...b.keys()], [...t.keys()]) ? title : `the order of ${title}`;
+  if (it.whole || !it.order) return title;
+  return it.meta && !same(it.meta.base, it.meta.theirs) ? `${title}, and its order` : `the order of ${title}`;
 }
 
 /** The subtitle a glossary item is in, as the page numbers it: its id and title (1b · Speed). */
-export const glossarySection = (it: GlossaryItem) => {
-  const title = it.meta?.theirs?.title || it.meta?.base?.title;
-  return title ? `${it.key} · ${title}` : it.key;
+export const glossarySection = (it: GlossaryItem | GlossaryRowItem) => {
+  const title = it.kind === 'glossary-row' ? it.title : it.meta?.theirs?.title || it.meta?.base?.title;
+  const id = it.kind === 'glossary-row' ? it.section : it.key;
+  return title ? `${id} · ${title}` : id;
 };
 
 /** An item's name in a list of changes: Glyph · lg_gou, Spellings · lg_gou, Glossary · ji2_md… */
 export function itemName(i: Item): string {
-  return i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${glossaryWhat(i)}`
+  return i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' || i.kind === 'glossary-row' ? `Glossary · ${glossaryWhat(i)}`
     : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`;
 }
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
@@ -71,29 +73,75 @@ export function diffBundle(b: Bundle, cur: Current): Item[] {
     ...(b.glossary || b.glossaryLayout ? glossaryItems(b, cur) : [])];
 }
 
-/** The subtitles whose rows or settings the draft changed, and its section titles when it changed
- *  them (a draft from before the glossary file has no rows to give, one from before titles no titles). */
-function glossaryItems(bundle: Bundle, cur: Current): Item[] {
+/** The draft's glossary changes: each row it adds, takes out or edits, in a subtitle both sides
+ *  have; each subtitle whose settings or row order it changed; a subtitle it adds or removes, whole;
+ *  and its section titles when it changed them (a draft from before the glossary file has no rows to
+ *  give, one from before titles no titles). */
+export function glossaryItems(bundle: Bundle, cur: Pick<Current, 'glossary' | 'glossaryLayout'>): Item[] {
   const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows, curRows = cur.glossary ?? {};
   const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay, curLay = cur.glossaryLayout;
   const metaOf = (l: GlossaryLayout | undefined, k: string) => l?.sections[k];
   const differ = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
   const ids = new Set([...changedSections(baseRows, rows), ...(lay ? Object.keys({ ...baseLay!.sections, ...lay.sections }).filter((k) => differ(metaOf(baseLay, k), metaOf(lay, k))) : [])]);
+  const keys = (rs: GRow[]) => rs.map(rowKey);
+  const byKey = (rs: GRow[]) => new Map(rs.map((r) => [rowKey(r), r] as const));
+  /** `a`'s rows in their order, only those `b` has too */
+  const shared = (a: GRow[], b: GRow[]) => { const in_ = new Set(keys(b)); return keys(a).filter((k) => in_.has(k)); };
   const out: Item[] = [];
   for (const k of [...ids].sort()) {
     const b = baseRows[k] ?? [], t = rows[k] ?? [], c = curRows[k] ?? [];
     const meta = lay ? { base: metaOf(baseLay, k), theirs: metaOf(lay, k), current: metaOf(curLay, k) } : undefined;
-    if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
     const gone = meta ? !meta.theirs : !t.length, fresh = meta ? !meta.base : !b.length;
-    out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
-      base: b, theirs: t, current: c, ...(meta ? { meta } : {}),
-      conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+    const inFont = curLay ? !!curLay.sections[k] : k in curRows;
+    if (fresh || gone || !inFont) {
+      // a subtitle that comes or goes (here or in the font since): one item, its rows with it
+      if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
+      out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
+        base: b, theirs: t, current: c, ...(meta ? { meta } : {}), whole: true, order: false,
+        conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+      continue;
+    }
+    const title = meta?.theirs?.title || meta?.base?.title || '';
+    // each row the draft added, took out or edited, unless the font has it so already
+    const bm = byKey(b), tm = byKey(t), cm = byKey(c);
+    for (const r of [...keys(t), ...keys(b).filter((x) => !tm.has(x))]) {
+      const br = bm.get(r), tr = tm.get(r), cr = cm.get(r);
+      if (!differ(br, tr) || !differ(tr, cr)) continue;
+      out.push({ id: `glossary-row:${k}:${r}`, kind: 'glossary-row', key: `${k}:${r}`, section: k, row: r, title,
+        status: !br ? 'added' : !tr ? 'deleted' : 'changed', base: br, theirs: tr, current: cr,
+        baseOrder: keys(b), theirsOrder: keys(t), conflict: differ(cr, br) });
+    }
+    // the subtitle itself: its settings, and the order of the rows both sides keep
+    const metaChanged = !!meta && differ(meta.base, meta.theirs) && differ(meta.theirs, meta.current);
+    const order = differ(shared(b, t), shared(t, b)) && differ(shared(t, c), shared(c, t));
+    if (metaChanged || order) {
+      out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: 'changed', base: b, theirs: t, current: c,
+        ...(meta ? { meta } : {}), whole: false, order,
+        conflict: (metaChanged && curLay !== undefined && differ(meta!.current, meta!.base)) || (order && differ(shared(c, b), shared(b, c))) });
+    }
   }
   if (lay && differ(baseLay!.groups, lay.groups) && differ(lay.groups, curLay?.groups)) {
     out.push({ id: 'glossary-titles', kind: 'glossary-titles', key: 'titles', status: 'changed',
       base: baseLay!.groups, theirs: lay.groups, current: curLay?.groups ?? [], conflict: !!curLay && differ(curLay.groups, baseLay!.groups) });
   }
   return out;
+}
+
+/** Put `row` into `rows` where it is in `order` (its subtitle's rows on the side it comes from):
+ *  after the nearest row before it that `rows` has, else before the nearest after it, else last. */
+function placeRow(rows: GRow[], row: GRow, order: string[]) {
+  const at = order.indexOf(rowKey(row)), here = keysOf(rows);
+  for (let i = at - 1; i >= 0; i--) { const j = here.indexOf(order[i]); if (j >= 0) { rows.splice(j + 1, 0, row); return; } }
+  for (let i = at + 1; i < order.length; i++) { const j = here.indexOf(order[i]); if (j >= 0) { rows.splice(j, 0, row); return; } }
+  rows.push(row);
+}
+const keysOf = (rs: GRow[]) => rs.map(rowKey);
+/** `rows` with the ones `to` has put in `to`'s order, each in a place one of them had (others stay put). */
+function reorder(rows: GRow[], to: GRow[]): GRow[] {
+  const pos = new Map(keysOf(to).map((k, i) => [k, i] as const));
+  const ranked = rows.filter((r) => pos.has(rowKey(r))).sort((a, b) => pos.get(rowKey(a))! - pos.get(rowKey(b))!);
+  let j = 0;
+  return rows.map((r) => (pos.has(rowKey(r)) ? ranked[j++] : r));
 }
 
 function glyphItems(b: Bundle, cur: Current): GlyphItem[] {
@@ -286,7 +334,7 @@ export function updateSummary(items: Item[]): string {
   const design = new Map<string, number>(), areas = new Set<string>();
   for (const it of items) {
     if (it.kind === 'glyph') drawings++;
-    else if (it.kind === 'glossary' || it.kind === 'glossary-titles') sections++;
+    else if (it.kind === 'glossary' || it.kind === 'glossary-row' || it.kind === 'glossary-titles') sections++;
     else if (it.kind === 'spelling') {
       for (const f of it.fields) {
         const noun = SPELLING_NOUN[f.field];
@@ -304,7 +352,7 @@ export function updateSummary(items: Item[]): string {
   const parts: [number, string][] = [
     ...[...fields].map(([noun, gs]): [number, string] => [gs.size, `${noun} for ${n(gs.size, 'glyph')}`]),
     ...(drawings ? [[drawings, n(drawings, 'glyph drawing')] as [number, string]] : []),
-    ...(sections ? [[sections, n(sections, 'glossary section')] as [number, string]] : []),
+    ...(sections ? [[sections, n(sections, 'glossary change')] as [number, string]] : []),
     ...[...design].map(([w, k]): [number, string] => [k, n(k, w)])
   ].sort((a, b) => b[0] - a[0]);
   const words = parts.slice(0, 3).map((p) => p[1]);
@@ -326,15 +374,24 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
   const glossary: GlossaryRows = JSON.parse(JSON.stringify(cur.glossary ?? {}));
   const layout: GlossaryLayout = JSON.parse(JSON.stringify(cur.glossaryLayout ?? { groups: [], sections: {} }));
   const copy = <V>(v: V): V => JSON.parse(JSON.stringify(v));
+  const orders: GlossaryItem[] = [];      // a subtitle's row order goes last, after its rows came and went
   for (const it of items) {
     if (!keep[it.id]) continue;
     applied.push(it);
-    if (it.kind === 'glossary') {
+    if (it.kind === 'glossary' && it.whole) {
       glossary[it.key] = copy(it.theirs);
       if (it.meta) {
         if (it.meta.theirs) layout.sections[it.key] = copy(it.meta.theirs);
         else { delete layout.sections[it.key]; delete glossary[it.key]; }
       }
+    } else if (it.kind === 'glossary') {
+      if (it.meta?.theirs && JSON.stringify(it.meta.base) !== JSON.stringify(it.meta.theirs)) layout.sections[it.key] = copy(it.meta.theirs);
+      if (it.order) orders.push(it);
+    } else if (it.kind === 'glossary-row') {
+      const sec = (glossary[it.section] ??= []), at = keysOf(sec).indexOf(it.row);
+      if (!it.theirs) { if (at >= 0) sec.splice(at, 1); }
+      else if (at >= 0) sec[at] = copy(it.theirs);
+      else placeRow(sec, copy(it.theirs), it.theirsOrder);
     } else if (it.kind === 'glossary-titles') layout.groups = copy(it.theirs);
     else if (it.kind === 'glyph') {
       if (it.theirs == null) svgDeletes.push(it.key);
@@ -348,6 +405,7 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
   }
   // a section title can't hold a subtitle that isn't there (one whose own item was skipped)
   for (const g of layout.groups) g.sections = g.sections.filter((id) => id in layout.sections);
+  for (const it of orders) if (glossary[it.key]) glossary[it.key] = reorder(glossary[it.key], it.theirs);
   return { design, typing, svgWrites, svgDeletes, ...(cur.glossary !== undefined ? { glossary } : {}),
     ...(cur.glossaryLayout !== undefined ? { glossaryLayout: layout } : {}), applied };
 }
@@ -411,6 +469,7 @@ export function revertItems(items: Item[], cur: Current): Merged {
   const back = items.map((it): Item =>
     it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) }
       : it.kind === 'glossary' && it.meta ? { ...it, theirs: it.base, meta: { ...it.meta, theirs: it.meta.base } }
+      : it.kind === 'glossary-row' ? { ...it, theirs: it.base, theirsOrder: it.baseOrder }
       : { ...it, theirs: it.base } as Item);
   return applyMerge(back, Object.fromEntries(back.map((i) => [i.id, true])), cur);
 }
