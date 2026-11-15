@@ -18,8 +18,9 @@ const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const kept = (r: RequestRow) => r.item_ids.filter((id) => r.decisions?.[id] === 'keep').length;
 
-/** One email: a heading, paragraphs (plain text, escaped here), an optional quote, a button. */
-function mail(o: { subject: string; heading: string; paras: string[]; quote?: { label: string; text: string }[]; button: { label: string; url: string }; footer: string }): Mail {
+/** One email: a heading, paragraphs (plain text, escaped here), an optional quote, a button.
+ *  `brand`: the line above the heading (the feedback emails, supabase/functions/feedback, say where from). */
+export function mail(o: { subject: string; heading: string; paras: string[]; quote?: { label: string; text: string }[]; button: { label: string; url: string }; footer: string; brand?: string }): Mail {
   const quotes = (o.quote ?? []).filter((q) => q.text.trim());
   const text = [
     o.heading, '', ...o.paras.flatMap((p) => [p, '']),
@@ -41,7 +42,7 @@ function mail(o: { subject: string; heading: string; paras: string[]; quote?: { 
   <tr>
     <td align="center" style="padding:32px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#fafafa;border:1px solid #c4c4c4;border-radius:6px;">
-        ${td("padding:28px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:15px;line-height:1.4;color:#595959;", 'JZP Font Builder')}
+        ${td("padding:28px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:15px;line-height:1.4;color:#595959;", esc(o.brand ?? 'JZP Font Builder'))}
         ${td("padding:8px 32px 0 32px;font-family:'EB Garamond',Garamond,Georgia,serif;font-size:26px;line-height:1.25;font-weight:500;color:#2a2a2a;", esc(o.heading))}
         ${o.paras.map((p) => td(`padding:16px 32px 0 32px;${body}`, esc(p))).join('\n        ')}
         ${quotes.map((q) => td(`padding:16px 32px 0 32px;${body}`, `<div style="font-size:13px;color:#595959;">${esc(q.label)}</div><div style="margin-top:4px;padding:8px 12px;border-left:2px solid #0a5cbf;background:#f0f0f0;white-space:pre-wrap;">${esc(q.text.trim())}</div>`)).join('\n        ')}

@@ -6,13 +6,12 @@ where the settings live. Secrets never go in this repository.
 | Part | What it does | Where |
 | --- | --- | --- |
 | Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
-| Supabase | Sign-in, drafts, Change Requests, the base font, emails | supabase.com dashboard, `supabase/` |
+| Supabase | Sign-in, drafts, Change Requests, the base font, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
 | Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
-| Resend | Sends the Change Request emails | resend.com, `supabase/functions/notify/` |
+| Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
 | EmailOctopus | The "send me the font" email on the font page, and the email list shared with Guqin Tabs | emailoctopus.com, `site/index.html` |
-| Formspree | The Builder's invite and Feedback forms, and the font page's feedback form (the pencil on each glossary row) | formspree.io, `app/src/lib/forms.ts`, `site/index.html` |
 
 ## Your computer
 
@@ -42,6 +41,7 @@ where the settings live. Secrets never go in this repository.
    | `003_drop_drafts_bucket.sql` | removes the old drafts bucket's policies; only needed if the bucket ever existed |
    | `004_change_requests.sql` | Change Requests, credit, `withdraw_change_request()` |
    | `005_request_drafts.sql` | unsent Change Requests saved with a draft |
+   | `006_feedback.sql` | the font page's feedback (`feedback` table with a status, private `feedback` bucket) |
 
 2. **Auth**, following the comments at the top of `001_setup.sql`:
    - Turn off sign-ups.
@@ -75,15 +75,6 @@ bucket".
 The "Ask for an invite" and Feedback forms post to Formspree straight from the
 app (`app/src/lib/forms.ts`), so they need no setting.
 
-The font page's feedback form posts to Formspree too: the pencil by each glossary
-row's number and "Send feedback" at the foot of the page. Its form id is
-`window.FEEDBACK_FORM_ID` near the top of `site/index.html` (the `<id>` in
-formspree.io/f/<id>; not a secret, every visitor's browser posts to it). Empty: no
-pencils and no feedback link. Photos and drawings go as file uploads, which need a
-Formspree plan that allows them; without one, Formspree refuses them and the form
-offers to send the message alone. Each entry's subject says which row it's about,
-with a `row` field (number · 中文 · ASCII · 拼音 (section)) and a `link` to it.
-
 A failed deploy, or one that looks old (a build error that was fixed weeks
 ago), means Railway is serving an old image. Redeploy from Railway's
 Deployments tab.
@@ -103,6 +94,27 @@ Deployments tab.
 The email templates are in git (`supabase/functions/notify/templates.ts`). To
 change one, edit it, run `deno test supabase/functions/notify`, and deploy
 again.
+
+## Feedback from the font page
+
+The pencil by each glossary row's number on jianzipufont.com, and "Send
+feedback" at the foot of the page, send a message with optional photos or a
+drawing to the `feedback` Edge Function. It keeps each one in the `feedback`
+table (pictures in the `feedback` bucket) and emails the admins through Resend,
+pictures attached. `supabase/functions/feedback/README.md` has the full steps.
+In short:
+
+1. Run `supabase/006_feedback.sql`.
+2. Deploy with `supabase functions deploy feedback --no-verify-jwt`. It uses the
+   Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`; optionally set
+   `FEEDBACK_SALT` to a long random string.
+3. Set `window.FEEDBACK_URL` near the top of `site/index.html` to
+   `https://<project>.supabase.co/functions/v1/feedback` and merge. Until then
+   the page shows no pencils and no feedback link.
+
+Answer a message by replying to its email. Set its status in Table Editor →
+`feedback`: `new`, `read`, `ticket` (put the ticket's link in `ticket`),
+`wont_do` or `need_info`.
 
 ## GitHub
 
