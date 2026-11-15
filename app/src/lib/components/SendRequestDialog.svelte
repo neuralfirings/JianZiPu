@@ -129,14 +129,16 @@
     </fieldset>
 
     <label class="field">Title
+      <span class="muted small hint">Its line in the release notes.</span>
       <input id="cr-title" type="text" bind:value={title} maxlength="200" placeholder="Tighter spacing for 勾 over 七" />
     </label>
     <label class="field">What you changed and why
+      <span class="muted small hint">For the reviewer only, never published.</span>
       <textarea id="cr-notes" bind:value={notes} rows="5" maxlength="20000" placeholder="Which words look better now, what you tried, anything you're unsure about."></textarea>
     </label>
     <label class="field">How would you like to be credited?
+      <span class="muted small hint">After "thanks to" in the release notes; empty for none.</span>
       <input id="cr-credit" type="text" bind:value={credit} maxlength="200" placeholder="Your name here" />
-      <span class="muted small">Your name the way it should read in the release notes, which say "thanks to" before it. Leave it empty for no credit. It's remembered for next time.</span>
     </label>
 
     {#if problem}<div class="banner danger" role="alert"><span class="ic"><I.Problem /></span><span>{problem}</span></div>{/if}
@@ -165,6 +167,7 @@
   .field { display: flex; flex-direction: column; gap: var(--space-2); font-weight: 600; }
   .field input, .field textarea { font: inherit; font-weight: 400; }
   .field .muted { font-weight: 400; }
+  .field .hint { margin-top: calc(-1 * var(--space-1)); }   /* close under its label */
   .tag.added { color: var(--status-saved); border-color: currentColor; }
   .tag.deleted { color: var(--status-danger); border-color: currentColor; }
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
