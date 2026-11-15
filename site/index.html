@@ -308,7 +308,7 @@
         position: relative;
         display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 0;
         /* inset 12px from the paper's edges on both sides; the extra 1.75rem on the right keeps the heading clear of the ID */
-        padding: 16px calc(1.75rem + 12px) 18px 12px;
+        padding: 16px calc(var(--gid-room, 1.75rem) + 12px) 18px 12px;
         border-bottom: 1px solid var(--border);
       }
       .table > tbody > tr[hidden], .table > tr[hidden], .table[hidden] { display: none; }
@@ -332,7 +332,7 @@
       .table td:nth-child(3):has(> .nw + .nw)::before, .table td:nth-child(3) > .nw { font-size: 0.9rem; }
       .table td:nth-child(3) > .nw + .nw::before { content: "/"; margin: 0 0.35em; color: var(--ink-faint); }
       /* the definition, right under its heading, as wide as the entry */
-      .table td.meaning { order: 5; flex-basis: calc(100% + 1.75rem); margin: 4px -1.75rem 0 0; line-height: 1.45; }
+      .table td.meaning { order: 5; flex-basis: calc(100% + var(--gid-room, 1.75rem)); margin: 4px calc(-1 * var(--gid-room, 1.75rem)) 0 0; line-height: 1.45; }
       .table td.meaning:empty { display: none; }
       /* the example: one slip, the typed spellings on the left, → and the glyph on the right */
       .table td:nth-child(5), .table td:nth-child(6) {
@@ -348,7 +348,7 @@
       .table td:nth-child(6) {
         /* the same flex as Input, so the two halves are as wide as each other and the arrow, at the
            start of this half, sits in the middle of the slip; a wide glyph takes the room it needs */
-        order: 8; flex: 1 1 0; margin-right: -1.75rem;
+        order: 8; flex: 1 1 0; margin-right: calc(-1 * var(--gid-room, 1.75rem));
         display: flex; align-items: center; justify-content: space-between; gap: 10px;
         padding: 0 10px 0 0; border-left: 0; border-radius: 0 4px 4px 0;
       }
@@ -390,16 +390,37 @@
     .glossary-desc p, .glossary-subdesc p { margin-bottom: .5rem; }
     .glossary-subdesc { margin-bottom: .25rem; }
 
-    /* Feedback: a pencil on each glossary row and "Send feedback" at the foot of the page open one
-       short form (message, photos or a drawing, name, email), sent to Supabase (script at the end) */
-    .fb-row { border: 1px solid transparent; background: none; border-radius: 4px; padding: 2px 4px; margin-left: 2px;
-      color: var(--ink-faint); opacity: .6; cursor: pointer; vertical-align: middle; line-height: 0; }
-    .fb-row svg { width: 14px; height: 14px; }
+    /* Feedback: a button at the end of each glossary row, Feedback in the sticky bar, "Tell me" when a
+       search finds nothing and "Send feedback" at the foot of the page open one short form (message,
+       photos or a drawing, name, email), sent to Supabase (script at the end). The icon is Remix
+       Icon's feedback-line (remixicon.com, Apache 2.0). */
+    .fb-ic { width: 18px; height: 18px; display: block; flex: none; }
+    th.fb-cell, td.fb-cell { width: 1%; white-space: nowrap; text-align: right; }
+    .fb-row { border: 1px solid transparent; background: none; border-radius: 4px; padding: 5px; color: var(--ink-faint); opacity: .7;
+      cursor: pointer; line-height: 0; }
     tr:hover .fb-row, .fb-row:focus-visible { opacity: 1; color: var(--link); border-color: var(--border); background: var(--bg-field); }
     tr.fb-picked { --bs-table-bg: var(--target); background-color: var(--target); }
     .fb-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .fb-inline { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.15em; color: var(--ink-muted); }
+    /* in the sticky bar: beside Download, quieter than it */
+    .bar-feedback { display: inline-flex; align-items: center; gap: 6px; margin-left: 18px; padding: 2px 4px; border: 0; background: none;
+      color: var(--on-bar-muted); font: inherit; cursor: pointer; vertical-align: baseline; }
+    .bar-feedback:hover, .bar-feedback:focus-visible { color: var(--on-bar); text-decoration: underline; text-underline-offset: 3px; }
+    .bar-feedback .fb-ic { width: 16px; height: 16px; }
     @media (max-width: 759.98px) {
-      .fb-row { opacity: 1; color: var(--link); border-color: var(--border); background: var(--bg-field); padding: 7px; }   /* a finger-sized pencil */
+      /* each entry's ID and button sit in its top-right corner, at the same place in every entry */
+      .fb-ready .table > tbody > tr, .fb-ready .table > tr { --gid-room: calc(1.75rem + 40px); }
+      .fb-ready .table td:nth-child(1) { top: 20px; right: 54px; }
+      .table td.fb-cell { position: absolute; top: 8px; right: 8px; width: auto; padding: 0; }   /* clear of the definition's first line */
+      .fb-row { opacity: 1; color: var(--link); border-color: var(--border); background: var(--bg-field); width: 36px; height: 36px;
+        display: grid; place-items: center; padding: 0; position: relative; }
+      .fb-row::after { content: ""; position: absolute; inset: -4px; }   /* a 44 px target around the 36 px button */
+      /* in the bar: the icon alone, a 44 px target, between Contents and Download */
+      .bar-feedback { width: 44px; height: 44px; justify-content: center; margin-left: auto; padding: 0; color: var(--on-bar); flex: none; }
+      .bar-feedback .fb-ic { width: 20px; height: 20px; }
+      .bar-feedback .t { display: none; }
+      .fb-ready .download-bar .bar-feedback { order: 1; }
+      .fb-ready .download-bar .download { order: 2; margin-left: 0; }
     }
     #fb { border: 1px solid var(--border-strong); border-radius: 6px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto;
       background: var(--bg-panel); color: var(--ink); box-shadow: 0 18px 50px rgba(43, 39, 36, .28); }
@@ -479,11 +500,12 @@
        Its id is the one in the form's embed code, eocampaign1.com/form/<id>.js. Empty: the Download
        button downloads the font straight away. -->
   <script>window.EO_FORM_ID = 'dc6d7afe-dd52-11f1-978b-43af410d7c6e';</script>
-  <!-- Feedback (the pencil on each glossary row, "Send feedback" at the foot): the Supabase Edge
+  <!-- Feedback (a button on each glossary row, Feedback in the sticky bar, "Tell me" under a search
+       that finds nothing, "Send feedback" at the foot): the Supabase Edge
        Function supabase/functions/feedback, https://<project>.supabase.co/functions/v1/feedback. It keeps
        each message (and its pictures) in the feedback table with a status, and emails the admins
        (docs/maintainers/setup.md, Feedback). Not a secret: every visitor's browser posts to it.
-       Empty: no pencils and no feedback link. -->
+       Empty: no feedback buttons or links. -->
   <script>window.FEEDBACK_URL = 'https://lpezoqdnhtwvokzdfduf.supabase.co/functions/v1/feedback';</script>
 </head>
 <body>
@@ -533,6 +555,7 @@
     <a class="download" id="download-font" href="./JianZiPu.ttf" download>
       Download<span class="download-name"> JianZiPu Font</span>
     </a>
+    <button type="button" class="bar-feedback fb-on" data-fb-site aria-label="Send feedback" hidden><svg class="fb-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg><span class="t">Feedback</span></button>
     <small class="font-version" id="font-version"></small>
   </div>
   <div class="container">
@@ -572,7 +595,7 @@
     </details>
 
     <h3 id="glossary">Glossary</h3>
-    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Use the pencil by its number to suggest a fix.</span></p>
+    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Tell me with <svg class="fb-inline" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg> on its row.</span></p>
     <div class="row">
       <div class="col">
         <div class="glossary-search" role="search">
@@ -1850,7 +1873,7 @@
   </div>
   <div class="scroll-rod bottom" aria-hidden="true"></div>
 
-  <!-- Feedback: one short form for a glossary row (the pencil by its number) or the whole page
+  <!-- Feedback: one short form for a glossary row (the button at the end of it) or the whole page
        (Send feedback at the foot). Script below; styles under "Feedback" in the head. -->
   <dialog id="fb" aria-labelledby="fb-title">
     <form id="fb-form" novalidate>
@@ -1904,30 +1927,37 @@
     <div id="fb-done" hidden></div>
   </dialog>
   <script>
-    // Feedback: the pencil each glossary row gets here (in its ID cell, which the search skips), the
-    // form above, and sending it to Supabase (window.FEEDBACK_URL in the head) as multipart, so
+    // Feedback: the button each glossary row gets here (in a cell of its own at the end, which the
+    // search skips), the form above, and sending it to Supabase (window.FEEDBACK_URL in the head) as multipart, so
     // photos and drawings go along as files. A row's values are read from the page itself.
     (function () {
       var FORM = window.FEEDBACK_URL, dlg = document.getElementById('fb');
       if (!FORM || !dlg || !dlg.showModal) return;
       document.querySelectorAll('.fb-on').forEach(function (e) { e.hidden = false; });
+      document.documentElement.classList.add('fb-ready');   // the phone layout makes room for the row buttons; the search offers "Tell me"
       var $ = function (id) { return document.getElementById(id); };
       var form = $('fb-form'), why = $('fb-why'), send = $('fb-send'), plain = $('fb-plain');
       var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
       var MAX_FILES = 5, MAX_BYTES = 8 * 1024 * 1024;   // as supabase/functions/feedback/check.ts allows
-      var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M21.17 6.81a1 1 0 0 0-3.98-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></svg>';
+      var ICON = '<svg class="fb-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg>';
       var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
-      // ---- a pencil on every glossary row
+      // ---- a feedback button at the end of every glossary row, in a cell (and column) of its own
       document.querySelectorAll('td.gid').forEach(function (td) {
         var tr = td.parentElement, n = td.textContent.trim();
         var zh = cell(tr, '中文');
+        var head = tr.closest('table').querySelector('thead tr');
+        if (head && !head.querySelector('th.fb-cell')) {
+          var th = document.createElement('th'); th.className = 'fb-cell';
+          th.innerHTML = '<span class="visually-hidden">Feedback</span>'; head.appendChild(th);
+        }
+        var c = document.createElement('td'); c.className = 'fb-cell';
         var b = document.createElement('button');
-        b.type = 'button'; b.className = 'fb-row'; b.innerHTML = PEN;
+        b.type = 'button'; b.className = 'fb-row'; b.innerHTML = ICON;
         b.title = 'Suggest a fix';
         b.setAttribute('aria-label', 'Suggest a fix to row ' + n + (zh ? ', ' + zh.textContent.trim() : ''));
         b.addEventListener('click', function () { open(tr); });
-        td.appendChild(b);
+        c.appendChild(b); tr.appendChild(c);
       });
       function cell(tr, name) {   // a row's cell under the column headed `name`
         var heads = tr.closest('table').querySelectorAll('thead th');
@@ -1939,7 +1969,12 @@
           if (e.tagName === 'LABEL' || e.tagName === 'H4') return e.textContent.trim();
         return '';
       }
-      document.querySelectorAll('[data-fb-site]').forEach(function (b) { b.addEventListener('click', function () { open(null); }); });
+      // the sticky bar, the foot of the page, and "Tell me" under a search that found nothing (added
+      // later, so the click is caught here); data-fb-prefill starts the message
+      document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-fb-site]');
+        if (b) open(null, b.getAttribute('data-fb-prefill') || '');
+      });
 
       // ---- photos and drawings
       var files = [];
@@ -2042,9 +2077,10 @@
       // ---- opening and closing
       var row = null, rowText = '', lastFocus = null;
       function say(t, bad) { why.textContent = t; why.classList.toggle('bad', !!bad); }
-      function open(tr) {
+      function open(tr, prefill) {
         lastFocus = document.activeElement;
         form.reset(); files = []; strokes = []; drawThumbs(); pad(false);
+        $('fb-msg').value = prefill || '';
         form.hidden = false; $('fb-done').hidden = true; plain.hidden = true; send.disabled = false; send.textContent = 'Send';
         say('I read every message myself.');
         document.querySelectorAll('tr.fb-picked').forEach(function (t) { t.classList.remove('fb-picked'); });
@@ -2428,7 +2464,8 @@
           b.any = false;
           Array.prototype.forEach.call(b.table.rows, function (tr) {
             if (!tr.querySelector('td.gid')) return;
-            var cells = Array.prototype.slice.call(tr.cells, 1, tr.cells.length - 1);
+            var cells = Array.prototype.filter.call(tr.cells, function (c) { return !c.classList.contains('fb-cell'); });
+            cells = cells.slice(1, cells.length - 1);
             var hit = !q || whole || cells.some(function (c) { return norm(c.textContent).indexOf(q) >= 0; });
             tr.hidden = !hit;
             if (hit) { b.any = true; shown++; }
@@ -2439,6 +2476,14 @@
         heads.forEach(function (x) { x.h.hidden = !!q && !x.blocks.some(function (b) { return b.any; }); });
         loose.forEach(function (e) { e.hidden = !!q; });
         status.textContent = !q ? '' : shown ? shown + (shown === 1 ? ' row' : ' rows') : 'No glossary row matches. Try the pinyin without tones, or one character.';
+        // nothing found, and the feedback form is on: offer to say what's missing
+        if (q && !shown && document.documentElement.classList.contains('fb-ready')) {
+          var tell = document.createElement('button');
+          tell.type = 'button'; tell.className = 'fb-link'; tell.textContent = 'Tell me';
+          tell.setAttribute('data-fb-site', '');
+          tell.setAttribute('data-fb-prefill', 'I searched the glossary for “' + input.value.trim() + '” and couldn’t find it. ');
+          status.append(' Missing something? ', tell, '.');
+        }
       }
       input.addEventListener('input', run);
     })();

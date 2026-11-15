@@ -97,8 +97,9 @@ again.
 
 ## Feedback from the font page
 
-The pencil by each glossary row's number on jianzipufont.com, and "Send
-feedback" at the foot of the page, send a message with optional photos or a
+The feedback button on each glossary row on jianzipufont.com, Feedback in the
+sticky bar, "Tell me" under a search that finds nothing, and "Send feedback" at
+the foot of the page send a message with optional photos or a
 drawing to the `feedback` Edge Function. It keeps each one in the `feedback`
 table (pictures in the `feedback` bucket) and emails the admins through Resend,
 pictures attached. `supabase/functions/feedback/README.md` has the full steps.
@@ -110,7 +111,7 @@ In short:
    `FEEDBACK_SALT` to a long random string.
 3. Set `window.FEEDBACK_URL` near the top of `site/index.html` to
    `https://<project>.supabase.co/functions/v1/feedback` and merge. Until then
-   the page shows no pencils and no feedback link.
+   the page shows no feedback buttons or links.
 
 Answer a message by replying to its email. Set its status in Table Editor →
 `feedback`: `new`, `read`, `ticket` (put the ticket's link in `ticket`),

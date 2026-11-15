@@ -1,8 +1,9 @@
 # Feedback from the font page
 
 A Supabase Edge Function that takes the font page's feedback form
-(jianzipufont.com: the pencil by each glossary row's number, and "Send feedback"
-at the foot of the page). Each message is kept in `public.feedback`
+(jianzipufont.com: the feedback button on each glossary row, Feedback in the sticky
+bar, "Tell me" under a search that finds nothing, and "Send feedback" at the foot
+of the page). Each message is kept in `public.feedback`
 (`supabase/006_feedback.sql`) with its pictures in the private `feedback`
 bucket, and emailed to every admin (`profiles.role = 'admin'`) through
 [Resend](https://resend.com), pictures attached, replying to the sender when
@@ -46,7 +47,7 @@ they left an email.
      (the Change Request emails set them), and add `FEEDBACK_SALT`.
 4. **The page**: set `window.FEEDBACK_URL` near the top of `site/index.html` to
    `https://<project>.supabase.co/functions/v1/feedback`. Until it's set, the page
-   shows no pencils and no feedback link.
+   shows no feedback buttons or links.
 
 ## Reading and answering
 

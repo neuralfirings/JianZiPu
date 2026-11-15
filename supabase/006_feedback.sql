@@ -1,5 +1,5 @@
--- Feedback from the font page (jianzipufont.com): the pencil by each glossary row's number and
--- "Send feedback" at the foot of the page. Run once in the SQL editor; safe to run again. It stands
+-- Feedback from the font page (jianzipufont.com): the feedback button on each glossary row, Feedback in
+-- the sticky bar, "Tell me" under a search that finds nothing, and "Send feedback" at the foot of the page. Run once in the SQL editor; safe to run again. It stands
 -- on its own: in the Builder's project (after 001) admins may also read and set statuses from a
 -- signed-in app; in any other project only the dashboard and the function (service key) reach it.
 --
