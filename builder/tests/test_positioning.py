@@ -221,23 +221,22 @@ def test_a_word_without_a_space_takes_its_width(design):
     assert ("  lookup word_advance {\n"
             "    ignore pos @area_wild' @area_wild;\n"
             "    ignore pos @area_wild' @space_char;\n"
+            "    pos word_mark blank_colon @area_wild' <0 0 1000 0>;\n"
             "    ignore pos blank_colon @area_wild';\n"
             "    pos @area_wild @area_wild' <0 0 1000 0>;\n"
-            "    pos numbersign @area_wild' <0 0 1000 0>;\n"
+            "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;\n"
             "  } word_advance;") in text
 
 
-def test_one_part_takes_its_width_only_in_latin_text(design):
+def test_one_part_takes_its_width_after_the_latin_mark(design):
     """`s` or `shang` on its own is 1000 wide, but 散 or 上 is not: Safari measures a word typed in
-    Chinese a character at a time, so the rule is left out of the Chinese script."""
+    Chinese a character at a time. The GSUB puts a mark in front of a word typed in Latin letters;
+    no rule is kept to one script, which Safari mishandles on a line that mixes the two."""
     lines = emit.gen_gpos(design).lines
-    at = lines.index("  script DFLT;")
-    assert "  lookup lone_part {" not in lines[:at]
-    assert lines[at + 1] == "  lookup lone_part {" and lines[-3:] == ["  script latn;", "  lookup lone_part;", "} kern;"]
-    assert not any("hani" in l for l in lines)
+    assert not any(l.strip().startswith("script ") for l in lines)
     text = "\n".join(lines)
-    assert "    ignore pos [blank_colon]';\n    pos @area_wild' <0 0 1000 0>;" in text
-    assert "    pos blank_colon @area_wild' <0 0 1000 0>;" in text
+    assert "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;" in text
+    assert "    pos word_mark blank_colon @area_wild' <0 0 1000 0>;\n    ignore pos blank_colon @area_wild';" in text
 
 
 def test_a_hash_moves_nothing(design):

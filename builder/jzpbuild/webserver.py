@@ -191,7 +191,8 @@ class WordShaper:
             buf.add_str(w)
             buf.guess_segment_properties()
             hb.shape(f, buf, {"liga": True, "kern": False})
-            out.append([f.glyph_to_string(i.codepoint) for i in buf.glyph_infos])
+            names = [f.glyph_to_string(i.codepoint) for i in buf.glyph_infos]
+            out.append([n for n in names if n != "word_mark"])     # zero-width, no part of a word
         return out
 
     @staticmethod

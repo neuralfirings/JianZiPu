@@ -97,6 +97,9 @@ def compare_fonts(old_path: str, new_path: str) -> int:
         else:
             old = shape(old_path, text)
             new = shape(new_path, text)
+        # the zero-width mark in front of a word typed in Latin letters (features.gen_word_mark)
+        # is newer than the golden font and moves nothing
+        new = [g for g in new if g[0] != "word_mark"]
         if old != new:
             failures += 1
             print(f"DIFF for {text!r}:")
@@ -152,9 +155,10 @@ WIDTHS = {
     "#s9k5 #s9k5": 2000, "#s9k5#s9k5": 2000, "#5 #5": 2000, "s9k5 # s9k5": 3000, "s9k5 ## s9k5": 4000,
     "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "名九勾五 名九勾五 ": 2000,
     "上三四 上三四 ": 2000,
-    # one part: its own width typed in Latin, none typed in Chinese (Safari measures 五 like this)
-    "s": 1000, "shang": 1000, ":shang": 1000, "5": 1000, "s s": 2000, "s9k5 5": 2000, "_": 1000, "|": 500,
-    "五": 0, "上": 0, "散": 0,
+    # one part: its own width typed in Latin letters, none typed in Chinese or as a digit (Safari
+    # measures 五 like this, and the 5 of 名5 too)
+    "s": 1000, "shang": 1000, "s s": 2000, "s9k5 s": 2000, "shang34 上三七 ": 2000, "上三七 shang34": 2000,
+    "五": 0, "上": 0, "散": 0, "5": 0, "名9勾5 ": 1000,
 }
 MAIN = {"md_ming": 150, "md_zhong": 150, "md_shang": 325, "md_xia": 325}
 
@@ -195,6 +199,8 @@ def test_a_line_measures_in_pieces_as_whole():
     for text, cells in SEPARATED.items():
         glyphs, _ = _shape_whole(font, text)
         assert [x - MAIN[n] for n, x, _ in glyphs if n in MAIN] == cells, text
+    # Latin, then Chinese with no space after it: drawn right, though Safari measures the last word 0
+    assert _shape_whole(font, "shang34 上三七")[1] == 2000
     for text, width in WIDTHS.items():
         assert _shape_whole(font, text)[1] == width, text
         assert _measured_in_pieces(font, text) == width, text

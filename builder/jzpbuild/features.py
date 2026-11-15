@@ -553,6 +553,29 @@ def gen_hold_words(c2g: dict[str, str]) -> list[str]:
             "} hold_words;"]
 
 
+WORD_MARK = "word_mark"
+_LETTERS = [chr(c) for c in range(ord("a"), ord("z") + 1)] + [chr(c) for c in range(ord("A"), ord("Z") + 1)]
+
+
+def gen_word_mark() -> list[str]:
+    """A zero-width mark in front of every word that starts with a Latin letter, so that a word of
+    one part (`s`, `shang`) can take its width (positioning/emit.py: word_advance): the same part
+    typed in Chinese must not, because Safari measures a Chinese word a character at a time. A
+    letter after any other typed character is inside a word and gets none. The mark is told apart
+    by where it came from, not by script: Safari mishandles a rule that only one script has when
+    a line mixes Latin and Chinese (measured on an iPhone, 2026-11)."""
+    letters = f"[{' '.join(_LETTERS)}]"
+    # lookups run in the order they are written, so these come before every spelling lookup:
+    # there a letter is still a letter, and a Chinese character is still in @typed
+    return (["lookup word_mark_insert {"]
+            + [f"  sub {c} by {WORD_MARK} {c};" for c in _LETTERS]
+            + ["} word_mark_insert;",
+               "lookup word_mark_latin {",
+               f"  ignore sub @typed {letters}';",
+               f"  sub {letters}' lookup word_mark_insert;",
+               "} word_mark_latin;"])
+
+
 # ---------------------------------------------------------------------------
 # feature block
 
@@ -569,6 +592,9 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         "",
         "  # whole words while typing (see gen_hold_words)",
         "  lookup hold_words;",
+        "",
+        "  # a mark in front of a word typed in Latin letters (see gen_word_mark)",
+        "  lookup word_mark_latin;",
         "",
         "  # some special symbols",
         "  sub underscore by blank;",
@@ -651,6 +677,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_classes(rows), [""],
         # the first lookup: it reads the characters as typed
         gen_hold_words(c2g), [""],
+        gen_word_mark(), [""],
         edge_cases, [""],
         # defined before the number lookups: lookups run in definition order
         gen_c2j_bracket_symbols(rows),
