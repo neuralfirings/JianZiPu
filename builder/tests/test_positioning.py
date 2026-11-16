@@ -214,29 +214,19 @@ def test_no_rule_changes_a_space(design):
     assert "    ignore pos @area_wild blank_colon';\n    pos blank_colon' <0 0 -1000 0>;" in text
 
 
-def test_a_word_without_a_space_takes_its_width(design):
-    """The last part of a word gets the space's width when no space follows: `k5` is 1000 wide. One
-    part on its own gets nothing (Safari measures each Chinese character alone), unless a # leads it; a colon is not a part."""
+def test_a_latin_word_without_a_space_takes_its_width(design):
+    """The last part of a word gets the space's width when no space follows, if the word starts with
+    the mark of a word typed in Latin or with a #: `k5` is 1000 wide. A word typed in Chinese has
+    neither and is as before; Safari and Word never show the font such a word with what is around it."""
     text = "\n".join(emit.gen_gpos(design).lines)
     assert ("  lookup word_advance {\n"
             "    ignore pos @area_wild' @area_wild;\n"
             "    ignore pos @area_wild' @space_char;\n"
-            "    pos word_mark blank_colon @area_wild' <0 0 1000 0>;\n"
-            "    ignore pos blank_colon @area_wild';\n"
-            "    pos @area_wild @area_wild' <0 0 1000 0>;\n"
-            "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;\n"
-            "  } word_advance;") in text
-
-
-def test_one_part_takes_its_width_after_the_latin_mark(design):
-    """`s` or `shang` on its own is 1000 wide, but 散 or 上 is not: Safari measures a word typed in
-    Chinese a character at a time. The GSUB puts a mark in front of a word typed in Latin letters;
-    no rule is kept to one script, which Safari mishandles on a line that mixes the two."""
-    lines = emit.gen_gpos(design).lines
-    assert not any(l.strip().startswith("script ") for l in lines)
-    text = "\n".join(lines)
-    assert "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;" in text
-    assert "    pos word_mark blank_colon @area_wild' <0 0 1000 0>;\n    ignore pos blank_colon @area_wild';" in text
+            "    ignore pos [blank_colon]';\n") in text
+    assert "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;\n  } word_advance;" in text
+    assert "    pos [numbersign word_mark] @area_wild @area_wild @area_wild' <0 0 1000 0>;" in text
+    assert "    pos @area_wild @area_wild' <0 0 1000 0>;" not in text       # never without the mark or a #
+    assert not any(l.strip().startswith("script ") for l in emit.gen_gpos(design).lines)   # Safari mishandles that
 
 
 def test_a_hash_moves_nothing(design):

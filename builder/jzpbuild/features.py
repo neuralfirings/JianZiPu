@@ -554,25 +554,35 @@ def gen_hold_words(c2g: dict[str, str]) -> list[str]:
 
 
 WORD_MARK = "word_mark"
-_LETTERS = [chr(c) for c in range(ord("a"), ord("z") + 1)] + [chr(c) for c in range(ord("A"), ord("Z") + 1)]
+def word_starters() -> list[str]:
+    """The characters a word typed in Latin can start with: printable ASCII but the space, # (it has
+    rules of its own) and + (an advance, not part of a word)."""
+    return [UV2AGL[u] for u in config.BASE_KEEP_CODEPOINTS
+            if 0x20 < u < 0x7F and u in UV2AGL and chr(u) not in "#+"]
 
 
 def gen_word_mark() -> list[str]:
-    """A zero-width mark in front of every word that starts with a Latin letter, so that a word of
-    one part (`s`, `shang`) can take its width (positioning/emit.py: word_advance): the same part
-    typed in Chinese must not, because Safari measures a Chinese word a character at a time. A
-    letter after any other typed character is inside a word and gets none. The mark is told apart
-    by where it came from, not by script: Safari mishandles a rule that only one script has when
-    a line mixes Latin and Chinese (measured on an iPhone, 2026-11)."""
-    letters = f"[{' '.join(_LETTERS)}]"
+    """A zero-width mark in front of every word typed in Latin (ASCII), which lets that word take
+    its width when no space follows it (positioning/emit.py: word_advance). A word typed in Chinese
+    gets none and keeps today's behaviour, the space or + after it is its width, because two
+    programs never show the font a Chinese word together with what is around it:
+      - Safari measures it a character at a time, so a part that took a width alone would be
+        counted once per character;
+      - Word shapes Chinese and the space after it as separate runs, so a word that took its
+        width when it saw no space would take it before every space too.
+    A character after any other typed character is inside a word and gets no mark. The mark is
+    told apart by where it came from, not by script: Safari mishandles a rule that only one script
+    has when a line mixes Latin and Chinese (all measured with test fonts, 2026-11)."""
+    starters = word_starters()
+    cls = f"[{' '.join(starters)}]"
     # lookups run in the order they are written, so these come before every spelling lookup:
     # there a letter is still a letter, and a Chinese character is still in @typed
     return (["lookup word_mark_insert {"]
-            + [f"  sub {c} by {WORD_MARK} {c};" for c in _LETTERS]
+            + [f"  sub {c} by {WORD_MARK} {c};" for c in starters]
             + ["} word_mark_insert;",
                "lookup word_mark_latin {",
-               f"  ignore sub @typed {letters}';",
-               f"  sub {letters}' lookup word_mark_insert;",
+               f"  ignore sub @typed {cls}';",
+               f"  sub {cls}' lookup word_mark_insert;",
                "} word_mark_latin;"])
 
 

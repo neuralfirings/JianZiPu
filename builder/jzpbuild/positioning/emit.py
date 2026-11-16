@@ -196,22 +196,22 @@ def _with_breaks(lines: list[str]) -> list[str]:
 
 
 # Widths. A word's parts are 0 wide and the space after the word is its width, as it always was.
-# A word with no space after it now takes its width itself (word_advance): its last part gets the
-# space's width, so `k5` is 1000, `k5 k5` 2000 and `k5  k5` 3000.
+# A word typed in Latin with no space after it now takes its width itself (word_advance): its last
+# part gets the space's width, so `k5` is 1000, `k5 k5` 2000 and `k5  k5` 3000. A word typed in
+# Chinese is as before: end it with a space or a +.
 #
-# Two things Safari and every iPhone browser do shape these rules (measured on an iPhone with test
-# fonts, 2026-11):
-#   - A typed space is drawn at the width the font file gives it, whatever a rule says; the rule
-#     only changes the measured width, so text is drawn in one place and measured in another. So
-#     no rule here changes a space: a rule changes the word, the colon or the #, and looks at the
-#     space after it, never the other way round.
-#   - Text is measured in pieces between the places a line may break. A word typed in Latin is one
-#     piece with the space after it, so a rule sees both. Between Chinese characters a line may
-#     break anywhere, so each one is measured alone; a part on its own must stay 0 wide or a word
-#     of three characters comes out three cells wide. That is why word_advance wants two parts
-#     (or a # and a part, or the mark in front of a word typed in Latin letters and a part), and
-#     why a word typed in Chinese still needs a space or a # there unless the page sets
-#     `word-break: keep-all`.
+# What shapes these rules (measured with test fonts on an iPhone and in Word, 2026-11):
+#   - Safari and every iPhone browser draw a typed space at the width the font file gives it,
+#     whatever a rule says; the rule only changes the measured width, so text is drawn in one
+#     place and measured in another. So no rule here changes a space: a rule changes the word,
+#     the colon or the #, and looks at the space after it, never the other way round.
+#   - Safari measures text in pieces between the places a line may break. A word typed in Latin
+#     is one piece with the space after it, so a rule sees both. Each Chinese character is a
+#     piece of its own.
+#   - Word shapes Chinese text and the space after it as separate runs, so a rule never sees a
+#     Chinese word and its space together.
+#   Both are why only a word typed in Latin takes its width: the font marks those words
+#   (features.gen_word_mark), and a rule on a marked word is safe in all three places.
 #
 # A vertical word's width (its colon area's advance) is likewise paid out as the space after it:
 # the colon gives back the space's width (COLON_WIDTH) and the positioning counts its advance
@@ -220,7 +220,7 @@ def _with_breaks(lines: list[str]) -> list[str]:
 # after it is not the last one).
 #
 # A typed # is a blank cell on its own. In front of a word or a space it is 0 wide (HASH_WIDTH)
-# and moves nothing: `#k5` is `k5`, except that a # makes a word of one part take its width too.
+# and moves nothing; a word after a # takes its width like a word typed in Latin.
 COLON = "blank_colon"
 SPACE = config.UPEM          # the space's advance (base.py); a lone # is as wide
 HASH = "numbersign"
@@ -231,16 +231,20 @@ COLON_WIDTH = [
     f"    pos {COLON}' <0 0 -{SPACE} 0>;",
     "  } colon_width;",
 ]
-def word_advance(colon: bool) -> list[str]:
+_DEPTH = 10                  # the most parts a word has
+
+
+def word_advance(own_width: list[str]) -> list[str]:
+    """The last part of a word takes the space's width when no space follows, if the word starts
+    with the mark of a word typed in Latin or with a #. A word typed in Chinese has neither and is
+    left alone (features.gen_word_mark says why)."""
+    starts = f"[{HASH} {MARK}]"
     return [
         "  lookup word_advance {",
         f"    ignore pos {WILD}' {WILD};",            # not the word's last part
         f"    ignore pos {WILD}' @space_char;",       # the space is the width
-        # a colon is not a part: 上 on its own gets one (features.gen_auto_colon) and must stay 0 wide;
-        # shang on its own is mark, colon, part
-        *([f"    pos {MARK} {COLON} {WILD}' <0 0 {SPACE} 0>;", f"    ignore pos {COLON} {WILD}';"] if colon else []),
-        f"    pos {WILD} {WILD}' <0 0 {SPACE} 0>;",
-        f"    pos [{HASH} {MARK}] {WILD}' <0 0 {SPACE} 0>;",
+        *([f"    ignore pos [{' '.join(own_width)}]';"] if own_width else []),   # : and | have a width already
+        *(f"    pos {' '.join([starts] + [WILD] * n)} {WILD}' <0 0 {SPACE} 0>;" for n in range(_DEPTH, -1, -1)),
         "  } word_advance;",
     ]
 
@@ -267,7 +271,8 @@ def gen_gpos(design: Design) -> Emission:
     colon = any(COLON in a.glyphs and a.advance for a in design.areas.values())
     if colon:
         lines += COLON_WIDTH
-    lines += word_advance(colon) + HASH_WIDTH
+    own_width = sorted({g for a in design.areas.values() if a.advance for g in a.glyphs})
+    lines += word_advance(own_width) + HASH_WIDTH
     lines.append("} kern;")
     return Emission(lines=lines, rules=rules, skipped=skipped, pair_lookups=len(reg.pairs),
                     other_classes=dict(reg.other))

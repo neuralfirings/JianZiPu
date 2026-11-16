@@ -148,18 +148,20 @@ SEPARATED = {
     "#s9k5:shang34#d7u3": [0, 1000, 2000],
     "#:shang34#d7u3": [0, 1000],
 }
-# A word with no space after it takes its width itself; a # is a blank cell only on its own.
+# A word typed in Latin with no space after it takes its width itself; a # is a blank cell only on
+# its own. A word typed in Chinese is as before: the space or + after it is its width.
 WIDTHS = {
     "s9k5": 1000, "s9k5 s9k5": 2000, "s9k5  s9k5": 3000, "s9k5 s9k5 ": 2000, " s9k5": 2000,
-    ":shang34": 1000, ":shang34 s9k5": 2000, "s9k5 :shang34": 2000,
+    ":shang34": 1000, "shang34": 1000, ":shang34 s9k5": 2000, "s9k5 :shang34": 2000, "0k3": 1000,
+    "s": 1000, "shang": 1000, "0": 1000, "s s": 2000, "s9k5 s": 2000, "_": 1000, "|": 500,
     "#s9k5 #s9k5": 2000, "#s9k5#s9k5": 2000, "#5 #5": 2000, "s9k5 # s9k5": 3000, "s9k5 ## s9k5": 4000,
-    "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "名九勾五 名九勾五 ": 2000,
-    "上三四 上三四 ": 2000,
-    # one part: its own width typed in Latin letters, none typed in Chinese or as a digit (Safari
-    # measures 五 like this, and the 5 of 名5 too)
-    "s": 1000, "shang": 1000, "s s": 2000, "s9k5 s": 2000, "shang34 上三七 ": 2000, "上三七 shang34": 2000,
-    "五": 0, "上": 0, "散": 0, "5": 0, "名9勾5 ": 1000,
+    "名九勾五": 0, "名九勾五 名九勾五": 1000, "名九勾五 名九勾五 ": 2000, "上三四 上三四 ": 2000, "勾五+勾五+": 2000,
+    "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "五": 0, "上": 0, "散": 0, "散+": 1000,
+    "shang34 上三七 ": 2000, "上三七 shang34": 2000,
 }
+# Word shapes Chinese text and the space after it as separate runs: a Chinese word alone is 0 wide,
+# so the two come to one cell however they are cut
+CHINESE_ALONE = ["名九勾五", "上三四", "勾五", "散"]
 MAIN = {"md_ming": 150, "md_zhong": 150, "md_shang": 325, "md_xia": 325}
 
 
@@ -199,8 +201,8 @@ def test_a_line_measures_in_pieces_as_whole():
     for text, cells in SEPARATED.items():
         glyphs, _ = _shape_whole(font, text)
         assert [x - MAIN[n] for n, x, _ in glyphs if n in MAIN] == cells, text
-    # Latin, then Chinese with no space after it: drawn right, though Safari measures the last word 0
-    assert _shape_whole(font, "shang34 上三七")[1] == 2000
+    for text in CHINESE_ALONE:
+        assert _shape_whole(font, text)[1] == 0, text
     for text, width in WIDTHS.items():
         assert _shape_whole(font, text)[1] == width, text
         assert _measured_in_pieces(font, text) == width, text
