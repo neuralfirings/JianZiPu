@@ -3,6 +3,8 @@
   // you changed and why, and how you'd like to be credited. Before it goes: the draft is saved,
   // the chosen spellings mustn't clash, and a font built from just those changes must build.
   // Once sent, those changes are locked in the draft until the request is withdrawn or declined.
+  // A new glyph can be tagged with the coming character it draws (the font page's ghost rows,
+  // lib/upcoming.ts): suggested from its spelling, saved in the request's manifest.upcoming.
   // Save as draft keeps the form (ticks, title, notes, credit) with the tester's draft in Supabase,
   // to finish later, here or on another computer; it opens again from where it was.
   import * as I from '$lib/icons';
@@ -13,6 +15,7 @@
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
+  import { newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
@@ -35,8 +38,19 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
+  // coming characters: the font page's list, and which one each new glyph draws ('' for none)
+  let ghosts = $state<Ghost[]>([]);
+  let tags = $state<Record<string, string>>({});
+  $effect(() => {
+    const url = hosted.config?.supabase_url;
+    if (url) void publicGhosts(url).then((g) => (ghosts = g));
+  });
+  const tagOf = (g: string) => (g in tags ? tags[g] : suggestGhost(app.typing[g], ghosts) ?? '');
+  const ghostById = (id: string) => ghosts.find((x) => x.id === id);
+
   const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
+  let fresh = $derived(newGlyphs(picked));
   /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
@@ -87,6 +101,8 @@
     try {
       if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
       const { bundle, itemIds } = snapshot(app.bundle(), app.mainSvgs, picked.map((i) => i.id));
+      const tagged = Object.fromEntries(fresh.map((g) => [g, tagOf(g)]).filter(([, id]) => id));
+      if (Object.keys(tagged).length) bundle.manifest.upcoming = tagged;
       const clash = T.issues(bundle.typing, app.known);
       if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → List view, or leave those spellings out.`; return; }
       const failed = await buildCheck(buildInputs(bundle, app.mainSvgs));
@@ -127,6 +143,30 @@
         {/each}
       </ul>
     </fieldset>
+
+    {#if ghosts.length && fresh.length}
+      <fieldset class="coming">
+        <legend>Is this for a coming character?</legend>
+        <p class="muted small">From the font page's Coming next. The maintainer confirms it, then can show your drawing there for comments.</p>
+        {#each fresh as g (g)}
+          {@const gh = ghostById(tagOf(g))}
+          <div class="tagrow">
+            <label class="tagpick"><span class="mono">{g} draws</span>
+              <select value={tagOf(g)} onchange={(e) => (tags = { ...tags, [g]: (e.target as HTMLSelectElement).value })}>
+                <option value="">None of these</option>
+                {#each ghosts as x (x.id)}<option value={x.id}>{x.zh}{x.pinyin ? ` · ${x.pinyin}` : ''} · {stageLabel(x)}</option>{/each}
+              </select>
+            </label>
+            {#if gh}
+              <div class="ghost"><span class="tag">{stageLabel(gh)}</span> <b>{gh.zh}</b>{#if gh.pinyin} <span class="muted">{gh.pinyin}</span>{/if}
+                {#if gh.meaning}<span class="muted"> · {gh.meaning}</span>{/if}<span class="muted small"> · on the font page in {gh.section}{gh.after ? `, after ${gh.after}` : ''}</span></div>
+            {:else}
+              <p class="muted small">Not tagged: nothing about a coming character changes.</p>
+            {/if}
+          </div>
+        {/each}
+      </fieldset>
+    {/if}
 
     <label class="field">Title
       <span class="muted small hint">Its line in the release notes.</span>
@@ -171,4 +211,10 @@
   .tag.added { color: var(--status-saved); border-color: currentColor; }
   .tag.deleted { color: var(--status-danger); border-color: currentColor; }
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
+  .coming { display: flex; flex-direction: column; gap: var(--space-3); }
+  .coming p { margin: 0; }
+  .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
+  .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .tagpick select { font: inherit; max-width: 100%; }
+  .ghost { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--bg-field); }
 </style>
