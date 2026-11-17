@@ -91,6 +91,15 @@
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
   const pinyin = (r: GRow) => glyphsOfRow(r).map(pyOf).filter(Boolean).join(' ');
+  /** Why a row's glyph can't be drawn yet: it's in no area (a new glyph not added to one in Layouts). Its
+   *  example then also keeps the colon, since only an area the font sets vertically drops it. */
+  function noAreaNote(r: GRow): string {
+    const areas = Object.values(app.design?.areas ?? {});
+    const lost = glyphsOfRow(r).filter((g) => !areas.some((a) => a.glyphs.includes(g)));
+    if (!lost.length) return '';
+    const one = lost.length === 1;
+    return `${lost.join(', ')} ${one ? "isn't" : "aren't"} in an area yet, so the font can't draw ${one ? 'it' : 'them'}, and the row is typed after a colon. Add ${one ? 'it' : 'them'} to an area in Layouts › Area Properties: in a vertical one, the colon goes.`;
+  }
   /** Not in the glossary: glyphs with spellings that no row shows (vertical forms count as their partner),
    *  in the Glyphs screen's order; the search narrows it like the rows. Dragged as section OUT. */
   const OUT = '~out';
@@ -795,7 +804,7 @@
                   {#if rowNote?.sid === s.id && rowNote.i === i}<span class="small bad" role="status"><I.Problem size={12} /> {rowNote.text}</span>{/if}
                 </td>
               {:else}
-              <td class="zh">{chinese(r, s)}</td>
+              <td class="zh">{chinese(r, s)}{#if noAreaNote(r)} <button type="button" class="noarea" data-tip={noAreaNote(r)} aria-label={noAreaNote(r)}><I.Warn size={12} /></button>{/if}</td>
               <td class="mono">{ascii(r, s)}</td>
               <td>{pinyin(r)}</td>
               {/if}
@@ -1070,6 +1079,8 @@
 {/if}
 
 <style>
+  /* a row whose glyph is in no area: hover, tap or focus the warning for why */
+  button.noarea { height: auto; padding: 0; border: 0; background: none; color: var(--status-draft); vertical-align: -1px; cursor: help; }
   .gloss { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-7); }
   .gloss.dragging { user-select: none; cursor: grabbing; }
   .intro { margin: 0; max-width: 760px; }

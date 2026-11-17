@@ -192,7 +192,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 
 On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (**No build yet**, or when the last build was made) opens the build, font and view settings and the build log.
 
-A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type.
+A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type; hover over it, tap it or tab to it for which glyph and why.
 
 ## Saving and undo
 
@@ -286,7 +286,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 
 - **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. The live previews (Try it, Check the glossary, and Live preview in Build & test) don't need a Build for a new glyph or spelling: they draw a new glyph in from its drawing and copy a new Chinese character from the base font. There, red means a character not even the base font has.
 - **The live preview and the font differ**: The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.
-- **warning under a word**: Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.
+- **warning under a word**: Some parts of the word matched no word type, so the font won't place them; hover over the warning, or tap it, for which glyph and why. A new glyph in no area: add it to one in Layouts › Area Properties (Glyphs › Unassigned lists them). Otherwise check the spelling, or the word type's parts in Layouts.
 - **Save is waiting**: A spelling clashes with another glyph's or isn't valid. **Show them** lists the cells to fix.
 - **A new glyph never appears in words**: It needs an area (**Unassigned** in Glyphs) and at least one spelling.
 - **The build failed**: The first error is shown above the build log; the log has the rest. [Messages and errors](https://jianzipufont.com/help/#messages-build) lists the usual ones and their fixes.

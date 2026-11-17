@@ -226,7 +226,7 @@
         </dl>
         <figure><a href="/help/build-font.jpg" target="_blank"><img src="/help/build-font.jpg" alt="Build and test, Test the font file view: the same words as running text in the built font" width="1280" height="800" loading="lazy" /></a><figcaption><strong>Test the font file</strong>: the same words as running text in the built font.</figcaption></figure>
         <p>On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (<strong>No build yet</strong>, or when the last build was made) opens the build, font and view settings and the build log.</p>
-        <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <I.Warn class="inl badge-warn" aria-label="warning" /> under a word means some of its parts matched no word type.</p>
+        <p>A character the font doesn't have is drawn by another font <span class="miss">in red</span>, so it can't pass for part of the font. In Test the design, <I.Warn class="inl badge-warn" aria-label="warning" /> under a word means some of its parts matched no word type; hover over it, tap it or tab to it for which glyph and why.</p>
       </section>
 
       <!-- ─────────────────────────────────────────────── -->
@@ -340,7 +340,7 @@
         <dl class="panels">
           <dt>A character shows in red</dt><dd>The font doesn't have it yet: a new glyph or spelling isn't in a build. <strong>Build font</strong> again. The live previews (Try it, Check the glossary, and Live preview in Build & test) don't need a Build for a new glyph or spelling: they draw a new glyph in from its drawing and copy a new Chinese character from the base font. There, red means a character not even the base font has.</dd>
           <dt>The live preview and the font differ</dt><dd>The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.</dd>
-          <dt><I.Warn class="inl badge-warn" aria-label="warning" /> under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.</dd>
+          <dt><I.Warn class="inl badge-warn" aria-label="warning" /> under a word</dt><dd>Some parts of the word matched no word type, so the font won't place them; hover over the warning, or tap it, for which glyph and why. A new glyph in no area: add it to one in Layouts › Area Properties (Glyphs › Unassigned lists them). Otherwise check the spelling, or the word type's parts in Layouts.</dd>
           <dt>Save is waiting</dt><dd>A spelling clashes with another glyph's or isn't valid. <strong>Show them</strong> lists the cells to fix.</dd>
           <dt>A new glyph never appears in words</dt><dd>It needs an area (<strong>Unassigned</strong> in Glyphs) and at least one spelling.</dd>
           <dt>The build failed</dt><dd>The first error is shown above the build log; the log has the rest. <a href="#messages-build">Messages and errors</a> lists the usual ones and their fixes.</dd>
