@@ -5,6 +5,7 @@
 // through Resend with the pictures attached. Setup and secrets: README.md in this folder.
 import { LIMITS, older, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail } from './mail.ts';
+import { GHOSTS_QUERY, ghostOf, type UpcomingRow } from './ghosts.ts';
 
 const env = (k: string, fallback = '') => Deno.env.get(k) ?? fallback;
 const SUPABASE_URL = env('SUPABASE_URL');
@@ -14,7 +15,7 @@ const service = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
 function cors(origin: string | null): Record<string, string> {
   const extra = env('FEEDBACK_ORIGINS').split(',').map((s) => s.trim()).filter(Boolean);
   return originAllowed(origin, extra)
-    ? { 'Access-Control-Allow-Origin': origin!, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin!, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 
@@ -41,6 +42,41 @@ async function recipients(): Promise<string[]> {
   return (await r.json() as { email: string | null }[]).map((p) => p.email).filter((e): e is string => !!e);
 }
 
+/** The coming characters the page shows (GET): public, so any page may read them; kept a minute. */
+let ghostCache: { at: number; body: string } | null = null;
+async function ghosts(): Promise<Response> {
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' };
+  if (ghostCache && Date.now() - ghostCache.at < 60_000) return new Response(ghostCache.body, { headers });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/upcoming?${GHOSTS_QUERY}`, { headers: service });
+  if (!r.ok) {
+    // a project without supabase/009 has no upcoming table: no ghosts, rather than an error on the page
+    console.error(`upcoming: HTTP ${r.status} ${await r.text()}`);
+    return new Response(JSON.stringify({ ghosts: [] }), { headers: { ...headers, 'Cache-Control': 'no-store' } });
+  }
+  const rows = await r.json() as UpcomingRow[];
+  const body = JSON.stringify({ ghosts: rows.map((x) => ghostOf(x, SUPABASE_URL)).filter(Boolean) });
+  ghostCache = { at: Date.now(), body };
+  return new Response(body, { headers });
+}
+
+/** Cloudflare Turnstile: whether the page's spam check passed. Off (always passes) until the
+ *  TURNSTILE_SECRET secret is set, so the function can be deployed before the page has the widget. */
+async function human(token: string, address: string): Promise<boolean> {
+  const secret = env('TURNSTILE_SECRET');
+  if (!secret) return true;
+  if (!token) return false;
+  const form = new FormData();
+  form.append('secret', secret); form.append('response', token);
+  if (address !== 'unknown') form.append('remoteip', address);
+  try {
+    const r = await fetch(env('TURNSTILE_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'), { method: 'POST', body: form });
+    return !!(await r.json()).success;
+  } catch (e) {
+    console.error('turnstile:', e);
+    return false;
+  }
+}
+
 function base64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -49,6 +85,12 @@ function base64(bytes: Uint8Array): string {
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin'), headers = cors(origin);
+  if (req.method === 'GET') {
+    try { return await ghosts(); } catch (e) {
+      console.error(e);
+      return Response.json({ ghosts: [] }, { headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+    }
+  }
   if (req.method === 'OPTIONS') return new Response(null, { status: headers['Access-Control-Allow-Origin'] ? 204 : 403, headers });
   const answer = (body: unknown, status = 200) => Response.json(body, { status, headers });
   // a page that may not post is told so in words it can show (with no CORS header the browser hides
@@ -67,6 +109,9 @@ Deno.serve(async (req) => {
 
   try {
     const address = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+    if (!await human(String(fd.get('cf-turnstile-response') ?? ''), address)) {
+      return answer({ error: "The page's spam check didn't pass. Wait a few seconds and send again, or reload the page." }, 403);
+    }
     const sender = await senderHash(address, env('FEEDBACK_SALT'));
     if (await recent(sender) >= LIMITS.perHour) {
       return answer({ error: "You've sent several messages in the last hour. Try again later, or write to me through the contact page." }, 429);

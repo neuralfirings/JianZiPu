@@ -402,6 +402,32 @@
     .fb-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
     .fb-inline { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.15em; color: var(--ink-muted); }
     /* in the sticky bar: beside Download, quieter than it */
+    /* Coming next: characters on their way into the font ("ghost" rows, from the feedback function's
+       list), each faded in its section with a badge for its stage, and the note above the search */
+    :root { --gh-planned: #6b5a8e; --gh-planned-bg: #efebf5; --gh-draft: #8a5a12; --gh-draft-bg: #f6ecd9; --gh-test: #23663a; --gh-test-bg: #e3efe3; }
+    .coming-next { border: 1px dashed var(--gh-planned); background: var(--gh-planned-bg); border-radius: 6px; padding: 10px 14px; margin: 0 0 14px;
+      display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+    .coming-next .sp { flex: 1; }
+    .coming-next .chip { border: 1px solid var(--border-strong); background: var(--bg-field); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.95rem; cursor: pointer; color: var(--ink); }
+    .coming-next .chip[aria-pressed="true"] { background: #e6eef9; border-color: var(--link); }
+    tr.ghost { --bs-table-bg: rgba(255, 255, 255, 0.35); }
+    tr.ghost > td { border-bottom-style: dashed; }
+    tr.ghost.planned td.zh, tr.ghost.planned .gh-def { opacity: 0.75; }
+    tr.ghost td.meaning { display: grid; gap: 6px; justify-items: start; }
+    .gh-tbd { color: var(--ink-faint); font-style: italic; font-size: 0.9rem; }
+    .gh-badge { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 600; line-height: 1; border-radius: 999px; padding: 4px 9px; border: 1px solid currentColor; white-space: nowrap; }
+    .gh-badge.planned { color: var(--gh-planned); background: var(--gh-planned-bg); border-style: dashed; }
+    .gh-badge.draft { color: var(--gh-draft); background: var(--gh-draft-bg); }
+    .gh-badge.test { color: var(--gh-test); background: var(--gh-test-bg); }
+    .gh-note { font-size: 0.875rem; color: var(--ink-muted); }
+    .gh-acts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 0.95rem; }
+    .gh-dl { display: inline-flex; gap: 6px; align-items: center; background: var(--ink); color: var(--bg-panel); border-radius: 4px; padding: 4px 12px; text-decoration: none; font-weight: 600; }
+    .gh-dl:hover { color: var(--bg-panel); background: #45403b; }
+    .gh-draw { display: block; width: 64px; height: 64px; object-fit: contain; }
+    .gh-notdrawn { width: 64px; height: 64px; border: 1.5px dashed var(--border-strong); border-radius: 4px; display: grid; place-items: center; color: var(--ink-faint); font-size: 0.75rem; text-align: center; line-height: 1.2; }
+    .only-coming .table > tbody > tr:not(.ghost), .only-coming .gh-none { display: none !important; }
+    #fb .fb-ctx .gh-draw, #fb .fb-ctx .gh-notdrawn { flex: none; }
+    #fb .fb-ts:empty { display: none; }
     /* a text-first inline-flex button: its baseline is its text's, so it sits on Download's line */
     .bar-feedback { display: inline-flex; align-items: center; gap: 6px; margin-left: 22px; padding: 0 2px; border: 0; background: none;
       color: var(--on-bar); font: inherit; cursor: pointer; vertical-align: baseline; text-decoration: underline; text-underline-offset: 3px; }
@@ -507,7 +533,9 @@
        each message (and its pictures) in the feedback table with a status, and emails the admins
        (docs/maintainers/setup.md, Feedback). Not a secret: every visitor's browser posts to it.
        Empty: no feedback buttons or links. -->
-  <script>window.FEEDBACK_URL = 'https://lpezoqdnhtwvokzdfduf.supabase.co/functions/v1/feedback';</script>
+  <script>window.FEEDBACK_URL = 'https://lpezoqdnhtwvokzdfduf.supabase.co/functions/v1/feedback';
+    // Cloudflare Turnstile's site key for the feedback form (supabase/functions/feedback/README.md); empty: no spam check
+    window.TURNSTILE_SITEKEY = '';</script>
 </head>
 <body>
 
@@ -600,6 +628,7 @@
 
     <h3 id="glossary">Glossary</h3>
     <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Tell me with <svg class="fb-inline" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg> on its row. Missing a character? <button type="button" class="fb-link" data-fb-request>Request it</button>.</span></p>
+    <div class="coming-next" id="coming-next" hidden></div>
     <div class="row">
       <div class="col">
         <div class="glossary-search" role="search">
@@ -2270,6 +2299,7 @@
           </div>
           <p class="fb-hint" id="fb-email-hint">Leave an email if you'd like to hear back. It's never shown.</p>
         </div>
+        <div class="fb-ts" id="fb-ts"></div>   <!-- Cloudflare Turnstile, when window.TURNSTILE_SITEKEY is set: shows only if it needs a click -->
         <!-- a spam trap: people never see or fill it -->
         <input class="fb-trap" type="text" id="fb-gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
       </div>
@@ -2439,18 +2469,20 @@
       window.addEventListener('resize', function () { if (!$('fb-pad').hidden) fit(); });
 
       // ---- opening and closing
-      var row = null, rowText = '', lastFocus = null, kind = 'page';   // kind: row, page, contact or request
+      var row = null, rowText = '', lastFocus = null, kind = 'page', ghost = null;   // kind: row, page, contact, request or comment (on `ghost`)
       function say(t, bad) { why.textContent = t; why.classList.toggle('bad', !!bad); }
-      // as: 'contact' (Contact me), 'request' (Request a character), or '' (feedback on the page or a row)
-      function open(tr, prefill, as) {
+      // as: 'contact' (Contact me), 'request' (Request a character), 'comment' (on the coming character g),
+      // or '' (feedback on the page or a row)
+      function open(tr, prefill, as, g) {
         lastFocus = document.activeElement;
         form.reset(); files = []; strokes = []; drawThumbs(); pad(false);
         $('fb-msg').value = prefill || '';
-        var contact = as === 'contact', request = as === 'request';
+        var contact = as === 'contact', request = as === 'request', comment = as === 'comment' && !!g;
+        tsStart();
         form.hidden = false; $('fb-done').hidden = true; plain.hidden = true; send.disabled = false; send.textContent = request ? 'Send request' : 'Send';
         say(request ? 'Nothing you send is shown on the page.' : 'I read every message myself.');
         document.querySelectorAll('tr.fb-picked').forEach(function (t) { t.classList.remove('fb-picked'); });
-        row = tr; rowText = ''; kind = tr ? 'row' : contact ? 'contact' : request ? 'request' : 'page';
+        row = tr; rowText = ''; ghost = comment ? g : null; kind = tr ? 'row' : contact ? 'contact' : request ? 'request' : comment ? 'comment' : 'page';
         $('fb-req').hidden = $('fb-seen-f').hidden = !request;
         $('fb-name-opt').textContent = request ? 'optional · to credit you' : 'optional';
         $('fb-email-opt').textContent = contact || request ? '' : 'optional';   // Contact me and a request need one
@@ -2473,6 +2505,23 @@
             + '<span><span class="k">中文</span>' + esc(zh) + '</span><span><span class="k">ASCII</span>' + esc(ascii) + '</span>'
             + (py ? '<span><span class="k">拼音</span>' + esc(py) + '</span>' : '') + (def ? '<span class="m">' + esc(def) + '</span>' : '') + '</div>';
           ctxBox.hidden = false;
+        } else if (comment) {
+          var drawn = !!g.drawing;
+          $('fb-title').textContent = 'Comment on ' + g.zh.split(' · ')[0];
+          $('fb-sub').textContent = (g.stage === 'planned' ? 'A character on its way into the font.' : g.stage === 'test' ? 'In the test font for ' + g.release + '.' : 'Its draft design.')
+            + ' Comments come to me; they aren\'t shown on the page.';
+          $('fb-msg-label').textContent = drawn ? 'What would you change?' : 'Your comment';
+          $('fb-msg').placeholder = drawn ? 'e.g. The hook is too long. In my score it stops level with the bottom of the character.' : 'e.g. In my score it\'s written a little differently. Here is a photo.';
+          ctxBox.textContent = '';
+          ctxBox.appendChild(ghostPicture(g));
+          var vals = document.createElement('div'); vals.className = 'fb-vals';
+          [['中文', g.zh], ['拼音', g.pinyin], ['', STAGE[g.stage](g)]].forEach(function (kv) {
+            if (!kv[1]) return;
+            var sp = document.createElement('span');
+            if (kv[0]) { var k = document.createElement('span'); k.className = 'k'; k.textContent = kv[0]; sp.appendChild(k); }
+            sp.appendChild(document.createTextNode(kv[1])); vals.appendChild(sp);
+          });
+          ctxBox.appendChild(vals); ctxBox.hidden = false;
         } else if (request) {
           $('fb-title').textContent = 'Request a character';
           $('fb-sub').textContent = 'Something the font doesn\'t have yet. Requests come to me first; if I take one on, it shows in the glossary as planned.';
@@ -2526,8 +2575,13 @@
         var fd = new FormData();
         fd.append('kind', kind);
         if (row) { fd.append('row', rowText); fd.append('link', location.origin + location.pathname + '#' + row.id); }
+        else if (ghost) fd.append('link', location.origin + location.pathname + '#coming-' + ghost.id);
         else fd.append('link', location.origin + location.pathname);
         fd.append('message', msg);
+        if (kind === 'comment') {
+          fd.append('upcoming', ghost.id);
+          fd.append('about', ghost.zh + (ghost.pinyin ? ' · ' + ghost.pinyin : ''));
+        }
         if (kind === 'request') {
           fd.append('zh', zh);
           if ($('fb-py').value.trim()) fd.append('pinyin', $('fb-py').value.trim());
@@ -2538,6 +2592,13 @@
         fd.append('_gotcha', $('fb-gotcha').value);
         if (withFiles) files.forEach(function (f, i) { fd.append('picture-' + (i + 1), f.blob, f.name); });
         send.disabled = true; plain.hidden = true; send.textContent = 'Sending…'; say('');
+        tsToken().then(function (token) {
+          if (SITEKEY && !token) return fail("The page's spam check didn't finish. Check your connection, wait a few seconds, and try again.", withFiles);
+          if (token) fd.append('cf-turnstile-response', token);
+          post(fd, withFiles, email);
+        });
+      }
+      function post(fd, withFiles, email) {
         fetch(FORM, { method: 'POST', body: fd })
           .then(function (r) {
             if (r.ok) return done(withFiles ? files.length : 0, email);
@@ -2548,6 +2609,7 @@
           .catch(function () { fail("Couldn't reach the form service. Check your connection and try again.", withFiles); });
       }
       function fail(text, withFiles) {
+        tsStart();   // a check's answer counts once: ready a new one for the retry
         send.disabled = false; send.textContent = 'Try again'; say(text, true);
         plain.hidden = !(withFiles && files.length);   // if the pictures were the problem, the words can still go
       }
@@ -2557,9 +2619,9 @@
           + '<div class="fb-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>'
           + '<h2 id="fb-done-title" tabindex="-1">Sent. Thank you.</h2>'
           + '<p>' + (row ? 'Your note on ' + esc(zh || 'the row') + ' (row ' + esc(row.id) + ')' : kind === 'contact' ? 'Your message'
-            : kind === 'request' ? 'Your request for ' + esc(asked) : 'Your note')
+            : kind === 'request' ? 'Your request for ' + esc(asked) : kind === 'comment' ? 'Your comment on ' + esc(ghost.zh.split(' · ')[0]) : 'Your note')
           + (pictures ? (pictures === 1 ? ' and its picture' : ' and its ' + pictures + ' pictures') : '')
-          + ' reached me.' + (kind === 'contact' ? '' : kind === 'request' ? ' If I take it on, it shows in the glossary as planned.'
+          + ' reached me.' + (kind === 'contact' || kind === 'comment' ? '' : kind === 'request' ? ' If I take it on, it shows in the glossary as planned.'
             : ' Corrections to the glossary go into the next version of the font.') + '</p>'
           + '<p>' + (kind === 'contact' ? "I'll write back to " + esc(email) + '.'
             : kind === 'request' ? "I'll write to " + esc(email) + " when it's planned, if I have a question, and when it's in the font."
@@ -2568,6 +2630,172 @@
         form.hidden = true; $('fb-done').hidden = false;
         dlg.querySelector('#fb-done [data-fb-close]').focus();
       }
+      // ---- the spam check: Cloudflare Turnstile, when window.TURNSTILE_SITEKEY is set. It runs while the
+      // form is open and shows itself only if it needs a click; its answer goes with the message and counts once.
+      // A page on your own computer uses Cloudflare's test key, which always passes.
+      var SITEKEY = window.TURNSTILE_SITEKEY || '';
+      if (SITEKEY && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) SITEKEY = '1x00000000000000000000AA';
+      var ts = { id: null, token: '', loading: null };
+      function tsLoad() {
+        if (!ts.loading) ts.loading = new Promise(function (ok) {
+          window.onJzpTurnstile = function () { ok(window.turnstile || null); };
+          var sc = document.createElement('script');
+          sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onJzpTurnstile';
+          sc.async = true; sc.onerror = function () { ok(null); };
+          document.head.appendChild(sc);
+        });
+        return ts.loading;
+      }
+      function tsStart() {
+        ts.token = '';
+        if (!SITEKEY) return;
+        tsLoad().then(function (t) {
+          if (!t) return;
+          if (ts.id === null) ts.id = t.render('#fb-ts', { sitekey: SITEKEY, appearance: 'interaction-only', action: 'feedback',
+            callback: function (tok) { ts.token = tok; }, 'expired-callback': function () { ts.token = ''; }, 'error-callback': function () { ts.token = ''; } });
+          else t.reset(ts.id);
+        });
+      }
+      // the check's answer, waiting up to 10 s for it to finish
+      function tsToken() {
+        if (!SITEKEY) return Promise.resolve('');
+        return new Promise(function (ok) {
+          var n = 0;
+          (function wait() { if (ts.token || n++ >= 50) ok(ts.token); else setTimeout(wait, 200); })();
+        });
+      }
+
+      // ---- Coming next: characters on their way into the font, from the function's list (supabase/009's
+      // upcoming table, which you edit in Supabase and the Builder writes). Each is a faded "ghost" row in its
+      // section, after the row it names, until the glossary on this page has the character itself.
+      var STAGE = {
+        planned: function () { return 'Planned'; },
+        draft: function () { return 'Draft design · comments welcome'; },
+        test: function (g) { return 'In release ' + g.release; },
+      };
+      function ghostPicture(g) {
+        if (g.drawing) {
+          var im = document.createElement('img'); im.className = 'gh-draw'; im.src = g.drawing; im.alt = 'Draft drawing of ' + g.zh; im.loading = 'lazy';
+          return im;
+        }
+        var nd = document.createElement('div'); nd.className = 'gh-notdrawn'; nd.textContent = 'not drawn yet';
+        return nd;
+      }
+      function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+      // the glossary's own tables (the ones with row IDs), and the subtitle id each sits under (glossary-1e → 1e)
+      function sectionOfTable(t) {
+        for (var e = t.previousElementSibling; e; e = e.previousElementSibling) {
+          if (e.tagName === 'TABLE') return '';
+          if (e.tagName === 'LABEL' && /^glossary-/.test(e.id)) return e.id.slice(9);
+        }
+        return '';
+      }
+      function tableOf(section) {
+        var label = document.getElementById('glossary-' + section);
+        for (var e = label && label.nextElementSibling; e; e = e.nextElementSibling) {
+          if (e.tagName === 'TABLE') return e.querySelector('td.gid') ? e : null;
+          if (e.tagName === 'LABEL' || e.tagName === 'H4') return null;
+        }
+        return null;
+      }
+      // the character is in the glossary already (the release that has it is out): the same spelling
+      // anywhere, or the same 中文 in its section
+      function arrived(g, realRows) {
+        var zh = g.zh.split(' · ')[0];
+        return realRows.some(function (tr) {
+          if (g.ascii && text(tr, 'td.ascii').split(/[\s,]+/).indexOf(g.ascii) >= 0) return true;
+          return shortOf(tr) === zh && sectionOfTable(tr.closest('table')) === g.section;
+        });
+      }
+      function ghostRow(g, withFb) {
+        var tr = el('tr', 'ghost ' + g.stage); tr.id = 'coming-' + g.id;
+        tr.appendChild(el('td', 'gid')).appendChild(el('span', 'gh-tbd', '—'));
+        var zh = el('td', 'zh');
+        g.zh.split(' · ').forEach(function (part, i) {
+          if (i) zh.appendChild(el('span', 'sep', ' · '));
+          zh.appendChild(el('span', 'nw', part));
+        });
+        if (g.pinyin) zh.appendChild(el('span', 'py', g.pinyin));
+        tr.appendChild(zh);
+        var ascii = tr.appendChild(el('td', 'ascii'));
+        if (g.ascii) ascii.textContent = g.ascii; else ascii.appendChild(el('span', 'gh-tbd', 'to come'));
+        var slip = tr.appendChild(el('td', 'ex')).appendChild(el('div', 'slip'));
+        var inn = slip.appendChild(el('div', 'ex-in'));
+        if (g.stage === 'test' && g.ascii) inn.appendChild(el('txs', '', g.ascii));
+        slip.appendChild(el('span', 'ex-arrow', g.drawing ? '→' : ''));
+        slip.appendChild(el('div', 'ex-out')).appendChild(ghostPicture(g));
+        var m = tr.appendChild(el('td', 'meaning'));
+        m.appendChild(el('span', 'gh-badge ' + g.stage, STAGE[g.stage](g)));
+        if (g.meaning) m.appendChild(el('span', 'gh-def', g.meaning));
+        if (g.note) m.appendChild(el('span', 'gh-note', g.note));
+        var acts = m.appendChild(el('span', 'gh-acts'));
+        if (g.stage === 'test' && g.testFont) {
+          var dl = acts.appendChild(el('a', 'gh-dl', 'Download the test font')); dl.href = g.testFont;
+        }
+        var c = acts.appendChild(el('button', 'fb-link', g.stage === 'draft' ? 'Comment on the design' : 'Comment'));
+        c.type = 'button';
+        c.addEventListener('click', function () { comment(g, tr); });
+        if (withFb) {
+          var b = tr.appendChild(el('td', 'fb-cell')).appendChild(el('button', 'fb-row'));
+          b.type = 'button'; b.innerHTML = ICON; b.title = 'Comment';
+          b.setAttribute('aria-label', 'Comment on the coming character ' + g.zh);
+          b.addEventListener('click', function () { comment(g, tr); });
+        }
+        return tr;
+      }
+      function comment(g, tr) { open(null, '', 'comment', g); tr.classList.add('fb-picked'); }
+      function placeGhosts(list) {
+        var realRows = Array.prototype.filter.call(document.querySelectorAll('tr'), function (tr) { return tr.querySelector('td.gid'); });
+        var shown = [];
+        list.forEach(function (g) {
+          if (!STAGE[g.stage] || !g.zh || arrived(g, realRows)) return;
+          var table = tableOf(g.section);
+          if (!table) return;
+          var body = table.tBodies[0] || table, tr = ghostRow(g, !!table.querySelector('th.fb-cell'));
+          // after the row it names, and after any ghosts already following it; else at the section's end
+          var at = g.after && Array.prototype.find.call(body.rows, function (r) { return !r.classList.contains('ghost') && (shortOf(r) === g.after || zhOf(r) === g.after); });
+          if (at) { while (at.nextElementSibling && at.nextElementSibling.classList.contains('ghost')) at = at.nextElementSibling; at.after(tr); }
+          else body.appendChild(tr);
+          shown.push(g);
+        });
+        if (!shown.length) return;
+        // Show only these: hides every table without a ghost, with its titles, and each part (h4) left empty
+        document.querySelectorAll('table').forEach(function (t) {
+          if (!t.querySelector('td.gid') || t.querySelector('tr.ghost')) return;
+          t.classList.add('gh-none');
+          for (var e = t.previousElementSibling; e && e.tagName !== 'TABLE' && e.tagName !== 'H4' && !e.classList.contains('row'); e = e.previousElementSibling) e.classList.add('gh-none');
+        });
+        document.querySelectorAll('h4[id^="glossary-"]').forEach(function (h) {
+          for (var e = h.nextElementSibling; e && e.tagName !== 'H4'; e = e.nextElementSibling) if (e.tagName === 'TABLE' && !e.classList.contains('gh-none')) return;
+          h.classList.add('gh-none');
+        });
+        var count = function (st) { return shown.filter(function (g) { return g.stage === st; }).length; };
+        var parts = [shown.length + (shown.length === 1 ? ' character' : ' characters') + ' on the way'];
+        if (count('draft')) parts.push(count('draft') + (count('draft') === 1 ? ' draft' : ' drafts') + ' to comment on');
+        if (count('test')) parts.push(count('test') + ' in the test font');
+        var box = $('coming-next');
+        box.textContent = '';
+        var t = box.appendChild(el('span'));
+        t.appendChild(el('b', '', 'Coming next: ')); t.appendChild(document.createTextNode(parts.join(', ') + '.'));
+        var only = box.appendChild(el('button', 'chip', 'Show only these'));
+        only.type = 'button'; only.setAttribute('aria-pressed', 'false');
+        only.addEventListener('click', function () {
+          var on = document.documentElement.classList.toggle('only-coming');
+          only.setAttribute('aria-pressed', String(on));
+        });
+        box.appendChild(el('span', 'sp'));
+        var req = box.appendChild(el('button', 'fb-link', 'Request a character'));
+        req.type = 'button'; req.setAttribute('data-fb-request', '');
+        box.hidden = false;
+        // a link to a coming character (#coming-u12, from an email or a comment) lands on it
+        var target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (target && target.classList.contains('ghost')) target.scrollIntoView({ block: 'center' });
+      }
+      fetch(FORM, { method: 'GET' })
+        .then(function (r) { return r.ok ? r.json() : { ghosts: [] }; })
+        .then(function (j) { placeGhosts(Array.isArray(j.ghosts) ? j.ghosts : []); })
+        .catch(function () { /* no list: the glossary as released */ });
+
       form.addEventListener('submit', function (e) { e.preventDefault(); submit(true); });
       plain.addEventListener('click', function () { submit(false); });
     })();

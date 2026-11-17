@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert@1';
 import { LIMITS, older, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail, rowName } from './mail.ts';
+import { GHOSTS_QUERY, ghostOf, type UpcomingRow } from './ghosts.ts';
 
 const form = (fields: Record<string, string>, files: [string, File][] = []) => {
   const fd = new FormData();
@@ -158,4 +159,22 @@ Deno.test('the emails for a request and a comment', () => {
     upcoming_id: 'u12', details: { about: '不动 · bù dòng' } }, pictures: 0, tableUrl: 'u' });
   assertEquals(com.subject, 'Comment on 不动 · bù dòng (coming next)');
   assertStringIncludes(com.text, 'commented on the coming character 不动 · bù dòng (u12).');
+});
+
+Deno.test('a ghost row gets only what the page shows, its drawing as a public address, and its test font', () => {
+  const row: UpcomingRow = { id: 'u12', zh: '不动', pinyin: 'bù dòng', ascii: null, meaning: 'keep the hand still', section: '1e', after: '下',
+    stage: 'planned', note: null, drawing: 'u12.svg', version: null, glyphs: null, updated_at: '2026-11-20T10:00:00Z' };
+  const S = 'https://p.supabase.co';
+  const planned = ghostOf(row, S)!;
+  assertEquals([planned.drawing, planned.release, planned.testFont, planned.glyphs, planned.after], [null, null, null, [], '下']);   // planned: not drawn yet
+  assert(!('feedback_id' in planned) && !('updated_at' in planned));
+  const draft = ghostOf({ ...row, stage: 'draft' }, S)!;
+  assertEquals(draft.drawing, 'https://p.supabase.co/storage/v1/object/public/upcoming/u12.svg?v=2026-11-20T10%3A00%3A00Z');
+  const test = ghostOf({ ...row, stage: 'test', version: '3.400-rc.2', glyphs: ['budong_md'] }, S)!;
+  assertEquals([test.release, test.testFont], ['3.400', 'https://github.com/neuralfirings/JianZiPu/releases/download/v3.400-rc.2/JianZiPu.ttf']);
+  assertEquals(ghostOf({ ...row, section: null }, S), null);          // not placed yet
+  assertEquals(ghostOf({ ...row, stage: 'released' }, S), null);
+  assertEquals(ghostOf({ ...row, after: '' }, S)!.after, null);       // the end of its section
+  assertMatch(GHOSTS_QUERY, /stage=in\.\(planned,draft,test\)&section=not\.is\.null/);
+  assert(!/feedback_id|change_request_id/.test(GHOSTS_QUERY));
 });
