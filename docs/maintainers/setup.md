@@ -44,6 +44,7 @@ where the settings live. Secrets never go in this repository.
    | `006_feedback.sql` | the font page's feedback (`feedback` table with a status, private `feedback` bucket) |
    | `007_feedback_kind.sql` | each message's `kind`: a glossary row, the page, or Contact me |
    | `008_feedback_requests.sql` | two more kinds, `request` (Request a character) and `comment` (on a coming character), with `upcoming_id` and `details` |
+   | `009_upcoming.sql` | coming characters (the glossary's ghost rows): the `upcoming` table, statuses `wip` and `done`, the trigger that makes a row when a request is set to `wip`, the public `upcoming` bucket |
 
 2. **Auth**, following the comments at the top of `001_setup.sql`:
    - Turn off sign-ups.
@@ -107,8 +108,8 @@ table (pictures in the `feedback` bucket) and emails the admins through Resend,
 pictures attached. `supabase/functions/feedback/README.md` has the full steps.
 In short:
 
-1. Run `supabase/006_feedback.sql`, `supabase/007_feedback_kind.sql` and
-   `supabase/008_feedback_requests.sql`.
+1. Run `supabase/006_feedback.sql`, `supabase/007_feedback_kind.sql`,
+   `supabase/008_feedback_requests.sql` and `supabase/009_upcoming.sql`.
 2. Deploy with `supabase functions deploy feedback --no-verify-jwt`. It uses the
    Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`; optionally set
    `FEEDBACK_SALT` to a long random string.
@@ -120,8 +121,40 @@ In short:
 with `kind` = `contact`.
 
 Answer a message by replying to its email. Set its status in Table Editor →
-`feedback`: `new`, `read`, `ticket` (put the ticket's link in `ticket`),
-`wont_do` or `need_info`.
+`feedback`: `new`, `read`, `wip`, `ticket` (put the ticket's link in `ticket`),
+`wont_do`, `need_info` or `done`.
+
+### Spam check (Cloudflare Turnstile)
+
+The form runs Cloudflare Turnstile once both halves are set; until then it
+works without it.
+
+1. Cloudflare dashboard → Turnstile → **Add widget**. Hostnames:
+   `jianzipufont.com`, `jianzipu.pages.dev` (the previews), `builder.jianzipufont.com`
+   and `up.railway.app` (the Builder's copy of the page and its previews).
+   Widget mode: **Managed**. It gives a site key and a secret key.
+2. Supabase → Edge Functions → Secrets: add `TURNSTILE_SECRET` with the secret
+   key. Messages without a passing check are refused from then on.
+3. Set `window.TURNSTILE_SITEKEY` near the top of `site/index.html` to the site
+   key and merge. A page on your own computer uses Cloudflare's test key.
+
+Do 2 and 3 together: with the secret set and no site key on the page, every
+message is refused.
+
+### Coming characters (the glossary's ghost rows)
+
+A visitor's **Request a character** arrives as a `request` in `feedback`. To take
+one on, set its status to `wip`: a row appears in Table Editor → `upcoming`,
+filled from the request. Check its words (the meaning is the visitor's), then
+set `section` (the glossary subtitle's id, such as `1e`) and `after` (the 中文 of
+the row it follows; empty for the section's end). The font page shows it as
+**Planned** within a minute. A second request for the same character: put the
+first one's `upcoming_id` on it before setting it to `wip`.
+
+From there the Builder moves it on: Review's **Publish draft to glossary** shows a
+tester's drawing (**Draft design**), a release candidate makes it **In release**,
+and publishing the release takes it off the list. Set the request to `done` then,
+and write to the person who asked.
 
 ## GitHub
 

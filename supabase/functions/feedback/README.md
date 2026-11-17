@@ -9,16 +9,23 @@ bucket, and emailed to every admin (`profiles.role = 'admin'`) through
 [Resend](https://resend.com), pictures attached, replying to the sender when
 they left an email.
 
+Its `GET` is the font page's list of coming characters (the glossary's ghost rows,
+`supabase/009_upcoming.sql`): only the rows at stage planned, draft or test with a
+section, and only what the page shows (never who asked or what they wrote), each
+drawing as its public address and, at stage test, the candidate's font. Any page
+may read it; it's kept for a minute.
+
 | File | What it does |
 | --- | --- |
 | `check.ts` | What the form may send: fields and lengths, up to 5 pictures (8 MB each, 25 MB together), the spam trap, which pages may post |
 | `mail.ts` | The admins' email (the Change Request emails' look, `../notify/templates.ts`) |
-| `index.ts` | Stores the pictures and the message, then sends the email; at most 5 messages an hour from one network address |
+| `index.ts` | Stores the pictures and the message, then sends the email; at most 5 messages an hour from one network address; checks Cloudflare Turnstile when `TURNSTILE_SECRET` is set; `GET` lists the coming characters |
+| `ghosts.ts` | What the `GET` gives the page for each row of `upcoming` |
 
 ## Setting it up
 
-1. **The table and bucket**: run `supabase/006_feedback.sql`, then `supabase/007_feedback_kind.sql`
-   and `supabase/008_feedback_requests.sql`, in the SQL editor. In the Builder's project 006 also lets its admins read the table from a
+1. **The table and bucket**: run `supabase/006_feedback.sql`, then `supabase/007_feedback_kind.sql`,
+   `supabase/008_feedback_requests.sql` and `supabase/009_upcoming.sql` (coming characters), in the SQL editor. In the Builder's project 006 also lets its admins read the table from a
    signed-in app. 007 adds `kind`, 008 the kinds `request` and `comment` with `upcoming_id` and
    `details`: run them before deploying a function that sends them (one deployed first still
    saves every message, a request as feedback on the page with its details in the message, and
@@ -39,6 +46,10 @@ they left an email.
    jianzipufont.com, its Cloudflare previews (`*.jianzipu.pages.dev`), the Builder's
    copy of the page (builder.jianzipufont.com/site, Railway previews
    `jzpbuilder-*.up.railway.app`, `jianzipu-*.up.railway.app`) and your own computer.
+   `TURNSTILE_SECRET` turns on the spam check (Cloudflare Turnstile): set it together
+   with `window.TURNSTILE_SITEKEY` in `site/index.html` (`docs/maintainers/setup.md`
+   says how to make the widget), since from then on a message without a passing
+   check is refused.
 3. **Deploy**: `supabase functions deploy feedback --no-verify-jwt` (visitors aren't
    signed in; `check.ts` decides what gets in). Or in the dashboard, without the CLI:
    - Make one file of it (the dashboard's editor can't reach `../notify/`):
@@ -63,9 +74,11 @@ in Dashboard → Table Editor → `feedback`, newest first by `created_at`. Set
 | --- | --- |
 | `new` | Not looked at (every message starts here) |
 | `read` | Seen |
+| `wip` | Taken on. A request set to `wip` gets its row in `upcoming`, and the font page shows it as Planned once you set its `section` |
 | `ticket` | Made into a ticket: put its link in `ticket` |
 | `wont_do` | Not changing it |
 | `need_info` | Asked the sender for more |
+| `done` | Its character is released: write to them |
 
 `kind` says what it is: `row` (the button on a glossary row), `page` (Feedback in the
 sticky bar, "tell me", Send feedback), `contact` (Contact me, which asks for an email

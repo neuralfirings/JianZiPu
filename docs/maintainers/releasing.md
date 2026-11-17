@@ -102,6 +102,9 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
    as "v3.300-rc.1: JianZiPu 3.300, release candidate 1".
 7. Tags `v3.300-rc.1`, and pushes the branch and the tag.
 8. Marks the requests as In a release candidate, which emails their authors.
+9. On the font page, the coming characters whose glyphs are all in the
+   candidate turn to **In release 3.300**, with a link to this candidate's font
+   (their rows in the `upcoming` table go to stage `test`).
 
 So every candidate is **two commits**: the design, then the built font. The
 font records the hash of the design commit it was built from, and that hash
@@ -162,7 +165,10 @@ Go back to the Release screen while still on `release/3.300`, and choose
 2. Tags main as `v3.300` and pushes the tag. The workflow then publishes the
    GitHub release as **latest**, with the font attached.
 3. Marks the requests Released, which emails their authors.
-4. Switches your copy back to `main` and pulls.
+4. Takes the release's coming characters off the font page's Coming next
+   (stage `released`): the glossary has their real rows now. Set the visitors'
+   requests for them to `done` in Supabase and write to the people who asked.
+5. Switches your copy back to `main` and pulls.
 
 After that:
 

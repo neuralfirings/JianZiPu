@@ -55,9 +55,18 @@ the tester's guide. In short:
    changes, each with the decision the area had. Likewise a request sent while
    a glossary subtitle was one change shows as its rows, each with the
    subtitle's decision.
-5. If you like, write a reply. The tester sees it on Your Change Requests and in
+5. **On the glossary**, above the changes, lists the request's new glyphs that
+   have a glossary row, with the coming character each one draws (the tester
+   tags it when sending; change it if it's wrong, or choose **A new row on the
+   page**) and its row on the font page now and after. **Publish draft to
+   glossary** puts the drawings on the font page as drafts for comments: it
+   uploads each to the `upcoming` bucket and writes its row in the `upcoming`
+   table (`supabase/009_upcoming.sql`). It doesn't depend on your decisions, so
+   you can show a drawing before deciding. A redraw in a later request:
+   **Update the draft on the glossary** there.
+6. If you like, write a reply. The tester sees it on Your Change Requests and in
    the email.
-6. **Save decisions.** The request becomes **In review** and its author gets an
+7. **Save decisions.** The request becomes **In review** and its author gets an
    email. If you skipped everything, it becomes **Declined** instead, and its
    changes unlock in the tester's draft.
 
