@@ -1,6 +1,6 @@
 import * as T from './typing';
 import { describe, expect, it } from 'vitest';
-import { rowExample, byId, changedLayout, cleanLayout, glossarySearchText, leftOut, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { rowExample, rowExampleMarked, byId, changedLayout, cleanLayout, glossarySearchText, leftOut, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -194,5 +194,11 @@ describe('a row\'s own example, for Review', () => {
     expect(rowExample({ word: '带起', glyphs: ['md_dai', 'md_qi'], usage: ['s9k6 {}', '名九勾六 {}'] }, t)).toEqual(['名九勾六 带起', 's9k6 daiqi']);
     expect(rowExample({ glyph: 'yin3_md' }, t)).toBe(null);
     expect(rowExample({ glyph: 'yin3_md', usage: ['', ' '] }, t)).toBe(null);
+  });
+
+  it('as the page writes it: red only when the example has more than the row, and its own red marks kept', () => {
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['<r>{}</r>shang9', '<r>{}</r>上九'] }, t)).toEqual(['<r>引</r>上九', '<r>yin3</r>shang9']);
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['{}d7,7<r>|</r>06', '{}中七，七<r>｜</r>散六'] }, t)).toEqual(['<r>引</r>中七，七<r>｜</r>散六', '<r>yin3</r>d7,7<r>|</r>06']);
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['{}', '{}'] }, t)).toEqual(['引', 'yin3']);            // the row on its own: black
   });
 });

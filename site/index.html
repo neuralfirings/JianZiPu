@@ -2684,10 +2684,11 @@
           // a whole example word is drawn in the font's units (1000 to the em): show it at the size the
           // real rows' examples are set in, so its characters match theirs
           if (g.example) im.addEventListener('load', function () {
-            var ref = document.querySelector('.slip jzp'), em = ref ? parseFloat(getComputedStyle(ref).fontSize) : 38;
+            var ref = document.querySelector('table td.ex .ex-out jzp');   // a real row's example, at this width
+            var em = ref ? parseFloat(getComputedStyle(ref).fontSize) : 2.5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
             if (im.naturalWidth) im.style.width = Math.round(im.naturalWidth * em / 1000) + 'px';
           });
-          im.alt = g.example ? 'Draft drawing of ' + g.example[0] : 'Draft drawing of ' + g.zh;
+          im.alt = 'Draft drawing of ' + (g.example ? g.example[0].replace(/<\/?r>/g, '') : g.zh);
           return im;
         }
         var nd = document.createElement('div'); nd.className = 'gh-notdrawn'; nd.textContent = 'not drawn yet';
@@ -2736,12 +2737,19 @@
         var inn = slip.appendChild(el('div', 'ex-in'));
         // its example, typed as the page's other rows show it (中文 then ASCII, its own spelling in red);
         // the drawing is then the whole word. Without one, at test, its spelling alone.
+        // a line as the Builder wrote it: <r>…</r> round what's red (the row's spelling, when the example has
+        // more in it than the row; marks the example makes red, like a chord's |), the rest as plain text
         var marked = function (line, own) {
-          var t = el('txs'), at = own ? line.indexOf(own) : -1;
-          if (at < 0) { t.textContent = line; return t; }
-          t.appendChild(document.createTextNode(line.slice(0, at)));
-          t.appendChild(el('r', '', own));
-          t.appendChild(document.createTextNode(line.slice(at + own.length)));
+          var t = el('txs');
+          if (line.indexOf('<r>') < 0) {          // from before the marks were sent: the spelling, if there's more
+            var at = own && line.trim() !== own ? line.indexOf(own) : -1;
+            if (at < 0) { t.textContent = line; return t; }
+            line = line.slice(0, at) + '<r>' + own + '</r>' + line.slice(at + own.length);
+          }
+          line.split(/(<r>[^<]*<\/r>)/).forEach(function (part) {
+            var m = /^<r>([^<]*)<\/r>$/.exec(part);
+            if (m) t.appendChild(el('r', '', m[1])); else if (part) t.appendChild(document.createTextNode(part.replace(/<\/?r>/g, '')));
+          });
           return t;
         };
         if (g.example) {

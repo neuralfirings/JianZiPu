@@ -196,6 +196,19 @@ export function rowExample(r: GRow, t: T.Typing): [string, string] | null {
   const fill = (k: 0 | 1) => exampleText(r.usage![k], esc(sp.map((x) => x[k]).join('')));
   return [fill(1), fill(0)];
 }
+/** The same example as the font page writes it: [中文, ASCII] with <r>…</r> round what's red, the row's own
+ *  spelling only when the example has more in it than the row (marksGlyph), plus any marks the example
+ *  itself makes red (the chord bar in d7,7<r>|</r>06). Other text plain, not HTML-escaped. */
+export function rowExampleMarked(r: GRow, t: T.Typing): [string, string] | null {
+  if (!r.usage || !r.usage.some((x) => x.trim())) return null;
+  const red = marksGlyph(r.usage), sp = glyphsOfRow(r).map((g) => mainSpellings(t, g));
+  const fill = (k: 0 | 1) => {
+    const own = sp.map((x) => x[k]).join('');
+    const tpl = r.usage![k].replace(/<r>\{\}<\/r>/g, '{}');   // a spelling marked already is marked once
+    return unesc(tpl.split('{}').join(red ? `<r>${esc(own)}</r>` : esc(own))).replace(/<r><\/r>/g, '');
+  };
+  return [fill(1), fill(0)];
+}
 /** The glyph's main spelling in each language, as the page fills the example with. */
 export function mainSpellings(t: T.Typing, g: string): [string, string] {
   const s = T.get(t, g);

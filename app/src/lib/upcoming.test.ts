@@ -32,7 +32,7 @@ describe('coming characters', () => {
       base: { commit: null, design_hash: '', csv_hash: '' },
       glossary: { '1e': [{ glyph: 'md_xia', meaning: 'slide down' }, { glyph: 'budong_md', meaning: 'keep the hand still' }] } });
     const { rows, unplaced } = draftRows(b, { budong_md: 'u12' });
-    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下', example: null }]);
+    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下', example: null, marked: false }]);
     expect(unplaced).toEqual(['lone_md']);                                         // no glossary row: nowhere to show it
     expect(draftRows(b, {}).rows[0].ghost).toBe(null);                             // untagged: a new ghost
     expect(zhOf({ word: '泛起', glyphs: ['md_fan', 'md_qi'] }, typing)).toBe('泛起');
@@ -55,12 +55,16 @@ describe('coming characters', () => {
     const typing = { yin3_md: sp({ latin: 'yin3', simplified: '引' }) };
     const b = makeBundle({ design, typing, svgs: { yin3_md: SVG }, baseDesign: design, baseTyping: {}, baseSvgs: {},
       base: { commit: null, design_hash: '', csv_hash: '' }, glossary: { '1e': [{ glyph: 'yin3_md', usage: ['<r>{}</r>shang9', '<r>{}</r>上九'] }] } });
-    expect(draftRows(b, {}).rows[0].example).toEqual(['引上九', 'yin3shang9']);
+    expect(draftRows(b, {}).rows[0]).toMatchObject({ example: ['<r>引</r>上九', '<r>yin3</r>shang9'], marked: true });
+    const alone = makeBundle({ design, typing, svgs: { yin3_md: SVG }, baseDesign: design, baseTyping: {}, baseSvgs: {},
+      base: { commit: null, design_hash: '', csv_hash: '' }, glossary: { '1e': [{ glyph: 'yin3_md', usage: ['{}', '{}'] }] } });
+    expect(draftRows(alone, {}).rows[0]).toMatchObject({ example: ['引', 'yin3'], marked: false });   // the row on its own: no red
     const el = (glyph: string, x: number, y: number) => ({ name: glyph, area: 'a', glyph, x, y, size: [350, 350] as [number, number] });
     const svg = exampleSvg([{ glyphs: [], layout: 'v', pen: 0, elements: [el('yin3_md', 0, 700), el('md_shang', 0, 350), el('blank_colon', 0, 0), el('nodrawing', 0, 0)] }],
       { yin3_md: SVG, md_shang: SVG.replace('fill="black"', ''), blank_colon: SVG }, ['yin3_md'], ['blank_colon'])!;
-    expect(svg.match(/<svg x=/g)?.length).toBe(2);                         // the colon and a glyph with no drawing left out
+    expect(svg.match(/<g transform=/g)?.length).toBe(2);                    // the colon and a glyph with no drawing left out
     expect(svg).toContain('color="#a3352b"');                               // the row's glyph in red
+    expect(svg).toContain('translate(0 -1050) scale(1)');                    // its drawing in its part's box, as a group (the ink can be measured)
     expect(svg).toContain('viewBox="-70 -1120 490 840"');                     // the word's box, padded a tenth
     expect(exampleSvg([], {}, [])).toBe(null);
   });

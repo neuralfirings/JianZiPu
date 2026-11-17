@@ -9,7 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WordPiece } from './api';
 import type { Bundle, SvgMap } from './bundle';
-import { rowExample, type GRow } from './glossary';
+import { marksGlyph, rowExampleMarked, type GRow } from './glossary';
 import { parseSvg } from './svg';
 import type { Item } from './merge';
 import type * as T from './typing';
@@ -75,9 +75,12 @@ export function suggestGhost(sp: Partial<T.Spelling> | undefined, ghosts: Pick<G
 export type DraftRow = {
   glyph: string; ghost: string | null;
   zh: string; pinyin: string | null; ascii: string | null; meaning: string | null; section: string; after: string | null;
-  /** The row's own example, [中文, ASCII] (引上九, yin3shang9): the page shows it typed, and its drawing is
-   *  the whole word; null: the drawing is the glyph alone. */
+  /** The row's own example, [中文, ASCII] (<r>引</r>上九, <r>yin3</r>shang9: what's red marked, as the font
+   *  page writes it): the page shows it typed, and its drawing is the whole word; null: the glyph alone. */
   example: [string, string] | null;
+  /** Its glyph is drawn red in the example: only when the example has more in it than the row (s9k3
+   *  for 名, not 掐撮二声 on its own), as the font page and Glyphs › Glossary mark it. */
+  marked: boolean;
 };
 
 /** A glossary row's 中文, as the page's first column shows it (simplified, then traditional). */
@@ -106,7 +109,8 @@ export function draftRows(b: Bundle, tags: Record<string, string | null | undefi
       zh: zhOf(row, b.typing), pinyin: sp?.pinyin || null, ascii: sp?.latin || null,
       meaning: row.meaning || null, section: found.section,
       after: before ? zhOf(before, b.typing).split(' · ')[0] : null,
-      example: rowExample(row, b.typing)
+      example: rowExampleMarked(row, b.typing),
+      marked: !!row.usage && marksGlyph(row.usage)
     });
   }
   return { rows, unplaced };
@@ -120,22 +124,54 @@ export async function allUpcoming(c: SupabaseClient): Promise<UpcomingRow[]> {
 }
 
 /** An example word as one standalone SVG, as Glyphs › Glossary draws it (GlossaryExample.svelte): each
- *  glyph at its place in the word, the row's glyphs (`mark`) in the font page's red, the rest in ink;
- *  the control glyphs (a vertical word's colon) left out. Null when nothing in it has a drawing. */
+ *  glyph at its place in the word, the glyphs in `mark` in the font page's red, the rest in ink; the
+ *  control glyphs (a vertical word's colon) left out. Its frame is the parts' boxes, padded: a drawing
+ *  can reach past its box, so in a browser fitToInk() then frames the ink itself. Its size is in font
+ *  units (1000 to the em), as the page's examples are set. Null when nothing in it has a drawing. */
 export function exampleSvg(pieces: WordPiece[], svgs: SvgMap, mark: string[], control: string[] = []): string | null {
   const els = pieces.flatMap((p) => p.elements).filter((e) => e.glyph && !control.includes(e.glyph) && parseSvg(svgs[e.glyph]));
   if (!els.length) return null;
   const x0 = Math.min(...els.map((e) => e.x)), x1 = Math.max(...els.map((e) => e.x + e.size[0]));
   const y0 = Math.min(...els.map((e) => e.y)), y1 = Math.max(...els.map((e) => e.y + e.size[1]));
   const pad = 0.1 * Math.max(x1 - x0, y1 - y0);
-  const r = (n: number) => Math.round(n * 100) / 100;
-  const box = [x0 - pad, -(y1 + pad), x1 - x0 + 2 * pad, y1 - y0 + 2 * pad].map(r);
+  const box = [x0 - pad, -(y1 + pad), x1 - x0 + 2 * pad, y1 - y0 + 2 * pad].map(r2);
+  // each glyph's drawing scaled into its part's box as <svg viewBox> would (centred, aspect kept), but as a
+  // group, so the ink can be measured and nothing is clipped at the box
   const parts = els.map((e) => {
     const g = parseSvg(svgs[e.glyph])!;
+    const [vx, vy, vw, vh] = g.viewBox.split(/[\s,]+/).map(Number);
+    const k = Math.min(e.size[0] / vw, e.size[1] / vh);
+    const dx = e.x + (e.size[0] - vw * k) / 2 - vx * k, dy = -(e.y + e.size[1]) + (e.size[1] - vh * k) / 2 - vy * k;
     const color = mark.includes(e.glyph) ? '#a3352b' : '#2b2724';   // site/index.html's --accent and --ink
-    return `<svg x="${r(e.x)}" y="${r(-(e.y + e.size[1]))}" width="${r(e.size[0])}" height="${r(e.size[1])}" viewBox="${g.viewBox}" color="${color}" overflow="visible">${g.inner}</svg>`;
+    return `<g transform="translate(${r2(dx)} ${r2(dy)}) scale(${r2(k * 1e4) / 1e4})" color="${color}" fill="${color}">${g.inner}</g>`;
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.join(' ')}" width="${box[2]}" height="${box[3]}" overflow="visible">${parts.join('')}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.join(' ')}" width="${box[2]}" height="${box[3]}"><g class="ink">${parts.join('')}</g></svg>\n`;
+}
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** The example's frame moved onto its ink (measured in the page), a little padding round it, so no
+ *  stroke that reaches past its part's box is cut off. In a browser only; elsewhere it comes back as is. */
+export function fitToInk(svg: string, doc: Document | undefined = typeof document === 'undefined' ? undefined : document): string {
+  if (!doc) return svg;
+  const host = doc.createElement('div');
+  host.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden';
+  host.innerHTML = svg;
+  doc.body.append(host);
+  try {
+    const root = host.querySelector('svg'), ink = host.querySelector('g.ink') as SVGGraphicsElement | null;
+    const b = ink?.getBBox?.();
+    if (!root || !b || !b.width || !b.height) return svg;
+    const pad = Math.max(10, 0.03 * Math.max(b.width, b.height));
+    const box = [b.x - pad, b.y - pad, b.width + 2 * pad, b.height + 2 * pad].map(r2);
+    root.setAttribute('viewBox', box.join(' '));
+    root.setAttribute('width', String(box[2]));
+    root.setAttribute('height', String(box[3]));
+    return root.outerHTML + '\n';
+  } catch {
+    return svg;
+  } finally {
+    host.remove();
+  }
 }
 
 /** Admin: put a Change Request's drawings on the page as drafts. Rows tagged with the same ghost

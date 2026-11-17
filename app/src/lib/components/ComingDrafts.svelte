@@ -9,7 +9,7 @@
   import { pilot } from '$lib/pilot.svelte';
   import { app } from '$lib/state.svelte';
   import type { ChangeRequest } from '$lib/requests';
-  import { allUpcoming, draftRows, exampleSvg, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
+  import { allUpcoming, draftRows, exampleSvg, fitToInk, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
   import { api } from '$lib/api';
   import * as T from '$lib/typing';
   import SvgText from './SvgText.svelte';
@@ -49,9 +49,10 @@
       const svgs = { ...app.svgs, ...b.svgs }, out: Record<string, string> = {};
       rows.forEach((r, i) => {
         const w = res.words[i];
-        const mark = [r.glyph, T.get(b.typing, r.glyph).vert_variant].filter(Boolean);
+        // red only when the example has more in it than the row (引上九), as Glyphs › Glossary marks it
+        const mark = r.marked ? [r.glyph, T.get(b.typing, r.glyph).vert_variant].filter(Boolean) : [];
         const svg = w && exampleSvg(w.pieces, svgs, mark, app.control);
-        if (svg) out[r.glyph] = svg;
+        if (svg) out[r.glyph] = fitToInk(svg);
       });
       pictures = out;
     }).catch(() => { /* the glyph alone is shown and published */ });
@@ -62,6 +63,10 @@
   const rowOf = (id: string | null) => (id ? (upcoming ?? []).find((u) => u.id === id) : undefined);
   /** Every row already shows this request's drawing: the button updates them. */
   let published = $derived(plan.rows.length > 0 && plan.rows.every((r) => rowOf(r.ghost)?.change_request_id === request.id));
+
+  const plain = (t: string) => t.replace(/<\/?r>/g, '');
+  /** At Glyphs › Glossary's size for an example (GlossaryExample, 0.04 px per font unit), from its width in units. */
+  const picWidth = (svg: string) => Math.max(16, Math.round(Number(/width="([\d.]+)"/.exec(svg)?.[1] ?? 400) * 0.04));
 
   async function publish() {
     busy = true; err = null;
@@ -125,8 +130,8 @@
             <span class="zh">{r.zh}{#if r.pinyin}<small>{r.pinyin}</small>{/if}</span>
             <span class="mono">{r.ascii ?? ''}</span>
             {#if r.example && pictures[r.glyph]}
-              <span class="exin"><span class="zh">{r.example[0]}</span><span class="mono">{r.example[1]}</span></span>
-              <span class="pic">{@html pictures[r.glyph]}</span>
+              <span class="exin"><span class="zh">{plain(r.example[0])}</span><span class="mono">{plain(r.example[1])}</span></span>
+              <span class="pic" style="width: {picWidth(pictures[r.glyph])}px">{@html pictures[r.glyph]}</span>
             {:else}<SvgText text={request.bundle.svgs[r.glyph]} size={56} />{/if}
             <span><span class="tag">Draft design</span> {r.meaning ?? ''} <span class="muted small">· in {sectionName(r.section)}{r.after ? `, after ${r.after}` : ''}</span></span>
           </div>
@@ -155,7 +160,8 @@
   .grow.none { display: block; }
   .grow.after:has(.exin) { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto auto minmax(0, 2fr); }
   .exin { display: flex; flex-direction: column; align-items: center; }
-  .pic :global(svg) { display: block; height: 56px; width: auto; max-width: 140px; }
+  .pic { display: block; }
+  .pic :global(svg) { display: block; width: 100%; height: auto; }
   .grow.after { border-color: var(--border-strong); }
   .zh { font-family: var(--font-cjk); }
   .zh small { display: block; font-family: var(--font-serif); color: var(--ink-muted); }
