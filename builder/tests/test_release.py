@@ -98,7 +98,7 @@ def test_a_candidate_regenerates_the_glossary_and_scope_allows_only_that(repo):
     release._check_scope(repo, "release/3.200")
     candidate(repo)
     page = (repo / "site" / "index.html").read_text()
-    assert "<td>挑</td>" in page and "<p>hand-written</p>" in page
+    assert '<td class="zh">挑<' in page and "<p>hand-written</p>" in page
     assert not release.dirty_files(repo)
     assert release.glossary_only("origin/main", "HEAD", repo=repo)
     files = sh(repo, "diff", "--name-only", "origin/main...HEAD").splitlines()

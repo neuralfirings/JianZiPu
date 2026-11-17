@@ -227,6 +227,46 @@ CLEANUP_RULES = (
 )
 
 
+def run_spacing(design: Design, glyphs: list[str]) -> tuple[list[int], list[int]]:
+    """What the font's control rules do to a run of glyphs, for the Builder's preview (/api/words):
+    each glyph's advance and its extra x placement, after COLON_WIDTH and CLEANUP_RULES above.
+    Advances start as the font's own: a control glyph's is its area's advance (base.control_widths),
+    the space, `advance` and `#` one em, a part of a word nothing. Change this with those rules."""
+    def width(g: str) -> int:
+        if g in config.CONTROL_GLYPHS:
+            return next((a.advance for a in design.areas.values() if g in a.glyphs and a.advance > 0),
+                        config.CONTROL_GLYPHS[g][1])
+        if g in ("space", "numbersign"):
+            return SPACE
+        return next((a.advance for a in design.areas.values() if g in a.glyphs), 0)
+    wild = set(design.all_glyphs()) | {"blank", "blank_bar", COLON}
+    adv = [width(g) for g in glyphs]
+    dx = [0] * len(glyphs)
+
+    def after(i: int, mark: str) -> bool:
+        """`mark WILD{n} glyph'` for some n in 0..10: within reach, with only word parts between."""
+        for n in range(_DEPTH + 1):
+            j = i - 1 - n
+            if j < 0 or (n and glyphs[j + 1] not in wild):
+                return False
+            if glyphs[j] == mark:
+                return True
+        return False
+    if any(COLON in a.glyphs and a.advance for a in design.areas.values()):
+        for i, g in enumerate(glyphs):
+            if g == COLON and not (i and glyphs[i - 1] in wild):
+                adv[i] -= SPACE
+            elif g == "numbersign" and not after(i, "numbersign") and after(i, COLON):
+                adv[i] += SPACE
+    for i, g in enumerate(glyphs):
+        if after(i, "numbersign"):
+            if g in wild:
+                dx[i] -= SPACE
+            elif g in ("space", "advance"):
+                adv[i] -= SPACE
+    return adv, dx
+
+
 def gen_gpos(design: Design) -> Emission:
     rules, skipped, reg = build_rules(design)
     lines = ["# --- positioning (jzpbuild.positioning): one rule per word shape, cursive chains ---"]

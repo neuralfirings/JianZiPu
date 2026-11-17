@@ -1,7 +1,8 @@
-// Searching the glossary tables (Check the glossary): the rows whose ASCII, 中文, 拼音 or Meaning
-// holds the search, or every row of a section whose title holds it. Tone marks, case and spaces
-// don't count ("banfu" finds bàn fú); the last column (the examples) isn't searched, since nearly
-// every example has 勾 in it. site/index.html's glossary searches the same way (its script).
+// Searching the glossary tables (Check the glossary): the rows whose 中文 (with its 拼音), ASCII or
+// Definition holds the search, or every row of a section whose title holds it. Tone marks, case and
+// spaces don't count ("banfu" finds bàn fú); the Example isn't searched, since nearly every example
+// has 勾 in it. The cells are found by the classes glossary.py gives them (zh, ascii, meaning).
+// site/index.html's glossary searches the same way (its script).
 
 /** Text as the search compares it: no tone marks, no spaces, lower case. */
 export const norm = (t: string | null | undefined) =>
@@ -24,7 +25,7 @@ export function filterTables(root: HTMLElement, query: string): number {
     let any = false;
     for (const tr of table.rows) {
       if (!tr.querySelector('td.gid')) continue;
-      const cells = [...tr.cells].slice(1, -1).map((c) => c.textContent ?? '');
+      const cells = [...tr.querySelectorAll('td.zh, td.ascii, td.meaning')].map((c) => c.textContent ?? '');
       const hit = rowMatches(cells, head?.textContent ?? '', query);
       tr.hidden = !hit;
       if (hit) { any = true; shown++; }

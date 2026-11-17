@@ -444,3 +444,33 @@ def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, 
     layout["groups"][1]["sections"].remove("2b")
     with pytest.raises(ValueError, match="still has"):
         webserver.write_glossary(rows, r["hash"], layout)
+
+
+def test_words_space_vertical_words_as_the_font_does():
+    """/api/words moves the pen as the font does: a vertical word's colon gives its em back to the
+    space after the word, so two words typed with a space are one em apart, not two (the Glossary's
+    Output showed a gap between them); a colon straight after a word keeps it, a # after a vertical
+    word makes room for it and pulls what follows back. Figures checked against the released font."""
+    from jzpbuild.positioning import schema
+    design = schema.load_design()
+    runs = {
+        "yin": ["blank_colon", "md_yin"],
+        "s9k6": ["md_ming", "md_9", "lg_gou", "md_6"],
+        "daiqi": ["blank_colon", "md_dai", "md_qi"],
+    }
+    def laid(*parts):
+        glyphs = [g for p in parts for g in (runs.get(p) or [p])]
+        w = webserver.words_payload(design, ["x"], runs=[glyphs])["words"][0]
+        return {e["glyph"]: e["x"] for p in w["pieces"] for e in p["elements"]}, w["advance"]
+    alone = {g: x for p in runs for g, x in laid(p)[0].items()}
+    xs, adv = laid("yin", "space", "blank_colon", "md_nao")
+    assert xs["md_nao"] - alone["md_yin"] == 1000 and adv == 1000
+    xs, adv = laid("s9k6", "space", "daiqi")
+    assert xs["md_dai"] - alone["md_dai"] == 1000 and adv == 1000
+    xs, adv = laid("s9k6", "daiqi")                        # s9k6:daiqi: the colon keeps its em
+    assert xs["md_dai"] - alone["md_dai"] == 1000 and adv == 1000
+    assert laid("yin")[1] == 0
+    xs, adv = laid("yin", "numbersign", "s9k6")
+    assert xs["md_ming"] - alone["md_ming"] == 1000 and adv == 2000
+    xs, adv = laid("s9k6", "numbersign", "yin")
+    assert xs["md_yin"] == alone["md_yin"] and adv == 1000

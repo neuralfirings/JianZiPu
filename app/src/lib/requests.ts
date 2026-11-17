@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
-import { applyMerge, designItems, diffBundle, type Current, type Item } from './merge';
+import { applyMerge, designItems, diffBundle, glossaryItems, type Current, type Item } from './merge';
 import * as T from './typing';
 
 export const TABLE = 'change_requests';
@@ -88,7 +88,10 @@ export function startSvgs(draft: Bundle, fontSvgs: SvgMap): SvgMap {
 
 /** The draft's changes, item by item, against what it started from (Your changes). */
 export function draftItems(draft: Bundle, fontSvgs: SvgMap): Item[] {
-  return diffBundle(draft, { design: draft.base.design, typing: draft.base.typing, svgs: startSvgs(draft, fontSvgs) });
+  // the glossary it started from too: a subtitle it has is then compared row by row, as Your changes shows it
+  return diffBundle(draft, { design: draft.base.design, typing: draft.base.typing, svgs: startSvgs(draft, fontSvgs),
+    ...(draft.glossary ? { glossary: draft.base.glossary ?? draft.glossary } : {}),
+    ...(draft.glossaryLayout ? { glossaryLayout: draft.base.glossaryLayout ?? draft.glossaryLayout } : {}) });
 }
 
 /** A bundle with only the chosen changes of a draft, on the same base: what a request carries. */
@@ -124,6 +127,31 @@ export function buildInputs(b: Bundle, fontSvgs: SvgMap): BuildInputs {
  *  glyph it added or removed, each with the decision the area had. A request sent since lists its
  *  members itself, so one that lists none of an area's members while its bundle changes them is old. */
 export function upgradeItems<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  return upgradeGlossary(upgradeAreas(r));
+}
+
+/** A request sent before a glossary row was an item of its own listed a subtitle whole ("glossary:2b").
+ *  Read it as today's items: each row it added, took out or edited, and the subtitle's settings and
+ *  order when they changed, each with the decision the subtitle had. A request sent since lists the
+ *  rows itself, so one that lists none of a subtitle's rows while its bundle changes them is old. */
+export function upgradeGlossary<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  const secs = r.item_ids.filter((id) => id.startsWith('glossary:')).map((id) => id.slice(9));
+  if (!secs.length || !(r.bundle.glossary || r.bundle.glossaryLayout)) return r;
+  const items = glossaryItems(r.bundle, { glossary: r.bundle.base.glossary, glossaryLayout: r.bundle.base.glossaryLayout });
+  let ids = [...r.item_ids];
+  const decisions = { ...r.decisions };
+  for (const k of secs) {
+    const rows = items.filter((i) => i.kind === 'glossary-row' && i.section === k).map((i) => i.id);
+    if (!rows.length || rows.some((x) => ids.includes(x))) continue;
+    const old = `glossary:${k}`, own = items.some((i) => i.id === old), d = r.decisions[old];
+    ids = ids.flatMap((id) => (id === old ? [...(own ? [old] : []), ...rows] : [id]));
+    if (d) for (const x of rows) decisions[x] = d;
+    if (!own) delete decisions[old];
+  }
+  return { ...r, item_ids: ids, decisions };
+}
+
+function upgradeAreas<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
   const areas = r.item_ids.filter((id) => id.startsWith('design:area:')).map((id) => id.slice(12));
   if (!areas.length) return r;
   const items = designItems(r.bundle.base.design, r.bundle.design, r.bundle.base.design);

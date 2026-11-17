@@ -42,15 +42,19 @@ the tester's guide. In short:
    - at the top: who sent it, their notes, and how they want to be credited;
    - then each change, before and after: glyphs drawn over each other,
      spellings side by side, design changes with sample words and the JSON, and
-     glossary sections with their rows before and after (a section is kept or
-     skipped whole, in the draft's order).
+     glossary rows before and after. Each row added, taken out or edited is a
+     change of its own, and a kept new row goes between the same rows as in the
+     draft; a subtitle's title, description, example and row order are one more
+     change, and a new or removed subtitle is one change with its rows.
 4. Choose **Keep** or **Skip** for each change, or **Keep all**. A new glyph
    goes together with its spellings and its place in an area. An area's box,
    advance and label are one change, and each glyph that joins or leaves the
    area is a change of its own, so you can keep some new members and skip
    others (a new or removed area is one change, members and all). A request
    sent before this split lists an area whole; Review shows it as these
-   changes, each with the decision the area had.
+   changes, each with the decision the area had. Likewise a request sent while
+   a glossary subtitle was one change shows as its rows, each with the
+   subtitle's decision.
 5. If you like, write a reply. The tester sees it on Your Change Requests and in
    the email.
 6. **Save decisions.** The request becomes **In review** and its author gets an

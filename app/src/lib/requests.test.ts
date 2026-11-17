@@ -95,9 +95,10 @@ describe('snapshot', () => {
         sections: { '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1.2. Hui' } } },
       baseGlossaryLayout: lay
     });
-    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glossary:1a', 'glossary:1b', 'glossary-titles']);
-    const { bundle, itemIds } = snapshot(b, font, ['glossary:1a', 'glossary-titles']);
-    expect(itemIds).toEqual(['glossary:1a', 'glossary-titles']);
+    // each row's new meaning, and each subtitle's new title, on their own
+    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-row:1b:g:md_7', 'glossary:1b', 'glossary-titles']);
+    const { bundle, itemIds } = snapshot(b, font, ['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-titles']);
+    expect(itemIds).toEqual(['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-titles']);
     expect(bundle.glossary).toEqual({ '1a': [{ glyph: 'md_ming', meaning: 'ring finger' }], '1b': [{ glyph: 'md_7' }] });
     expect(bundle.glossaryLayout!.sections).toEqual({ '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1b: Hui' } });
     expect(bundle.glossaryLayout!.groups[0].title).toBe('1. Left Hand');
