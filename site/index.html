@@ -2486,11 +2486,12 @@
         row = tr; rowText = ''; ghost = comment ? g : null; kind = tr ? 'row' : contact ? 'contact' : request ? 'request' : comment ? 'comment' : 'page';
         $('fb-req').hidden = $('fb-seen-f').hidden = !request;
         $('fb-name-opt').textContent = request ? 'optional · to credit you' : 'optional';
-        $('fb-email-opt').textContent = contact || request ? '' : 'optional';   // Contact me and a request need one
+        $('fb-email-opt').textContent = contact || request || comment ? '' : 'optional';   // Contact me, a request and a comment need one
         $('fb-pic-hint').textContent = request ? 'Optional. A photo of the score you saw it in helps most, or draw it.'
           : 'Optional. A photo of a score or a book, or draw the glyph the way it should look.';
         $('fb-email-hint').textContent = contact ? 'Leave your email, so I can write back. It\'s never shown.'
           : request ? 'So I can ask about it, and tell you when it\'s planned and when it\'s in the font. It\'s never shown.'
+          : comment ? 'So I can ask about your comment, and tell you when the drawing changes. It\'s never shown.'
           : 'Leave an email if you\'d like to hear back. It\'s never shown.';
         var ctxBox = $('fb-ctx');
         if (tr) {
@@ -2572,6 +2573,7 @@
         if (!msg) { say(files.length ? 'Add a few words about the picture, so I know what to look at.' : 'Write what should change, so I know what to fix.', true); $('fb-msg').focus(); return; }
         if (kind === 'contact' && !email) { say('Leave your email, so I can write back.', true); $('fb-email').focus(); return; }
         if (kind === 'request' && !email) { say('Leave your email, so I can ask about it and tell you when it\'s in.', true); $('fb-email').focus(); return; }
+        if (kind === 'comment' && !email) { say('Leave your email, so I can ask about your comment.', true); $('fb-email').focus(); return; }
         if (email && !$('fb-email').checkValidity()) { say("That email doesn't look right. Check it, or leave it empty.", true); $('fb-email').focus(); return; }
         var fd = new FormData();
         fd.append('kind', kind);
@@ -2626,6 +2628,7 @@
             : ' Corrections to the glossary go into the next version of the font.') + '</p>'
           + '<p>' + (kind === 'contact' ? "I'll write back to " + esc(email) + '.'
             : kind === 'request' ? "I'll write to " + esc(email) + " when it's planned, if I have a question, and when it's in the font."
+            : kind === 'comment' ? "I'll write to " + esc(email) + " if I have a question about it."
             : email ? "I'll write to " + esc(email) + " if I have a question, or when it's in." : "You left no email, so I can't write back, but I read every message.") + '</p></div>'
           + '<div class="fb-foot"><p class="fb-why"></p><button type="button" class="fb-btn primary" data-fb-close>Back to the page</button></div>';
         form.hidden = true; $('fb-done').hidden = false;

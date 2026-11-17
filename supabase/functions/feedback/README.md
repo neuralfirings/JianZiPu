@@ -86,7 +86,7 @@ and sends "Message from …" instead of "Feedback on …"), `request` (Request a
 in the glossary's intro and under a search that finds nothing: `details` holds its
 `zh`, `pinyin` and where it was `seen`, the message what it means; the email says
 "Request: 不动 (bù dòng)") or `comment` (on a coming character, `upcoming_id` naming
-it, e.g. `u12`, and `details.about` its name as the page showed it). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
+it, e.g. `u12`, and `details.about` its name as the page showed it; needs an email, as a request does). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
 folder per message (the message's `id`); `pictures` lists their paths.
 
 ## Changing it

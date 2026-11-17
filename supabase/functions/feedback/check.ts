@@ -75,6 +75,7 @@ export function parse(fd: FormData): Parsed {
   if (kind === 'comment') {
     // a coming character's id, as the page's list gives it (u12)
     if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(upcoming)) return bad('The character you are commenting on isn’t one of the coming ones. Reload the page and try again.');
+    if (!email) return bad('Leave your email, so I can ask about your comment.');
     const about = text(fd, 'about').slice(0, LIMITS.about);
     upcomingId = upcoming;
     details = about ? { about } : null;

@@ -126,14 +126,15 @@ Deno.test('a request: the character, its pinyin and where it was seen go in deta
 });
 
 Deno.test('a comment names its coming character by id; without one it is feedback on the page', () => {
-  const p = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动 · bù dòng', message: 'The hook is too long.' }));
+  assertEquals(parse(form({ kind: 'comment', upcoming: 'u12', message: 'The hook is too long.' })), { ok: false, status: 400, error: 'Leave your email, so I can ask about your comment.' });
+  const p = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动 · bù dòng', message: 'The hook is too long.', email: 'wang@example.com' }));
   assert(p.ok && !p.spam);
   assertEquals([p.entry.kind, p.entry.upcoming_id, p.entry.details], ['comment', 'u12', { about: '不动 · bù dòng' }]);
   const none = parse(form({ kind: 'comment', message: 'The hook is too long.' }));
   assert(none.ok && !none.spam);
   assertEquals([none.entry.kind, none.entry.upcoming_id], ['page', null]);
   assertEquals(parse(form({ kind: 'comment', upcoming: '../etc', message: 'x' })).ok, false);
-  assertEquals(parse(form({ kind: 'comment', upcoming: 'u12', message: '' })), { ok: false, status: 400, error: 'Write what you would change, so the drawing can follow it.' });
+  assertEquals(parse(form({ kind: 'comment', upcoming: 'u12', message: '', email: 'wang@example.com' })), { ok: false, status: 400, error: 'Write what you would change, so the drawing can follow it.' });
 });
 
 Deno.test('before supabase/008: a request is kept as feedback on the page, its details in the message', () => {
@@ -141,7 +142,7 @@ Deno.test('before supabase/008: a request is kept as feedback on the page, its d
   assert(p.ok && !p.spam);
   assertEquals(older(p.entry), { kind: 'page', glossary_row: null, link: null, name: null, email: 'lin@example.com',
     message: 'Request: 不动 (bù dòng)\nSeen in: p. 4\n\nKeep the hand still.' });
-  const c = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动', message: 'Too long.' }));
+  const c = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动', message: 'Too long.', email: 'wang@example.com' }));
   assert(c.ok && !c.spam);
   assertEquals(older(c.entry).message, 'Comment on 不动 (u12)\n\nToo long.');
   const row = parse(form({ row: '2 · 中', message: 'hi' }));
