@@ -60,11 +60,14 @@ async function ghosts(): Promise<Response> {
 }
 
 /** Cloudflare Turnstile: whether the page's spam check passed. Off (always passes) until the
- *  TURNSTILE_SECRET secret is set, so the function can be deployed before the page has the widget. */
+ *  TURNSTILE_SECRET secret is set. With it, a check that was sent must pass; a message without one
+ *  still goes through until TURNSTILE_REQUIRED is set too, so a branch's preview with the widget can
+ *  be tried while the live page (without it) keeps working. Set TURNSTILE_REQUIRED once the page
+ *  with the site key is live. */
 async function human(token: string, address: string): Promise<boolean> {
   const secret = env('TURNSTILE_SECRET');
   if (!secret) return true;
-  if (!token) return false;
+  if (!token) return !env('TURNSTILE_REQUIRED');
   const form = new FormData();
   form.append('secret', secret); form.append('response', token);
   if (address !== 'unknown') form.append('remoteip', address);

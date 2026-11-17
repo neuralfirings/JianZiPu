@@ -46,10 +46,10 @@ may read it; it's kept for a minute.
    jianzipufont.com, its Cloudflare previews (`*.jianzipu.pages.dev`), the Builder's
    copy of the page (builder.jianzipufont.com/site, Railway previews
    `jzpbuilder-*.up.railway.app`, `jianzipu-*.up.railway.app`) and your own computer.
-   `TURNSTILE_SECRET` turns on the spam check (Cloudflare Turnstile): set it together
-   with `window.TURNSTILE_SITEKEY` in `site/index.html` (`docs/maintainers/setup.md`
-   says how to make the widget), since from then on a message without a passing
-   check is refused.
+   `TURNSTILE_SECRET` turns on the spam check (Cloudflare Turnstile, the page's
+   `window.TURNSTILE_SITEKEY`; `docs/maintainers/setup.md` says how): a check that
+   was sent must pass. `TURNSTILE_REQUIRED` = `1` also refuses messages without one;
+   set it once the live page has the site key.
 3. **Deploy**: `supabase functions deploy feedback --no-verify-jwt` (visitors aren't
    signed in; `check.ts` decides what gets in). Or in the dashboard, without the CLI:
    - Make one file of it (the dashboard's editor can't reach `../notify/`):

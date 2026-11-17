@@ -126,20 +126,24 @@ Answer a message by replying to its email. Set its status in Table Editor →
 
 ### Spam check (Cloudflare Turnstile)
 
-The form runs Cloudflare Turnstile once both halves are set; until then it
-works without it.
+The form runs Cloudflare Turnstile once it has a site key; until then it works
+without it. The secret is shared by every copy of the page, while the site key
+reaches jianzipufont.com only when its pull request merges, so it goes on in two
+steps:
 
 1. Cloudflare dashboard → Turnstile → **Add widget**. Hostnames:
    `jianzipufont.com`, `jianzipu.pages.dev` (the previews), `builder.jianzipufont.com`
    and `up.railway.app` (the Builder's copy of the page and its previews).
    Widget mode: **Managed**. It gives a site key and a secret key.
 2. Supabase → Edge Functions → Secrets: add `TURNSTILE_SECRET` with the secret
-   key. Messages without a passing check are refused from then on.
+   key. From then on a check that was sent must pass, but a message without one
+   (the live page, before step 3 merges) still goes through.
 3. Set `window.TURNSTILE_SITEKEY` near the top of `site/index.html` to the site
-   key and merge. A page on your own computer uses Cloudflare's test key.
-
-Do 2 and 3 together: with the secret set and no site key on the page, every
-message is refused.
+   key, try the form on the pull request's preview, and merge. A page on your
+   own computer uses Cloudflare's test key.
+4. Once jianzipufont.com has the site key (a minute after the merge), add the
+   secret `TURNSTILE_REQUIRED` = `1`: a message without a passing check is
+   refused from then on.
 
 ### Coming characters (the glossary's ghost rows)
 
