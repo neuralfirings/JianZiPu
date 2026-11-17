@@ -425,6 +425,7 @@
     .gh-dl { display: inline-flex; gap: 6px; align-items: center; background: var(--ink); color: var(--bg-panel); border-radius: 4px; padding: 4px 12px; text-decoration: none; font-weight: 600; }
     .gh-dl:hover { color: var(--bg-panel); background: #45403b; }
     .gh-draw { display: block; width: 64px; height: 64px; object-fit: contain; }
+    .gh-draw.word { width: auto; height: auto; max-width: 100%; }   /* a whole example word: sized from its font units when it loads */
     .gh-notdrawn { width: 64px; height: 64px; border: 1.5px dashed var(--border-strong); border-radius: 4px; display: grid; place-items: center; color: var(--ink-faint); font-size: 0.75rem; text-align: center; line-height: 1.2; }
     .only-coming .table > tbody > tr:not(.ghost), .only-coming .gh-none { display: none !important; }
     #fb .fb-ctx .gh-draw, #fb .fb-ctx .gh-notdrawn { flex: none; }
@@ -2679,7 +2680,14 @@
       };
       function ghostPicture(g) {
         if (g.drawing) {
-          var im = document.createElement('img'); im.className = 'gh-draw'; im.src = g.drawing; im.alt = 'Draft drawing of ' + g.zh; im.loading = 'lazy';
+          var im = document.createElement('img'); im.className = 'gh-draw' + (g.example ? ' word' : ''); im.src = g.drawing; im.loading = 'lazy';
+          // a whole example word is drawn in the font's units (1000 to the em): show it at the size the
+          // real rows' examples are set in, so its characters match theirs
+          if (g.example) im.addEventListener('load', function () {
+            var ref = document.querySelector('.slip jzp'), em = ref ? parseFloat(getComputedStyle(ref).fontSize) : 38;
+            if (im.naturalWidth) im.style.width = Math.round(im.naturalWidth * em / 1000) + 'px';
+          });
+          im.alt = g.example ? 'Draft drawing of ' + g.example[0] : 'Draft drawing of ' + g.zh;
           return im;
         }
         var nd = document.createElement('div'); nd.className = 'gh-notdrawn'; nd.textContent = 'not drawn yet';
@@ -2726,7 +2734,20 @@
         if (g.ascii) ascii.textContent = g.ascii; else ascii.appendChild(el('span', 'gh-tbd', 'to come'));
         var slip = tr.appendChild(el('td', 'ex')).appendChild(el('div', 'slip'));
         var inn = slip.appendChild(el('div', 'ex-in'));
-        if (g.stage === 'test' && g.ascii) inn.appendChild(el('txs', '', g.ascii));
+        // its example, typed as the page's other rows show it (中文 then ASCII, its own spelling in red);
+        // the drawing is then the whole word. Without one, at test, its spelling alone.
+        var marked = function (line, own) {
+          var t = el('txs'), at = own ? line.indexOf(own) : -1;
+          if (at < 0) { t.textContent = line; return t; }
+          t.appendChild(document.createTextNode(line.slice(0, at)));
+          t.appendChild(el('r', '', own));
+          t.appendChild(document.createTextNode(line.slice(at + own.length)));
+          return t;
+        };
+        if (g.example) {
+          if (g.example[0]) inn.appendChild(marked(g.example[0], g.zh.split(' · ')[0]));
+          if (g.example[1]) inn.appendChild(marked(g.example[1], g.ascii));
+        } else if (g.stage === 'test' && g.ascii) inn.appendChild(el('txs', '', g.ascii));
         slip.appendChild(el('span', 'ex-arrow', g.drawing ? '→' : ''));
         slip.appendChild(el('div', 'ex-out')).appendChild(ghostPicture(g));
         var m = tr.appendChild(el('td', 'meaning'));

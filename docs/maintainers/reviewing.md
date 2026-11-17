@@ -61,7 +61,9 @@ the tester's guide. In short:
    page**) and its row on the font page now and after. **Publish draft to
    glossary** puts the drawings on the font page as drafts for comments: it
    uploads each to the `upcoming` bucket and writes its row in the `upcoming`
-   table (`supabase/009_upcoming.sql`). It doesn't depend on your decisions, so
+   table (`supabase/009_upcoming.sql`). A row with an example of its own
+   (引上九) goes up as that whole word, with its two input lines, the way the
+   page's other rows show their examples. It doesn't depend on your decisions, so
    you can show a drawing before deciding. A redraw in a later request:
    **Update the draft on the glossary** there.
 6. If you like, write a reply. The tester sees it on Your Change Requests and in

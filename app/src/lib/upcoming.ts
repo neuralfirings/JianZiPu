@@ -7,8 +7,10 @@
 // Testers read the public list (the feedback function's GET); the local Builder, signed in as an
 // admin, reads and writes the table itself.
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { WordPiece } from './api';
 import type { Bundle, SvgMap } from './bundle';
-import type { GRow } from './glossary';
+import { rowExample, type GRow } from './glossary';
+import { parseSvg } from './svg';
 import type { Item } from './merge';
 import type * as T from './typing';
 
@@ -18,12 +20,14 @@ export type Ghost = {
   id: string; zh: string; pinyin: string | null; ascii: string | null; meaning: string | null;
   section: string; after: string | null; stage: Exclude<Stage, 'released'>;
   note: string | null; drawing: string | null; release: string | null; testFont: string | null; glyphs: string[];
+  example: [string, string] | null;
 };
 /** A row of the upcoming table, as an admin reads it. */
 export type UpcomingRow = {
   id: string; zh: string; pinyin: string | null; ascii: string | null; meaning: string | null;
   section: string | null; after: string | null; stage: Stage; note: string | null; drawing: string | null;
   version: string | null; glyphs: string[]; feedback_id: string | null; change_request_id: string | null; updated_at: string;
+  example?: string[] | null;
 };
 
 export const TABLE = 'upcoming';
@@ -71,6 +75,9 @@ export function suggestGhost(sp: Partial<T.Spelling> | undefined, ghosts: Pick<G
 export type DraftRow = {
   glyph: string; ghost: string | null;
   zh: string; pinyin: string | null; ascii: string | null; meaning: string | null; section: string; after: string | null;
+  /** The row's own example, [中文, ASCII] (引上九, yin3shang9): the page shows it typed, and its drawing is
+   *  the whole word; null: the drawing is the glyph alone. */
+  example: [string, string] | null;
 };
 
 /** A glossary row's 中文, as the page's first column shows it (simplified, then traditional). */
@@ -98,7 +105,8 @@ export function draftRows(b: Bundle, tags: Record<string, string | null | undefi
       glyph, ghost: tags[glyph] || null,
       zh: zhOf(row, b.typing), pinyin: sp?.pinyin || null, ascii: sp?.latin || null,
       meaning: row.meaning || null, section: found.section,
-      after: before ? zhOf(before, b.typing).split(' · ')[0] : null
+      after: before ? zhOf(before, b.typing).split(' · ')[0] : null,
+      example: rowExample(row, b.typing)
     });
   }
   return { rows, unplaced };
@@ -111,9 +119,30 @@ export async function allUpcoming(c: SupabaseClient): Promise<UpcomingRow[]> {
   return (data ?? []) as UpcomingRow[];
 }
 
+/** An example word as one standalone SVG, as Glyphs › Glossary draws it (GlossaryExample.svelte): each
+ *  glyph at its place in the word, the row's glyphs (`mark`) in the font page's red, the rest in ink;
+ *  the control glyphs (a vertical word's colon) left out. Null when nothing in it has a drawing. */
+export function exampleSvg(pieces: WordPiece[], svgs: SvgMap, mark: string[], control: string[] = []): string | null {
+  const els = pieces.flatMap((p) => p.elements).filter((e) => e.glyph && !control.includes(e.glyph) && parseSvg(svgs[e.glyph]));
+  if (!els.length) return null;
+  const x0 = Math.min(...els.map((e) => e.x)), x1 = Math.max(...els.map((e) => e.x + e.size[0]));
+  const y0 = Math.min(...els.map((e) => e.y)), y1 = Math.max(...els.map((e) => e.y + e.size[1]));
+  const pad = 0.1 * Math.max(x1 - x0, y1 - y0);
+  const r = (n: number) => Math.round(n * 100) / 100;
+  const box = [x0 - pad, -(y1 + pad), x1 - x0 + 2 * pad, y1 - y0 + 2 * pad].map(r);
+  const parts = els.map((e) => {
+    const g = parseSvg(svgs[e.glyph])!;
+    const color = mark.includes(e.glyph) ? '#a3352b' : '#2b2724';   // site/index.html's --accent and --ink
+    return `<svg x="${r(e.x)}" y="${r(-(e.y + e.size[1]))}" width="${r(e.size[0])}" height="${r(e.size[1])}" viewBox="${g.viewBox}" color="${color}" overflow="visible">${g.inner}</svg>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.join(' ')}" width="${box[2]}" height="${box[3]}" overflow="visible">${parts.join('')}</svg>\n`;
+}
+
 /** Admin: put a Change Request's drawings on the page as drafts. Rows tagged with the same ghost
- *  (two variants of one character) share it: the first glyph's drawing shows. Returns the ghost ids. */
-export async function publishDrafts(c: SupabaseClient, requestId: string, rows: DraftRow[], svgs: SvgMap): Promise<string[]> {
+ *  (two variants of one character) share it: the first glyph's drawing shows. `pictures`: a whole
+ *  example word's drawing for a row with an example (exampleSvg), by glyph; else the glyph alone.
+ *  Returns the ghost ids. */
+export async function publishDrafts(c: SupabaseClient, requestId: string, rows: DraftRow[], svgs: SvgMap, pictures: Record<string, string> = {}): Promise<string[]> {
   const out: string[] = [];
   const byGhost = new Map<string, DraftRow[]>(), fresh: DraftRow[] = [];
   for (const r of rows) (r.ghost ? byGhost.set(r.ghost, [...(byGhost.get(r.ghost) ?? []), r]) : fresh.push(r));
@@ -124,14 +153,16 @@ export async function publishDrafts(c: SupabaseClient, requestId: string, rows: 
   }
   for (const [id, group] of byGhost) {
     const first = group[0];
-    const svg = svgs[first.glyph];
+    const picture = first.example ? pictures[first.glyph] : undefined;
+    const svg = picture ?? svgs[first.glyph];
     if (!svg) throw new Error(`The request has no drawing for ${first.glyph}.`);
     const file = `${id}.svg`;
     const up = await c.storage.from(BUCKET).upload(file, new Blob([svg], { type: 'image/svg+xml' }), { upsert: true, contentType: 'image/svg+xml' });
     if (up.error) throw new Error(`Uploading ${file}: ${up.error.message}`);
     const { error } = await c.from(TABLE).update({
       zh: first.zh, pinyin: first.pinyin, ascii: first.ascii, meaning: first.meaning, section: first.section, after: first.after,
-      stage: 'draft', drawing: file, version: null, glyphs: group.map((r) => r.glyph), change_request_id: requestId
+      stage: 'draft', drawing: file, version: null, glyphs: group.map((r) => r.glyph), change_request_id: requestId,
+      example: picture ? first.example : null
     }).eq('id', id);
     if (error) throw new Error(error.message);
     out.push(id);

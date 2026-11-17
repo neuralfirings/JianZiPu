@@ -6,6 +6,7 @@ export type UpcomingRow = {
   id: string; zh: string; pinyin: string | null; ascii: string | null; meaning: string | null;
   section: string | null; after: string | null; stage: 'planned' | 'draft' | 'test' | 'released';
   note: string | null; drawing: string | null; version: string | null; glyphs: string[] | null; updated_at: string;
+  example?: string[] | null;
 };
 
 /** One ghost on the page. `testFont` is the release candidate's font (stage test). */
@@ -13,11 +14,13 @@ export type Ghost = {
   id: string; zh: string; pinyin: string | null; ascii: string | null; meaning: string | null;
   section: string; after: string | null; stage: 'planned' | 'draft' | 'test';
   note: string | null; drawing: string | null; release: string | null; testFont: string | null; glyphs: string[];
+  /** What to type for its example, [中文, ASCII], when the drawing is a whole example word; else null. */
+  example: [string, string] | null;
 };
 
 /** What the GET asks Supabase for: the rows the page shows, oldest first, so a section's ghosts keep
  *  the order they were taken on. Never feedback_id or change_request_id. */
-export const GHOSTS_QUERY = 'select=id,zh,pinyin,ascii,meaning,section,after,stage,note,drawing,version,glyphs,updated_at'
+export const GHOSTS_QUERY = 'select=id,zh,pinyin,ascii,meaning,section,after,stage,note,drawing,version,glyphs,example,updated_at'
   + '&stage=in.(planned,draft,test)&section=not.is.null&order=created_at.asc,id.asc';
 
 /** The repository whose releases hold the test fonts. */
@@ -33,6 +36,7 @@ export function ghostOf(r: UpcomingRow, supabaseUrl: string): Ghost | null {
   return {
     id: r.id, zh: r.zh, pinyin: r.pinyin, ascii: r.ascii, meaning: r.meaning, section: r.section, after: r.after || null,
     stage: r.stage, note: r.note, drawing, glyphs: r.glyphs ?? [],
+    example: drawing && Array.isArray(r.example) && r.example.length === 2 ? [String(r.example[0] ?? ''), String(r.example[1] ?? '')] : null,
     release: test ? test.replace(/-rc\.\d+$/, '') : null,
     testFont: test ? `https://github.com/${REPO}/releases/download/v${test}/JianZiPu.ttf` : null,
   };

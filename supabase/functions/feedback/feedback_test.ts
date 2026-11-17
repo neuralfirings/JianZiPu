@@ -173,6 +173,8 @@ Deno.test('a ghost row gets only what the page shows, its drawing as a public ad
   assertEquals(draft.drawing, 'https://p.supabase.co/storage/v1/object/public/upcoming/u12.svg?v=2026-11-20T10%3A00%3A00Z');
   const test = ghostOf({ ...row, stage: 'test', version: '3.400-rc.2', glyphs: ['budong_md'] }, S)!;
   assertEquals([test.release, test.testFont], ['3.400', 'https://github.com/neuralfirings/JianZiPu/releases/download/v3.400-rc.2/JianZiPu.ttf']);
+  assertEquals(ghostOf({ ...row, stage: 'draft', example: ['引上九', 'yin3shang9'] }, S)!.example, ['引上九', 'yin3shang9']);
+  assertEquals(ghostOf({ ...row, example: ['引上九', 'yin3shang9'] }, S)!.example, null);   // planned: no drawing, no example
   assertEquals(ghostOf({ ...row, section: null }, S), null);          // not placed yet
   assertEquals(ghostOf({ ...row, stage: 'released' }, S), null);
   assertEquals(ghostOf({ ...row, after: '' }, S)!.after, null);       // the end of its section

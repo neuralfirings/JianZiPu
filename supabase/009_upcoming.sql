@@ -47,6 +47,8 @@ create table if not exists public.upcoming (
   feedback_id uuid references public.feedback (id) on delete set null,   -- the request it came from
   change_request_id uuid                       -- the Change Request whose drawing it shows
 );
+-- added after the table's first version: running this file again adds it
+alter table public.upcoming add column if not exists example text[];   -- the example's two input lines, [中文, ASCII] (引上九, yin3shang9); its drawing is the whole word
 create index if not exists upcoming_stage_idx on public.upcoming (stage);
 alter table public.upcoming enable row level security;
 

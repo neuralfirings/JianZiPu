@@ -9,7 +9,9 @@
   import { pilot } from '$lib/pilot.svelte';
   import { app } from '$lib/state.svelte';
   import type { ChangeRequest } from '$lib/requests';
-  import { allUpcoming, draftRows, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
+  import { allUpcoming, draftRows, exampleSvg, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
+  import { api } from '$lib/api';
+  import * as T from '$lib/typing';
   import SvgText from './SvgText.svelte';
 
   let { request }: { request: ChangeRequest } = $props();
@@ -32,6 +34,28 @@
   }
 
   let plan = $derived(draftRows(request.bundle, tags));
+  // a row with its own example: the whole word, laid out by the request's design and spellings, as the
+  // drawing the page shows (glyph → SVG); drawn once per request
+  let pictures = $state<Record<string, string>>({});
+  let drewFor = '';
+  $effect(() => {
+    const b = request.bundle, rows = plan.rows.filter((r) => r.example);
+    const key = request.id + rows.map((r) => r.glyph + (r.example ?? []).join('|')).join(',');
+    if (!rows.length || key === drewFor) return;
+    drewFor = key;
+    const words = rows.map((r) => r.example![1] || r.example![0]);
+    void api.words(b.design, words, { rows: T.toRecords(b.typing), svgs: b.svgs }).then((res) => {
+      if (!res.ok) return;
+      const svgs = { ...app.svgs, ...b.svgs }, out: Record<string, string> = {};
+      rows.forEach((r, i) => {
+        const w = res.words[i];
+        const mark = [r.glyph, T.get(b.typing, r.glyph).vert_variant].filter(Boolean);
+        const svg = w && exampleSvg(w.pieces, svgs, mark, app.control);
+        if (svg) out[r.glyph] = svg;
+      });
+      pictures = out;
+    }).catch(() => { /* the glyph alone is shown and published */ });
+  });
   let open = $derived((upcoming ?? []).filter((u) => u.stage !== 'released'));
   /** "1.4. Vibratos and Slides" for 1e: the request's own subtitles, else the font's. */
   const sectionName = (id: string) => request.bundle.glossaryLayout?.sections[id]?.title ?? app.mainLayout?.sections[id]?.title ?? id;
@@ -42,7 +66,7 @@
   async function publish() {
     busy = true; err = null;
     try {
-      const ids = await publishDrafts(hosted.client!, request.id, plan.rows, request.bundle.svgs);
+      const ids = await publishDrafts(hosted.client!, request.id, plan.rows, request.bundle.svgs, pictures);
       // new ghosts take the ids they were given, so a second press updates them
       const fresh = plan.rows.filter((r) => !r.ghost);
       await load();
@@ -100,7 +124,10 @@
           <div class="grow after">
             <span class="zh">{r.zh}{#if r.pinyin}<small>{r.pinyin}</small>{/if}</span>
             <span class="mono">{r.ascii ?? ''}</span>
-            <SvgText text={request.bundle.svgs[r.glyph]} size={56} />
+            {#if r.example && pictures[r.glyph]}
+              <span class="exin"><span class="zh">{r.example[0]}</span><span class="mono">{r.example[1]}</span></span>
+              <span class="pic">{@html pictures[r.glyph]}</span>
+            {:else}<SvgText text={request.bundle.svgs[r.glyph]} size={56} />{/if}
             <span><span class="tag">Draft design</span> {r.meaning ?? ''} <span class="muted small">· in {sectionName(r.section)}{r.after ? `, after ${r.after}` : ''}</span></span>
           </div>
         </div>
@@ -126,6 +153,9 @@
   .grow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto minmax(0, 2fr); gap: var(--space-4); align-items: center; padding: var(--space-2) var(--space-3);
     border: 1px dashed var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
   .grow.none { display: block; }
+  .grow.after:has(.exin) { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto auto minmax(0, 2fr); }
+  .exin { display: flex; flex-direction: column; align-items: center; }
+  .pic :global(svg) { display: block; height: 56px; width: auto; max-width: 140px; }
   .grow.after { border-color: var(--border-strong); }
   .zh { font-family: var(--font-cjk); }
   .zh small { display: block; font-family: var(--font-serif); color: var(--ink-muted); }

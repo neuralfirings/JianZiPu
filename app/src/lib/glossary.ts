@@ -188,6 +188,14 @@ export function verticalTemplate(t: T.Typing, r: GRow, verticalOnly: Set<string>
   const sp = r.glyphs.map((g) => mainSpellings(t, g));
   return [c + esc(sp.map((x) => x[0]).join('')), c + esc(sp.map((x) => x[1]).join(''))];
 }
+/** A row's own example as plain text, [中文, ASCII] (引上九, yin3shang9), with {} filled from the spellings
+ *  in `t`; null when it has none (it shows the section's default, or is typed on its own). For Review. */
+export function rowExample(r: GRow, t: T.Typing): [string, string] | null {
+  if (!r.usage || !r.usage.some((x) => x.trim())) return null;
+  const sp = glyphsOfRow(r).map((g) => mainSpellings(t, g));
+  const fill = (k: 0 | 1) => exampleText(r.usage![k], esc(sp.map((x) => x[k]).join('')));
+  return [fill(1), fill(0)];
+}
 /** The glyph's main spelling in each language, as the page fills the example with. */
 export function mainSpellings(t: T.Typing, g: string): [string, string] {
   const s = T.get(t, g);

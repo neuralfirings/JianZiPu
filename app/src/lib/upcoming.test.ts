@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { draftRows, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type UpcomingRow } from './upcoming';
+import { draftRows, exampleSvg, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type UpcomingRow } from './upcoming';
 import * as T from './typing';
 import type { Item } from './merge';
 
@@ -32,7 +32,7 @@ describe('coming characters', () => {
       base: { commit: null, design_hash: '', csv_hash: '' },
       glossary: { '1e': [{ glyph: 'md_xia', meaning: 'slide down' }, { glyph: 'budong_md', meaning: 'keep the hand still' }] } });
     const { rows, unplaced } = draftRows(b, { budong_md: 'u12' });
-    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下' }]);
+    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下', example: null }]);
     expect(unplaced).toEqual(['lone_md']);                                         // no glossary row: nowhere to show it
     expect(draftRows(b, {}).rows[0].ghost).toBe(null);                             // untagged: a new ghost
     expect(zhOf({ word: '泛起', glyphs: ['md_fan', 'md_qi'] }, typing)).toBe('泛起');
@@ -49,5 +49,19 @@ describe('coming characters', () => {
     expect(stageLabel({ stage: 'draft' })).toBe('Draft design');
     expect(functionUrl('https://p.supabase.co/')).toBe('https://p.supabase.co/functions/v1/feedback');
     expect(newGlyphs([{ kind: 'glyph', status: 'added', key: 'a' }, { kind: 'glyph', status: 'changed', key: 'b' }] as Item[])).toEqual(['a']);
+  });
+
+  it('a row with its own example sends it, and its whole word as one drawing', () => {
+    const typing = { yin3_md: sp({ latin: 'yin3', simplified: '引' }) };
+    const b = makeBundle({ design, typing, svgs: { yin3_md: SVG }, baseDesign: design, baseTyping: {}, baseSvgs: {},
+      base: { commit: null, design_hash: '', csv_hash: '' }, glossary: { '1e': [{ glyph: 'yin3_md', usage: ['<r>{}</r>shang9', '<r>{}</r>上九'] }] } });
+    expect(draftRows(b, {}).rows[0].example).toEqual(['引上九', 'yin3shang9']);
+    const el = (glyph: string, x: number, y: number) => ({ name: glyph, area: 'a', glyph, x, y, size: [350, 350] as [number, number] });
+    const svg = exampleSvg([{ glyphs: [], layout: 'v', pen: 0, elements: [el('yin3_md', 0, 700), el('md_shang', 0, 350), el('blank_colon', 0, 0), el('nodrawing', 0, 0)] }],
+      { yin3_md: SVG, md_shang: SVG.replace('fill="black"', ''), blank_colon: SVG }, ['yin3_md'], ['blank_colon'])!;
+    expect(svg.match(/<svg x=/g)?.length).toBe(2);                         // the colon and a glyph with no drawing left out
+    expect(svg).toContain('color="#a3352b"');                               // the row's glyph in red
+    expect(svg).toContain('viewBox="-70 -1120 490 840"');                     // the word's box, padded a tenth
+    expect(exampleSvg([], {}, [])).toBe(null);
   });
 });

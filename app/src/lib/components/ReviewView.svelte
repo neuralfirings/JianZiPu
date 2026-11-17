@@ -268,14 +268,14 @@
             </table>
           {:else if it.kind === 'glossary-row'}
             <p class="muted small">{it.status === 'added' ? 'A new row' : it.status === 'deleted' ? 'Taken out' : 'Its definition or example changed'}. Kept or skipped on its own; a new row goes in between the same rows as in the draft.</p>
-            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base ? [it.base] : [] }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs ? [it.theirs] : [] },
+            <GlossaryRowsDiff typing={{ ...current.typing, ...bundle.typing }} columns={[{ title: 'before', rows: it.base ? [it.base] : [] }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs ? [it.theirs] : [] },
               ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current ? [it.current] : [] }] : [])]} />
           {:else if it.kind === 'glossary'}
             <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...(it.whole ? sectionSummary(it.base, it.theirs) : it.order ? ['rows in a new order'] : [])].join(' · ')}. {it.whole ? 'A new or removed subtitle is one item: you keep its rows, title and description whole.' : 'Its rows, added or taken out, are items of their own.'}</p>
             {#if it.meta?.theirs?.description && it.meta.theirs.description !== it.meta.base?.description}
               <div class="desc">{@html markdown(it.meta.theirs.description)}</div>
             {/if}
-            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs },
+            <GlossaryRowsDiff typing={{ ...current.typing, ...bundle.typing }} columns={[{ title: 'before', rows: it.base }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs },
               ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current }] : [])]} />
           {:else if it.kind === 'glossary-titles'}
             <p class="muted small">{titlesSummary(it.base, it.theirs).join(' · ')}. The section titles are one item, kept whole.</p>
