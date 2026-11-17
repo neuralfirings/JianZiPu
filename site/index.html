@@ -2698,12 +2698,13 @@
         }
         return null;
       }
-      // the character is in the glossary already (the release that has it is out): the same spelling
-      // anywhere, or the same 中文 in its section
+      // the character is in the glossary already (the release that has it is out): the same 中文 in its
+      // section, or, for a ghost drawn in a Change Request (it has glyphs), the same spelling anywhere. A
+      // spelling typed by hand on a planned ghost is only a guess (引's yin is 吟's), so it doesn't count.
       function arrived(g, realRows) {
-        var zh = g.zh.split(' · ')[0];
+        var zh = g.zh.split(' · ')[0], fromRequest = g.ascii && g.glyphs && g.glyphs.length;
         return realRows.some(function (tr) {
-          if (g.ascii && text(tr, 'td.ascii').split(/[\s,]+/).indexOf(g.ascii) >= 0) return true;
+          if (fromRequest && text(tr, 'td.ascii').split(/[\s,]+/).indexOf(g.ascii) >= 0) return true;
           return shortOf(tr) === zh && sectionOfTable(tr.closest('table')) === g.section;
         });
       }
