@@ -2266,7 +2266,7 @@
         <div class="fb-who">
           <div class="fb-two">
             <label class="fb-f"><span>Name <span class="fb-opt" id="fb-name-opt">optional</span></span><input type="text" id="fb-name" autocomplete="name"></label>
-            <label class="fb-f"><span>Email <span class="fb-opt">optional</span></span><input type="email" id="fb-email" autocomplete="email"></label>
+            <label class="fb-f"><span>Email <span class="fb-opt" id="fb-email-opt">optional</span></span><input type="email" id="fb-email" autocomplete="email"></label>
           </div>
           <p class="fb-hint" id="fb-email-hint">Leave an email if you'd like to hear back. It's never shown.</p>
         </div>
@@ -2453,10 +2453,11 @@
         row = tr; rowText = ''; kind = tr ? 'row' : contact ? 'contact' : request ? 'request' : 'page';
         $('fb-req').hidden = $('fb-seen-f').hidden = !request;
         $('fb-name-opt').textContent = request ? 'optional · to credit you' : 'optional';
+        $('fb-email-opt').textContent = contact || request ? '' : 'optional';   // Contact me and a request need one
         $('fb-pic-hint').textContent = request ? 'Optional. A photo of the score you saw it in helps most, or draw it.'
           : 'Optional. A photo of a score or a book, or draw the glyph the way it should look.';
         $('fb-email-hint').textContent = contact ? 'Leave your email, so I can write back. It\'s never shown.'
-          : request ? 'Leave an email to hear when it\'s planned and when it\'s in the font, or if I have a question. It\'s never shown.'
+          : request ? 'So I can ask about it, and tell you when it\'s planned and when it\'s in the font. It\'s never shown.'
           : 'Leave an email if you\'d like to hear back. It\'s never shown.';
         var ctxBox = $('fb-ctx');
         if (tr) {
@@ -2520,6 +2521,7 @@
         if (kind === 'request' && !msg) { say('Say what it means or how it\'s played, so I can find it.', true); $('fb-msg').focus(); return; }
         if (!msg) { say(files.length ? 'Add a few words about the picture, so I know what to look at.' : 'Write what should change, so I know what to fix.', true); $('fb-msg').focus(); return; }
         if (kind === 'contact' && !email) { say('Leave your email, so I can write back.', true); $('fb-email').focus(); return; }
+        if (kind === 'request' && !email) { say('Leave your email, so I can ask about it and tell you when it\'s in.', true); $('fb-email').focus(); return; }
         if (email && !$('fb-email').checkValidity()) { say("That email doesn't look right. Check it, or leave it empty.", true); $('fb-email').focus(); return; }
         var fd = new FormData();
         fd.append('kind', kind);
@@ -2560,7 +2562,7 @@
           + ' reached me.' + (kind === 'contact' ? '' : kind === 'request' ? ' If I take it on, it shows in the glossary as planned.'
             : ' Corrections to the glossary go into the next version of the font.') + '</p>'
           + '<p>' + (kind === 'contact' ? "I'll write back to " + esc(email) + '.'
-            : kind === 'request' && email ? "I'll write to " + esc(email) + " when it's planned, if I have a question, and when it's in the font."
+            : kind === 'request' ? "I'll write to " + esc(email) + " when it's planned, if I have a question, and when it's in the font."
             : email ? "I'll write to " + esc(email) + " if I have a question, or when it's in." : "You left no email, so I can't write back, but I read every message.") + '</p></div>'
           + '<div class="fb-foot"><p class="fb-why"></p><button type="button" class="fb-btn primary" data-fb-close>Back to the page</button></div>';
         form.hidden = true; $('fb-done').hidden = false;

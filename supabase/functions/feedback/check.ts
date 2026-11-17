@@ -66,6 +66,7 @@ export function parse(fd: FormData): Parsed {
   if (kind === 'request') {
     const zh = text(fd, 'zh'), pinyin = text(fd, 'pinyin'), seen = text(fd, 'seen');
     if (!zh) return bad('Write the character you would like, in Chinese.');
+    if (!email) return bad('Leave your email, so I can ask about it and tell you when it’s in.');
     if (zh.length > LIMITS.zh) return bad(`The character is over ${LIMITS.zh} characters. Request one at a time.`);
     if (pinyin.length > LIMITS.pinyin) return bad(`The pinyin is over ${LIMITS.pinyin} characters.`);
     if (seen.length > LIMITS.seen) return bad(`Where you saw it is over ${LIMITS.seen} characters. Shorten it, or put it in your message.`);

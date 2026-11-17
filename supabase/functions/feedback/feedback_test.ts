@@ -116,11 +116,12 @@ Deno.test('a request: the character, its pinyin and where it was seen go in deta
   assert(p.ok && !p.spam);
   assertEquals([p.entry.kind, p.entry.glossary_row, p.entry.upcoming_id], ['request', null, null]);
   assertEquals(p.entry.details, { zh: '不动', pinyin: 'bù dòng', seen: '《梅庵琴谱》, p. 4' });
-  const bare = parse(form({ kind: 'request', zh: '不动', message: 'x' }));
+  const bare = parse(form({ kind: 'request', zh: '不动', message: 'x', email: 'lin@example.com' }));
   assertEquals(bare.ok && !bare.spam && bare.entry.details, { zh: '不动' });            // nothing empty is kept
   assertEquals(parse(form({ kind: 'request', message: 'Keep the hand still.' })), { ok: false, status: 400, error: 'Write the character you would like, in Chinese.' });
+  assertEquals(parse(form({ kind: 'request', zh: '不动', message: 'Keep the hand still.' })), { ok: false, status: 400, error: 'Leave your email, so I can ask about it and tell you when it’s in.' });
   assertEquals(parse(form({ kind: 'request', zh: '不动' })), { ok: false, status: 400, error: 'Say what it means or how it’s played, so I can find it.' });
-  assertEquals(parse(form({ kind: 'request', zh: '字'.repeat(LIMITS.zh + 1), message: 'x' })).ok, false);
+  assertEquals(parse(form({ kind: 'request', zh: '字'.repeat(LIMITS.zh + 1), message: 'x', email: 'lin@example.com' })).ok, false);
 });
 
 Deno.test('a comment names its coming character by id; without one it is feedback on the page', () => {
@@ -135,9 +136,9 @@ Deno.test('a comment names its coming character by id; without one it is feedbac
 });
 
 Deno.test('before supabase/008: a request is kept as feedback on the page, its details in the message', () => {
-  const p = parse(form({ kind: 'request', zh: '不动', pinyin: 'bù dòng', seen: 'p. 4', message: 'Keep the hand still.' }));
+  const p = parse(form({ kind: 'request', zh: '不动', pinyin: 'bù dòng', seen: 'p. 4', message: 'Keep the hand still.', email: 'lin@example.com' }));
   assert(p.ok && !p.spam);
-  assertEquals(older(p.entry), { kind: 'page', glossary_row: null, link: null, name: null, email: null,
+  assertEquals(older(p.entry), { kind: 'page', glossary_row: null, link: null, name: null, email: 'lin@example.com',
     message: 'Request: 不动 (bù dòng)\nSeen in: p. 4\n\nKeep the hand still.' });
   const c = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动', message: 'Too long.' }));
   assert(c.ok && !c.spam);
