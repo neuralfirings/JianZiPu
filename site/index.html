@@ -413,7 +413,8 @@
     tr.ghost { --bs-table-bg: rgba(255, 255, 255, 0.35); }
     tr.ghost > td { border-bottom-style: dashed; }
     tr.ghost.planned td.zh, tr.ghost.planned .gh-def { opacity: 0.75; }
-    tr.ghost td.meaning { display: grid; gap: 6px; justify-items: start; }
+    tr.ghost td.meaning .gh-def, tr.ghost td.meaning .gh-note { display: block; margin-top: 6px; }   /* under the badge; the cell stays a table cell */
+    tr.ghost td.meaning .gh-acts { margin-top: 8px; }
     .gh-tbd { color: var(--ink-faint); font-style: italic; font-size: 0.9rem; }
     .gh-badge { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 600; line-height: 1; border-radius: 999px; padding: 4px 9px; border: 1px solid currentColor; white-space: nowrap; }
     .gh-badge.planned { color: var(--gh-planned); background: var(--gh-planned-bg); border-style: dashed; }
@@ -2708,7 +2709,7 @@
           return shortOf(tr) === zh && sectionOfTable(tr.closest('table')) === g.section;
         });
       }
-      function ghostRow(g, withFb) {
+      function ghostRow(g) {
         var tr = el('tr', 'ghost ' + g.stage); tr.id = 'coming-' + g.id;
         tr.appendChild(el('td', 'gid')).appendChild(el('span', 'gh-tbd', '—'));
         var zh = el('td', 'zh');
@@ -2729,19 +2730,14 @@
         m.appendChild(el('span', 'gh-badge ' + g.stage, STAGE[g.stage](g)));
         if (g.meaning) m.appendChild(el('span', 'gh-def', g.meaning));
         if (g.note) m.appendChild(el('span', 'gh-note', g.note));
-        var acts = m.appendChild(el('span', 'gh-acts'));
         if (g.stage === 'test' && g.testFont) {
-          var dl = acts.appendChild(el('a', 'gh-dl', 'Download the test font')); dl.href = g.testFont;
+          var dl = m.appendChild(el('span', 'gh-acts')).appendChild(el('a', 'gh-dl', 'Download the test font')); dl.href = g.testFont;
         }
-        var c = acts.appendChild(el('button', 'fb-link', g.stage === 'draft' ? 'Comment on the design' : 'Comment'));
-        c.type = 'button';
-        c.addEventListener('click', function () { comment(g, tr); });
-        if (withFb) {
-          var b = tr.appendChild(el('td', 'fb-cell')).appendChild(el('button', 'fb-row'));
-          b.type = 'button'; b.innerHTML = ICON; b.title = 'Comment';
-          b.setAttribute('aria-label', 'Comment on the coming character ' + g.zh);
-          b.addEventListener('click', function () { comment(g, tr); });
-        }
+        // comments go through the row's own button at the end, where every row has its feedback button
+        var b = tr.appendChild(el('td', 'fb-cell')).appendChild(el('button', 'fb-row'));
+        b.type = 'button'; b.innerHTML = ICON; b.title = 'Comment';
+        b.setAttribute('aria-label', 'Comment on the coming character ' + g.zh);
+        b.addEventListener('click', function () { comment(g, tr); });
         return tr;
       }
       function comment(g, tr) { open(null, '', 'comment', g); tr.classList.add('fb-picked'); }
@@ -2752,7 +2748,7 @@
           if (!STAGE[g.stage] || !g.zh || arrived(g, realRows)) return;
           var table = tableOf(g.section);
           if (!table) return;
-          var body = table.tBodies[0] || table, tr = ghostRow(g, !!table.querySelector('th.fb-cell'));
+          var body = table.tBodies[0] || table, tr = ghostRow(g);
           // after the row it names, and after any ghosts already following it; else at the section's end
           var at = g.after && Array.prototype.find.call(body.rows, function (r) { return !r.classList.contains('ghost') && (shortOf(r) === g.after || zhOf(r) === g.after); });
           if (at) { while (at.nextElementSibling && at.nextElementSibling.classList.contains('ghost')) at = at.nextElementSibling; at.after(tr); }
