@@ -191,6 +191,16 @@
     .jzp-example-container input {
       border-radius: 50px;
     }
+    /* the preview as a file: SVG (outlines, no font needed) or PNG (script at the end) */
+    .jzp-download { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.9rem; color: var(--ink-muted); }
+    .jzp-download button { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid var(--border-strong); border-radius: 4px;
+      background: var(--bg-field); color: var(--ink); font: inherit; cursor: pointer; }
+    .jzp-download button:hover { background: var(--bg-hover); }
+    .jzp-download button:disabled { opacity: .6; cursor: default; }
+    .jzp-download button svg { width: 16px; height: 16px; }
+    .jzp-download .note { flex-basis: 100%; min-height: 1.2em; }
+    .jzp-download .note.bad { color: var(--accent); }
+    @media (max-width: 759.98px) { .jzp-download button { min-height: 44px; padding: 0 16px; } }
     .lat-entry, .text-entry {
       font-family: "Roboto Mono", "CNSKai", "M PLUS 1 Code", monospace;
       font-size: 1.2rem;
@@ -525,6 +535,11 @@
         </div>
         <hr />
         <div class="jzp jzp-example" contenteditable></div>
+        <div class="jzp-download" hidden>
+          <button type="button" data-dl="svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download SVG</button>
+          <button type="button" data-dl="png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download PNG</button>
+          <span class="note" aria-live="polite"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -2728,6 +2743,106 @@
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
     })();
+  </script>
+  <script type="module">
+    // The preview as a file, so the notation can be used without installing the font: SVG with each
+    // glyph's outline (scales to any size, recolours, opens in any editor) or PNG (2×, transparent).
+    // The text is shaped by HarfBuzz, the shaper browsers use, so the file is set as the preview is;
+    // HarfBuzz and the font load on the first download, not with the page.
+    const HB = 'https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.4/dist/index.mjs';
+    const EM_PX = 100;          // the SVG's size: px per em (the font's 1000 units)
+    const PNG_SCALE = 2;        // the PNG: twice that
+    let ready = null;
+    const load = () => (ready ??= Promise.all([
+      import(HB),
+      fetch(new URL('./JianZiPu.ttf', location.href)).then((r) => { if (!r.ok) throw new Error('font ' + r.status); return r.arrayBuffer(); }),
+    ]).then(([hb, data]) => { const face = new hb.Face(new hb.Blob(data)); return { hb, upem: face.upem, font: new hb.Font(face) }; })
+      .catch((e) => { ready = null; throw e; }));
+
+    /** The text as an SVG document, or null when it draws nothing; `missing`: characters the font lacks. */
+    function toSvg({ hb, upem, font }, text) {
+      const parts = [], gap = 0.25 * upem;
+      let top = 0, x0 = Infinity, x1 = -Infinity, missing = 0;
+      for (const line of text.split(/\r?\n/)) {
+        const buf = new hb.Buffer();
+        buf.addText(line); buf.guessSegmentProperties();
+        hb.shape(font, buf);
+        let pen = 0, hi = -Infinity, lo = Infinity;
+        const glyphs = [];
+        for (const g of buf.getGlyphInfosAndPositions()) {
+          if (g.codepoint === 0 && line.trim()) missing++;
+          const x = pen + (g.xOffset || 0), y = g.yOffset || 0, e = font.glyphExtents(g.codepoint), d = font.glyphToPath(g.codepoint);
+          pen += g.xAdvance || 0;
+          if (!d || !e || !e.width) continue;
+          glyphs.push({ d, x, y });
+          x0 = Math.min(x0, x + e.xBearing); x1 = Math.max(x1, x + e.xBearing + e.width);
+          hi = Math.max(hi, y + e.yBearing); lo = Math.min(lo, y + e.yBearing + e.height);
+        }
+        if (!glyphs.length) continue;
+        // lines stack downwards, each a gap below the ink of the one before
+        const base = (parts.length ? top + gap : 0) + hi;
+        for (const g of glyphs) parts.push(`<path transform="translate(${g.x} ${base - g.y}) scale(1 -1)" d="${g.d}"/>`);
+        top = base - lo;
+      }
+      if (!parts.length) return null;
+      const pad = 0.1 * upem, w = x1 - x0 + 2 * pad, h = top + 2 * pad, k = EM_PX / upem;
+      const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0 - pad} ${-pad} ${w} ${h}" width="${Math.ceil(w * k)}" height="${Math.ceil(h * k)}">`
+        + `<title>${esc(text.trim())}</title><g fill="#000000">${parts.join('')}</g></svg>\n`;
+      return { svg, width: w * k, height: h * k, missing };
+    }
+
+    function save(blob, name) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    /** A file name from what was typed: s9k3-d7u3.svg */
+    const fileName = (text, ext) => (text.trim().replace(/[\\/:*?"<>|#%]+/g, '').replace(/\s+/g, '-').slice(0, 40) || 'jianzipu') + '.' + ext;
+
+    function png(svg, width, height) {
+      return new Promise((resolve, reject) => {
+        const img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = Math.ceil(width * PNG_SCALE); c.height = Math.ceil(height * PNG_SCALE);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          c.toBlob((b) => (b ? resolve(b) : reject(new Error('png'))), 'image/png');
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('svg')); };
+        img.src = url;
+      });
+    }
+
+    document.querySelectorAll('.jzp-example-container').forEach((box) => {
+      const bar = box.querySelector('.jzp-download');
+      if (!bar) return;
+      bar.hidden = false;
+      const note = bar.querySelector('.note');
+      const say = (t, bad) => { note.textContent = t; note.classList.toggle('bad', !!bad); };
+      bar.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-dl]');
+        if (!b) return;
+        const text = (box.querySelector('.text-entry')?.value ?? '').replace(/\s+$/, '');
+        if (!text.trim()) { say('Type something to download first.', true); return; }
+        bar.querySelectorAll('button').forEach((x) => (x.disabled = true));
+        say('Preparing…');
+        try {
+          const out = toSvg(await load(), text);
+          if (!out) { say('That draws nothing to download.', true); return; }
+          if (b.dataset.dl === 'svg') save(new Blob([out.svg], { type: 'image/svg+xml' }), fileName(text, 'svg'));
+          else save(await png(out.svg, out.width, out.height), fileName(text, 'png'));
+          say(out.missing ? `Downloaded. ${out.missing} character${out.missing === 1 ? ' isn’t' : 's aren’t'} in the font and show${out.missing === 1 ? 's' : ''} as a box.` : 'Downloaded.');
+        } catch (err) {
+          console.error(err);
+          say("Couldn't prepare the file: the shaper or the font didn't load. Check your connection and try again.", true);
+        } finally {
+          bar.querySelectorAll('button').forEach((x) => (x.disabled = false));
+        }
+      });
+    });
   </script>
   <dialog id="get-the-font" class="signup-dialog" aria-label="Get the JianZiPu font">
     <form method="dialog" class="signup-close"><button class="btn-close" aria-label="Close"></button></form>
