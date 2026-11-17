@@ -51,7 +51,12 @@ Deno.serve(async (req) => {
   const origin = req.headers.get('origin'), headers = cors(origin);
   if (req.method === 'OPTIONS') return new Response(null, { status: headers['Access-Control-Allow-Origin'] ? 204 : 403, headers });
   const answer = (body: unknown, status = 200) => Response.json(body, { status, headers });
-  if (!headers['Access-Control-Allow-Origin']) return answer({ error: 'This form only takes messages from the JianZiPu font page.' }, 403);
+  // a page that may not post is told so in words it can show (with no CORS header the browser hides
+  // the answer, and the page could only say it couldn't reach the form); nothing of it is kept
+  if (!headers['Access-Control-Allow-Origin']) {
+    return Response.json({ error: `This form only takes messages from the JianZiPu font page, not ${origin ?? 'this page'}.` },
+      { status: 403, headers: origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : { Vary: 'Origin' } });
+  }
   if (req.method !== 'POST') return answer({ error: 'Send the form with POST.' }, 405);
 
   let fd: FormData;

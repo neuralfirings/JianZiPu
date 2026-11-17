@@ -116,7 +116,9 @@ export function originAllowed(origin: string | null, extra: string[] = []): bool
   return /^https:\/\/(www\.)?jianzipufont\.com$/.test(origin)
     || /^https:\/\/([a-z0-9-]+\.)?jianzipu\.pages\.dev$/.test(origin)
     || origin === 'https://builder.jianzipufont.com'
-    || /^https:\/\/jianzipu-[a-z0-9-]+\.up\.railway\.app$/.test(origin)
+    // a pull request's Railway preview: <service>-<environment>, e.g. jzpbuilder-jianzipu-pr-94
+    // (jianzipu-jianzipu-pr-91 before the service was renamed)
+    || /^https:\/\/(jzpbuilder|jianzipu)-[a-z0-9-]+\.up\.railway\.app$/.test(origin)
     || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 }
 
