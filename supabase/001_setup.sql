@@ -6,7 +6,8 @@
 --   bucket assets   private; only the server's service key reads it (the TW-Kai base font)
 -- Then run 002_drafts_table.sql (testers' drafts), 004_change_requests.sql (Change Requests),
 -- 005_request_drafts.sql (a Change Request saved before sending), 006_feedback.sql (feedback
--- from the font page) and 007_feedback_kind.sql (what each message is).
+-- from the font page), 007_feedback_kind.sql (what each message is) and 008_feedback_requests.sql
+-- (requests for a character, comments on a coming one).
 --
 -- After running it (docs: builder/README.md "Hosted pilot"):
 --   Authentication → Sign In / Providers → Email: turn OFF "Allow new users to sign up"

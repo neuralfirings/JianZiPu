@@ -43,6 +43,7 @@ where the settings live. Secrets never go in this repository.
    | `005_request_drafts.sql` | unsent Change Requests saved with a draft |
    | `006_feedback.sql` | the font page's feedback (`feedback` table with a status, private `feedback` bucket) |
    | `007_feedback_kind.sql` | each message's `kind`: a glossary row, the page, or Contact me |
+   | `008_feedback_requests.sql` | two more kinds, `request` (Request a character) and `comment` (on a coming character), with `upcoming_id` and `details` |
 
 2. **Auth**, following the comments at the top of `001_setup.sql`:
    - Turn off sign-ups.
@@ -106,7 +107,8 @@ table (pictures in the `feedback` bucket) and emails the admins through Resend,
 pictures attached. `supabase/functions/feedback/README.md` has the full steps.
 In short:
 
-1. Run `supabase/006_feedback.sql` and `supabase/007_feedback_kind.sql`.
+1. Run `supabase/006_feedback.sql`, `supabase/007_feedback_kind.sql` and
+   `supabase/008_feedback_requests.sql`.
 2. Deploy with `supabase functions deploy feedback --no-verify-jwt`. It uses the
    Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`; optionally set
    `FEEDBACK_SALT` to a long random string.

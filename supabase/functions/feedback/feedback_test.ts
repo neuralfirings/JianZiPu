@@ -1,6 +1,6 @@
 // deno test supabase/functions/feedback
 import { assert, assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert@1';
-import { LIMITS, originAllowed, parse, senderHash } from './check.ts';
+import { LIMITS, older, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail, rowName } from './mail.ts';
 
 const form = (fields: Record<string, string>, files: [string, File][] = []) => {
@@ -16,14 +16,14 @@ Deno.test('a row message is taken, trimmed, with its pictures', () => {
     link: 'https://jianzipufont.com/#2', name: 'Lin', email: 'lin@example.com', _gotcha: '' }, [['picture-1', png()], ['picture-2', png(5, 'a.jpg', 'image/jpeg')]]));
   assert(p.ok && !p.spam);
   assertEquals(p.entry, { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2',
-    message: 'The pinyin should be zhòng.', name: 'Lin', email: 'lin@example.com' });
+    message: 'The pinyin should be zhòng.', name: 'Lin', email: 'lin@example.com', upcoming_id: null, details: null });
   assertEquals(p.pictures.map((x) => x.ext), ['png', 'jpg']);
 });
 
 Deno.test('feedback on the page has no row; empty fields are null', () => {
   const p = parse(form({ message: 'The font has no 猱.' }));
   assert(p.ok && !p.spam);
-  assertEquals(p.entry, { kind: 'page', glossary_row: null, link: null, message: 'The font has no 猱.', name: null, email: null });
+  assertEquals(p.entry, { kind: 'page', glossary_row: null, link: null, message: 'The font has no 猱.', name: null, email: null, upcoming_id: null, details: null });
 });
 
 Deno.test('the spam trap passes quietly and keeps nothing', () => {
@@ -73,7 +73,7 @@ Deno.test('the sender is kept as a salted hash, the same each time', async () =>
 Deno.test('the email names the row, quotes the message, and says who to reply to', () => {
   assertEquals(rowName('2 · 中 · d · zhōng (1.1. Which Finger to Use)'), '中 (row 2)');
   const m = feedbackMail({
-    entry: { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2', message: 'Should be <b>zhòng</b>.', name: 'Lin', email: 'lin@example.com' },
+    entry: { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2', message: 'Should be <b>zhòng</b>.', name: 'Lin', email: 'lin@example.com', upcoming_id: null, details: null },
     pictures: 2, tableUrl: 'https://supabase.com/dashboard/project/abc/editor',
   });
   assertEquals(m.subject, 'Feedback on 中 (row 2)');
@@ -85,7 +85,7 @@ Deno.test('the email names the row, quotes the message, and says who to reply to
 });
 
 Deno.test('feedback on the page, from someone who left nothing', () => {
-  const m = feedbackMail({ entry: { kind: 'page', glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null }, pictures: 0, tableUrl: 'u' });
+  const m = feedbackMail({ entry: { kind: 'page', glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null, upcoming_id: null, details: null }, pictures: 0, tableUrl: 'u' });
   assertEquals(m.subject, 'Feedback on the font page');
   assertStringIncludes(m.text, 'Someone who left no name or email wrote.');
   assertStringIncludes(m.text, 'no one to reply to');
@@ -109,4 +109,52 @@ Deno.test('the kind comes from the page, else from whether there is a row', () =
   assertEquals(kind({ kind: 'row' }), 'page');                   // a row kind with no row is about the page
   assertEquals(kind({ kind: 'nonsense', row: '2 · 中' }), 'row');
   assertEquals(kind({ kind: 'page' }), 'page');
+});
+
+Deno.test('a request: the character, its pinyin and where it was seen go in details', () => {
+  const p = parse(form({ kind: 'request', zh: ' 不动 ', pinyin: 'bù dòng', seen: '《梅庵琴谱》, p. 4', message: 'Keep the left hand where it is.', email: 'lin@example.com' }));
+  assert(p.ok && !p.spam);
+  assertEquals([p.entry.kind, p.entry.glossary_row, p.entry.upcoming_id], ['request', null, null]);
+  assertEquals(p.entry.details, { zh: '不动', pinyin: 'bù dòng', seen: '《梅庵琴谱》, p. 4' });
+  const bare = parse(form({ kind: 'request', zh: '不动', message: 'x' }));
+  assertEquals(bare.ok && !bare.spam && bare.entry.details, { zh: '不动' });            // nothing empty is kept
+  assertEquals(parse(form({ kind: 'request', message: 'Keep the hand still.' })), { ok: false, status: 400, error: 'Write the character you would like, in Chinese.' });
+  assertEquals(parse(form({ kind: 'request', zh: '不动' })), { ok: false, status: 400, error: 'Say what it means or how it’s played, so I can find it.' });
+  assertEquals(parse(form({ kind: 'request', zh: '字'.repeat(LIMITS.zh + 1), message: 'x' })).ok, false);
+});
+
+Deno.test('a comment names its coming character by id; without one it is feedback on the page', () => {
+  const p = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动 · bù dòng', message: 'The hook is too long.' }));
+  assert(p.ok && !p.spam);
+  assertEquals([p.entry.kind, p.entry.upcoming_id, p.entry.details], ['comment', 'u12', { about: '不动 · bù dòng' }]);
+  const none = parse(form({ kind: 'comment', message: 'The hook is too long.' }));
+  assert(none.ok && !none.spam);
+  assertEquals([none.entry.kind, none.entry.upcoming_id], ['page', null]);
+  assertEquals(parse(form({ kind: 'comment', upcoming: '../etc', message: 'x' })).ok, false);
+  assertEquals(parse(form({ kind: 'comment', upcoming: 'u12', message: '' })), { ok: false, status: 400, error: 'Write what you would change, so the drawing can follow it.' });
+});
+
+Deno.test('before supabase/008: a request is kept as feedback on the page, its details in the message', () => {
+  const p = parse(form({ kind: 'request', zh: '不动', pinyin: 'bù dòng', seen: 'p. 4', message: 'Keep the hand still.' }));
+  assert(p.ok && !p.spam);
+  assertEquals(older(p.entry), { kind: 'page', glossary_row: null, link: null, name: null, email: null,
+    message: 'Request: 不动 (bù dòng)\nSeen in: p. 4\n\nKeep the hand still.' });
+  const c = parse(form({ kind: 'comment', upcoming: 'u12', about: '不动', message: 'Too long.' }));
+  assert(c.ok && !c.spam);
+  assertEquals(older(c.entry).message, 'Comment on 不动 (u12)\n\nToo long.');
+  const row = parse(form({ row: '2 · 中', message: 'hi' }));
+  assert(row.ok && !row.spam);
+  assertEquals(older(row.entry), { kind: 'row', glossary_row: '2 · 中', link: null, message: 'hi', name: null, email: null });
+});
+
+Deno.test('the emails for a request and a comment', () => {
+  const req = feedbackMail({ entry: { kind: 'request', glossary_row: null, link: null, message: 'Keep the hand still.', name: 'Lin', email: 'lin@example.com',
+    upcoming_id: null, details: { zh: '不动', pinyin: 'bù dòng', seen: '《梅庵琴谱》' } }, pictures: 1, tableUrl: 'u' });
+  assertEquals(req.subject, 'Request: 不动 (bù dòng)');
+  assertStringIncludes(req.text, 'Lin (lin@example.com) asked for 不动 (bù dòng) with a picture, attached.');
+  assertStringIncludes(req.text, 'Where they saw it: 《梅庵琴谱》.');
+  const com = feedbackMail({ entry: { kind: 'comment', glossary_row: null, link: null, message: 'Too long.', name: null, email: null,
+    upcoming_id: 'u12', details: { about: '不动 · bù dòng' } }, pictures: 0, tableUrl: 'u' });
+  assertEquals(com.subject, 'Comment on 不动 · bù dòng (coming next)');
+  assertStringIncludes(com.text, 'commented on the coming character 不动 · bù dòng (u12).');
 });

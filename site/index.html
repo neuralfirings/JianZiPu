@@ -599,7 +599,7 @@
     </details>
 
     <h3 id="glossary">Glossary</h3>
-    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Tell me with <svg class="fb-inline" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg> on its row.</span></p>
+    <p>Every glyph in the font, with its spellings and an example. Search by letter, pinyin, character or meaning.<span class="fb-on" hidden> See a mistake? Tell me with <svg class="fb-inline" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"/></svg> on its row. Missing a character? <button type="button" class="fb-link" data-fb-request>Request it</button>.</span></p>
     <div class="row">
       <div class="col">
         <div class="glossary-search" role="search">
@@ -2233,14 +2233,20 @@
       </div>
       <div class="fb-body">
         <div class="fb-ctx" id="fb-ctx" aria-label="The row you're writing about" hidden></div>
+        <!-- Request a character: the character itself, before what it means -->
+        <div class="fb-two" id="fb-req" hidden>
+          <label class="fb-f"><span>中文</span><input type="text" id="fb-zh" lang="zh" autocomplete="off" placeholder="e.g. 不动" maxlength="40"></label>
+          <label class="fb-f"><span>拼音 <span class="fb-opt">optional</span></span><input type="text" id="fb-py" autocomplete="off" placeholder="e.g. bù dòng" maxlength="80"></label>
+        </div>
         <label class="fb-f"><span id="fb-msg-label">What should change?</span><textarea id="fb-msg" name="message"></textarea></label>
+        <label class="fb-f" id="fb-seen-f" hidden><span>Where you’ve seen it <span class="fb-opt">optional</span></span><input type="text" id="fb-seen" autocomplete="off" placeholder="e.g. 《梅庵琴谱》, 平沙落雁, page 4" maxlength="300"></label>
         <div style="display:grid;gap:10px">
           <div class="fb-tools">
             <label class="fb-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg>Add a photo
               <input type="file" id="fb-photo" accept="image/*" multiple></label>
             <button type="button" class="fb-tool" id="fb-draw-open" aria-expanded="false" aria-controls="fb-pad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></svg>Draw it</button>
           </div>
-          <p class="fb-hint">Optional. A photo of a score or a book, or draw the glyph the way it should look.</p>
+          <p class="fb-hint" id="fb-pic-hint">Optional. A photo of a score or a book, or draw the glyph the way it should look.</p>
           <div class="fb-pad" id="fb-pad" hidden>
             <canvas id="fb-canvas" aria-label="Drawing area: draw with a mouse, pen or finger"></canvas>
             <div class="fb-bar">
@@ -2259,7 +2265,7 @@
         </div>
         <div class="fb-who">
           <div class="fb-two">
-            <label class="fb-f"><span>Name <span class="fb-opt">optional</span></span><input type="text" id="fb-name" autocomplete="name"></label>
+            <label class="fb-f"><span>Name <span class="fb-opt" id="fb-name-opt">optional</span></span><input type="text" id="fb-name" autocomplete="name"></label>
             <label class="fb-f"><span>Email <span class="fb-opt">optional</span></span><input type="email" id="fb-email" autocomplete="email"></label>
           </div>
           <p class="fb-hint" id="fb-email-hint">Leave an email if you'd like to hear back. It's never shown.</p>
@@ -2324,12 +2330,14 @@
       }
       // the sticky bar, the foot of the page, and "Tell me" under a search that found nothing (added
       // later, so the click is caught here; data-fb-prefill starts the message); Contact me (a link to
-      // /contact, kept for when the form is off) opens the same form to write to me
+      // /contact, kept for when the form is off) opens the same form to write to me; Request a character
+      // (data-fb-request: what was searched for, put in 中文 or 拼音) opens it to ask for one
       document.addEventListener('click', function (e) {
-        var b = e.target.closest && e.target.closest('[data-fb-site], [data-fb-contact]');
+        var b = e.target.closest && e.target.closest('[data-fb-site], [data-fb-contact], [data-fb-request]');
         if (!b) return;
         e.preventDefault();
-        open(null, b.getAttribute('data-fb-prefill') || '', b.hasAttribute('data-fb-contact'));
+        if (b.hasAttribute('data-fb-request')) openRequest(b.getAttribute('data-fb-request') || '');
+        else open(null, b.getAttribute('data-fb-prefill') || '', b.hasAttribute('data-fb-contact') ? 'contact' : '');
       });
 
       // ---- photos and drawings
@@ -2431,17 +2439,25 @@
       window.addEventListener('resize', function () { if (!$('fb-pad').hidden) fit(); });
 
       // ---- opening and closing
-      var row = null, rowText = '', lastFocus = null, kind = 'page';   // kind: row, page or contact
+      var row = null, rowText = '', lastFocus = null, kind = 'page';   // kind: row, page, contact or request
       function say(t, bad) { why.textContent = t; why.classList.toggle('bad', !!bad); }
-      function open(tr, prefill, contact) {
+      // as: 'contact' (Contact me), 'request' (Request a character), or '' (feedback on the page or a row)
+      function open(tr, prefill, as) {
         lastFocus = document.activeElement;
         form.reset(); files = []; strokes = []; drawThumbs(); pad(false);
         $('fb-msg').value = prefill || '';
-        form.hidden = false; $('fb-done').hidden = true; plain.hidden = true; send.disabled = false; send.textContent = 'Send';
-        say('I read every message myself.');
+        var contact = as === 'contact', request = as === 'request';
+        form.hidden = false; $('fb-done').hidden = true; plain.hidden = true; send.disabled = false; send.textContent = request ? 'Send request' : 'Send';
+        say(request ? 'Nothing you send is shown on the page.' : 'I read every message myself.');
         document.querySelectorAll('tr.fb-picked').forEach(function (t) { t.classList.remove('fb-picked'); });
-        row = tr; rowText = ''; kind = tr ? 'row' : contact ? 'contact' : 'page';
-        $('fb-email-hint').textContent = contact ? 'Leave your email, so I can write back. It\'s never shown.' : 'Leave an email if you\'d like to hear back. It\'s never shown.';
+        row = tr; rowText = ''; kind = tr ? 'row' : contact ? 'contact' : request ? 'request' : 'page';
+        $('fb-req').hidden = $('fb-seen-f').hidden = !request;
+        $('fb-name-opt').textContent = request ? 'optional · to credit you' : 'optional';
+        $('fb-pic-hint').textContent = request ? 'Optional. A photo of the score you saw it in helps most, or draw it.'
+          : 'Optional. A photo of a score or a book, or draw the glyph the way it should look.';
+        $('fb-email-hint').textContent = contact ? 'Leave your email, so I can write back. It\'s never shown.'
+          : request ? 'Leave an email to hear when it\'s planned and when it\'s in the font, or if I have a question. It\'s never shown.'
+          : 'Leave an email if you\'d like to hear back. It\'s never shown.';
         var ctxBox = $('fb-ctx');
         if (tr) {
           var n = text(tr, 'td.gid'), zh = zhOf(tr), ascii = text(tr, 'td.ascii'), py = text(tr, 'td.zh .py');
@@ -2456,6 +2472,12 @@
             + '<span><span class="k">中文</span>' + esc(zh) + '</span><span><span class="k">ASCII</span>' + esc(ascii) + '</span>'
             + (py ? '<span><span class="k">拼音</span>' + esc(py) + '</span>' : '') + (def ? '<span class="m">' + esc(def) + '</span>' : '') + '</div>';
           ctxBox.hidden = false;
+        } else if (request) {
+          $('fb-title').textContent = 'Request a character';
+          $('fb-sub').textContent = 'Something the font doesn\'t have yet. Requests come to me first; if I take one on, it shows in the glossary as planned.';
+          $('fb-msg-label').textContent = 'What it means, or how it\'s played';
+          $('fb-msg').placeholder = 'e.g. Keep the left hand where it is and pluck again.';
+          ctxBox.hidden = true;
         } else if (contact) {
           $('fb-title').textContent = 'Contact me';
           $('fb-sub').textContent = 'Questions, characters or glyphs you would like in the font, or working together';
@@ -2471,7 +2493,15 @@
         }
         document.documentElement.style.overflow = 'hidden';
         dlg.showModal(); dlg.scrollTop = 0;
-        $('fb-msg').focus();
+        $(request ? 'fb-zh' : 'fb-msg').focus();
+      }
+      // Request a character, with what was searched for: Chinese goes in 中文, anything else in 拼音
+      function openRequest(q) {
+        open(null, '', 'request');
+        q = q.trim();
+        if (!q) return;
+        if (/[\u3400-\u9fff\uf900-\ufaff]/.test(q)) $('fb-zh').value = q;
+        else { $('fb-py').value = q; }
       }
       dlg.addEventListener('close', function () {
         document.documentElement.style.overflow = '';
@@ -2485,7 +2515,9 @@
 
       // ---- sending
       function submit(withFiles) {
-        var msg = $('fb-msg').value.trim(), email = $('fb-email').value.trim();
+        var msg = $('fb-msg').value.trim(), email = $('fb-email').value.trim(), zh = $('fb-zh').value.trim();
+        if (kind === 'request' && !zh) { say('Write the character you would like, in Chinese.', true); $('fb-zh').focus(); return; }
+        if (kind === 'request' && !msg) { say('Say what it means or how it\'s played, so I can find it.', true); $('fb-msg').focus(); return; }
         if (!msg) { say(files.length ? 'Add a few words about the picture, so I know what to look at.' : 'Write what should change, so I know what to fix.', true); $('fb-msg').focus(); return; }
         if (kind === 'contact' && !email) { say('Leave your email, so I can write back.', true); $('fb-email').focus(); return; }
         if (email && !$('fb-email').checkValidity()) { say("That email doesn't look right. Check it, or leave it empty.", true); $('fb-email').focus(); return; }
@@ -2494,6 +2526,11 @@
         if (row) { fd.append('row', rowText); fd.append('link', location.origin + location.pathname + '#' + row.id); }
         else fd.append('link', location.origin + location.pathname);
         fd.append('message', msg);
+        if (kind === 'request') {
+          fd.append('zh', zh);
+          if ($('fb-py').value.trim()) fd.append('pinyin', $('fb-py').value.trim());
+          if ($('fb-seen').value.trim()) fd.append('seen', $('fb-seen').value.trim());
+        }
         if ($('fb-name').value.trim()) fd.append('name', $('fb-name').value.trim());
         if (email) fd.append('email', email);   // the admins' email replies to this address
         fd.append('_gotcha', $('fb-gotcha').value);
@@ -2513,14 +2550,17 @@
         plain.hidden = !(withFiles && files.length);   // if the pictures were the problem, the words can still go
       }
       function done(pictures, email) {
-        var zh = row ? shortOf(row) : '';
+        var zh = row ? shortOf(row) : '', asked = $('fb-zh').value.trim();
         $('fb-done').innerHTML = '<div class="fb-done" role="status">'
           + '<div class="fb-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>'
           + '<h2 id="fb-done-title" tabindex="-1">Sent. Thank you.</h2>'
-          + '<p>' + (row ? 'Your note on ' + esc(zh || 'the row') + ' (row ' + esc(row.id) + ')' : kind === 'contact' ? 'Your message' : 'Your note')
+          + '<p>' + (row ? 'Your note on ' + esc(zh || 'the row') + ' (row ' + esc(row.id) + ')' : kind === 'contact' ? 'Your message'
+            : kind === 'request' ? 'Your request for ' + esc(asked) : 'Your note')
           + (pictures ? (pictures === 1 ? ' and its picture' : ' and its ' + pictures + ' pictures') : '')
-          + ' reached me.' + (kind === 'contact' ? '' : ' Corrections to the glossary go into the next version of the font.') + '</p>'
+          + ' reached me.' + (kind === 'contact' ? '' : kind === 'request' ? ' If I take it on, it shows in the glossary as planned.'
+            : ' Corrections to the glossary go into the next version of the font.') + '</p>'
           + '<p>' + (kind === 'contact' ? "I'll write back to " + esc(email) + '.'
+            : kind === 'request' && email ? "I'll write to " + esc(email) + " when it's planned, if I have a question, and when it's in the font."
             : email ? "I'll write to " + esc(email) + " if I have a question, or when it's in." : "You left no email, so I can't write back, but I read every message.") + '</p></div>'
           + '<div class="fb-foot"><p class="fb-why"></p><button type="button" class="fb-btn primary" data-fb-close>Back to the page</button></div>';
         form.hidden = true; $('fb-done').hidden = false;
@@ -2942,11 +2982,14 @@
         status.textContent = !q ? '' : shown ? shown + (shown === 1 ? ' row' : ' rows') : 'No glossary row matches. Try the pinyin without tones, or one character.';
         // nothing found, and the feedback form is on: offer to say what's missing
         if (q && !shown && document.documentElement.classList.contains('fb-ready')) {
+          var ask = document.createElement('button');
+          ask.type = 'button'; ask.className = 'fb-link'; ask.textContent = 'Request it';
+          ask.setAttribute('data-fb-request', input.value.trim());
           var tell = document.createElement('button');
-          tell.type = 'button'; tell.className = 'fb-link'; tell.textContent = 'Tell me';
+          tell.type = 'button'; tell.className = 'fb-link'; tell.textContent = 'tell me';
           tell.setAttribute('data-fb-site', '');
           tell.setAttribute('data-fb-prefill', 'I searched the glossary for “' + input.value.trim() + '” and couldn’t find it. ');
-          status.append(' Missing something? ', tell, '.');
+          status.append(' A character the font lacks? ', ask, ', or ', tell, ' what you were looking for.');
         }
       }
       input.addEventListener('input', run);

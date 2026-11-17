@@ -3,7 +3,7 @@
 // check.ts decides what's acceptable, this stores the pictures in the private `feedback` bucket and
 // the message in public.feedback (status 'new'), then emails FEEDBACK_TO (or the Builder's admins)
 // through Resend with the pictures attached. Setup and secrets: README.md in this folder.
-import { LIMITS, originAllowed, parse, senderHash } from './check.ts';
+import { LIMITS, older, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail } from './mail.ts';
 
 const env = (k: string, fallback = '') => Deno.env.get(k) ?? fallback;
@@ -73,16 +73,26 @@ Deno.serve(async (req) => {
       method: 'POST', headers: { ...service, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(row),
     });
-    let r = await insert({ id, ...p.entry, pictures: paths, sender });
-    if (!r.ok) {
-      const why = await r.text();
-      // a project where 007_feedback_kind.sql hasn't run yet has no kind column: keep the message all the same
-      if (!/kind/.test(why)) throw new Error(`feedback insert: HTTP ${r.status} ${why}`);
-      console.error('feedback: no kind column (run supabase/007_feedback_kind.sql); saved without it');
-      const { kind: _, ...rest } = p.entry;
-      r = await insert({ id, ...rest, pictures: paths, sender });
-      if (!r.ok) throw new Error(`feedback insert: HTTP ${r.status} ${await r.text()}`);
+    // a project behind on its migrations still keeps the message: without 008 a request or comment
+    // goes in as feedback on the page with its details written into the message (older()), and
+    // without 007 also without its kind. The 008 columns go only when they hold something, so plain
+    // feedback never needs 008.
+    const e = p.entry, plain = older(e);
+    const full = { ...plain, kind: e.kind, message: e.message,
+      ...(e.upcoming_id ? { upcoming_id: e.upcoming_id } : {}), ...(e.details ? { details: e.details } : {}) };
+    const { kind: _, ...kindless } = plain;
+    const tries = [full, plain, kindless].filter((t, i, all) => all.findIndex((u) => JSON.stringify(u) === JSON.stringify(t)) === i);
+    let r: Response | null = null, why = '';
+    for (const row of tries) {
+      r = await insert({ id, ...row, pictures: paths, sender });
+      if (r.ok) {
+        if (row !== full) console.error('feedback: saved in an older form; run supabase/007_feedback_kind.sql and 008_feedback_requests.sql');
+        break;
+      }
+      why = await r.text();
+      if (!/kind|upcoming_id|details/.test(why)) break;
     }
+    if (!r?.ok) throw new Error(`feedback insert: HTTP ${r?.status} ${why}`);
 
     // the message is kept; the email is a courtesy, so a failed send is logged, not the visitor's problem
     try {

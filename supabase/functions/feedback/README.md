@@ -2,8 +2,8 @@
 
 A Supabase Edge Function that takes the font page's feedback form
 (jianzipufont.com: the feedback button on each glossary row, Feedback in the sticky
-bar, "Tell me" under a search that finds nothing, and "Send feedback" at the foot
-of the page). Each message is kept in `public.feedback`
+bar, "Request it" and "tell me" under a search that finds nothing, Request a character
+in the glossary's intro, and "Send feedback" at the foot of the page). Each message is kept in `public.feedback`
 (`supabase/006_feedback.sql`) with its pictures in the private `feedback`
 bucket, and emailed to every admin (`profiles.role = 'admin'`) through
 [Resend](https://resend.com), pictures attached, replying to the sender when
@@ -17,10 +17,12 @@ they left an email.
 
 ## Setting it up
 
-1. **The table and bucket**: run `supabase/006_feedback.sql`, then `supabase/007_feedback_kind.sql`,
-   in the SQL editor. In the Builder's project 006 also lets its admins read the table from a
-   signed-in app. 007 adds `kind`: run it before deploying a function that sends it (one
-   deployed first saves messages without it, and logs that 007 is missing).
+1. **The table and bucket**: run `supabase/006_feedback.sql`, then `supabase/007_feedback_kind.sql`
+   and `supabase/008_feedback_requests.sql`, in the SQL editor. In the Builder's project 006 also lets its admins read the table from a
+   signed-in app. 007 adds `kind`, 008 the kinds `request` and `comment` with `upcoming_id` and
+   `details`: run them before deploying a function that sends them (one deployed first still
+   saves every message, a request as feedback on the page with its details in the message, and
+   logs which migration is missing).
 2. **Secrets**: it uses the Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`
    (`../notify/README.md`), so nothing new is needed. Optional:
 
@@ -66,8 +68,12 @@ in Dashboard → Table Editor → `feedback`, newest first by `created_at`. Set
 | `need_info` | Asked the sender for more |
 
 `kind` says what it is: `row` (the button on a glossary row), `page` (Feedback in the
-sticky bar, "Tell me", Send feedback) or `contact` (Contact me, which asks for an email
-and sends "Message from …" instead of "Feedback on …"). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
+sticky bar, "tell me", Send feedback), `contact` (Contact me, which asks for an email
+and sends "Message from …" instead of "Feedback on …"), `request` (Request a character,
+in the glossary's intro and under a search that finds nothing: `details` holds its
+`zh`, `pinyin` and where it was `seen`, the message what it means; the email says
+"Request: 不动 (bù dòng)") or `comment` (on a coming character, `upcoming_id` naming
+it, e.g. `u12`, and `details.about` its name as the page showed it). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
 folder per message (the message's `id`); `pictures` lists their paths.
 
 ## Changing it
