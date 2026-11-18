@@ -89,10 +89,26 @@ Deployments tab.
 1. Create a Resend account, add and verify the `jianzipufont.com` domain (DNS
    records), and create an API key.
 2. Set the secrets with
-   `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`.
-3. Deploy with `supabase functions deploy notify --no-verify-jwt`.
-4. Create a Database Webhook on `change_requests` (Insert and Update) that calls
-   `notify` with the header `x-webhook-secret`.
+   `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`,
+   or in the dashboard under Edge Functions → Secrets. `NOTIFY_WEBHOOK_SECRET` is
+   a random string you make (`openssl rand -hex 32`); `BUILDER_URL` is
+   `https://builder.jianzipufont.com`, `REVIEW_URL` `http://127.0.0.1:5713`.
+3. Deploy with `supabase functions deploy notify --no-verify-jwt`. Without the
+   CLI: `deno bundle supabase/functions/notify/index.ts -o notify-index.ts`, then
+   Edge Functions → Deploy a new function → Via Editor, name `notify`, paste the
+   file over `index.ts`, deploy, and turn off **Enforce JWT verification** in its
+   settings.
+4. Create a database webhook: in the dashboard's left bar, **Integrations** →
+   **Database Webhooks** (enable them first if asked) → Create a new hook. Name
+   it `notify_change_requests`; table `change_requests`, events Insert and
+   Update, type Supabase Edge Functions, function `notify`, method POST, and the
+   HTTP header `x-webhook-secret` with the same string as the secret.
+
+To check it: https://<project>.supabase.co/functions/v1/notify should answer
+`forbidden` (deployed; it wants the webhook's secret), not "Requested function
+was not found". Each status change shows in Edge Functions → `notify` → Logs, and
+each email in Resend's logs. An email goes only when a request's status changes,
+and never for a change made before the hook existed.
 
 The email templates are in git (`supabase/functions/notify/templates.ts`). To
 change one, edit it, run `deno test supabase/functions/notify`, and deploy
