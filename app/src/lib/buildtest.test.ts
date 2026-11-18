@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseView, pickBuild, testerRedirect, buildFailure } from './buildtest';
+import { parseView, pickBuild, testerRedirect, buildFailure, unplacedNote } from './buildtest';
 import type { Build } from './api';
 
 const b = (id: string): Build => ({ id, time: 0, bytes: 1, ok: true, seconds: 1, url: `/api/builds/${id}/JianZiPu.ttf`, file: '' });
@@ -74,5 +74,17 @@ describe('buildFailure', () => {
   it('falls back to a size complaint, then to the log', () => {
     expect(buildFailure(['packing GPOS', 'the GPOS table is too large to pack'])).toBe('the GPOS table is too large to pack');
     expect(buildFailure(['could not start the build: [Errno 2] No such file'])).toBe('Build failed: see the log.');
+  });
+});
+
+describe('why a glyph is not drawn', () => {
+  const areas = { char: { label: 'Character', glyphs: ['md_yin'] } };
+  it('names the glyph and what to do', () => {
+    expect(unplacedNote([{ layout: 'standard', glyphs: ['md_yin'] }], areas)).toBe('');
+    expect(unplacedNote([{ layout: null, glyphs: ['yin3_md', 'space'] }], areas))
+      .toBe("yin3_md isn't in an area, so no word type can place it. Add it to one in Layouts › Area Properties.");
+    expect(unplacedNote([{ layout: null, glyphs: ['md_yin'] }], areas))
+      .toBe('md_yin (Character) fits no word type with the glyphs around it here. Check the word types in Layouts › Structure.');
+    expect(unplacedNote([{ layout: null, glyphs: ['.notdef'] }], areas)).toBe("Part of it isn't a spelling of any glyph: check it in Glyphs › List view.");
   });
 });

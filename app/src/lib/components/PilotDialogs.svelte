@@ -114,10 +114,10 @@
                     {#each it.fields.filter((f) => f.conflict) as f}<tr><th>{f.field}</th><td>yours: {f.current || '—'}</td><td>the font's: {f.theirs || '—'}</td></tr>{/each}
                   </tbody></table>
                 {:else if it.kind === 'glossary-row'}
-                  <GlossaryRowsDiff columns={[{ title: 'yours', rows: it.current ? [it.current] : [] }, { title: "the font's", rows: it.theirs ? [it.theirs] : [] }]} />
+                  <GlossaryRowsDiff typing={app.typing} columns={[{ title: 'yours', rows: it.current ? [it.current] : [] }, { title: "the font's", rows: it.theirs ? [it.theirs] : [] }]} />
                 {:else if it.kind === 'glossary'}
                   {#if it.meta}<p class="muted small">{metaSummary(it.meta.base, it.meta.theirs).join(' · ')}</p>{/if}
-                  <GlossaryRowsDiff columns={[{ title: 'yours', rows: it.current }, { title: "the font's", rows: it.theirs }]} />
+                  <GlossaryRowsDiff typing={app.typing} columns={[{ title: 'yours', rows: it.current }, { title: "the font's", rows: it.theirs }]} />
                 {:else if it.kind === 'glossary-titles'}
                   <p class="muted small">{titlesSummary(it.base, it.theirs).join(' · ')}</p>
                 {:else}

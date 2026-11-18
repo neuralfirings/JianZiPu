@@ -15,7 +15,8 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, companions, diffBundle, glossarySection, glossaryWhat, itemName, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
+  import { canWithdraw, inTheFont, releasedItems, startSvgs, tryWords } from '$lib/requests';
+  import { goto } from '$app/navigation';
   import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
@@ -55,7 +56,17 @@
 
   const readOnly = $derived(mode === 'mine' || mode === 'sent');
   const who = $derived(mode === 'owner' ? `${name}'s` : mode === 'mine' || mode === 'sent' ? 'Your' : 'The draft’s');
-  let conflicts = $derived(items.filter((i) => i.conflict));
+  /** decide: the request's changes your Builder has changed too since the request was sent (main, or a
+   *  request you tried), compared three ways (before, the request's, your Builder now). Keep / Skip
+   *  stay as they are; Add kept changes asks which wins when the release takes them. */
+  let clashes = $derived.by(() => {
+    if (mode !== 'decide' || !app.design) return new Map<string, Item>();
+    const now = diffBundle(bundle, { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout });
+    return new Map(now.filter((i) => i.conflict).map((i) => [i.id, i]));
+  });
+  /** What an item shows: in decide, its three-way version when your Builder changed it too. */
+  const view = (it: Item): Item => clashes.get(it.id) ?? it;
+  let conflicts = $derived(mode === 'decide' ? items.filter((i) => clashes.has(i.id)) : items.filter((i) => i.conflict));
   let unpicked = $derived(conflicts.filter((i) => picks[i.id] === undefined));
   let skipped = $derived(items.filter((i) => picks[i.id] === false));
   let keeping = $derived(items.filter((i) => picks[i.id] === true));
@@ -66,7 +77,7 @@
   let done = $derived(items.filter((i) => inFont.has(i.id)));
   let released = $derived(mode === 'mine' ? releasedItems(app.requests) : {});
   let doneOpen = $state(false);
-  let shown = $derived(items.filter((i) => !inFont.has(i.id) && (filter === 'all' || (filter === 'conflicts' ? i.conflict : picks[i.id] === false))));
+  let shown = $derived(items.filter((i) => !inFont.has(i.id) && (filter === 'all' || (filter === 'conflicts' ? conflicts.includes(i) : picks[i.id] === false))));
   let sections = $derived([
     { title: 'Glyphs', items: shown.filter((i) => i.kind === 'glyph') },
     { title: 'Spellings', items: shown.filter((i) => i.kind === 'spelling') },
@@ -103,6 +114,24 @@
     const label = mode === 'owner' ? `From ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}` : `Import ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}`;
     app.applyChanges(label, m);
     onapplied?.({ count: m.applied.length, message: commitMessage(m.applied) });
+  }
+
+  /** decide: try the request before deciding. The changes ticked Keep come into the Builder as unsaved
+   *  changes (one undo step), compared with the Builder as it is now: a change it already has is left
+   *  alone, and one that clashes with it (main, or another request tried, changed the same thing) comes
+   *  in as the request has it, since that's what you want to see. Build & test opens on its words.
+   *  Nothing is saved; Undo puts the Builder back. */
+  function tryIt() {
+    if (!app.design) return;
+    const cur = { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout };
+    const ids = new Set(items.filter((i) => picks[i.id] !== false).map((i) => i.id));
+    const its = diffBundle(bundle, cur);
+    const clash = its.filter((i) => ids.has(i.id) && i.conflict);
+    const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id)])), cur);
+    if (!m.applied.length) { pilot.say('Nothing to try: your Builder already has these changes.'); return; }
+    app.applyChanges(`Try: ${name}`, m);
+    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length === 1 ? 'this one replaces' : 'these replace'} what your Builder had (changed there too, so the request's version is shown): ${clash.map((i) => itemName(i)).join(', ')}` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
+    void goto(`/test?view=words&words=${encodeURIComponent(tryWords(bundle).join(' '))}`);
   }
 
   /** Your changes: items a sent Change Request holds can't be undone (or sent again). */
@@ -212,11 +241,13 @@
     {#if sec.items.length}
       <h3>{sec.title} <span class="muted">{sec.items.length}</span></h3>
       {#each sec.items as it (it.id)}
+        {@const v = view(it)}
         <div class="item" class:skip={picks[it.id] === false && !readOnly} class:conflict={it.conflict && !readOnly}>
           <div class="ihead">
             <b class="key">{nameOf(it)}</b>
             <span class="tag {it.status}">{it.status}</span>
             {#if it.conflict && !readOnly}<span class="pill danger"><I.Problem size={14} />Conflict</span>{/if}
+            {#if clashes.has(it.id)}<span class="pill draft" data-tip="Your Builder has changed this too since the request was sent (on main, or by a request you tried). Below: before, the request's version, and yours. Keep or Skip as usual; when the release adds kept changes, you pick which one wins."><I.Warn size={14} />Changed in your Builder too</span>{/if}
             {#if it.kind === 'design'}<span class="muted sum">{it.summary.join(' · ')}</span>{/if}
             {#if it.kind === 'glossary-row'}<span class="muted sum">in {glossarySection(it)}</span>{/if}
             <span class="spacer"></span>
@@ -245,71 +276,71 @@
             </div>
           {/if}
 
-          {#if it.kind === 'glyph'}
+          {#if v.kind === 'glyph'}
             <div class="views">
-              {#if it.conflict && !readOnly}
-                <SvgText text={svgOf(it.base)} tone="before" label="Before{m.base.date ? ` (${day(m.base.date)})` : ''}" />
-                <SvgText text={svgOf(it.theirs)} tone="after" label="{who} draft" />
-                <SvgText text={svgOf(it.current)} label="Your Builder now" />
+              {#if v.conflict && !readOnly}
+                <SvgText text={svgOf(v.base)} tone="before" label="Before{m.base.date ? ` (${day(m.base.date)})` : ''}" />
+                <SvgText text={svgOf(v.theirs)} tone="after" label={mode === 'decide' ? 'The request' : `${who} draft`} />
+                <SvgText text={svgOf(v.current)} label="Your Builder now" />
               {:else}
-                <SvgText text={svgOf(it.base ?? it.current)} tone="before" label="Before" />
-                <SvgText text={svgOf(it.theirs)} tone="after" label="After" />
-                {#if it.status === 'changed'}<SvgText text={svgOf(it.theirs)} ghost={svgOf(it.base ?? it.current)} label="Before / After" />{/if}
+                <SvgText text={svgOf(v.base ?? v.current)} tone="before" label="Before" />
+                <SvgText text={svgOf(v.theirs)} tone="after" label="After" />
+                {#if v.status === 'changed'}<SvgText text={svgOf(v.theirs)} ghost={svgOf(v.base ?? v.current)} label="Before / After" />{/if}
               {/if}
             </div>
-          {:else if it.kind === 'spelling'}
+          {:else if v.kind === 'spelling'}
             <table class="cells">
-              <thead><tr><th></th><th>before</th><th>{readOnly ? 'yours' : 'draft'}</th>{#if it.conflict && !readOnly}<th>your Builder now</th>{/if}</tr></thead>
+              <thead><tr><th></th><th>before</th><th>{readOnly ? 'yours' : mode === 'decide' ? 'request' : 'draft'}</th>{#if v.conflict && !readOnly}<th>your Builder now</th>{/if}</tr></thead>
               <tbody>
-                {#each it.fields as f}
-                  <tr class:cf={f.conflict && !readOnly}><th>{FIELD[f.field] ?? f.field}</th><td>{f.base || '—'}</td><td class="new">{f.theirs || '—'}</td>{#if it.conflict && !readOnly}<td>{f.current || '—'}</td>{/if}</tr>
+                {#each v.fields as f}
+                  <tr class:cf={f.conflict && !readOnly}><th>{FIELD[f.field] ?? f.field}</th><td>{f.base || '—'}</td><td class="new">{f.theirs || '—'}</td>{#if v.conflict && !readOnly}<td>{f.current || '—'}</td>{/if}</tr>
                 {/each}
               </tbody>
             </table>
-          {:else if it.kind === 'glossary-row'}
-            <p class="muted small">{it.status === 'added' ? 'A new row' : it.status === 'deleted' ? 'Taken out' : 'Its definition or example changed'}. Kept or skipped on its own; a new row goes in between the same rows as in the draft.</p>
-            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base ? [it.base] : [] }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs ? [it.theirs] : [] },
-              ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current ? [it.current] : [] }] : [])]} />
-          {:else if it.kind === 'glossary'}
-            <p class="muted small">{[...(it.meta ? metaSummary(it.meta.base, it.meta.theirs) : []), ...(it.whole ? sectionSummary(it.base, it.theirs) : it.order ? ['rows in a new order'] : [])].join(' · ')}. {it.whole ? 'A new or removed subtitle is one item: you keep its rows, title and description whole.' : 'Its rows, added or taken out, are items of their own.'}</p>
-            {#if it.meta?.theirs?.description && it.meta.theirs.description !== it.meta.base?.description}
-              <div class="desc">{@html markdown(it.meta.theirs.description)}</div>
+          {:else if v.kind === 'glossary-row'}
+            <p class="muted small">{v.status === 'added' ? 'A new row' : v.status === 'deleted' ? 'Taken out' : 'Its definition or example changed'}. Kept or skipped on its own; a new row goes in between the same rows as in the draft.</p>
+            <GlossaryRowsDiff typing={{ ...current.typing, ...bundle.typing }} columns={[{ title: 'before', rows: v.base ? [v.base] : [] }, { title: readOnly ? 'yours' : mode === 'decide' ? 'request' : 'draft', rows: v.theirs ? [v.theirs] : [] },
+              ...(v.conflict && !readOnly ? [{ title: 'your Builder now', rows: v.current ? [v.current] : [] }] : [])]} />
+          {:else if v.kind === 'glossary'}
+            <p class="muted small">{[...(v.meta ? metaSummary(v.meta.base, v.meta.theirs) : []), ...(v.whole ? sectionSummary(v.base, v.theirs) : v.order ? ['rows in a new order'] : [])].join(' · ')}. {v.whole ? 'A new or removed subtitle is one item: you keep its rows, title and description whole.' : 'Its rows, added or taken out, are items of their own.'}</p>
+            {#if v.meta?.theirs?.description && v.meta.theirs.description !== v.meta.base?.description}
+              <div class="desc">{@html markdown(v.meta.theirs.description)}</div>
             {/if}
-            <GlossaryRowsDiff columns={[{ title: 'before', rows: it.base }, { title: readOnly ? 'yours' : 'draft', rows: it.theirs },
-              ...(it.conflict && !readOnly ? [{ title: 'your Builder now', rows: it.current }] : [])]} />
-          {:else if it.kind === 'glossary-titles'}
-            <p class="muted small">{titlesSummary(it.base, it.theirs).join(' · ')}. The section titles are one item, kept whole.</p>
-            <ul class="small">{#each it.theirs as g (g.id)}<li><b>{g.title}</b>{#if g.sections.length} · {g.sections.join(', ')}{/if}{#if g.description}<div class="desc">{@html markdown(g.description)}</div>{/if}</li>{/each}</ul>
+            <GlossaryRowsDiff typing={{ ...current.typing, ...bundle.typing }} columns={[{ title: 'before', rows: v.base }, { title: readOnly ? 'yours' : mode === 'decide' ? 'request' : 'draft', rows: v.theirs },
+              ...(v.conflict && !readOnly ? [{ title: 'your Builder now', rows: v.current }] : [])]} />
+          {:else if v.kind === 'glossary-titles'}
+            <p class="muted small">{titlesSummary(v.base, v.theirs).join(' · ')}. The section titles are one item, kept whole.</p>
+            <ul class="small">{#each v.theirs as g (g.id)}<li><b>{g.title}</b>{#if g.sections.length} · {g.sections.join(', ')}{/if}{#if g.description}<div class="desc">{@html markdown(g.description)}</div>{/if}</li>{/each}</ul>
           {:else}
             <div class="more">
-              <button class="link" onclick={() => (open = { ...open, [it.id + ':w']: !open[it.id + ':w'] })}>{open[it.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
-              {#if rulesOf(it).length}
-                <button class="link" onclick={() => (open = { ...open, [it.id + ':r']: !open[it.id + ':r'] })}>{open[it.id + ':r'] ? 'Hide' : 'Show'} the {rulesOf(it).length} spacing rule{rulesOf(it).length === 1 ? '' : 's'}</button>
+              <button class="link" onclick={() => (open = { ...open, [v.id + ':w']: !open[v.id + ':w'] })}>{open[v.id + ':w'] ? 'Hide' : 'Show'} sample words, before and after</button>
+              {#if rulesOf(v).length}
+                <button class="link" onclick={() => (open = { ...open, [v.id + ':r']: !open[v.id + ':r'] })}>{open[v.id + ':r'] ? 'Hide' : 'Show'} the {rulesOf(v).length} spacing rule{rulesOf(v).length === 1 ? '' : 's'}</button>
               {/if}
-              {#if !(it.kind === 'design' && it.unit.type === 'member')}<button class="link" onclick={() => (open = { ...open, [it.id]: !open[it.id] })}>{open[it.id] ? 'Hide' : 'Show'} JSON changes ({diffLines(it).filter((l) => l.op === '+' || l.op === '-').length} lines)</button>{/if}
+              {#if !(v.kind === 'design' && v.unit.type === 'member')}<button class="link" onclick={() => (open = { ...open, [v.id]: !open[v.id] })}>{open[v.id] ? 'Hide' : 'Show'} JSON changes ({diffLines(v).filter((l) => l.op === '+' || l.op === '-').length} lines)</button>{/if}
             </div>
-            {#if open[it.id + ':r'] && it.kind === 'design'}
+            {#if open[v.id + ':r'] && v.kind === 'design'}
               <ul class="rules">
-                {#each rulesOf(it) as r (r.key)}
+                {#each rulesOf(v) as r (r.key)}
                   <li>
                     <span class="tag {r.status}">{r.status}</span>
                     <span>{r.label}</span>
                     {#if r.status === 'changed' && r.base}<span class="muted">was {gapText(r.base)}</span>{/if}
                     <span class="spacer"></span>
-                    {#if mode === 'mine' && lockOf(it)}<button class="sm" aria-disabled="true" data-tip={lockTip(it)}><I.Undo size={14} /> Undo</button>
-                    {:else if mode === 'mine'}<button class="sm" onclick={() => undoRule(it, r)}><I.Undo size={14} /> Undo</button>{/if}
+                    {#if mode === 'mine' && lockOf(v)}<button class="sm" aria-disabled="true" data-tip={lockTip(v)}><I.Undo size={14} /> Undo</button>
+                    {:else if mode === 'mine'}<button class="sm" onclick={() => undoRule(v, r)}><I.Undo size={14} /> Undo</button>{/if}
                   </li>
                 {/each}
               </ul>
             {/if}
-            {#if open[it.id + ':w']}
+            {#if open[v.id + ':w']}
               <div class="words">
                 <div><span class="muted">before</span><WordTester design={current.design} size={40} /></div>
-                <div><span class="muted">after</span><WordTester design={designWith(it)} size={40} /></div>
+                <div><span class="muted">after</span><WordTester design={designWith(v)} size={40} /></div>
               </div>
             {/if}
-            {#if open[it.id]}
-              <pre class="diff">{#each diffLines(it) as l}<span class="op{l.op === '+' ? 'add' : l.op === '-' ? 'del' : l.op === '…' ? 'gap' : ''}">{l.op === '…' ? `  … ${l.text}` : `${l.op} ${l.text}`}
+            {#if open[v.id]}
+              <pre class="diff">{#each diffLines(v) as l}<span class="op{l.op === '+' ? 'add' : l.op === '-' ? 'del' : l.op === '…' ? 'gap' : ''}">{l.op === '…' ? `  … ${l.text}` : `${l.op} ${l.text}`}
 </span>{/each}</pre>
             {/if}
           {/if}
@@ -361,6 +392,7 @@
       <span>Keeping {keeping.length} of {items.length}</span>
       <span class="muted small">Decisions are saved on the request; nothing goes into the font yet. Kept changes go into the next release candidate.</span>
       <span class="spacer"></span>
+      <button onclick={tryIt} data-tip="Bring the changes you're keeping into your Builder as unsaved changes, and see them in Build & test. Undo takes them back out.">Try in Build & test</button>
       <button class="primary" onclick={() => ondecide?.(Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'])))}>Save decisions</button>
     </div>
   {:else if mode === 'mine' && phone.on && items.length}

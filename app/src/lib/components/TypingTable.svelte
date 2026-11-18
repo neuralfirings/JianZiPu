@@ -87,7 +87,7 @@
         {#each s.glyphs as g (g)}
           {@const partner = partnerOf[g]}
           <tr data-g={g} class:on={selected === g} class:bad={status(g) === 'err'} onfocusin={() => onselect(g)} onclick={() => onselect(g)}>
-            <td class="st {status(g)}" title={issueText(g)}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
+            <td class="st {status(g)}" data-tip={issueText(g) || undefined}>{#if status(g) === 'err'}<I.Problem size={14} />{:else if status(g) === 'warn'}<I.Warn size={14} />{/if}</td>
             <td class="gl"><button class="ga" onclick={() => onopen?.(g)} aria-label="Show {g} in the glyph panel" data-tip="Show it in the glyph panel"><Glyph name={g} size={26} /></button><span class="gnw"><button class="gn" data-tip="Show it in the glyph panel"
               onclick={() => onopen?.(g)}>{g}</button></span></td>
             {#each COLS as f}

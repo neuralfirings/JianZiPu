@@ -16,25 +16,40 @@ export function rowName(row: string): string {
   return zh ? `${zh} (row ${n})` : `row ${n}`;
 }
 
+/** A requested character with its pinyin: "不动 (bù dòng)". */
+function requested(e: Entry): string {
+  const d = e.details ?? {};
+  return d.pinyin ? `${d.zh} (${d.pinyin})` : d.zh ?? 'a character';
+}
+
+function subjectOf(e: Entry): string {
+  if (e.kind === 'contact') return `Message from ${e.name || e.email} (the font page's Contact me)`;   // a note to you
+  if (e.kind === 'request') return `Request: ${requested(e)}`;
+  if (e.kind === 'comment') return `Comment on ${e.details?.about || e.upcoming_id} (coming next)`;
+  return `Feedback on ${e.glossary_row ? rowName(e.glossary_row) : 'the font page'}`;
+}
+
 export function feedbackMail(c: FeedbackContext): Mail {
   const e = c.entry;
-  const about = e.glossary_row ? rowName(e.glossary_row) : 'the font page';
   const who = e.name && e.email ? `${e.name} (${e.email})` : e.name || e.email || 'Someone who left no name or email';
   const pics = c.pictures ? ` with ${c.pictures === 1 ? 'a picture' : `${c.pictures} pictures`}, attached` : '';
-  // Contact me: a note to you, not feedback on the glossary
-  const subject = e.kind === 'contact' ? `Message from ${e.name || e.email} (the font page's Contact me)` : `Feedback on ${about}`;
+  const subject = subjectOf(e);
+  const wrote = e.kind === 'request' ? `${who} asked for ${requested(e)}${pics}.`
+    : e.kind === 'comment' ? `${who} commented on the coming character ${e.details?.about ? `${e.details.about} (${e.upcoming_id})` : e.upcoming_id}${pics}.`
+    : `${who} wrote${pics}.`;
   return mail({
     brand: 'JianZiPu font page',
     subject,
     heading: e.kind === 'contact' ? `A message from ${e.name || e.email}` : subject,
     paras: [
-      `${who} wrote${pics}.`,
+      wrote,
+      ...(e.details?.seen ? [`Where they saw it: ${e.details.seen}.`] : []),
       ...(e.glossary_row ? [`The row: ${e.glossary_row}.`] : []),
       ...(e.link ? [`On the page: ${e.link}`] : []),
       e.email ? 'Reply to this email to answer them.' : 'They left no email, so there is no one to reply to.',
     ],
-    quote: [{ label: 'Their message', text: e.message }],
+    quote: [{ label: e.kind === 'request' ? 'What it means, or how it’s played' : 'Their message', text: e.message }],
     button: { label: 'Set its status', url: c.tableUrl },
-    footer: 'You get this email because you are an admin of the JianZiPu font. Every message is kept in Supabase, in the feedback table (kind: row, page or contact), with its status: new, read, ticket, wont_do or need_info.',
+    footer: 'You get this email because you are an admin of the JianZiPu font. Every message is kept in Supabase, in the feedback table (kind: row, page, contact, request or comment), with its status: new, read, ticket, wont_do or need_info.',
   });
 }

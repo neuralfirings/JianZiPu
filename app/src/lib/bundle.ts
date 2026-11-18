@@ -25,6 +25,9 @@ export type Manifest = {
   updated: string;
   note?: string;
   svgs: { added: string[]; changed: string[]; deleted: string[] };
+  /** A Change Request's new glyphs → the coming character (font page ghost row) each draws, as the
+   *  tester tagged them (lib/upcoming.ts); Review confirms them. */
+  upcoming?: Record<string, string>;
 };
 export type Bundle = {
   manifest: Manifest;

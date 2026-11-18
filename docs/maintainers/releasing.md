@@ -11,7 +11,10 @@ one looks like.
 
 ## The short version
 
-1. On Review, decide on the Change Requests (see [reviewing.md](reviewing.md)).
+1. On Review, decide on the Change Requests (see [reviewing.md](reviewing.md)):
+   try each one first with **Try in Build & test** (Test the design, then
+   Undo), and, if you like, put new glyphs on the font page as drafts for
+   comments with **Publish draft to glossary**.
 2. Release → **Start release** `3.300`.
 3. **Add kept changes**, check them in Layouts and Build & test, then **Save**.
 4. **Build candidate**. This tags `v3.300-rc.1` and GitHub publishes a pre-release.
@@ -19,6 +22,8 @@ one looks like.
    something needs fixing.
 6. Merge the pull request with **Create a merge commit**, not squash or rebase.
 7. Release → **Publish**. This tags `v3.300` and GitHub publishes the release.
+8. In Supabase, set the visitors' requests for characters this release added
+   to `done`, and write to the people who asked ([Coming characters](#coming-characters)).
 
 ## Before you start
 
@@ -40,6 +45,9 @@ one looks like.
   out.
 - Your copy must be clean, with no uncommitted changes. Commit or stash them
   first.
+- Supabase needs `supabase/009_upcoming.sql` run for the font page's coming
+  characters (the candidate and Publish steps move them on), and the `notify`
+  function with its webhook for the testers' emails ([setup.md](setup.md)).
 
 ## Step by step
 
@@ -64,16 +72,36 @@ Builder code goes to main on its own branch (see [Scope rules](#scope-rules)).
 ### 2. Bring in the kept changes
 
 **Add kept changes** applies every kept change from the requests that are In
-review, oldest request first, as unsaved changes. When two requests change the
-same thing, the screen opens the later one so you can pick which version wins.
+review, oldest request first, as unsaved changes. When a kept change clashes,
+because main or an earlier request changed the same thing since the tester's
+draft started, the screen opens that request with the change marked
+**Conflict**: before, the request's version and what the release branch has now,
+side by side. Pick which one wins (**Use <tester>'s** or **Keep yours**), then
+it carries on with the next request.
 
-Only kept changes come in. Skipped ones stay in the tester's draft.
+Only kept changes come in. Skipped ones are back in the tester's draft (they
+unlock as soon as you save your decisions).
+
+**Seeing a clash before this step.** You don't have to wait for Add kept changes
+to find one. In Review, with your Builder on main and nothing tried (Undo or
+Discard first), a request's page marks each such change **Changed in your
+Builder too**, and its **Conflicts** button lists them; for a word type, **Show
+JSON changes** shows how the two versions differ. **Try in Build & test** shows
+the request's version of them and names them in its message. Two requests that
+change the same word type clash with each other only here, once the first one
+is in; decide which should win before you start, and say so in your replies.
 
 ### 3. Check and adjust
 
-Look the result over in Layouts (the word strip) and in Build & test (build a
-font and type in it). Fix anything you like here: you are the last reviewer.
-Then **Save**, which writes `builder/inputs/`.
+Look the result over in Layouts (the word strip) and in Build & test. **Test
+the design** draws each word live, unsaved changes included; **Save & build**
+saves first, then builds a font to type in (on the release branch that's what
+you want). A warning under a word says, when you hover over or tap it, which
+glyph isn't drawn and why: usually a new glyph in no area (add it in Layouts ›
+Area Properties) or one the word type's spacing rules don't name. Glyphs ›
+Glossary shows the same for a row. Fix anything you like here: you are the last
+reviewer. Then **Save**, which writes `builder/inputs/` (and
+`site/glossary.json`).
 
 ### 4. Build the candidate
 
@@ -102,6 +130,14 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
    as "v3.300-rc.1: JianZiPu 3.300, release candidate 1".
 7. Tags `v3.300-rc.1`, and pushes the branch and the tag.
 8. Marks the requests as In a release candidate, which emails their authors.
+9. On the font page, the draft rows whose glyphs are all in the candidate
+   turn to **In release 3.300**, with **Download the test font** linking this
+   candidate's font (their rows in the `upcoming` table go to stage `test`, with
+   the candidate's tag in `version`). Only rows you published as drafts
+   (Review's **Publish draft to glossary**) move; a kept glyph you never
+   published has no row, and shows only once released. A character drawn with
+   two glyphs moves when both are in. A **Planned** row (a request taken on, not
+   drawn yet) has no glyphs and stays as it is.
 
 So every candidate is **two commits**: the design, then the built font. The
 font records the hash of the design commit it was built from, and that hash
@@ -162,7 +198,13 @@ Go back to the Release screen while still on `release/3.300`, and choose
 2. Tags main as `v3.300` and pushes the tag. The workflow then publishes the
    GitHub release as **latest**, with the font attached.
 3. Marks the requests Released, which emails their authors.
-4. Switches your copy back to `main` and pulls.
+4. Takes the release's coming characters off the font page's Coming next
+   (stage `released`): the glossary has their real rows now, with no badge, once
+   jianzipufont.com redeploys from main (a minute or so). The page also hides a
+   ghost by itself once its character is in that page's glossary, so the two
+   never show at once. Set the visitors' requests for them to `done` in Supabase
+   and write to the people who asked.
+5. Switches your copy back to `main` and pulls.
 
 After that:
 
@@ -274,8 +316,10 @@ and the spellings in `components.csv`, so its spellings are the font's:
   as one).
   A word can go in any section: among example words it shows typed on its own
   after a colon, as in a vertical section.
-- A Change Request carries the glossary a section at a time: Review keeps or
-  skips a section whole, rows in the draft's order.
+- A Change Request carries the glossary a row at a time: Review keeps or skips
+  each row added, taken out or edited on its own (a kept new row goes between
+  the same rows as in the draft), with its example shown under it; a
+  subtitle's title, description, example and order are one more change.
 - A glyph only a vertical word can hold (上, 退…) gets its colon from the font,
   so the page writes its spellings without one, but only once `site/JianZiPu.ttf`
   does that (the generator types one such spelling with it to see). A
@@ -299,6 +343,43 @@ and the spellings in `components.csv`, so its spellings are the font's:
 when a glyph with a spelling has no row, or when an example anywhere on the
 page (the lessons too) doesn't type what it shows. A new glyph in a release
 needs a Glossary section before the candidate's tests pass.
+
+## Coming characters
+
+The font page's glossary shows characters on their way into the font as faded
+"ghost" rows, each with a badge for its stage, so guqin experts can see what's
+coming and comment before a release. They live in Supabase, not in the
+repository: the `upcoming` table (one row each) and the public `upcoming`
+bucket (their drawings), from `supabase/009_upcoming.sql`. The page reads them
+through the feedback function's `GET`, which gives only what the page shows.
+
+| Stage | How it gets there | The font page shows |
+| --- | --- | --- |
+| a request | A visitor presses **Request a character** (中文, pinyin, meaning, where seen, photo, email). You get an email; it's a `feedback` row, kind `request`. | nothing |
+| **Planned** | You set the request's `status` to `wip` (Table Editor → `feedback`). A trigger adds its row to `upcoming`, filled from the request; you set `section` (the subtitle's id, `1e`) and `after` (the 中文 of the row above; empty for the end) and check the meaning. | a faded row, "not drawn yet", once `section` is set |
+| **Draft design** | A tester draws it and tags the glyph with it when sending the Change Request. In Review, **Publish draft to glossary** (any new glyph with a glossary row, tagged or not). | the example word as the font will set it, and its input lines |
+| **In release 3.300** | **Build candidate** moves every draft whose glyphs are all in it. | the same, with **Download the test font** |
+| released | **Publish** takes it off. | the real row, no badge |
+
+What you do by hand:
+
+- Take a request on (`wip`), and place its row (`section`, `after`).
+- Reply to people from your inbox: the request's email replies to them.
+- After a release, set those requests to `done`, and write to the people who
+  asked. Filtering `feedback` on `done` lists them with their emails.
+
+Comments on a ghost arrive by email and as `feedback` rows of kind `comment`,
+with the ghost's id in `upcoming_id`; they're never shown on the page.
+
+**Editing or removing a ghost.** Edit any column in Table Editor → `upcoming`;
+the page shows it within a minute. Deleting a row is safe: it leaves the page,
+and nothing else depends on it (a comment keeps its `upcoming_id`, pointing
+nowhere). Delete its drawing in Storage → `upcoming` too if you like. A request
+for it keeps its own status.
+
+**Duplicates.** Publishing a glyph again updates the row it's already in, from
+the same request or another. Rows made twice before that fix (Nov 18) can be
+deleted: keep the newer one.
 
 ## Doing it from the command line
 
@@ -393,8 +474,30 @@ or publish again.
 **The Builder still shows the old design after a step.** The screen reloads the
 design after each step. If it didn't, reload the page.
 
-**Authors got no email.** Check the `notify` Edge Function's logs in Supabase,
-and the webhook; see `supabase/functions/notify/README.md`.
+**Authors got no email.** Open
+`https://<project>.supabase.co/functions/v1/notify`: "Requested function was
+not found" means `notify` isn't deployed; `forbidden` means it is. Then check
+its logs (Edge Functions → `notify` → Logs), the webhook (Integrations →
+Database Webhooks, on `change_requests`), the secrets, and Resend's logs; see
+[setup.md](setup.md), "Change Request emails". An email goes only when a
+status changes, and none is sent for changes made before the webhook existed.
+
+**A ghost row doesn't show on the font page.** In order:
+
+- Its `section` is empty, or its `stage` is `released`.
+- The feedback function is older than 009's: opening
+  `https://<project>.supabase.co/functions/v1/feedback` should show
+  `{"ghosts":[…]}`. If it says "This form only takes messages…", redeploy it
+  (`deno bundle supabase/functions/feedback/index.ts -o feedback-index.ts`).
+- The page thinks the character is released: a ghost drawn in a Change Request
+  hides once any glossary row has its ASCII spelling, a Planned one once its
+  section has a row with its 中文.
+
+**A draft's example shows the word in pieces, or a glyph missing.** The new
+glyph fits no word type with the glyphs around it: it's in no area, or the
+design's spacing rules (Layouts › Spacing, `when_base` in `design.json`) don't
+name it. Build & test's warning under the word says which. It's fixed in the
+tester's draft, then sent again.
 
 ## Where things live
 
@@ -404,7 +507,8 @@ and the webhook; see `supabase/functions/notify/README.md`.
 | The version | `builder/VERSION` |
 | What each version changed | `CHANGELOG.md` |
 | The released font (built, committed by each candidate) | `site/JianZiPu.ttf`, plus `site/version.json` for the website |
-| The glossary on the font page | rows from `components.csv` (Glossary column), layout in `site/glossary.json`, written by `builder/jzpbuild/glossary.py` |
+| The glossary on the font page | `site/glossary.json` (sections and rows) with the spellings in `components.csv`, written by `builder/jzpbuild/glossary.py` |
+| Coming characters (the glossary's ghost rows) | Supabase `upcoming` table and bucket (`supabase/009_upcoming.sql`), listed by `supabase/functions/feedback/` (`GET`), written by `app/src/lib/upcoming.ts` |
 | Downloads of every version | [GitHub Releases](https://github.com/neuralfirings/JianZiPu/releases) |
 | The release steps | `builder/jzpbuild/release.py`, the screen `app/src/routes/release/` |
 | The tag workflow and the scope check | `.github/workflows/release.yml`, `.github/workflows/scope.yml` |

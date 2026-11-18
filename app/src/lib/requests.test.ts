@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { buildInputs, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, upgradeItems, type ChangeRequest } from './requests';
+import { buildInputs, tryWords, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, upgradeItems, type ChangeRequest } from './requests';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -38,7 +38,9 @@ describe('locks', () => {
   it('an open request holds all its changes; later on only the kept ones; withdrawn and declined none', () => {
     const ids = ['design:area:hui', 'spelling:md_7'];
     expect(Object.keys(lockedItems([req({ item_ids: ids })]))).toEqual(ids);
-    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids);
+    // decisions saved: a skipped change unlocks at once; kept ones (and any not decided) stay locked
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids.filter((i) => i !== 'design:area:hui'));
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: Object.fromEntries(ids.map((i, k) => [i, k ? 'skip' : 'keep'])) })]))).toEqual([ids[0]]);
     expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_candidate', decisions: { 'design:area:hui': 'keep', 'spelling:md_7': 'skip' } })]))).toEqual(['design:area:hui']);
     expect(lockedItems([req({ item_ids: ids, status: 'withdrawn' }), req({ id: 'r2', item_ids: ids, status: 'declined' })])).toEqual({});
   });
@@ -150,5 +152,17 @@ describe('in the font', () => {
     const items = draftItems(b, font);
     expect([...inTheFont(items, b, fontNow)].sort()).toEqual(['design:area:hui', 'design:member:hui:md_new', 'glyph:md_7', 'spelling:md_7']);
     expect(inTheFont(items, b, { design: design(), typing: { md_7: sp('7') }, svgs: font }).size).toBe(0);
+  });
+});
+
+describe('words to try a request with', () => {
+  it('each new glyph\'s spelling and its glossary example, once each', () => {
+    const b = makeBundle({
+      design: design(), typing: { md_7: sp('7'), yin3_md: { ...sp('yin3'), simplified: '引' } },
+      svgs: { ...font, yin3_md: SVG('M3 3h9v9z') }, baseDesign: design(), baseTyping: { md_7: sp('7') }, baseSvgs: font,
+      base: { commit: 'abc', design_hash: 'd0', csv_hash: 'c0' },
+      glossary: { '1e': [{ glyph: 'yin3_md', usage: ['<r>{}</r>7', '<r>{}</r>七'] }] }
+    });
+    expect(tryWords(b)).toEqual(['yin3', 'yin37']);
   });
 });

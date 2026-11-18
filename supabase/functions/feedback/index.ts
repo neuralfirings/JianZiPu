@@ -3,8 +3,9 @@
 // check.ts decides what's acceptable, this stores the pictures in the private `feedback` bucket and
 // the message in public.feedback (status 'new'), then emails FEEDBACK_TO (or the Builder's admins)
 // through Resend with the pictures attached. Setup and secrets: README.md in this folder.
-import { LIMITS, originAllowed, parse, senderHash } from './check.ts';
+import { LIMITS, older, originAllowed, parse, senderHash } from './check.ts';
 import { feedbackMail } from './mail.ts';
+import { GHOSTS_QUERY, ghostOf, type UpcomingRow } from './ghosts.ts';
 
 const env = (k: string, fallback = '') => Deno.env.get(k) ?? fallback;
 const SUPABASE_URL = env('SUPABASE_URL');
@@ -14,7 +15,7 @@ const service = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
 function cors(origin: string | null): Record<string, string> {
   const extra = env('FEEDBACK_ORIGINS').split(',').map((s) => s.trim()).filter(Boolean);
   return originAllowed(origin, extra)
-    ? { 'Access-Control-Allow-Origin': origin!, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin!, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 
@@ -41,6 +42,44 @@ async function recipients(): Promise<string[]> {
   return (await r.json() as { email: string | null }[]).map((p) => p.email).filter((e): e is string => !!e);
 }
 
+/** The coming characters the page shows (GET): public, so any page may read them; kept a minute. */
+let ghostCache: { at: number; body: string } | null = null;
+async function ghosts(): Promise<Response> {
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' };
+  if (ghostCache && Date.now() - ghostCache.at < 60_000) return new Response(ghostCache.body, { headers });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/upcoming?${GHOSTS_QUERY}`, { headers: service });
+  if (!r.ok) {
+    // a project without supabase/009 has no upcoming table: no ghosts, rather than an error on the page
+    console.error(`upcoming: HTTP ${r.status} ${await r.text()}`);
+    return new Response(JSON.stringify({ ghosts: [] }), { headers: { ...headers, 'Cache-Control': 'no-store' } });
+  }
+  const rows = await r.json() as UpcomingRow[];
+  const body = JSON.stringify({ ghosts: rows.map((x) => ghostOf(x, SUPABASE_URL)).filter(Boolean) });
+  ghostCache = { at: Date.now(), body };
+  return new Response(body, { headers });
+}
+
+/** Cloudflare Turnstile: whether the page's spam check passed. Off (always passes) until the
+ *  TURNSTILE_SECRET secret is set. With it, a check that was sent must pass; a message without one
+ *  still goes through until TURNSTILE_REQUIRED is set too, so a branch's preview with the widget can
+ *  be tried while the live page (without it) keeps working. Set TURNSTILE_REQUIRED once the page
+ *  with the site key is live. */
+async function human(token: string, address: string): Promise<boolean> {
+  const secret = env('TURNSTILE_SECRET');
+  if (!secret) return true;
+  if (!token) return !env('TURNSTILE_REQUIRED');
+  const form = new FormData();
+  form.append('secret', secret); form.append('response', token);
+  if (address !== 'unknown') form.append('remoteip', address);
+  try {
+    const r = await fetch(env('TURNSTILE_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'), { method: 'POST', body: form });
+    return !!(await r.json()).success;
+  } catch (e) {
+    console.error('turnstile:', e);
+    return false;
+  }
+}
+
 function base64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -49,9 +88,20 @@ function base64(bytes: Uint8Array): string {
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin'), headers = cors(origin);
+  if (req.method === 'GET') {
+    try { return await ghosts(); } catch (e) {
+      console.error(e);
+      return Response.json({ ghosts: [] }, { headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+    }
+  }
   if (req.method === 'OPTIONS') return new Response(null, { status: headers['Access-Control-Allow-Origin'] ? 204 : 403, headers });
   const answer = (body: unknown, status = 200) => Response.json(body, { status, headers });
-  if (!headers['Access-Control-Allow-Origin']) return answer({ error: 'This form only takes messages from the JianZiPu font page.' }, 403);
+  // a page that may not post is told so in words it can show (with no CORS header the browser hides
+  // the answer, and the page could only say it couldn't reach the form); nothing of it is kept
+  if (!headers['Access-Control-Allow-Origin']) {
+    return Response.json({ error: `This form only takes messages from the JianZiPu font page, not ${origin ?? 'this page'}.` },
+      { status: 403, headers: origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : { Vary: 'Origin' } });
+  }
   if (req.method !== 'POST') return answer({ error: 'Send the form with POST.' }, 405);
 
   let fd: FormData;
@@ -62,6 +112,9 @@ Deno.serve(async (req) => {
 
   try {
     const address = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+    if (!await human(String(fd.get('cf-turnstile-response') ?? ''), address)) {
+      return answer({ error: "The page's spam check didn't pass. Wait a few seconds and send again, or reload the page." }, 403);
+    }
     const sender = await senderHash(address, env('FEEDBACK_SALT'));
     if (await recent(sender) >= LIMITS.perHour) {
       return answer({ error: "You've sent several messages in the last hour. Try again later, or write to me through the contact page." }, 429);
@@ -73,16 +126,26 @@ Deno.serve(async (req) => {
       method: 'POST', headers: { ...service, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(row),
     });
-    let r = await insert({ id, ...p.entry, pictures: paths, sender });
-    if (!r.ok) {
-      const why = await r.text();
-      // a project where 007_feedback_kind.sql hasn't run yet has no kind column: keep the message all the same
-      if (!/kind/.test(why)) throw new Error(`feedback insert: HTTP ${r.status} ${why}`);
-      console.error('feedback: no kind column (run supabase/007_feedback_kind.sql); saved without it');
-      const { kind: _, ...rest } = p.entry;
-      r = await insert({ id, ...rest, pictures: paths, sender });
-      if (!r.ok) throw new Error(`feedback insert: HTTP ${r.status} ${await r.text()}`);
+    // a project behind on its migrations still keeps the message: without 008 a request or comment
+    // goes in as feedback on the page with its details written into the message (older()), and
+    // without 007 also without its kind. The 008 columns go only when they hold something, so plain
+    // feedback never needs 008.
+    const e = p.entry, plain = older(e);
+    const full = { ...plain, kind: e.kind, message: e.message,
+      ...(e.upcoming_id ? { upcoming_id: e.upcoming_id } : {}), ...(e.details ? { details: e.details } : {}) };
+    const { kind: _, ...kindless } = plain;
+    const tries = [full, plain, kindless].filter((t, i, all) => all.findIndex((u) => JSON.stringify(u) === JSON.stringify(t)) === i);
+    let r: Response | null = null, why = '';
+    for (const row of tries) {
+      r = await insert({ id, ...row, pictures: paths, sender });
+      if (r.ok) {
+        if (row !== full) console.error('feedback: saved in an older form; run supabase/007_feedback_kind.sql and 008_feedback_requests.sql');
+        break;
+      }
+      why = await r.text();
+      if (!/kind|upcoming_id|details/.test(why)) break;
     }
+    if (!r?.ok) throw new Error(`feedback insert: HTTP ${r?.status} ${why}`);
 
     // the message is kept; the email is a courtesy, so a failed send is logged, not the visitor's problem
     try {

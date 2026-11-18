@@ -16,6 +16,7 @@
   import { allRequests, keptIds, OPEN, saveDecisions, STATUS_LABEL, type ChangeRequest, type RequestStatus } from '$lib/requests';
   import ReviewView from '$lib/components/ReviewView.svelte';
   import RequestStatusPill from '$lib/components/RequestStatus.svelte';
+  import ComingDrafts from '$lib/components/ComingDrafts.svelte';
 
   let mine = $derived(page.url.searchParams.has('mine'));
   let err = $state<string | null>(null);
@@ -153,6 +154,7 @@
     <label class="replybox">Your reply <span class="muted">(they see it on Your Change Requests and in the email)</span>
       <textarea id="cr-reply" bind:value={reply} rows="3" maxlength="20000"></textarea>
     </label>
+    <ComingDrafts request={current} />
     <ReviewView bundle={current.bundle} mode="decide" name={current.title} decisions={current.decisions} ondecide={decide} />
   {:else if mine && myBundle}
     <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} send={page.url.searchParams.has('send')} />

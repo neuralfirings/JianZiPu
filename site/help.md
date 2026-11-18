@@ -192,7 +192,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 
 On a phone, the words come first and the box you type in sits under them, above the keyboard. The line at the top (**No build yet**, or when the last build was made) opens the build, font and view settings and the build log.
 
-A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type.
+A character the font doesn't have is drawn by another font in red, so it can't pass for part of the font. In Test the design, **warning** under a word means some of its parts matched no word type; hover over it, tap it or tab to it for which glyph and why.
 
 ## Saving and undo
 
@@ -220,20 +220,24 @@ Invited testers use the Builder online. You sign in with a link sent to your ema
 When some of your changes are ready for the real font, send them as a **Change Request** (a CR). The font's maintainer looks at each change, keeps or skips it, and replies.
 
 - On [Your changes](https://builder.jianzipufont.com/review?mine), choose **Send Change Request…**. Every change is ticked to start with; untick any you want to keep working on (**Select all** and **Clear all** above the list tick or untick them all at once). Each glyph you add to an area is a change of its own, apart from the area's box, so new glyphs in the same area can go in different requests; ticking a new glyph ticks its spellings and its place in an area with it. Give it a title (it becomes its line in the release notes), say what you changed and why (for the reviewer only, never published), and how you'd like to be credited in the release notes: your name the way it should read, such as *Mei Chen* or *Mei Chen (Taipei Qin Society)*, or nothing for no credit.
+- **Is this for a coming character?** When you add a glyph for a character on the font page's *Coming next* (a faded row marked Planned or Draft), pick it from the list under each new glyph; the Builder suggests one from the glyph's spelling, and shows the row as the page shows it. Choose **None of these** for anything else. The maintainer confirms it, and can then show your drawing on the font page for comments.
 - **Save as draft** keeps the request with your draft, ticks and notes included, so you can finish it later, on this computer or another. It shows on [Your Change Requests](https://builder.jianzipufont.com/requests) as **Draft · not sent**, with **Continue…** to pick it up again.
 - Before it goes, the Builder saves your draft, checks the chosen spellings don't clash, and builds a font with just those changes.
 - Once sent, those changes are **locked** in your draft: you can look at them and try words, but not edit or undo them. Everything else stays yours to change.
 - [Your Change Requests](https://builder.jianzipufont.com/requests) shows each one's status, the maintainer's reply, and what you sent. You get an email when the status changes.
 - Statuses: **Sent**, **In review**, **In a release candidate** (a test version of the next font), **Released**, **Declined**, **Withdrawn**. A request can be partly kept: "3 of 5 changes in v3.200".
-- **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft.
-- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released and closed** on Your Change Requests. **Bring 3.300 into my draft…** (with the new number) compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
+- **Withdraw…** takes a request back, until the maintainer keeps one of its changes. Withdrawn and declined requests unlock their changes in your draft, and so does every change the maintainer skips, as soon as they save their decisions: fix it and send it in a new request.
+- When your changes are released, they fold away on Your changes under **In the font now**, and the request moves to **Released** on Your Change Requests (a declined or withdrawn one goes to **Declined or withdrawn**). **Bring 3.300 into my draft…** (with the new number) compares your draft with the new release, and they drop out of Your changes. Released changes aren't locked: they're the font's now, and you can change them again like any other part.
 
 ## Reviewing Change Requests
 
 On your own computer, signed in as an admin, [Review](https://builder.jianzipufont.com/review) lists the Change Requests testers sent, newest first. An email with a link to each one arrives when it's sent.
 
 - Open a request to see its title, notes and how its author wants to be credited, then each change before and after: glyphs drawn over each other, spellings side by side, design changes with sample words and the JSON. **Keep** or **Skip** each one, or **Keep all**.
-- Write a reply if you like, then **Save decisions**. Nothing goes into the font yet: the request becomes **In review** (or **Declined** if you skipped everything) and its author gets an email. Kept changes go into the next [release candidate](https://jianzipufont.com/help/#release).
+- **On the glossary**, above the changes, lists the request's new glyphs that have a glossary row: the coming character each one draws (the tester's tag, or **A new row on the page**), the row on the font page now and how it will look. **Publish draft to glossary** puts the drawings on the font page as drafts experts can comment on (it uploads each one to Supabase and fills its row in the `upcoming` table); the page shows them within a minute. Each row shows the example Glyphs › Glossary shows for it (its own, else its section's default, else the row on its own), as the page's other rows do: what to type, then the whole word as the font will set it. A later redraw: **Update the draft on the glossary**. Comments come to you by email.
+- **Changed in your Builder too** on a change means your Builder has changed the same thing since the request was sent (on main, or by a request you tried): it shows before, the request's version and yours side by side (for a word type, **Show JSON changes** compares yours with the request's), and **Conflicts** lists them. Keep or Skip as usual; when the release adds kept changes, you pick which version wins.
+- **Try in Build & test**, beside Save decisions, brings the changes you're keeping into your Builder as unsaved changes (one undo step) and opens Build & test on the request's words: each new glyph's spelling and its glossary example. **Test the design** shows them without saving anything; **Save & build** would write them to your files. Undo takes them back out, then decide. A change your Builder already has is left alone; one your Builder has changed too (main, or another request you tried) comes in as the request has it, and the message says how many did.
+- Write a reply if you like, then **Save decisions**. Nothing goes into the font yet: the request becomes **In review** (or **Declined** if you skipped everything) and its author gets an email. The changes you skipped unlock in the tester's draft at once, so they can fix them and send them again; the kept ones stay locked until the release. Kept changes go into the next [release candidate](https://jianzipufont.com/help/#release).
 - **Current drafts** below the requests shows what each tester is working on now. Opening a draft or a **.zip** and choosing **Apply** brings changes in directly, as one undoable step of unsaved changes. A **Conflict** means you changed the same thing since the draft started: pick whose version to use.
 
 ## Making a release
@@ -243,8 +247,8 @@ On your own computer, [Release](https://builder.jianzipufont.com/release) (from 
 1. **Start a release candidate** with the next version number, such as 3.200. The Builder makes the branch `release/3.200` from main. A release branch holds only font files; Builder code goes to main on its own branch.
 2. **Add kept changes** brings in every kept change from the reviewed requests, oldest first, as unsaved changes. Where two requests change the same thing, you pick which one wins.
 3. Check the result in Layouts and Build & test, adjust, then Save.
-4. **Build candidate** runs the tests, builds the font, writes the version and the changelog entry (it starts with any code changes queued under *Unreleased* in `CHANGELOG.md`), and tags `v3.200-rc.1`. GitHub publishes it as a pre-release, and the requests' authors get an email. Open the pull request from there. If testers find a problem, fix it and build again (`rc.2`).
-5. Merge the pull request on GitHub with **Create a merge commit** (not squash or rebase, which would leave the candidate's tag off main), then **Publish**: main is tagged `v3.200`, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become **Released**.
+4. **Build candidate** runs the tests, builds the font, writes the version and the changelog entry (it starts with any code changes queued under *Unreleased* in `CHANGELOG.md`), and tags `v3.200-rc.1`. GitHub publishes it as a pre-release, and the requests' authors get an email. On the font page, the drafts whose glyphs are all in the candidate turn to **In release 3.200**, with a link to the test font. Open the pull request from there. If testers find a problem, fix it and build again (`rc.2`).
+5. Merge the pull request on GitHub with **Create a merge commit** (not squash or rebase, which would leave the candidate's tag off main), then **Publish**: main is tagged `v3.200`, GitHub publishes the release with the font attached, jianzipufont.com serves the new font, and the requests become **Released**. Its coming characters leave the font page's *Coming next*: they're ordinary rows now. In Supabase, set the visitors' requests for them to `done` and write to the people who asked.
 
 Version numbers have a three-digit minor part (3.100, 3.200, 3.201), because the font stores the version as a number. Raise the first number only when existing documents would look different or break.
 
@@ -284,7 +288,7 @@ The full process, with testing a candidate and what to do when a step fails, is 
 
 - **A character shows in red**: The font doesn't have it yet: a new glyph or spelling isn't in a build. **Build font** again. The live previews (Try it, Check the glossary, and Live preview in Build & test) don't need a Build for a new glyph or spelling: they draw a new glyph in from its drawing and copy a new Chinese character from the base font. There, red means a character not even the base font has.
 - **The live preview and the font differ**: The live preview includes unsaved changes; the font is only what was saved when it was built. Save and build.
-- **warning under a word**: Some parts of the word matched no word type, so the font won't place them. Check the spelling, or the word type's parts in Layouts.
+- **warning under a word**: Some parts of the word matched no word type, so the font won't place them; hover over the warning, or tap it, for which glyph and why. A new glyph in no area: add it to one in Layouts › Area Properties (Glyphs › Unassigned lists them). Otherwise check the spelling, or the word type's parts in Layouts.
 - **Save is waiting**: A spelling clashes with another glyph's or isn't valid. **Show them** lists the cells to fix.
 - **A new glyph never appears in words**: It needs an area (**Unassigned** in Glyphs) and at least one spelling.
 - **The build failed**: The first error is shown above the build log; the log has the rest. [Messages and errors](https://jianzipufont.com/help/#messages-build) lists the usual ones and their fixes.
@@ -396,6 +400,8 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Pick *n* conflicts first”**: Apply waits until every **Conflict** has a side picked.
 - **“This isn't a Builder design file (needs version 2, layouts[] and areas{}).”**: **Import…** takes a design.json exported by the Builder.
 - **“Couldn't reach the form service. Check your connection and try again.” / “Not sent: …”**: **Feedback** or **Ask for an invite** didn't go. Check your connection (an ad blocker can stop it too) and send again.
+- **“Supabase has no upcoming table yet: run supabase/009_upcoming.sql.”**: Review's **On the glossary** reads the font page's coming characters from Supabase, and that table isn't there yet. Run `supabase/009_upcoming.sql` in the SQL editor of the Supabase project, then open the request again.
+- **“Nothing to try: your Builder already has these changes.”**: **Try in Build & test** found nothing to bring in: every change you're keeping in this request is in your Builder already (it's in the font, or you tried the request before and haven't undone it). Undo the earlier try, or just test it in Build & test as it is.
 
 ### On a phone
 
