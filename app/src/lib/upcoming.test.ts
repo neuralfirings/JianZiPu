@@ -32,7 +32,10 @@ describe('coming characters', () => {
       base: { commit: null, design_hash: '', csv_hash: '' },
       glossary: { '1e': [{ glyph: 'md_xia', meaning: 'slide down' }, { glyph: 'budong_md', meaning: 'keep the hand still' }] } });
     const { rows, unplaced } = draftRows(b, { budong_md: 'u12' });
-    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下', example: null, marked: false }]);
+    expect(rows).toEqual([{ glyph: 'budong_md', ghost: 'u12', zh: '不动 · 不動', pinyin: 'bù dòng', ascii: 'budong', meaning: 'keep the hand still', section: '1e', after: '下', example: [':不动', ':budong'], marked: false }]);   // a vertical section: typed on its own
+    // a section with a default example: the row shows it, red where it has more than the row (as Glyphs › Glossary)
+    const lay = { groups: [], sections: { '1e': { title: '1.4', usage: ['0{}5', '散{}五'] as [string, string] } } };
+    expect(draftRows(b, {}, lay).rows[0]).toMatchObject({ example: ['散<r>不动</r>五', '0<r>budong</r>5'], marked: true });
     expect(unplaced).toEqual(['lone_md']);                                         // no glossary row: nowhere to show it
     expect(draftRows(b, {}).rows[0].ghost).toBe(null);                             // untagged: a new ghost
     expect(zhOf({ word: '泛起', glyphs: ['md_fan', 'md_qi'] }, typing)).toBe('泛起');

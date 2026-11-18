@@ -9,7 +9,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WordPiece } from './api';
 import type { Bundle, SvgMap } from './bundle';
-import { marksGlyph, rowExampleMarked, type GRow } from './glossary';
+import { marksGlyph, rowExampleMarked, rowTemplate, type GlossaryLayout, type GRow } from './glossary';
+import { verticalOnlyGlyphs } from './vertical';
 import { parseSvg } from './svg';
 import type { Item } from './merge';
 import type * as T from './typing';
@@ -93,8 +94,12 @@ export function zhOf(row: GRow, typing: T.Typing): string {
 /** A Change Request's new glyphs that have a row in its glossary, as drafts for the page, each with
  *  the ghost it's tagged with (`tags`: glyph → ghost id; none: a new ghost). New glyphs without a
  *  glossary row can't be placed on the page, so they're left out (`unplaced` lists them). */
-export function draftRows(b: Bundle, tags: Record<string, string | null | undefined>): { rows: DraftRow[]; unplaced: string[] } {
+export function draftRows(b: Bundle, tags: Record<string, string | null | undefined>, layout?: GlossaryLayout): { rows: DraftRow[]; unplaced: string[] } {
   const rows: DraftRow[] = [], unplaced: string[] = [];
+  // the example each row shows, picked as Glyphs › Glossary does: its own, else its section's default (the
+  // request's subtitles, else the font's), else the row on its own
+  const sections = { ...(layout?.sections ?? {}), ...(b.glossaryLayout?.sections ?? {}) };
+  const vo = verticalOnlyGlyphs(b.design);
   for (const glyph of b.manifest.svgs.added) {
     let found: { section: string; i: number; rows: GRow[] } | null = null;
     for (const [section, list] of Object.entries(b.glossary ?? {})) {
@@ -109,8 +114,8 @@ export function draftRows(b: Bundle, tags: Record<string, string | null | undefi
       zh: zhOf(row, b.typing), pinyin: sp?.pinyin || null, ascii: sp?.latin || null,
       meaning: row.meaning || null, section: found.section,
       after: before ? zhOf(before, b.typing).split(' · ')[0] : null,
-      example: rowExampleMarked(row, b.typing),
-      marked: !!row.usage && marksGlyph(row.usage)
+      example: rowExampleMarked(row, b.typing, sections[found.section]?.usage, vo),
+      marked: marksGlyph(rowTemplate(row, b.typing, sections[found.section]?.usage, vo))
     });
   }
   return { rows, unplaced };

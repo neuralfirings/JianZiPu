@@ -196,16 +196,29 @@ export function rowExample(r: GRow, t: T.Typing): [string, string] | null {
   const fill = (k: 0 | 1) => exampleText(r.usage![k], esc(sp.map((x) => x[k]).join('')));
   return [fill(1), fill(0)];
 }
-/** The same example as the font page writes it: [中文, ASCII] with <r>…</r> round what's red, the row's own
+/** The example a row shows, as [ASCII, 中文] templates, as Glyphs › Glossary picks it: the row's own, else its
+ *  section's default (a glyph's), else the row typed on its own (a vertical section, or a word). A line whose
+ *  glyph has no spelling in that language is empty. As templateOf() in GlossaryTable.svelte. */
+export function rowTemplate(r: GRow, t: T.Typing, sectionUsage?: [string, string] | null, verticalOnly: Set<string> = new Set()): [string, string] {
+  const own = r.usage && r.usage.some((x) => x.trim()) ? r.usage : null;
+  const tpl = own ?? (sectionUsage && !isWord(r) ? sectionUsage : verticalTemplate(t, r, verticalOnly));
+  const sp = isWord(r) ? ['', ''] : mainSpellings(t, r.glyph);
+  return [tpl[0].includes('{}') && !sp[0] ? '' : tpl[0], tpl[1].includes('{}') && !sp[1] ? '' : tpl[1]];
+}
+
+/** The example as the font page writes it: [中文, ASCII] with <r>…</r> round what's red, the row's own
  *  spelling only when the example has more in it than the row (marksGlyph), plus any marks the example
- *  itself makes red (the chord bar in d7,7<r>|</r>06). Other text plain, not HTML-escaped. */
-export function rowExampleMarked(r: GRow, t: T.Typing): [string, string] | null {
-  if (!r.usage || !r.usage.some((x) => x.trim())) return null;
-  const red = marksGlyph(r.usage), sp = glyphsOfRow(r).map((g) => mainSpellings(t, g));
+ *  itself makes red (the chord bar in d7,7<r>|</r>06). Other text plain, not HTML-escaped. The example is
+ *  rowTemplate()'s: the row's own, else its section's default, else the row on its own. */
+export function rowExampleMarked(r: GRow, t: T.Typing, sectionUsage?: [string, string] | null, verticalOnly: Set<string> = new Set()): [string, string] | null {
+  const tpl = rowTemplate(r, t, sectionUsage, verticalOnly);
+  if (!tpl.some((x) => x.trim())) return null;
+  const red = marksGlyph(tpl), sp = glyphsOfRow(r).map((g) => mainSpellings(t, g));
   const fill = (k: 0 | 1) => {
+    if (!tpl[k]) return '';
     const own = sp.map((x) => x[k]).join('');
-    const tpl = r.usage![k].replace(/<r>\{\}<\/r>/g, '{}');   // a spelling marked already is marked once
-    return unesc(tpl.split('{}').join(red ? `<r>${esc(own)}</r>` : esc(own))).replace(/<r><\/r>/g, '');
+    const line = tpl[k].replace(/<r>\{\}<\/r>/g, '{}');   // a spelling marked already is marked once
+    return unesc(line.split('{}').join(red ? `<r>${esc(own)}</r>` : esc(own))).replace(/<r><\/r>/g, '');
   };
   return [fill(1), fill(0)];
 }

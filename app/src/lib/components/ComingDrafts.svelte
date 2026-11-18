@@ -37,7 +37,7 @@
     tags = { ...placed, ...tags };
   }
 
-  let plan = $derived(draftRows(request.bundle, tags));
+  let plan = $derived(draftRows(request.bundle, tags, app.mainLayout));
   // a row with its own example: the whole word, laid out by the request's design and spellings, as the
   // drawing the page shows (glyph → SVG); drawn once per request
   let pictures = $state<Record<string, string>>({});
@@ -69,6 +69,8 @@
   let published = $derived(plan.rows.length > 0 && plan.rows.every((r) => rowOf(r.ghost)?.change_request_id === request.id));
 
   const plain = (t: string) => t.replace(/<\/?r>/g, '');
+  /** An example line's parts, red where the page will show red (<r>…</r>), as text. */
+  const marks = (t: string) => t.split(/(<r>[^<]*<\/r>)/).filter(Boolean).map((p) => ({ red: /^<r>/.test(p), text: plain(p) }));
   /** At Glyphs › Glossary's size for an example (GlossaryExample, 0.04 px per font unit), from its width in units. */
   const picWidth = (svg: string) => Math.max(16, Math.round(Number(/width="([\d.]+)"/.exec(svg)?.[1] ?? 400) * 0.04));
 
@@ -134,7 +136,7 @@
             <span class="zh">{r.zh}{#if r.pinyin}<small>{r.pinyin}</small>{/if}</span>
             <span class="mono">{r.ascii ?? ''}</span>
             {#if r.example && pictures[r.glyph]}
-              <span class="exin"><span class="zh">{plain(r.example[0])}</span><span class="mono">{plain(r.example[1])}</span></span>
+              <span class="exin"><span class="zh">{#each marks(r.example[0]) as m, k (k)}{#if m.red}<span class="red">{m.text}</span>{:else}{m.text}{/if}{/each}</span><span class="mono">{#each marks(r.example[1]) as m, k (k)}{#if m.red}<span class="red">{m.text}</span>{:else}{m.text}{/if}{/each}</span></span>
               <span class="pic" style="width: {picWidth(pictures[r.glyph])}px">{@html pictures[r.glyph]}</span>
             {:else}<SvgText text={request.bundle.svgs[r.glyph]} size={56} />{/if}
             <span><span class="tag">Draft design</span> {r.meaning ?? ''} <span class="muted small">· in {sectionName(r.section)}{r.after ? `, after ${r.after}` : ''}</span></span>
@@ -164,6 +166,7 @@
   .grow.none { display: block; }
   .grow.after:has(.exin) { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto auto minmax(0, 2fr); }
   .exin { display: flex; flex-direction: column; align-items: center; }
+  .exin .red { color: var(--accent); }
   .pic { display: block; }
   .pic :global(svg) { display: block; width: 100%; height: auto; }
   .grow.after { border-color: var(--border-strong); }

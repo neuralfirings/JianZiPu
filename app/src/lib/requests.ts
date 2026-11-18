@@ -8,7 +8,8 @@ import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
 import { applyMerge, designItems, diffBundle, glossaryItems, type Current, type Item } from './merge';
 import * as T from './typing';
-import { glyphsOfRow, rowExample } from './glossary';
+import { glyphsOfRow, rowExampleMarked } from './glossary';
+import { verticalOnlyGlyphs } from './vertical';
 
 export const TABLE = 'change_requests';
 
@@ -241,11 +242,12 @@ export function tryWords(b: Bundle): string[] {
   const out: string[] = [];
   const add = (w: string | null | undefined) => { const t = (w ?? '').trim(); if (t && !out.includes(t)) out.push(t); };
   const glyphs = [...b.manifest.svgs.added, ...b.manifest.svgs.changed, ...T.changedGlyphs(b.base.typing, b.typing)];
+  const vo = verticalOnlyGlyphs(b.design), secs = b.glossaryLayout?.sections ?? {};
   for (const g of [...new Set(glyphs)]) {
     const s = b.typing[g];
     add(s?.latin || s?.latin_alt || s?.common || s?.simplified);
-    for (const rows of Object.values(b.glossary ?? {}))
-      for (const r of rows) if (glyphsOfRow(r).includes(g)) add(rowExample(r, b.typing)?.[1]);
+    for (const [sid, rows] of Object.entries(b.glossary ?? {}))
+      for (const r of rows) if (glyphsOfRow(r).includes(g)) add(rowExampleMarked(r, b.typing, secs[sid]?.usage, vo)?.[1].replace(/<\/?r>/g, ''));
   }
   return out;
 }
