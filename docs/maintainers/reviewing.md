@@ -130,7 +130,8 @@ When a release is published, its requests become Released and their authors
 get an email. In the online Builder:
 
 - The released changes fold away on Your changes, under **In the font now**.
-- The requests move to **Released and closed** on Your Change Requests.
+- The requests move to **Released** on Your Change Requests (declined and
+  withdrawn ones are under **Declined or withdrawn**).
 - Testers see "JianZiPu 3.300 is out", with **Set reference font to 3.300
   (latest)…**. A tester's draft is compared with a reference font (a
   release), and this moves it to the new one: the released changes leave
