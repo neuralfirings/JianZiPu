@@ -15,7 +15,8 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, companions, diffBundle, glossarySection, glossaryWhat, itemName, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
-  import { canWithdraw, inTheFont, releasedItems, startSvgs } from '$lib/requests';
+  import { canWithdraw, inTheFont, releasedItems, startSvgs, tryWords } from '$lib/requests';
+  import { goto } from '$app/navigation';
   import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
   import * as T from '$lib/typing';
   import SendRequestDialog from './SendRequestDialog.svelte';
@@ -103,6 +104,22 @@
     const label = mode === 'owner' ? `From ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}` : `Import ${name}: ${m.applied.length} change${m.applied.length === 1 ? '' : 's'}`;
     app.applyChanges(label, m);
     onapplied?.({ count: m.applied.length, message: commitMessage(m.applied) });
+  }
+
+  /** decide: try the request before deciding. The changes ticked Keep come into the Builder as unsaved
+   *  changes (one undo step), compared with the Builder as it is now (so a change it already has, or
+   *  one that clashes with it, stays out), and Build & test opens on its words. Nothing is saved. */
+  function tryIt() {
+    if (!app.design) return;
+    const cur = { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout };
+    const ids = new Set(items.filter((i) => picks[i.id] !== false).map((i) => i.id));
+    const its = diffBundle(bundle, cur);
+    const clash = its.filter((i) => ids.has(i.id) && i.conflict);
+    const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id) && !i.conflict])), cur);
+    if (!m.applied.length) { pilot.say(clash.length ? `Nothing to try: the ${clash.length === 1 ? 'change clashes' : `${clash.length} changes clash`} with what your Builder has.` : 'Nothing to try: your Builder already has these changes.'); return; }
+    app.applyChanges(`Try: ${name}`, m);
+    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? ` (${clash.length} left out: ${clash.length === 1 ? 'it clashes' : 'they clash'} with your Builder)` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
+    void goto(`/test?view=words&words=${encodeURIComponent(tryWords(bundle).join(' '))}`);
   }
 
   /** Your changes: items a sent Change Request holds can't be undone (or sent again). */
@@ -361,6 +378,7 @@
       <span>Keeping {keeping.length} of {items.length}</span>
       <span class="muted small">Decisions are saved on the request; nothing goes into the font yet. Kept changes go into the next release candidate.</span>
       <span class="spacer"></span>
+      <button onclick={tryIt} data-tip="Bring the changes you're keeping into your Builder as unsaved changes, and see them in Build & test. Undo takes them back out.">Try in Build & test</button>
       <button class="primary" onclick={() => ondecide?.(Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'])))}>Save decisions</button>
     </div>
   {:else if mode === 'mine' && phone.on && items.length}

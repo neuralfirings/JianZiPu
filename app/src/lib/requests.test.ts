@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { buildInputs, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, upgradeItems, type ChangeRequest } from './requests';
+import { buildInputs, tryWords, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, upgradeItems, type ChangeRequest } from './requests';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -150,5 +150,17 @@ describe('in the font', () => {
     const items = draftItems(b, font);
     expect([...inTheFont(items, b, fontNow)].sort()).toEqual(['design:area:hui', 'design:member:hui:md_new', 'glyph:md_7', 'spelling:md_7']);
     expect(inTheFont(items, b, { design: design(), typing: { md_7: sp('7') }, svgs: font }).size).toBe(0);
+  });
+});
+
+describe('words to try a request with', () => {
+  it('each new glyph\'s spelling and its glossary example, once each', () => {
+    const b = makeBundle({
+      design: design(), typing: { md_7: sp('7'), yin3_md: { ...sp('yin3'), simplified: '引' } },
+      svgs: { ...font, yin3_md: SVG('M3 3h9v9z') }, baseDesign: design(), baseTyping: { md_7: sp('7') }, baseSvgs: font,
+      base: { commit: 'abc', design_hash: 'd0', csv_hash: 'c0' },
+      glossary: { '1e': [{ glyph: 'yin3_md', usage: ['<r>{}</r>7', '<r>{}</r>七'] }] }
+    });
+    expect(tryWords(b)).toEqual(['yin3', 'yin37']);
   });
 });

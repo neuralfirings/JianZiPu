@@ -76,7 +76,12 @@ Saving decisions doesn't change the font or your files. The kept changes wait
 for the next release candidate. Until then, you can open the request again and
 change your decisions.
 
-To try a change before deciding, keep it, then use the Release screen's **Add
+To try a request before deciding, press **Try in Build & test** at the bottom
+of its page: the changes ticked Keep come into your Builder as unsaved changes
+and Build & test opens on the request's words. Use **Test the design** (Save &
+build would write them to your files), then Undo, then decide.
+
+To try kept changes together, use the Release screen's **Add
 kept changes** on a release branch. Or open the tester's current draft (below)
 and **Apply** it, then look in Layouts and Build & test without saving.
 

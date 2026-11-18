@@ -8,6 +8,7 @@ import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
 import { applyMerge, designItems, diffBundle, glossaryItems, type Current, type Item } from './merge';
 import * as T from './typing';
+import { glyphsOfRow, rowExample } from './glossary';
 
 export const TABLE = 'change_requests';
 
@@ -232,4 +233,19 @@ export async function myCredit(c: SupabaseClient, uid: string): Promise<string> 
 export async function setCredit(c: SupabaseClient, credit: string) {
   const { error } = await c.rpc('set_my_credit', { p_credit: credit });
   if (error) throw new Error(error.message);
+}
+
+/** The words to try a request with in Build & test: each new or respelled glyph's spelling, and the
+ *  example words its glossary rows give (yin3, yin3shang9), in the request's order, once each. */
+export function tryWords(b: Bundle): string[] {
+  const out: string[] = [];
+  const add = (w: string | null | undefined) => { const t = (w ?? '').trim(); if (t && !out.includes(t)) out.push(t); };
+  const glyphs = [...b.manifest.svgs.added, ...b.manifest.svgs.changed, ...T.changedGlyphs(b.base.typing, b.typing)];
+  for (const g of [...new Set(glyphs)]) {
+    const s = b.typing[g];
+    add(s?.latin || s?.latin_alt || s?.common || s?.simplified);
+    for (const rows of Object.values(b.glossary ?? {}))
+      for (const r of rows) if (glyphsOfRow(r).includes(g)) add(rowExample(r, b.typing)?.[1]);
+  }
+  return out;
 }
