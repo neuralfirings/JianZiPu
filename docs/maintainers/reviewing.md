@@ -59,6 +59,12 @@ the tester's guide. In short:
      between the same rows as in the draft; a subtitle's title, description,
      example and row order are one more change, and a new or removed subtitle is
      one change with its rows.
+   A change your Builder has also changed since the request was sent (on main,
+   or by a request you tried) is marked **Changed in your Builder too**, with
+   before, the request's version and yours side by side (for a word type, **Show
+   JSON changes** compares yours with the request's); **Conflicts** lists them.
+   Keep or Skip it as usual: **Add kept changes** asks which version wins when
+   the release takes it.
 4. **Try it** (optional). **Try in Build & test**, beside Save decisions, brings
    the changes ticked Keep into your Builder as unsaved changes, one undo step,
    and opens Build & test on the request's words (each new glyph's spelling and
