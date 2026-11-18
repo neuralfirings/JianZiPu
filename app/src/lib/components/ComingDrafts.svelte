@@ -9,7 +9,7 @@
   import { pilot } from '$lib/pilot.svelte';
   import { app } from '$lib/state.svelte';
   import type { ChangeRequest } from '$lib/requests';
-  import { allUpcoming, draftRows, exampleSvg, fitToInk, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
+  import { allUpcoming, draftRows, exampleSvg, fitToInk, placedGhosts, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
   import { api } from '$lib/api';
   import * as T from '$lib/typing';
   import SvgText from './SvgText.svelte';
@@ -31,6 +31,10 @@
   async function load() {
     err = null;
     try { upcoming = await allUpcoming(hosted.client!); } catch (e) { err = (e as Error).message; upcoming = []; }
+    // a glyph already on the page (published before, from this request or another) goes back to its own
+    // row, not a new one: publishing again updates it
+    const placed = placedGhosts(upcoming ?? [], request.bundle.manifest.svgs.added, request.id);
+    tags = { ...placed, ...tags };
   }
 
   let plan = $derived(draftRows(request.bundle, tags));
@@ -43,7 +47,7 @@
     const key = request.id + rows.map((r) => r.glyph + (r.example ?? []).join('|')).join(',');
     if (!rows.length || key === drewFor) return;
     drewFor = key;
-    const words = rows.map((r) => r.example![1] || r.example![0]);
+    const words = rows.map((r) => plain(r.example![1] || r.example![0]));   // the red marks are for the page, not to type
     void api.words(b.design, words, { rows: T.toRecords(b.typing), svgs: b.svgs }).then((res) => {
       if (!res.ok) return;
       const svgs = { ...app.svgs, ...b.svgs }, out: Record<string, string> = {};

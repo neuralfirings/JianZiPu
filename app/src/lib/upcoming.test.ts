@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { draftRows, exampleSvg, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type UpcomingRow } from './upcoming';
+import { draftRows, exampleSvg, placedGhosts, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type UpcomingRow } from './upcoming';
 import * as T from './typing';
 import type { Item } from './merge';
 
@@ -67,5 +67,12 @@ describe('coming characters', () => {
     expect(svg).toContain('translate(0 -1050) scale(1)');                    // its drawing in its part's box, as a group (the ink can be measured)
     expect(svg).toContain('viewBox="-70 -1120 490 840"');                     // the word's box, padded a tenth
     expect(exampleSvg([], {}, [])).toBe(null);
+  });
+
+  it('a glyph published before goes back to its own row: this request\'s first, else the latest', () => {
+    const row = (id: string, glyphs: string[], cr: string | null, at: string, stage: UpcomingRow['stage'] = 'draft') => ({ id, glyphs, change_request_id: cr, updated_at: at, stage });
+    const rows = [row('u20', ['qc2s_md'], 'cr-1', '2026-11-17'), row('u22', ['qc2s_md'], 'cr-1', '2026-11-18'), row('u21', ['qc3s_md'], 'cr-0', '2026-11-18'),
+      row('u5', ['qc3s_md'], 'cr-1', '2026-11-01'), row('u9', ['old_md'], 'cr-1', '2026-11-18', 'released')];
+    expect(placedGhosts(rows, ['qc2s_md', 'qc3s_md', 'old_md', 'new_md'], 'cr-1')).toEqual({ qc2s_md: 'u22', qc3s_md: 'u5' });
   });
 });

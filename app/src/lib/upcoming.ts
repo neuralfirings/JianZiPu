@@ -116,6 +116,19 @@ export function draftRows(b: Bundle, tags: Record<string, string | null | undefi
   return { rows, unplaced };
 }
 
+/** The ghost each glyph is already drawn in (a row whose glyphs hold it, not released): this request's
+ *  row first, else the one changed last. A glyph on no row isn't listed. Publishing again then updates
+ *  that row instead of adding another. */
+export function placedGhosts(rows: Pick<UpcomingRow, 'id' | 'stage' | 'glyphs' | 'change_request_id' | 'updated_at'>[], glyphs: string[], requestId: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const g of glyphs) {
+    const hits = rows.filter((r) => r.stage !== 'released' && (r.glyphs ?? []).includes(g))
+      .sort((a, b) => Number(b.change_request_id === requestId) - Number(a.change_request_id === requestId) || b.updated_at.localeCompare(a.updated_at));
+    if (hits[0]) out[g] = hits[0].id;
+  }
+  return out;
+}
+
 /** Admin: every row of the table, oldest first. */
 export async function allUpcoming(c: SupabaseClient): Promise<UpcomingRow[]> {
   const { data, error } = await c.from(TABLE).select('*').order('created_at', { ascending: true });
