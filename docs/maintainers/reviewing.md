@@ -29,7 +29,8 @@ the tester's guide. In short:
   it (**Is this for a coming character?**, suggested from its spelling), so you
   can put its drawing on the page (step 6 below).
 - Sent changes are **locked** in their draft. They can see them but not edit or
-  undo them. Everything else in the draft stays editable.
+  undo them. Everything else in the draft stays editable, and a change you skip
+  unlocks as soon as you save your decisions.
 - Your Change Requests (`/requests`) shows each request's status, your reply,
   and what was sent. They can **Withdraw** a request until you keep one of its
   changes.
@@ -109,13 +110,12 @@ Saving decisions doesn't change the font or your files. The kept changes wait
 for the next release candidate. Until then, you can open the request again and
 change your decisions.
 
-**Sending a request back for changes** (a missing definition, say): write what's
-needed in the reply, **Skip all**, then **Save decisions**. The request becomes
-Declined, the tester gets your reply, and all its changes unlock in their draft
-so they can fix them and send a new request. There's no "needs changes" status:
-keeping some and skipping others leaves the request In review, and an In review
-request keeps all its changes locked in the tester's draft until a release
-candidate takes it.
+**Sending changes back** (a missing definition, say): write what's needed in the
+reply, **Skip** those changes, then **Save decisions**. Every skipped change
+unlocks in the tester's draft as soon as you save, so they can fix it and send
+it in a new request; the kept ones stay locked and go on to the release. Skip
+all and the request becomes Declined, everything unlocks, and the tester gets
+your reply either way. There's no "needs changes" status.
 
 **Withdraw**: a tester can withdraw a request until you keep one of its
 changes. Keeping one (and saving) takes Withdraw away; the database enforces it
@@ -138,9 +138,11 @@ without saving.
 | Released | Its kept changes are in `v<version>` | Publish |
 
 A request can be partly kept. The tester sees, for example, "3 of 5 changes in
-v3.300". Its skipped changes unlock in their draft once it goes into a release
-candidate (a declined or withdrawn request unlocks everything at once), so they
-can keep working on them.
+v3.300". Its skipped changes unlock in their draft as soon as you save your
+decisions (a declined or withdrawn request unlocks everything), so they can
+keep working on them; the kept ones stay locked until the release. If you open
+the request again and switch a skipped change to Keep, the request's own copy
+of it is what goes into the font, not the tester's later edits.
 
 These rules are enforced in the database (`supabase/004_change_requests.sql`),
 not just by the app:

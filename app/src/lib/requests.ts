@@ -1,8 +1,8 @@
 // Change Requests (supabase/004_change_requests.sql): a tester sends chosen changes from their
 // draft, with a title, notes and how they'd like to be credited; an admin keeps or skips each
 // change and replies; kept changes go into a release candidate, then a release. A sent change is
-// locked in the tester's draft until the request is withdrawn or declined (or, for a skipped
-// change, once the request moves on to a release candidate); a released change is the font's.
+// locked in the tester's draft until the request is withdrawn or declined; a change the admin skips
+// unlocks as soon as the decisions are saved; a released change is the font's.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
@@ -51,13 +51,16 @@ export function startingTicks(ids: string[], d: RequestDraft | null): Record<str
 }
 
 export type Lock = { id: string; title: string; sent: string };
-/** The draft items a tester's requests hold: every change of an open request, and the kept
- *  changes of one in a release candidate. Released, withdrawn and declined hold nothing: a
- *  released change is the font's now, and stays the tester's to change like any other part. */
+/** The draft items a tester's requests hold: every change of a request not decided on yet (Sent),
+ *  and the changes not skipped of one decided on (In review, In a release candidate): a skipped
+ *  change is the tester's again as soon as the decisions are saved, to fix and send anew. Released,
+ *  withdrawn and declined hold nothing: a released change is the font's now, and stays the tester's
+ *  to change like any other part. */
 export function lockedItems(reqs: ChangeRequest[]): Record<string, Lock> {
   const out: Record<string, Lock> = {};
   for (const r of [...reqs].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-    const ids = OPEN.includes(r.status) ? r.item_ids : r.status === 'in_candidate' ? keptIds(r) : [];
+    const ids = r.status === 'sent' ? r.item_ids
+      : r.status === 'in_review' || r.status === 'in_candidate' ? r.item_ids.filter((id) => r.decisions[id] !== 'skip') : [];
     for (const id of ids) out[id] ??= { id: r.id, title: r.title, sent: r.created_at };
   }
   return out;

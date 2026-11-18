@@ -38,7 +38,9 @@ describe('locks', () => {
   it('an open request holds all its changes; later on only the kept ones; withdrawn and declined none', () => {
     const ids = ['design:area:hui', 'spelling:md_7'];
     expect(Object.keys(lockedItems([req({ item_ids: ids })]))).toEqual(ids);
-    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids);
+    // decisions saved: a skipped change unlocks at once; kept ones (and any not decided) stay locked
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids.filter((i) => i !== 'design:area:hui'));
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: Object.fromEntries(ids.map((i, k) => [i, k ? 'skip' : 'keep'])) })]))).toEqual([ids[0]]);
     expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_candidate', decisions: { 'design:area:hui': 'keep', 'spelling:md_7': 'skip' } })]))).toEqual(['design:area:hui']);
     expect(lockedItems([req({ item_ids: ids, status: 'withdrawn' }), req({ id: 'r2', item_ids: ids, status: 'declined' })])).toEqual({});
   });
