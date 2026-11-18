@@ -72,10 +72,24 @@ Builder code goes to main on its own branch (see [Scope rules](#scope-rules)).
 ### 2. Bring in the kept changes
 
 **Add kept changes** applies every kept change from the requests that are In
-review, oldest request first, as unsaved changes. When two requests change the
-same thing, the screen opens the later one so you can pick which version wins.
+review, oldest request first, as unsaved changes. When a kept change clashes,
+because main or an earlier request changed the same thing since the tester's
+draft started, the screen opens that request with the change marked
+**Conflict**: before, the request's version and what the release branch has now,
+side by side. Pick which one wins (**Use <tester>'s** or **Keep yours**), then
+it carries on with the next request.
 
-Only kept changes come in. Skipped ones stay in the tester's draft.
+Only kept changes come in. Skipped ones are back in the tester's draft (they
+unlock as soon as you save your decisions).
+
+**Seeing a clash before this step.** You don't have to wait for Add kept changes
+to find one. In Review, with your Builder on main and nothing tried (Undo or
+Discard first), a request's page marks each such change **Changed in your
+Builder too**, and its **Conflicts** button lists them; for a word type, **Show
+JSON changes** shows how the two versions differ. **Try in Build & test** shows
+the request's version of them and names them in its message. Two requests that
+change the same word type clash with each other only here, once the first one
+is in; decide which should win before you start, and say so in your replies.
 
 ### 3. Check and adjust
 

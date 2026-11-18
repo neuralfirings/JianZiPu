@@ -64,7 +64,9 @@ the tester's guide. In short:
    before, the request's version and yours side by side (for a word type, **Show
    JSON changes** compares yours with the request's); **Conflicts** lists them.
    Keep or Skip it as usual: **Add kept changes** asks which version wins when
-   the release takes it.
+   the release takes it. "Your Builder" is your files plus any unsaved changes,
+   so undo tried requests first: while a request's own changes are in your
+   Builder, nothing in it shows as a clash.
 4. **Try it** (optional). **Try in Build & test**, beside Save decisions, brings
    the changes ticked Keep into your Builder as unsaved changes, one undo step,
    and opens Build & test on the request's words (each new glyph's spelling and
@@ -75,9 +77,11 @@ the tester's guide. In short:
    **Undo** (once per request) takes them back out; the header returns to
    **Saved**. A change your Builder already has is left alone; one your Builder has
    changed too (main since the request was sent, or another request you
-   tried) comes in as the request has it, so you see the request's version (the
-   message says how many). Undo before you **Save** anything else, or the tried changes are
-   saved with it.
+   tried) comes in as the request has it, so you see the request's version; the
+   message names them ("this one replaces what your Builder had …: Word type ·
+   chord"). To see how they differ, Undo, then use **Conflicts** on the request's
+   page (step 3). Undo before you **Save** anything else, or the tried changes
+   are saved with it.
 5. Choose **Keep** or **Skip** for each change, or **Keep all**. A new glyph
    goes together with its spellings and its place in an area. An area's box,
    advance and label are one change, and each glyph that joins or leaves the
