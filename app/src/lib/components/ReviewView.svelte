@@ -130,7 +130,7 @@
     const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id)])), cur);
     if (!m.applied.length) { pilot.say('Nothing to try: your Builder already has these changes.'); return; }
     app.applyChanges(`Try: ${name}`, m);
-    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length} ${clash.length === 1 ? 'replaces what your Builder had' : 'replace what your Builder had'} (changed there too, so the request's version is shown)` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
+    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length === 1 ? 'this one replaces' : 'these replace'} what your Builder had (changed there too, so the request's version is shown): ${clash.map((i) => itemName(i)).join(', ')}` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
     void goto(`/test?view=words&words=${encodeURIComponent(tryWords(bundle).join(' '))}`);
   }
 
