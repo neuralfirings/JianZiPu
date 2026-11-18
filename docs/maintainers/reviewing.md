@@ -67,9 +67,10 @@ the tester's guide. In short:
    writes the tried changes into the font files. To try several requests
    together, go back and press it on each; every request is its own undo step.
    **Undo** (once per request) takes them back out; the header returns to
-   **Saved**. A change your Builder already has, or one that clashes with a
-   change made since the request was sent, stays out (the message says how
-   many). Undo before you **Save** anything else, or the tried changes are
+   **Saved**. A change your Builder already has is left alone; one your Builder has
+   changed too (main since the request was sent, or another request you
+   tried) comes in as the request has it, so you see the request's version (the
+   message says how many). Undo before you **Save** anything else, or the tried changes are
    saved with it.
 5. Choose **Keep** or **Skip** for each change, or **Keep all**. A new glyph
    goes together with its spellings and its place in an area. An area's box,

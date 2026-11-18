@@ -107,18 +107,20 @@
   }
 
   /** decide: try the request before deciding. The changes ticked Keep come into the Builder as unsaved
-   *  changes (one undo step), compared with the Builder as it is now (so a change it already has, or
-   *  one that clashes with it, stays out), and Build & test opens on its words. Nothing is saved. */
+   *  changes (one undo step), compared with the Builder as it is now: a change it already has is left
+   *  alone, and one that clashes with it (main, or another request tried, changed the same thing) comes
+   *  in as the request has it, since that's what you want to see. Build & test opens on its words.
+   *  Nothing is saved; Undo puts the Builder back. */
   function tryIt() {
     if (!app.design) return;
     const cur = { design: app.design, typing: app.typing, svgs: app.svgs, glossary: app.glossary, glossaryLayout: app.glossaryLayout };
     const ids = new Set(items.filter((i) => picks[i.id] !== false).map((i) => i.id));
     const its = diffBundle(bundle, cur);
     const clash = its.filter((i) => ids.has(i.id) && i.conflict);
-    const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id) && !i.conflict])), cur);
-    if (!m.applied.length) { pilot.say(clash.length ? `Nothing to try: the ${clash.length === 1 ? 'change clashes' : `${clash.length} changes clash`} with what your Builder has.` : 'Nothing to try: your Builder already has these changes.'); return; }
+    const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id)])), cur);
+    if (!m.applied.length) { pilot.say('Nothing to try: your Builder already has these changes.'); return; }
     app.applyChanges(`Try: ${name}`, m);
-    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? ` (${clash.length} left out: ${clash.length === 1 ? 'it clashes' : 'they clash'} with your Builder)` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
+    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length} ${clash.length === 1 ? 'replaces what your Builder had' : 'replace what your Builder had'} (changed there too, so the request's version is shown)` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
     void goto(`/test?view=words&words=${encodeURIComponent(tryWords(bundle).join(' '))}`);
   }
 
