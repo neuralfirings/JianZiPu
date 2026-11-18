@@ -14,7 +14,7 @@ import { day, fontOf, pilot } from './pilot.svelte';
 import { lockedItems, myRequests, type ChangeRequest, type Lock, type RequestDraft } from './requests';
 import { isNetworkError } from './net';
 import { renameIn, renameProblem, type RenameImpact } from './rename';
-import { changedLayout, changedSections, cleanLayout, cleanRows, emptyLayout, renameInRows, sectionList, type GlossaryLayout, type GlossaryRows, type Section } from './glossary';
+import { changedLayout, changedSections, cleanLayout, cleanRows, emptyLayout, renameInRows, rowKey, sectionList, type GlossaryLayout, type GlossaryRows, type GRow, type Section } from './glossary';
 import * as T from './typing';
 import { verticalOnlyGlyphs } from './vertical';
 
@@ -133,7 +133,9 @@ class DesignState {
     if (kind === 'glyph') return `The glyph ${rest.join(':')}`;
     if (kind === 'spelling') return `The spellings of ${rest.join(':')}`;
     if (kind === 'glossary') return `The glossary section ${this.glossarySections.find((s) => s.id === rest.join(':'))?.title ?? rest.join(':')}`;
+    if (kind === 'glossary-row') return `The glossary row ${rest.slice(2).join(':')} in ${this.glossarySections.find((s) => s.id === rest[0])?.title ?? rest[0]}`;
     if (rest[0] === 'area') return `The area ${this.areaLabel(name)}`;
+    if (rest[0] === 'member') return `${rest.slice(2).join(':')} in the area ${this.areaLabel(rest[1])}`;
     if (rest[0] === 'layout') return `The word type ${this.design?.layouts.find((l) => l.name === name)?.label ?? name}`;
     return { center: 'The page center', glyph_weight: 'The stroke weight', test_sets: 'The sample word sets' }[rest[0]] ?? 'That';
   }
@@ -148,9 +150,24 @@ class DesignState {
     for (const id of Object.keys(this.locks)) {
       const [kind, ...rest] = id.split(':'), key = rest.join(':');
       if (kind === 'design' && next.design && !same(unitOf(this.design, key), unitOf(next.design, key))) return id;
+      // a new area went out whole, its members with it
+      if (kind === 'design' && next.design && key.startsWith('area:') && this.draftBase && !this.draftBase.design.areas[key.slice(5)]
+        && !same(this.design.areas[key.slice(5)], next.design.areas[key.slice(5)])) return id;
       if (kind === 'spelling' && next.typing && !same(T.get(this.typing, key), T.get(next.typing, key))) return id;
-      if (kind === 'glossary' && ((next.glossary && !same(this.glossary[key] ?? [], next.glossary[key] ?? []))
-        || (next.glossaryLayout && !same(this.glossaryLayout.sections[key], next.glossaryLayout.sections[key])))) return id;
+      if (kind === 'glossary') {
+        // a subtitle the draft added went out whole, its rows with it; one that was there went out as
+        // its settings and the order of its rows (each row it added or took out is an item of its own)
+        const whole = !!this.draftBase?.glossaryLayout && !this.draftBase.glossaryLayout.sections[key];
+        const order = (rs?: GRow[]) => (rs ?? []).map(rowKey);
+        const kept = (a: string[], b: string[]) => a.filter((k) => b.includes(k));
+        const rows = next.glossary && (whole ? !same(this.glossary[key] ?? [], next.glossary[key] ?? [])
+          : !same(kept(order(this.glossary[key]), order(next.glossary[key])), kept(order(next.glossary[key]), order(this.glossary[key]))));
+        if (rows || (next.glossaryLayout && !same(this.glossaryLayout.sections[key], next.glossaryLayout.sections[key]))) return id;
+      }
+      if (kind === 'glossary-row' && next.glossary) {
+        const [sec, ...r] = rest, row = r.join(':'), find = (rs?: GRow[]) => (rs ?? []).find((x) => rowKey(x) === row);
+        if (!same(find(this.glossary[sec]), find(next.glossary[sec]))) return id;
+      }
       if (kind === 'glossary-titles' && next.glossaryLayout && !same(this.glossaryLayout.groups, next.glossaryLayout.groups)) return id;
       if (kind === 'glyph' && ((next.svgWrites && key in next.svgWrites && next.svgWrites[key] !== this.svgs[key]) || next.svgDeletes?.includes(key))) return id;
     }

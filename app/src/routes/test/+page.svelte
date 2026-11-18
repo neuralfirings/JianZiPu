@@ -17,7 +17,7 @@
   import { SAMPLE_SETS } from '$lib/words';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
   import { segments } from '$lib/cmap';
-  import { parseView, pickBuild, buildFailure, type TestView } from '$lib/buildtest';
+  import { parseView, pickBuild, buildFailure, unplacedNote, type TestView } from '$lib/buildtest';
   import { unreleasedLines } from '$lib/release';
 
   let view = $state<TestView>(parseView(page.url.searchParams.get('view')));
@@ -276,26 +276,26 @@
           {/if}
           {#if mode !== 'live' && font}
             {#key font}
-              <div class="font" style="font-family: '{font.family}'; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
+              <div class="font" style="font-family: '{font.family}', var(--font-cjk), serif; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by a fallback font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
             {/key}
           {/if}
-          <div class="keys muted">{w.word}{#if w.pieces.some((p) => p.layout === null && p.glyphs.some((g) => !['space', 'numbersign', 'advance'].includes(g)))} <span class="badge-warn" title="Some glyphs matched no word type"><I.Warn size={14} /></span>{/if}</div>
+          <div class="keys muted">{w.word}{#if unplacedNote(w.pieces, app.design!.areas)}{@const why = unplacedNote(w.pieces, app.design!.areas)} <button type="button" class="badge-warn" data-tip={why} aria-label="Not drawn: {why}"><I.Warn size={14} /></button>{/if}</div>
           <div class="id">{w.glyphs.join(' ')}</div>
         </div>
       {/each}
     </div>
   {:else}
     <div class="sheets" class:two={compare}>
-      <div class="sheet" class:vertical style="font-family: {font ? `'${font.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-        {#if !font}<p class="muted hint">Build the font, pick a build or open a .ttf file to see the text in it.</p>{:else}{#each segments(text, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
+      <div class="sheet" class:vertical style="font-family: {font ? `'${font.family}', var(--font-cjk), serif` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
+        {#if !font}<p class="muted hint">Build the font, pick a build or open a .ttf file to see the text in it.</p>{:else}{#each segments(text, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by a fallback font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
       </div>
       {#if compare}
-        <div class="sheet" class:vertical style="font-family: {secondFont ? `'${secondFont.family}'` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
-          {#if !secondFont}<p class="muted hint">Pick a second font to compare.</p>{:else}{#each segments(text, secondFont.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by an installed font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
+        <div class="sheet" class:vertical style="font-family: {secondFont ? `'${secondFont.family}', var(--font-cjk), serif` : 'inherit'}; font-size: {size}px; font-feature-settings: {features}">
+          {#if !secondFont}<p class="muted hint">Pick a second font to compare.</p>{:else}{#each segments(text, secondFont.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by a fallback font">{s.text}</span>{:else}{s.text}{/if}{/each}{/if}
         </div>
       {/if}
     </div>
-    <p class="muted small note">Each font is loaded into this page under a name of its own, so an installed JianZiPu never stands in for it. A character the file doesn't have is drawn by an installed font <span class="miss">in red</span>, so it can't pass for part of the font.</p>
+    <p class="muted small note">Each font is loaded into this page under a name of its own, so an installed JianZiPu never stands in for it. A character the file doesn't have is drawn by a fallback font (TW-Kai, then LXGW WenKai TC, as on the font page) <span class="miss">in red</span>, so it can't pass for part of the font.</p>
   {/if}
 
   {#if phone.on}<div class="dock">{@render typeRow()}</div>{/if}
@@ -303,6 +303,8 @@
 </div>
 
 <style>
+  /* the warning beside a word: hover, tap or focus it for why a glyph isn't drawn */
+  button.badge-warn { height: auto; padding: 0; border: 0; background: none; vertical-align: -2px; cursor: help; }
   .page { display: flex; flex-direction: column; height: 100%; }
   .queued { align-items: flex-start; }
   .queued details { margin-top: var(--space-2); }

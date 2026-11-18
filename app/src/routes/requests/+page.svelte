@@ -13,15 +13,19 @@
   let err = $state<string | null>(null);
   let open = $state<Record<string, boolean>>({});
   let asking = $state<string | null>(null);
-  // released, declined and withdrawn requests fold away below the ones still moving
+  // released requests, then declined and withdrawn ones, fold away below the ones still moving
   let active = $derived(app.requests.filter((r) => !CLOSED.includes(r.status)));
   let closed = $derived(app.requests.filter((r) => CLOSED.includes(r.status)));
-  let closedOpen = $state(false);
+  let shelves = $derived([
+    { key: 'released', title: 'Released', list: closed.filter((r) => r.status === 'released') },
+    { key: 'ended', title: 'Declined or withdrawn', list: closed.filter((r) => r.status !== 'released') }
+  ].filter((s) => s.list.length));
+  let shelfOpen = $state<Record<string, boolean>>({});
 
   onMount(() => {
     if (hosted.isHosted) app.refreshRequests().catch((e) => (err = (e as Error).message));
     const id = location.hash.slice(1);
-    if (id) { open = { [id]: true }; closedOpen = true; }
+    if (id) { open = { [id]: true }; shelfOpen = { released: true, ended: true }; }
   });
 
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -89,15 +93,15 @@
     {/if}
     {#if !active.length && closed.length && !app.requestDraft}<p class="empty">Nothing open right now. On <a href="/review?mine">Your changes</a>, choose <strong>Send Change Request…</strong> when more changes are ready.</p>{/if}
     {#each active as r (r.id)}{@render request(r)}{/each}
-    {#if closed.length}
+    {#each shelves as s (s.key)}
       <section class="closed">
-        <h3><button class="link fold" aria-expanded={closedOpen} onclick={() => (closedOpen = !closedOpen)}>
-          {#if closedOpen}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if}
-          Released and closed <span class="muted">{closed.length}</span>
+        <h3><button class="link fold" aria-expanded={!!shelfOpen[s.key]} onclick={() => (shelfOpen = { ...shelfOpen, [s.key]: !shelfOpen[s.key] })}>
+          {#if shelfOpen[s.key]}<I.Unfolded size={14} />{:else}<I.Folded size={14} />{/if}
+          {s.title} <span class="muted">{s.list.length}</span>
         </button></h3>
-        {#if closedOpen}{#each closed as r (r.id)}{@render request(r)}{/each}{/if}
+        {#if shelfOpen[s.key]}{#each s.list as r (r.id)}{@render request(r)}{/each}{/if}
       </section>
-    {/if}
+    {/each}
   {/if}
 </div>
 

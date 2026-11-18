@@ -1,34 +1,68 @@
 // Three-way merge of a draft into the current font: base (what the draft started from),
 // theirs (the draft), current (the font as it is now). Each change is one reviewable item:
-// a glyph file, one glyph's spellings, one unit of design.json (an area, a word type, the
-// page center, the stroke weight, the sample sets), or one section of the glossary (its rows, whole). An item conflicts when the current font
+// a glyph file, one glyph's spellings, one unit of design.json (an area's settings, one glyph
+// joining or leaving an area, a word type, the page center, the stroke weight, the sample sets), one
+// row of the glossary added, taken out or edited, or a glossary subtitle's own settings and row order
+// (a new or removed subtitle: one item with its rows). A new or removed area is one item, whole. An item conflicts when the current font
 // also changed it since the base, differently. Pure functions; the Review screen and the
 // "font changed since you started" update both use them.
 import type { Area, Design, Layout, Relationship } from './api';
 import type { Bundle, SvgMap } from './bundle';
 import * as T from './typing';
-import { changedSections, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
+import { changedSections, rowKey, rowName, type GlossaryLayout, type GRow, type GlossaryRows, type Group, type SectionMeta } from './glossary';
 
 export type Status = 'added' | 'changed' | 'deleted';
 type Base = { id: string; status: Status; conflict: boolean };
 export type GlyphItem = Base & { kind: 'glyph'; key: string; base?: string; theirs?: string; current?: string };
 export type FieldChange = { field: T.SpellField; base: string; theirs: string; current: string; conflict: boolean };
 export type SpellingItem = Base & { kind: 'spelling'; key: string; fields: FieldChange[] };
-export type DesignUnit = { type: 'area' | 'layout' | 'center' | 'glyph_weight' | 'test_sets'; name?: string };
+/** `area`: an area's box, advance and label (and, for a new or removed area, its members too: the
+ *  item's value then has `glyphs`); `member`: one glyph in area `name` (value true, or undefined: not in it). */
+export type DesignUnit = { type: 'area' | 'member' | 'layout' | 'center' | 'glyph_weight' | 'test_sets'; name?: string; glyph?: string };
 export type DesignItem = Base & {
   kind: 'design'; key: string; unit: DesignUnit; label: string; summary: string[];
   base?: unknown; theirs?: unknown; current?: unknown;
 };
-/** One subtitle of the glossary (site/glossary.json): its rows in order and, from a draft that has
- *  them, its title, kind, example and description (`meta`, undefined: not there), kept or skipped whole. */
+/** One subtitle of the glossary (site/glossary.json): its title, example and description (`meta`,
+ *  from a draft that has them; undefined: not there) and the order of its rows. `whole`: a subtitle
+ *  the draft adds or removes, or one the font has since removed: its rows come and go with it. Else
+ *  its rows are items of their own (GlossaryRowItem), and this one is its settings (`meta` changed)
+ *  and/or the order of the rows both sides keep (`order`). `base`, `theirs`, `current`: its rows. */
 export type GlossaryItem = Base & { kind: 'glossary'; key: string; base: GRow[]; theirs: GRow[]; current: GRow[];
-  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta } };
+  meta?: { base?: SectionMeta; theirs?: SectionMeta; current?: SectionMeta }; whole: boolean; order: boolean };
+/** One row of a glossary subtitle, added, taken out or edited (its meaning or example). `key`:
+ *  `<subtitle>:<row>` (row: rowKey(), g:<glyph> or w:<word>). `theirsOrder`, `baseOrder`: the
+ *  subtitle's rows on each side, to put a row back between the same neighbours. */
+export type GlossaryRowItem = Base & { kind: 'glossary-row'; key: string; section: string; row: string; title: string;
+  base?: GRow; theirs?: GRow; current?: GRow; baseOrder: string[]; theirsOrder: string[] };
 /** The glossary's section titles: their names, short names, descriptions and which subtitles each holds, whole. */
 export type GlossaryTitlesItem = Base & { kind: 'glossary-titles'; key: 'titles'; base: Group[]; theirs: Group[]; current: Group[] };
-export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryTitlesItem;
+export type Item = GlyphItem | SpellingItem | DesignItem | GlossaryItem | GlossaryRowItem | GlossaryTitlesItem;
 export type Current = { design: Design; typing: T.Typing; svgs: SvgMap; glossary?: GlossaryRows; glossaryLayout?: GlossaryLayout };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** What a glossary item changes, in words: a row's name (ji2_md, 带起); a subtitle's title (a new or
+ *  removed one, or its title, example or description), or "the order of" it. */
+export function glossaryWhat(it: GlossaryItem | GlossaryRowItem): string {
+  if (it.kind === 'glossary-row') return rowName((it.theirs ?? it.base)!);
+  const title = it.meta?.theirs?.title || it.meta?.base?.title || it.key;
+  if (it.whole || !it.order) return title;
+  return it.meta && !same(it.meta.base, it.meta.theirs) ? `${title}, and its order` : `the order of ${title}`;
+}
+
+/** The subtitle a glossary item is in, as the page numbers it: its id and title (1b · Speed). */
+export const glossarySection = (it: GlossaryItem | GlossaryRowItem) => {
+  const title = it.kind === 'glossary-row' ? it.title : it.meta?.theirs?.title || it.meta?.base?.title;
+  const id = it.kind === 'glossary-row' ? it.section : it.key;
+  return title ? `${id} · ${title}` : id;
+};
+
+/** An item's name in a list of changes: Glyph · lg_gou, Spellings · lg_gou, Glossary · ji2_md… */
+export function itemName(i: Item): string {
+  return i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' || i.kind === 'glossary-row' ? `Glossary · ${glossaryWhat(i)}`
+    : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`;
+}
 const svgSame = (a?: string, b?: string) => (a == null || b == null ? a === b : a.replace(/\s+$/, '') === b.replace(/\s+$/, ''));
 const status = (base: unknown, theirs: unknown): Status => (base === undefined ? 'added' : theirs === undefined ? 'deleted' : 'changed');
 
@@ -39,29 +73,78 @@ export function diffBundle(b: Bundle, cur: Current): Item[] {
     ...(b.glossary || b.glossaryLayout ? glossaryItems(b, cur) : [])];
 }
 
-/** The subtitles whose rows or settings the draft changed, and its section titles when it changed
- *  them (a draft from before the glossary file has no rows to give, one from before titles no titles). */
-function glossaryItems(bundle: Bundle, cur: Current): Item[] {
-  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows, curRows = cur.glossary ?? {};
-  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay, curLay = cur.glossaryLayout;
+/** The draft's glossary changes: each row it adds, takes out or edits, in a subtitle both sides
+ *  have; each subtitle whose settings or row order it changed; a subtitle it adds or removes, whole;
+ *  and its section titles when it changed them (a draft from before the glossary file has no rows to
+ *  give, one from before titles no titles). */
+export function glossaryItems(bundle: Bundle, cur: Pick<Current, 'glossary' | 'glossaryLayout'>): Item[] {
+  const rows = bundle.glossary ?? cur.glossary ?? {}, baseRows = bundle.base.glossary ?? rows;
+  const lay = bundle.glossaryLayout, baseLay = bundle.base.glossaryLayout ?? lay;
+  // no glossary to compare with: compare with where the draft started (never "the font has none",
+  // which would make every subtitle new and hide its rows from the other comparisons)
+  const curRows = cur.glossary ?? baseRows, curLay = cur.glossary === undefined && cur.glossaryLayout === undefined ? baseLay : cur.glossaryLayout;
   const metaOf = (l: GlossaryLayout | undefined, k: string) => l?.sections[k];
   const differ = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
   const ids = new Set([...changedSections(baseRows, rows), ...(lay ? Object.keys({ ...baseLay!.sections, ...lay.sections }).filter((k) => differ(metaOf(baseLay, k), metaOf(lay, k))) : [])]);
+  const keys = (rs: GRow[]) => rs.map(rowKey);
+  const byKey = (rs: GRow[]) => new Map(rs.map((r) => [rowKey(r), r] as const));
+  /** `a`'s rows in their order, only those `b` has too */
+  const shared = (a: GRow[], b: GRow[]) => { const in_ = new Set(keys(b)); return keys(a).filter((k) => in_.has(k)); };
   const out: Item[] = [];
   for (const k of [...ids].sort()) {
     const b = baseRows[k] ?? [], t = rows[k] ?? [], c = curRows[k] ?? [];
     const meta = lay ? { base: metaOf(baseLay, k), theirs: metaOf(lay, k), current: metaOf(curLay, k) } : undefined;
-    if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
     const gone = meta ? !meta.theirs : !t.length, fresh = meta ? !meta.base : !b.length;
-    out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
-      base: b, theirs: t, current: c, ...(meta ? { meta } : {}),
-      conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+    const inFont = curLay ? !!curLay.sections[k] : k in curRows;
+    if (fresh || gone || !inFont) {
+      // a subtitle that comes or goes (here or in the font since): one item, its rows with it
+      if (!differ(t, c) && (!meta || !differ(meta.theirs, meta.current))) continue;
+      out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: fresh ? 'added' : gone ? 'deleted' : 'changed',
+        base: b, theirs: t, current: c, ...(meta ? { meta } : {}), whole: true, order: false,
+        conflict: differ(c, b) || (!!meta && curLay !== undefined && differ(meta.current, meta.base)) });
+      continue;
+    }
+    const title = meta?.theirs?.title || meta?.base?.title || '';
+    // each row the draft added, took out or edited, unless the font has it so already
+    const bm = byKey(b), tm = byKey(t), cm = byKey(c);
+    for (const r of [...keys(t), ...keys(b).filter((x) => !tm.has(x))]) {
+      const br = bm.get(r), tr = tm.get(r), cr = cm.get(r);
+      if (!differ(br, tr) || !differ(tr, cr)) continue;
+      out.push({ id: `glossary-row:${k}:${r}`, kind: 'glossary-row', key: `${k}:${r}`, section: k, row: r, title,
+        status: !br ? 'added' : !tr ? 'deleted' : 'changed', base: br, theirs: tr, current: cr,
+        baseOrder: keys(b), theirsOrder: keys(t), conflict: differ(cr, br) });
+    }
+    // the subtitle itself: its settings, and the order of the rows both sides keep
+    const metaChanged = !!meta && differ(meta.base, meta.theirs) && differ(meta.theirs, meta.current);
+    const order = differ(shared(b, t), shared(t, b)) && differ(shared(t, c), shared(c, t));
+    if (metaChanged || order) {
+      out.push({ id: `glossary:${k}`, kind: 'glossary', key: k, status: 'changed', base: b, theirs: t, current: c,
+        ...(meta ? { meta } : {}), whole: false, order,
+        conflict: (metaChanged && curLay !== undefined && differ(meta!.current, meta!.base)) || (order && differ(shared(c, b), shared(b, c))) });
+    }
   }
   if (lay && differ(baseLay!.groups, lay.groups) && differ(lay.groups, curLay?.groups)) {
     out.push({ id: 'glossary-titles', kind: 'glossary-titles', key: 'titles', status: 'changed',
       base: baseLay!.groups, theirs: lay.groups, current: curLay?.groups ?? [], conflict: !!curLay && differ(curLay.groups, baseLay!.groups) });
   }
   return out;
+}
+
+/** Put `row` into `rows` where it is in `order` (its subtitle's rows on the side it comes from):
+ *  after the nearest row before it that `rows` has, else before the nearest after it, else last. */
+function placeRow(rows: GRow[], row: GRow, order: string[]) {
+  const at = order.indexOf(rowKey(row)), here = keysOf(rows);
+  for (let i = at - 1; i >= 0; i--) { const j = here.indexOf(order[i]); if (j >= 0) { rows.splice(j + 1, 0, row); return; } }
+  for (let i = at + 1; i < order.length; i++) { const j = here.indexOf(order[i]); if (j >= 0) { rows.splice(j, 0, row); return; } }
+  rows.push(row);
+}
+const keysOf = (rs: GRow[]) => rs.map(rowKey);
+/** `rows` with the ones `to` has put in `to`'s order, each in a place one of them had (others stay put). */
+function reorder(rows: GRow[], to: GRow[]): GRow[] {
+  const pos = new Map(keysOf(to).map((k, i) => [k, i] as const));
+  const ranked = rows.filter((r) => pos.has(rowKey(r))).sort((a, b) => pos.get(rowKey(a))! - pos.get(rowKey(b))!);
+  let j = 0;
+  return rows.map((r) => (pos.has(rowKey(r)) ? ranked[j++] : r));
 }
 
 function glyphItems(b: Bundle, cur: Current): GlyphItem[] {
@@ -99,14 +182,56 @@ function units(d: Design): Map<string, { unit: DesignUnit; value: unknown }> {
   return m;
 }
 
-/** The value of one design unit ("area:left", "layout:standard", "center"…), undefined if absent. */
+/** An area without its members: what an area's own item holds. */
+export function areaSettings(a: Area | undefined): Omit<Area, 'glyphs'> | undefined {
+  if (!a) return undefined;
+  const { glyphs: _, ...rest } = a;
+  return rest;
+}
+/** The id of glyph `g` joining or leaving area `area`. */
+export const memberId = (area: string, g: string) => `design:member:${area}:${g}`;
+
+/** The value of one design unit, undefined if absent: "area:left" (its settings, without its
+ *  members), "member:left:md_x" (true when md_x is in it), "layout:standard", "center"… */
 export function unitOf(d: Design, key: string): unknown {
+  if (key.startsWith('member:')) {
+    const [, area, ...g] = key.split(':');
+    return d.areas[area]?.glyphs.includes(g.join(':')) ? true : undefined;
+  }
+  if (key.startsWith('area:')) return areaSettings(d.areas[key.slice(5)]);
   return units(d).get(key)?.value;
+}
+
+/** An area both sides have: its settings as one item, and each glyph that joins or leaves it as
+ *  one item of its own, so a Change Request can carry some new members and leave others. */
+function areaItems(name: string, b: Area, t: Area, c: Area | undefined): DesignItem[] {
+  const out: DesignItem[] = [];
+  const sb = areaSettings(b), st = areaSettings(t), sc = areaSettings(c);
+  if (!same(sb, st) && !same(st, sc)) {
+    const unit: DesignUnit = { type: 'area', name };
+    out.push({ id: `design:area:${name}`, kind: 'design', key: `area:${name}`, unit, label: unitLabel(unit, t),
+      summary: unitSummary(unit, { ...b, glyphs: [] }, { ...t, glyphs: [] }), status: 'changed', base: sb, theirs: st, current: sc, conflict: !same(sc, sb) });
+  }
+  const moved = [...t.glyphs.filter((g) => !b.glyphs.includes(g)), ...b.glyphs.filter((g) => !t.glyphs.includes(g))];
+  for (const g of moved) {
+    const inT = t.glyphs.includes(g), inC = !!c?.glyphs.includes(g);
+    if (inT === inC) continue;
+    const unit: DesignUnit = { type: 'member', name, glyph: g };
+    out.push({ id: memberId(name, g), kind: 'design', key: `member:${name}:${g}`, unit, label: unitLabel(unit, t),
+      summary: [inT ? 'adds it' : 'removes it'], status: inT ? 'added' : 'deleted',
+      base: inT ? undefined : true, theirs: inT ? true : undefined, current: inC || undefined, conflict: !c });
+  }
+  return out;
 }
 
 export function designItems(base: Design, theirs: Design, current: Design): DesignItem[] {
   const B = units(base), Th = units(theirs), C = units(current), out: DesignItem[] = [];
   for (const key of new Set([...B.keys(), ...Th.keys()])) {
+    const name = key.slice(5);
+    if (key.startsWith('area:') && base.areas[name] && theirs.areas[name]) {
+      out.push(...areaItems(name, base.areas[name], theirs.areas[name], current.areas[name]));
+      continue;
+    }
     const b = B.get(key)?.value, t = Th.get(key)?.value, c = C.get(key)?.value;
     if (same(b, t) || same(t, c)) continue;
     const unit = (Th.get(key) ?? B.get(key))!.unit;
@@ -120,6 +245,7 @@ export function designItems(base: Design, theirs: Design, current: Design): Desi
 
 export function unitLabel(u: DesignUnit, v?: Area | Layout): string {
   if (u.type === 'area') return `Area · ${(v as Area)?.label || u.name}`;
+  if (u.type === 'member') return `Area · ${(v as Area)?.label || u.name} · ${u.glyph}`;
   if (u.type === 'layout') return `Word type · ${(v as Layout)?.label ?? u.name}`;
   return { center: 'Page center', glyph_weight: 'Stroke weight', test_sets: 'Sample word sets' }[u.type];
 }
@@ -154,9 +280,22 @@ export function unitSummary(u: DesignUnit, b: unknown, t: unknown): string[] {
 const list = (gs: string[]) => (gs.length <= 4 ? gs.join(', ') : `${gs.slice(0, 3).join(', ')} and ${gs.length - 3} more`);
 const fmt = (v: unknown) => (v && typeof v === 'object' ? Object.values(v as object).join(', ') : String(v));
 
-/** The design summary the Import dialog shows (design.json only, no base). */
+/** The design summary the Import dialog shows (design.json only, no base): an area's new and
+ *  removed members on one line with its other changes. */
 export function designSummary(current: Design, file: Design): string[] {
-  return designItems(current, file, current).map((i) => `${i.label}: ${i.summary.join(', ')}`);
+  const out: string[] = [], areas = new Map<string, { label: string; parts: string[]; plus: string[]; minus: string[] }>();
+  for (const i of designItems(current, file, current)) {
+    if (i.unit.type !== 'area' && i.unit.type !== 'member') { out.push(`${i.label}: ${i.summary.join(', ')}`); continue; }
+    const name = i.unit.name!, a = areas.get(name) ?? { label: unitLabel({ type: 'area', name }, file.areas[name] ?? current.areas[name]), parts: [], plus: [], minus: [] };
+    areas.set(name, a);
+    if (i.unit.type === 'area') a.parts.push(...i.summary);
+    else (i.status === 'added' ? a.plus : a.minus).push(i.unit.glyph!);
+  }
+  for (const a of areas.values()) {
+    const parts = [...a.parts, ...(a.plus.length ? [`adds ${list(a.plus)}`] : []), ...(a.minus.length ? [`removes ${list(a.minus)}`] : [])];
+    out.push(`${a.label}: ${parts.join(', ')}`);
+  }
+  return out;
 }
 
 /** Bring the font's updates into a draft: the font's changes since the draft's base, as items to bring
@@ -195,25 +334,28 @@ export function updateSummary(items: Item[]): string {
   const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
   const fields = new Map<string, Set<string>>();
   let drawings = 0, sections = 0;
-  const design = new Map<string, number>();
+  const design = new Map<string, number>(), areas = new Set<string>();
   for (const it of items) {
     if (it.kind === 'glyph') drawings++;
-    else if (it.kind === 'glossary' || it.kind === 'glossary-titles') sections++;
+    else if (it.kind === 'glossary' || it.kind === 'glossary-row' || it.kind === 'glossary-titles') sections++;
     else if (it.kind === 'spelling') {
       for (const f of it.fields) {
         const noun = SPELLING_NOUN[f.field];
         if (!fields.has(noun)) fields.set(noun, new Set());
         fields.get(noun)!.add(it.key);
       }
+    } else if (it.unit.type === 'area' || it.unit.type === 'member') {
+      if (!areas.has(it.unit.name!)) design.set('area', (design.get('area') ?? 0) + 1);
+      areas.add(it.unit.name!);
     } else {
-      const w = it.unit.type === 'layout' ? 'word type' : it.unit.type === 'area' ? 'area' : 'design setting';
+      const w = it.unit.type === 'layout' ? 'word type' : 'design setting';
       design.set(w, (design.get(w) ?? 0) + 1);
     }
   }
   const parts: [number, string][] = [
     ...[...fields].map(([noun, gs]): [number, string] => [gs.size, `${noun} for ${n(gs.size, 'glyph')}`]),
     ...(drawings ? [[drawings, n(drawings, 'glyph drawing')] as [number, string]] : []),
-    ...(sections ? [[sections, n(sections, 'glossary section')] as [number, string]] : []),
+    ...(sections ? [[sections, n(sections, 'glossary change')] as [number, string]] : []),
     ...[...design].map(([w, k]): [number, string] => [k, n(k, w)])
   ].sort((a, b) => b[0] - a[0]);
   const words = parts.slice(0, 3).map((p) => p[1]);
@@ -235,15 +377,24 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
   const glossary: GlossaryRows = JSON.parse(JSON.stringify(cur.glossary ?? {}));
   const layout: GlossaryLayout = JSON.parse(JSON.stringify(cur.glossaryLayout ?? { groups: [], sections: {} }));
   const copy = <V>(v: V): V => JSON.parse(JSON.stringify(v));
+  const orders: GlossaryItem[] = [];      // a subtitle's row order goes last, after its rows came and went
   for (const it of items) {
     if (!keep[it.id]) continue;
     applied.push(it);
-    if (it.kind === 'glossary') {
+    if (it.kind === 'glossary' && it.whole) {
       glossary[it.key] = copy(it.theirs);
       if (it.meta) {
         if (it.meta.theirs) layout.sections[it.key] = copy(it.meta.theirs);
         else { delete layout.sections[it.key]; delete glossary[it.key]; }
       }
+    } else if (it.kind === 'glossary') {
+      if (it.meta?.theirs && JSON.stringify(it.meta.base) !== JSON.stringify(it.meta.theirs)) layout.sections[it.key] = copy(it.meta.theirs);
+      if (it.order) orders.push(it);
+    } else if (it.kind === 'glossary-row') {
+      const sec = (glossary[it.section] ??= []), at = keysOf(sec).indexOf(it.row);
+      if (!it.theirs) { if (at >= 0) sec.splice(at, 1); }
+      else if (at >= 0) sec[at] = copy(it.theirs);
+      else placeRow(sec, copy(it.theirs), it.theirsOrder);
     } else if (it.kind === 'glossary-titles') layout.groups = copy(it.theirs);
     else if (it.kind === 'glyph') {
       if (it.theirs == null) svgDeletes.push(it.key);
@@ -257,6 +408,7 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
   }
   // a section title can't hold a subtitle that isn't there (one whose own item was skipped)
   for (const g of layout.groups) g.sections = g.sections.filter((id) => id in layout.sections);
+  for (const it of orders) if (glossary[it.key]) glossary[it.key] = reorder(glossary[it.key], it.theirs);
   return { design, typing, svgWrites, svgDeletes, ...(cur.glossary !== undefined ? { glossary } : {}),
     ...(cur.glossaryLayout !== undefined ? { glossaryLayout: layout } : {}), applied };
 }
@@ -264,8 +416,20 @@ export function applyMerge(items: Item[], keep: Record<string, boolean>, cur: Cu
 function setUnit(d: Design, u: DesignUnit, v: unknown) {
   const val = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
   if (u.type === 'area') {
+    const a = d.areas[u.name!];
     if (val === undefined) delete d.areas[u.name!];
-    else d.areas[u.name!] = val as Area;
+    else if ('glyphs' in val) d.areas[u.name!] = val as Area;
+    else if (!a) d.areas[u.name!] = { ...val, glyphs: [] } as Area;
+    else {
+      // settings only: the area keeps its members (and its keys' order)
+      for (const k of Object.keys(a)) if (k !== 'glyphs' && !(k in val)) delete (a as Record<string, unknown>)[k];
+      Object.assign(a, val);
+    }
+  } else if (u.type === 'member') {
+    const a = d.areas[u.name!], g = u.glyph!;
+    if (!a) return;     // the area is gone: nothing to add the glyph to
+    if (val === undefined) a.glyphs = a.glyphs.filter((x) => x !== g);
+    else if (!a.glyphs.includes(g)) a.glyphs = [...a.glyphs, g];
   } else if (u.type === 'layout') {
     const i = d.layouts.findIndex((l) => l.name === u.name);
     if (val === undefined) { if (i >= 0) d.layouts.splice(i, 1); }
@@ -284,6 +448,17 @@ export function withChanges(b: Bundle, cur: Current): Merged {
   return applyMerge(items, Object.fromEntries(items.map((i) => [i.id, true])), cur);
 }
 
+/** What travels with a new glyph when it is kept, skipped or sent: its spellings and its place in
+ *  each area it joins. (One of those kept on its own takes the new glyph along: `glyphOf`.) */
+export function companions(items: Item[], g: string): string[] {
+  return items.filter((i) => i.id === `spelling:${g}` || (i.kind === 'design' && i.unit.type === 'member' && i.unit.glyph === g && i.status === 'added')).map((i) => i.id);
+}
+/** The new glyph a spelling or area-member item belongs to, if the items add one. */
+export function glyphOf(items: Item[], it: Item): string | null {
+  const g = it.kind === 'spelling' ? it.key : it.kind === 'design' && it.unit.type === 'member' && it.status === 'added' ? it.unit.glyph! : null;
+  return g && items.find((i) => i.id === `glyph:${g}`)?.status === 'added' ? g : null;
+}
+
 /** Default choices: keep everything that doesn't conflict; conflicts keep the current font. */
 export function defaultKeep(items: Item[]): Record<string, boolean> {
   return Object.fromEntries(items.map((i) => [i.id, !i.conflict]));
@@ -297,6 +472,7 @@ export function revertItems(items: Item[], cur: Current): Merged {
   const back = items.map((it): Item =>
     it.kind === 'spelling' ? { ...it, fields: it.fields.map((f) => ({ ...f, theirs: f.base })) }
       : it.kind === 'glossary' && it.meta ? { ...it, theirs: it.base, meta: { ...it.meta, theirs: it.meta.base } }
+      : it.kind === 'glossary-row' ? { ...it, theirs: it.base, theirsOrder: it.baseOrder }
       : { ...it, theirs: it.base } as Item);
   return applyMerge(back, Object.fromEntries(back.map((i) => [i.id, true])), cur);
 }

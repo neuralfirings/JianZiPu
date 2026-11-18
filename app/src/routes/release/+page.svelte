@@ -12,6 +12,7 @@
   import { commitMessage, forRelease, missing, nextVersion, releaseNotes } from '$lib/release';
   import { allRequests, keptIds, setStatus, snapshot, type ChangeRequest } from '$lib/requests';
   import { app } from '$lib/state.svelte';
+  import { toCandidate, toReleased } from '$lib/upcoming';
   import ReviewView from '$lib/components/ReviewView.svelte';
   import RequestStatusPill from '$lib/components/RequestStatus.svelte';
 
@@ -107,7 +108,13 @@
       await setStatus(hosted.client!, taking.filter((r) => r.status !== 'in_candidate').map((r) => r.id), 'in_candidate', rel);
       requests = null;
     } catch (e) { err = `Tagged ${res.tag}, but the requests weren't updated: ${(e as Error).message}`; }
-    pilot.say(`Built and tagged ${res.tag}. GitHub publishes it as a pre-release; open the pull request next.`);
+    // the font page's draft rows this candidate holds: In release, with its test font
+    let moved = '';
+    try {
+      const rows = await toCandidate(hosted.client!, new Set(Object.keys(app.svgs)), (res.tag ?? rel).replace(/^v/, ''));
+      if (rows.length) moved = ` On the font page, ${rows.map((r) => r.zh.split(' · ')[0]).join(', ')} ${rows.length === 1 ? 'is' : 'are'} In release ${rel} now.`;
+    } catch (e) { err = `Tagged ${res.tag}, but the font page's coming characters weren't moved on: ${(e as Error).message}`; }
+    pilot.say(`Built and tagged ${res.tag}. GitHub publishes it as a pre-release; open the pull request next.${moved}`);
   }
 
   async function publish() {
@@ -118,7 +125,13 @@
       await setStatus(hosted.client!, ids, 'released', res.version);
       requests = null;
     } catch (e) { err = `Released ${res.tag}, but the requests weren't updated: ${(e as Error).message}`; }
-    pilot.say(`Released ${res.tag}. GitHub publishes it with the font attached, and the site updates from main.`);
+    // its coming characters are ordinary rows now: off the font page's Coming next
+    let gone = '';
+    try {
+      const rows = await toReleased(hosted.client!, new Set(Object.keys(app.svgs)), res.version ?? rel);
+      if (rows.length) gone = ` ${rows.map((r) => r.zh.split(' · ')[0]).join(', ')} left Coming next: set their requests to done in Supabase and write to the people who asked.`;
+    } catch (e) { err = `Released ${res.tag}, but the font page's coming characters weren't moved on: ${(e as Error).message}`; }
+    pilot.say(`Released ${res.tag}. GitHub publishes it with the font attached, and the site updates from main.${gone}`);
   }
 </script>
 

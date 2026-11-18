@@ -1,13 +1,15 @@
 // Change Requests (supabase/004_change_requests.sql): a tester sends chosen changes from their
 // draft, with a title, notes and how they'd like to be credited; an admin keeps or skips each
 // change and replies; kept changes go into a release candidate, then a release. A sent change is
-// locked in the tester's draft until the request is withdrawn or declined (or, for a skipped
-// change, once the request moves on to a release candidate); a released change is the font's.
+// locked in the tester's draft until the request is withdrawn or declined; a change the admin skips
+// unlocks as soon as the decisions are saved; a released change is the font's.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BuildInputs } from './api';
 import { diffSvgs, fromStored, makeBundle, toJson, type Bundle, type SvgMap } from './bundle';
-import { applyMerge, diffBundle, type Current, type Item } from './merge';
+import { applyMerge, designItems, diffBundle, glossaryItems, type Current, type Item } from './merge';
 import * as T from './typing';
+import { glyphsOfRow, rowExampleMarked } from './glossary';
+import { verticalOnlyGlyphs } from './vertical';
 
 export const TABLE = 'change_requests';
 
@@ -49,13 +51,16 @@ export function startingTicks(ids: string[], d: RequestDraft | null): Record<str
 }
 
 export type Lock = { id: string; title: string; sent: string };
-/** The draft items a tester's requests hold: every change of an open request, and the kept
- *  changes of one in a release candidate. Released, withdrawn and declined hold nothing: a
- *  released change is the font's now, and stays the tester's to change like any other part. */
+/** The draft items a tester's requests hold: every change of a request not decided on yet (Sent),
+ *  and the changes not skipped of one decided on (In review, In a release candidate): a skipped
+ *  change is the tester's again as soon as the decisions are saved, to fix and send anew. Released,
+ *  withdrawn and declined hold nothing: a released change is the font's now, and stays the tester's
+ *  to change like any other part. */
 export function lockedItems(reqs: ChangeRequest[]): Record<string, Lock> {
   const out: Record<string, Lock> = {};
   for (const r of [...reqs].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-    const ids = OPEN.includes(r.status) ? r.item_ids : r.status === 'in_candidate' ? keptIds(r) : [];
+    const ids = r.status === 'sent' ? r.item_ids
+      : r.status === 'in_review' || r.status === 'in_candidate' ? r.item_ids.filter((id) => r.decisions[id] !== 'skip') : [];
     for (const id of ids) out[id] ??= { id: r.id, title: r.title, sent: r.created_at };
   }
   return out;
@@ -88,7 +93,10 @@ export function startSvgs(draft: Bundle, fontSvgs: SvgMap): SvgMap {
 
 /** The draft's changes, item by item, against what it started from (Your changes). */
 export function draftItems(draft: Bundle, fontSvgs: SvgMap): Item[] {
-  return diffBundle(draft, { design: draft.base.design, typing: draft.base.typing, svgs: startSvgs(draft, fontSvgs) });
+  // the glossary it started from too: a subtitle it has is then compared row by row, as Your changes shows it
+  return diffBundle(draft, { design: draft.base.design, typing: draft.base.typing, svgs: startSvgs(draft, fontSvgs),
+    ...(draft.glossary ? { glossary: draft.base.glossary ?? draft.glossary } : {}),
+    ...(draft.glossaryLayout ? { glossaryLayout: draft.base.glossaryLayout ?? draft.glossaryLayout } : {}) });
 }
 
 /** A bundle with only the chosen changes of a draft, on the same base: what a request carries. */
@@ -119,8 +127,54 @@ export function buildInputs(b: Bundle, fontSvgs: SvgMap): BuildInputs {
   return { design: b.design, rows: T.toRecords(b.typing), svgs: Object.fromEntries([...d.added, ...d.changed].map((n) => [n, svgs[n]])), deleted: d.deleted };
 }
 
+/** A request sent before an area's members were items of their own lists the area whole
+ *  ("design:area:char"). Read it as today's items: the area's settings when they changed, and each
+ *  glyph it added or removed, each with the decision the area had. A request sent since lists its
+ *  members itself, so one that lists none of an area's members while its bundle changes them is old. */
+export function upgradeItems<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  return upgradeGlossary(upgradeAreas(r));
+}
+
+/** A request sent before a glossary row was an item of its own listed a subtitle whole ("glossary:2b").
+ *  Read it as today's items: each row it added, took out or edited, and the subtitle's settings and
+ *  order when they changed, each with the decision the subtitle had. A request sent since lists the
+ *  rows itself, so one that lists none of a subtitle's rows while its bundle changes them is old. */
+export function upgradeGlossary<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  const secs = r.item_ids.filter((id) => id.startsWith('glossary:')).map((id) => id.slice(9));
+  if (!secs.length || !(r.bundle.glossary || r.bundle.glossaryLayout)) return r;
+  const items = glossaryItems(r.bundle, { glossary: r.bundle.base.glossary, glossaryLayout: r.bundle.base.glossaryLayout });
+  let ids = [...r.item_ids];
+  const decisions = { ...r.decisions };
+  for (const k of secs) {
+    const rows = items.filter((i) => i.kind === 'glossary-row' && i.section === k).map((i) => i.id);
+    if (!rows.length || rows.some((x) => ids.includes(x))) continue;
+    const old = `glossary:${k}`, own = items.some((i) => i.id === old), d = r.decisions[old];
+    ids = ids.flatMap((id) => (id === old ? [...(own ? [old] : []), ...rows] : [id]));
+    if (d) for (const x of rows) decisions[x] = d;
+    if (!own) delete decisions[old];
+  }
+  return { ...r, item_ids: ids, decisions };
+}
+
+function upgradeAreas<R extends Pick<ChangeRequest, 'bundle' | 'item_ids' | 'decisions'>>(r: R): R {
+  const areas = r.item_ids.filter((id) => id.startsWith('design:area:')).map((id) => id.slice(12));
+  if (!areas.length) return r;
+  const items = designItems(r.bundle.base.design, r.bundle.design, r.bundle.base.design);
+  let ids = [...r.item_ids];
+  const decisions = { ...r.decisions };
+  for (const a of areas) {
+    const members = items.filter((i) => i.unit.type === 'member' && i.unit.name === a).map((i) => i.id);
+    if (!members.length || members.some((m) => ids.includes(m))) continue;
+    const old = `design:area:${a}`, settings = items.some((i) => i.id === old), d = r.decisions[old];
+    ids = ids.flatMap((id) => (id === old ? [...(settings ? [old] : []), ...members] : [id]));
+    if (d) for (const m of members) decisions[m] = d;
+    if (!settings) delete decisions[old];
+  }
+  return { ...r, item_ids: ids, decisions };
+}
+
 type Row = Omit<ChangeRequest, 'bundle'> & { bundle: unknown };
-const fromRow = (r: Row): ChangeRequest => ({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
+const fromRow = (r: Row): ChangeRequest => upgradeItems({ ...r, decisions: (r.decisions ?? {}) as ChangeRequest['decisions'], bundle: fromStored(r.bundle) });
 
 export async function sendRequest(c: SupabaseClient, r: { title: string; notes: string; credit: string; bundle: Bundle; itemIds: string[] }): Promise<ChangeRequest> {
   const { data, error } = await c.from(TABLE).insert({
@@ -183,4 +237,20 @@ export async function myCredit(c: SupabaseClient, uid: string): Promise<string> 
 export async function setCredit(c: SupabaseClient, credit: string) {
   const { error } = await c.rpc('set_my_credit', { p_credit: credit });
   if (error) throw new Error(error.message);
+}
+
+/** The words to try a request with in Build & test: each new or respelled glyph's spelling, and the
+ *  example words its glossary rows give (yin3, yin3shang9), in the request's order, once each. */
+export function tryWords(b: Bundle): string[] {
+  const out: string[] = [];
+  const add = (w: string | null | undefined) => { const t = (w ?? '').trim(); if (t && !out.includes(t)) out.push(t); };
+  const glyphs = [...b.manifest.svgs.added, ...b.manifest.svgs.changed, ...T.changedGlyphs(b.base.typing, b.typing)];
+  const vo = verticalOnlyGlyphs(b.design), secs = b.glossaryLayout?.sections ?? {};
+  for (const g of [...new Set(glyphs)]) {
+    const s = b.typing[g];
+    add(s?.latin || s?.latin_alt || s?.common || s?.simplified);
+    for (const [sid, rows] of Object.entries(b.glossary ?? {}))
+      for (const r of rows) if (glyphsOfRow(r).includes(g)) add(rowExampleMarked(r, b.typing, secs[sid]?.usage, vo)?.[1].replace(/<\/?r>/g, ''));
+  }
+  return out;
 }

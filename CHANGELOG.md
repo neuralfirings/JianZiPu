@@ -17,6 +17,12 @@ same text becomes the GitHub release notes.
 - 十一, 十二 and 十三 typed in Chinese are always hui 11, 12 and 13 (they were 10.1, 10.2, 10.3): 10.2 is written `十徽二`, `十徽二分` or `十点二`. `十四` to `十九` are still 10.4 to 10.9.
 - 徽 before a 半 that starts a word ends the hui number, the way a comma does: `名九徽半轮六` is `名九，半轮六` (9 hui, then 半轮); `名九半轮六` is still 9.5, then 轮. Otherwise 徽 is still a decimal point (`名七徽六` is 7.6), 分 may close the decimal (`名十徽二分` is 10.2), and 徽 at the end just closes the number (`名十徽` is 10).
 
+## [3.301] - 2026-11-13
+
+### Fixed
+
+- On iPhone and in Safari, a vertical word (`shang34`, `:xia79`…) followed by a space no longer leaves an extra character's width of space after it. A colon typed straight after a word with no space (`s9k3:shang34`) now makes room for that word instead of drawing over it, and so does `#` after a vertical word. A vertical word with nothing after it now takes no width of its own, like every other word.
+
 ## [3.300] - 2026-11-13
 
 ### Added

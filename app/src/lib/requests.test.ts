@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { buildInputs, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, type ChangeRequest } from './requests';
+import { buildInputs, tryWords, canWithdraw, draftItems, inTheFont, lockedItems, releasedItems, snapshot, startingTicks, upgradeItems, type ChangeRequest } from './requests';
 import * as T from './typing';
 
 const design = (): Design => ({
@@ -38,7 +38,9 @@ describe('locks', () => {
   it('an open request holds all its changes; later on only the kept ones; withdrawn and declined none', () => {
     const ids = ['design:area:hui', 'spelling:md_7'];
     expect(Object.keys(lockedItems([req({ item_ids: ids })]))).toEqual(ids);
-    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids);
+    // decisions saved: a skipped change unlocks at once; kept ones (and any not decided) stay locked
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: { 'design:area:hui': 'skip' } })]))).toEqual(ids.filter((i) => i !== 'design:area:hui'));
+    expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_review', decisions: Object.fromEntries(ids.map((i, k) => [i, k ? 'skip' : 'keep'])) })]))).toEqual([ids[0]]);
     expect(Object.keys(lockedItems([req({ item_ids: ids, status: 'in_candidate', decisions: { 'design:area:hui': 'keep', 'spelling:md_7': 'skip' } })]))).toEqual(['design:area:hui']);
     expect(lockedItems([req({ item_ids: ids, status: 'withdrawn' }), req({ id: 'r2', item_ids: ids, status: 'declined' })])).toEqual({});
   });
@@ -71,10 +73,10 @@ describe('draft request', () => {
 describe('snapshot', () => {
   it('carries only the chosen changes, on the draft base', () => {
     const b = draft();
-    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glyph:md_7', 'glyph:md_new', 'spelling:md_7', 'spelling:md_new', 'design:area:left', 'design:area:hui']);
-    const { bundle, itemIds } = snapshot(b, font, ['design:area:hui', 'glyph:md_new', 'spelling:md_new']);
-    expect(itemIds).toEqual(['glyph:md_new', 'spelling:md_new', 'design:area:hui']);
-    expect(bundle.design.areas.hui.size).toEqual([380, 350]);
+    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glyph:md_7', 'glyph:md_new', 'spelling:md_7', 'spelling:md_new', 'design:area:left', 'design:area:hui', 'design:member:hui:md_new']);
+    const { bundle, itemIds } = snapshot(b, font, ['design:area:hui', 'glyph:md_new', 'spelling:md_new', 'design:member:hui:md_new']);
+    expect(itemIds).toEqual(['glyph:md_new', 'spelling:md_new', 'design:area:hui', 'design:member:hui:md_new']);
+    expect(bundle.design.areas.hui).toEqual({ label: '徽', size: [380, 350], glyphs: ['md_7', 'md_new'] });
     expect(bundle.design.areas.left.label).toBe('Left hand');   // not chosen
     expect(bundle.typing).toEqual({ md_7: sp('7'), md_new: sp('xin') });
     expect(bundle.manifest.svgs).toEqual({ added: ['md_new'], changed: [], deleted: [] });
@@ -95,18 +97,49 @@ describe('snapshot', () => {
         sections: { '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1.2. Hui' } } },
       baseGlossaryLayout: lay
     });
-    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glossary:1a', 'glossary:1b', 'glossary-titles']);
-    const { bundle, itemIds } = snapshot(b, font, ['glossary:1a', 'glossary-titles']);
-    expect(itemIds).toEqual(['glossary:1a', 'glossary-titles']);
+    // each row's new meaning, and each subtitle's new title, on their own
+    expect(draftItems(b, font).map((i) => i.id)).toEqual(['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-row:1b:g:md_7', 'glossary:1b', 'glossary-titles']);
+    const { bundle, itemIds } = snapshot(b, font, ['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-titles']);
+    expect(itemIds).toEqual(['glossary-row:1a:g:md_ming', 'glossary:1a', 'glossary-titles']);
     expect(bundle.glossary).toEqual({ '1a': [{ glyph: 'md_ming', meaning: 'ring finger' }], '1b': [{ glyph: 'md_7' }] });
     expect(bundle.glossaryLayout!.sections).toEqual({ '1a': { title: '1.1. Which Finger to Use' }, '1b': { title: '1b: Hui' } });
     expect(bundle.glossaryLayout!.groups[0].title).toBe('1. Left Hand');
     // what Review sees in the request: exactly the chosen items
     expect(draftItems(bundle, font).map((i) => i.id).sort()).toEqual([...itemIds].sort());
   });
+  it('carries some of an area\'s new members and leaves the others, and the area\'s box apart from them', () => {
+    const b = draft();
+    b.design.areas.hui.glyphs.push('md_two');
+    const { bundle, itemIds } = snapshot(b, font, ['design:member:hui:md_new']);
+    expect(itemIds).toEqual(['design:member:hui:md_new']);
+    expect(bundle.design.areas.hui).toEqual({ label: '徽', size: [350, 350], glyphs: ['md_7', 'md_new'] });
+    // once that one is sent, the draft's other changes to the area are still its own to send
+    const sent = req({ item_ids: itemIds, bundle });
+    const left = draftItems(b, font).map((i) => i.id).filter((id) => !lockedItems([sent])[id] && id.startsWith('design:'));
+    expect(left).toEqual(['design:area:left', 'design:area:hui', 'design:member:hui:md_two']);
+  });
   it('builds as the font plus those changes', () => {
     const { bundle } = snapshot(draft(), font, ['glyph:md_7']);
     expect(buildInputs(bundle, font)).toMatchObject({ svgs: { md_7: SVG('M1 1h20v20z') }, deleted: [] });
+  });
+});
+
+describe('requests sent before an area\'s members were items of their own', () => {
+  it('read the whole area as its members (and its settings when they changed), each with the area\'s decision', () => {
+    const b = draft();     // hui: a bigger box and md_new
+    const old = req({ item_ids: ['glyph:md_new', 'design:area:hui', 'design:area:left'], decisions: { 'design:area:hui': 'keep', 'design:area:left': 'skip' } });
+    const r = upgradeItems(old);
+    expect(r.item_ids).toEqual(['glyph:md_new', 'design:area:hui', 'design:member:hui:md_new', 'design:area:left']);
+    expect(r.decisions).toEqual({ 'design:area:hui': 'keep', 'design:member:hui:md_new': 'keep', 'design:area:left': 'skip' });
+    // an area that only gained members has no settings item any more
+    b.design.areas.hui.size = [350, 350];
+    const r2 = upgradeItems(req({ bundle: b, item_ids: ['design:area:hui'], decisions: { 'design:area:hui': 'keep' } }));
+    expect(r2.item_ids).toEqual(['design:member:hui:md_new']);
+    expect(r2.decisions).toEqual({ 'design:member:hui:md_new': 'keep' });
+    expect(Object.keys(lockedItems([r2]))).toEqual(['design:member:hui:md_new']);
+    // one sent since lists its members itself, and is left as it is
+    const now = req({ item_ids: ['design:area:hui'] });
+    expect(upgradeItems(req({ ...now, bundle: snapshot(draft(), font, ['design:area:hui']).bundle }))).toMatchObject({ item_ids: ['design:area:hui'] });
   });
 });
 
@@ -117,7 +150,19 @@ describe('in the font', () => {
     now.areas.hui = structuredClone(b.design.areas.hui);
     const fontNow = { design: now, typing: { md_7: sp('qi') }, svgs: { ...font, md_7: b.svgs.md_7 } };
     const items = draftItems(b, font);
-    expect([...inTheFont(items, b, fontNow)].sort()).toEqual(['design:area:hui', 'glyph:md_7', 'spelling:md_7']);
+    expect([...inTheFont(items, b, fontNow)].sort()).toEqual(['design:area:hui', 'design:member:hui:md_new', 'glyph:md_7', 'spelling:md_7']);
     expect(inTheFont(items, b, { design: design(), typing: { md_7: sp('7') }, svgs: font }).size).toBe(0);
+  });
+});
+
+describe('words to try a request with', () => {
+  it('each new glyph\'s spelling and its glossary example, once each', () => {
+    const b = makeBundle({
+      design: design(), typing: { md_7: sp('7'), yin3_md: { ...sp('yin3'), simplified: '引' } },
+      svgs: { ...font, yin3_md: SVG('M3 3h9v9z') }, baseDesign: design(), baseTyping: { md_7: sp('7') }, baseSvgs: font,
+      base: { commit: 'abc', design_hash: 'd0', csv_hash: 'c0' },
+      glossary: { '1e': [{ glyph: 'yin3_md', usage: ['<r>{}</r>7', '<r>{}</r>七'] }] }
+    });
+    expect(tryWords(b)).toEqual(['yin3', 'yin37']);
   });
 });

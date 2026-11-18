@@ -87,7 +87,7 @@ def test_usage_rows_fill_the_template_with_the_glyphs_spellings():
     r = rows("lg_gou,,,k,,勾,,gōu", "lg_li,,,U,,历,,lì")
     sec = {"2a": usage("2a", g("lg_gou"), {"glyph": "lg_li", "usage": ["0{}65", "散{}六五"]}, template=("0{}5", "散{}五"))}
     out = glossary.render(page("2a"), r, sec)
-    assert "<td>k</td>" in out and "<td>勾</td>" in out and "<td>gōu</td>" in out
+    assert '<td class="ascii">k</td>' in out and '<td class="zh">勾<' in out and '<span class="py">gōu</span>' in out
     assert "<jzp>0<r>k</r>5</jzp>" in out and "<txs>散<r>勾</r>五</txs>" in out
     assert "<txs>散<r>历</r>六五</txs>" in out
     assert out.startswith("<p>hand</p>")
@@ -98,9 +98,9 @@ def test_rows_show_every_spelling_and_an_id():
     r = rows("mod_fanyin,,,fanyin,fy,泛音,泛音,fànyīn", "mod_chuo,,/,,,绰,綽,chuò", "lg_banlun,,,banlun,bl,半轮,半輪,bàn lún")
     sec = {"1c": usage("1c", g("mod_fanyin"), g("mod_chuo"), template=("{}s9u6", "{}名九挑六")), "2c": vertical("2c", g("lg_banlun"))}
     out = glossary.render(page("1c", "2c"), r, sec)
-    assert "<td><span class=\"nw\">fanyin</span>, <span class=\"nw\">fy</span></td>" in out and "<td>泛音</td>" in out          # the same traditional isn't repeated
+    assert '<td class="ascii"><span class="nw">fanyin</span>, <span class="nw">fy</span></td>' in out and '<td class="zh">泛音<' in out          # the same traditional isn't repeated
     assert "<txs><r>fanyin</r>s9u6</txs>" in out and "<txs><r>fy</r>s9u6</txs>" in out
-    assert "<td><span class=\"nw\">绰</span>, <span class=\"nw\">綽</span></td>" in out and "<txs><r>綽</r>名九挑六</txs>" in out
+    assert '<td class="zh"><span class="nw">绰</span><span class="sep"> · </span><span class="nw">綽</span>' in out and "<txs><r>綽</r>名九挑六</txs>" in out
     assert "<span class=\"nw\">:bl</span>" in out and "<span class=\"nw\">:半輪</span>" in out
     # one count down the whole page: 1c has rows 1 and 2, so 2c starts at 3
     assert '<tr id="1">' in out and '<a href="#2">2</a>' in out and '<tr id="3">' in out and 'id="4"' not in out
@@ -111,7 +111,7 @@ def test_rows_show_every_spelling_and_an_id():
 def test_spellings_are_escaped():
     r = rows("mod_ji,,>,,,急,,jí")
     out = glossary.render(page("1b"), r, {"1b": usage("1b", g("mod_ji"), template=("s9{}k3", "名九{}勾三"))})
-    assert "<td>&gt;</td>" in out and "s9<r>&gt;</r>k3" in out
+    assert '<td class="ascii">&gt;</td>' in out and "s9<r>&gt;</r>k3" in out
 
 
 def test_vertical_rows_words_partners_and_numbers_in_the_files_order():
@@ -119,14 +119,14 @@ def test_vertical_rows_words_partners_and_numbers_in_the_files_order():
              "md_2,,2,,,二,,èr", "md_dai,,,dai,,带,,dài", "md_qi,,,qi,,起,,qǐ")
     sec = {"3c": vertical("3c", g("md_1"), g("md_2"), g("md_san"), w("带起", "md_dai", "md_qi"), g("md_qi"))}
     out = glossary.render(page("3c"), r, sec)
-    assert "<td>:1..:2</td>" in out and "<td>:一..:二</td>" in out
-    assert "<td><span class=\"nw\">:0</span>, <span class=\"nw\">:san</span></td>" in out and "<td>:散</td>" in out and "<td>sàn</td>" in out
-    assert "<td>:daiqi</td>" in out and "<jzp>:带起</jzp>" in out and "<td>dài qǐ</td>" in out
-    assert out.index(":1..:2") < out.index(":san") < out.index(":daiqi") < out.index("<td>:qi</td>")   # as listed
+    assert '<td class="ascii">:1..:2</td>' in out and '<td class="zh">:一..:二<' in out
+    assert '<td class="ascii"><span class="nw">:0</span>, <span class="nw">:san</span></td>' in out and '<td class="zh">:散<' in out and '<span class="py">sàn</span>' in out
+    assert '<td class="ascii">:daiqi</td>' in out and "<jzp>:带起</jzp>" in out and '<span class="py">dài qǐ</span>' in out
+    assert out.index(":1..:2") < out.index(":san") < out.index(":daiqi") < out.index('<td class="ascii">:qi</td>')   # as listed
     assert glossary.missing(r, sec) == []                        # md_san2 by its partner, md_dai in a word
     sec["3c"]["rows"] = [g("md_qi"), *sec["3c"]["rows"][:-1]]     # moved to the top: first on the page
     out = glossary.render(page("3c"), r, sec)
-    assert out.index("<td>:qi</td>") < out.index(":1..:2")
+    assert out.index('<td class="ascii">:qi</td>') < out.index(":1..:2")
 
 
 def test_missing_names_glyphs_with_no_row_and_rows_that_cant_be_shown():
@@ -144,7 +144,7 @@ def test_a_glyph_can_have_a_row_in_two_sections():
     sec = {"1d": usage("1d", g("md_san"), template=("{}k5", "{}勾五")), "3c": vertical("3c", g("md_san"))}
     assert glossary.missing(r, sec) == []
     out = glossary.render(page("1d", "3c"), r, sec)
-    assert "<td>0</td>" in out and "<td>:0</td>" in out
+    assert '<td class="ascii">0</td>' in out and '<td class="ascii">:0</td>' in out
 
 
 def test_the_files_must_agree():
@@ -171,7 +171,7 @@ def test_a_vertical_row_can_have_an_example_of_its_own():
                           {"glyph": "md_san", "usage": [":{}5", ":{}五"]})}
     out = glossary.render(page("3e"), r, sec)
     # a glyph or a word alike: red in an example with more in it than the row (:vxi7, :05), plain on its own
-    assert "<td><jzp>:<r>vxi</r>7</jzp></td>" in out and "<td><jzp>:<r>0</r>5</jzp></td>" in out and "<txs>:<r>大息</r>七</txs>" in out
+    assert '<div class="ex-out"><jzp>:<r>vxi</r>7</jzp></div>' in out and '<div class="ex-out"><jzp>:<r>0</r>5</jzp></div>' in out and "<txs>:<r>大息</r>七</txs>" in out
     alone = glossary.render(page("3e"), r, {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"], "usage": [":vxi", ":大息"]},
                                                             {"glyph": "md_san", "usage": ["{}", "{}"]})})
     assert "<r>" not in alone.split("<table")[1]
@@ -222,10 +222,10 @@ def test_a_meaning_column_joins_only_a_section_that_has_one():
            "2c": vertical("2c", g("lg_lun"))}
     out = glossary.render(page("2a", "2c"), r, sec)
     a, c = out.split("<!-- glossary 2c -->")
-    assert '<th width="19%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
+    assert '<th width="26%">Definition</th>' in a and '<td class="meaning">Pluck the string inward with the middle finger &lt;m&gt;</td>' in a
     assert '<td class="meaning"></td>' in a                                  # every row of the section gets the cell
-    assert a.index(">Input</th>") < a.index(">Output</th>") < a.index(">Definition</th>")   # Definition is last
-    assert "Definition" not in c and '<th width="17%">ASCII</th>' in c          # 2c has none: no Definition column
+    assert a.index(">ASCII</th>") < a.index(">Example</th>") < a.index(">Definition</th>")   # Definition is last
+    assert "Definition" not in c and '<th width="16%">ASCII</th>' in c          # 2c has none: no Definition column
     assert glossary.render(out, r, sec) == out
 
 
@@ -302,7 +302,7 @@ def test_the_check_shows_unsaved_rows_and_waits_for_a_build_for_a_new_glyph():
     out = glossary.check(glossary.records(shipped(md_foo=NEW, md_bar={"latin": "zz"})), svg=drawings(),
                          **laid_out([g("md_foo", "Push the string out")], [g("md_bar")]))
     t = next(t for t in out["tables"] if t["id"] == "9x")
-    assert "<td>mz</td>" in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
+    assert '<td class="ascii">mz</td>' in t["html"] and '<td class="meaning">Push the string out</td>' in t["html"]
     assert out["not_built"] == ["md_bar", "md_foo"] and out["typing"] == []   # not a false alarm: Build, then check
     assert out["problems"] == []
 
@@ -376,7 +376,7 @@ def test_http_check_locally_and_online(monkeypatch):
         assert any(p.startswith("md_foo") for p in res["problems"])
         status, res = post({"rows": shipped(md_foo=new), "layout": layout, "glossary": rows_}, "tok-a")
         assert status == 200 and res["ok"] and res["not_built"] == ["md_foo"]
-        assert any("<td>mz</td>" in t["html"] for t in res["tables"])
+        assert any('<td class="ascii">mz</td>' in t["html"] for t in res["tables"])
         assert font(res["font_url"]) and font("/api/glossary/font")
         # the draft's drawing of it comes with the request: drawn in, typed, and the tables' font has it
         status, res = post({"rows": shipped(md_foo=new), "layout": layout, "glossary": rows_, "svgs": {"md_foo": SQUARE}}, "tok-a")
@@ -414,7 +414,7 @@ def test_a_word_row_shows_its_meaning_and_its_glyphs_count_as_shown():
     r = rows("md_shao,,,shao,,少,,shǎo", "md_xi,,,xi,,息,,xī")
     sec = {"3e": vertical("3e", w("少息", "md_shao", "md_xi", meaning="a short rest"))}
     out = glossary.render(page("3e"), r, sec)
-    assert "<td>:shaoxi</td>" in out and '<td class="meaning">a short rest</td>' in out
+    assert '<td class="ascii">:shaoxi</td>' in out and '<td class="meaning">a short rest</td>' in out
     assert glossary.missing(r, sec) == []                             # 少 and 息 are shown in the word
 
 
@@ -430,16 +430,16 @@ def test_write_and_the_command_leave_out_the_colon_the_pages_font_adds(tmp_path,
     asked = []
     monkeypatch.setattr(glossary, "site_vertical_only", lambda font=None, rows=None: asked.append(font) or frozenset({"md_shao"}))
     index.write_text(page("3e"), encoding="utf-8")
-    assert glossary.write(index, csv_, secs) and "<td>shaoxi</td>" in index.read_text(encoding="utf-8")
+    assert glossary.write(index, csv_, secs) and '<td class="ascii">shaoxi</td>' in index.read_text(encoding="utf-8")
     assert asked == [tmp_path / "JianZiPu.ttf"]                     # the font beside the page
     monkeypatch.setattr(config, "SITE_INDEX", index)
     monkeypatch.setattr(config, "COMPONENTS_CSV", csv_)
     monkeypatch.setattr(config, "GLOSSARY_SECTIONS", secs)
     index.write_text(page("3e"), encoding="utf-8")
     assert glossary.main(["--check"]) == 1 and glossary.main([]) == 0
-    assert "<td>shaoxi</td>" in index.read_text(encoding="utf-8") and glossary.main(["--check"]) == 0
+    assert '<td class="ascii">shaoxi</td>' in index.read_text(encoding="utf-8") and glossary.main(["--check"]) == 0
     monkeypatch.setattr(glossary, "site_vertical_only", lambda font=None, rows=None: frozenset())   # an older font
-    assert glossary.write(index, csv_, secs) and "<td>:shaoxi</td>" in index.read_text(encoding="utf-8")
+    assert glossary.write(index, csv_, secs) and '<td class="ascii">:shaoxi</td>' in index.read_text(encoding="utf-8")
 
 
 def test_the_shipped_glossary_has_its_words():
@@ -568,29 +568,29 @@ def test_a_glyph_the_font_sets_vertically_by_itself_needs_no_colon():
     r = rows("md_shang,,,shang,,上,,shàng", "md_san,md_san2,0,,,散,,sàn", "md_san2,,,san,,,,", "md_dai,,,dai,,带,,dài", "md_qi,,,qi,,起,,qǐ")
     sec = {"3c": vertical("3c", g("md_shang"), g("md_san"), w("带起", "md_dai", "md_qi"))}
     off = glossary.render(page("3c"), r, sec)
-    assert "<td>:shang</td>" in off and "<td>:daiqi</td>" in off                    # an older font: every colon kept
+    assert '<td class="ascii">:shang</td>' in off and '<td class="ascii">:daiqi</td>' in off                    # an older font: every colon kept
     on = glossary.render(page("3c"), r, sec, vertical_only=frozenset({"md_shang", "md_san2", "md_qi"}))
-    assert "<td>shang</td>" in on and "<td>上</td>" in on and "<jzp>上</jzp>" in on
+    assert '<td class="ascii">shang</td>' in on and '<td class="zh">上<' in on and "<jzp>上</jzp>" in on
     assert '<span class="nw">:0</span>, <span class="nw">san</span>' in on            # 0 still needs its colon; san doesn't
-    assert "<td>daiqi</td>" in on                                                   # a word holding one: no colon either
+    assert '<td class="ascii">daiqi</td>' in on                                                   # a word holding one: no colon either
 
 
 def test_input_and_output_columns_in_both_kinds_of_section():
     r = rows("lg_gou,,,k,,勾,,gōu", "md_da,,,v,,大,,dà", "md_xi,,,xi,,息,,xī")
     a = glossary.render(page("2a"), r, {"2a": usage("2a", g("lg_gou"), template=("0{}5", "散{}五"))})
-    assert "<th width=\"22%\">Input</th>" in a and "<th width=\"21%\">Output</th>" in a and "Usage</th>" not in a
-    # the drawing on its own in Output; what to type for it in Input, Chinese then ASCII
-    assert "<td><jzp>0<r>k</r>5</jzp></td>" in a and "<txs>散<r>勾</r>五</txs>" in a
+    assert '<th width="56%">Example</th>' in a and "Input</th>" not in a and "Usage</th>" not in a
+    # the slip: what to type for it, Chinese then ASCII, then the drawing on its own
+    assert '<div class="ex-out"><jzp>0<r>k</r>5</jzp></div>' in a and "<txs>散<r>勾</r>五</txs>" in a
     v = glossary.render(page("3e"), r, {"3e": vertical("3e", {"word": "大息", "glyphs": ["md_da", "md_xi"]})})
-    assert "<txs>:大息</txs>" in v and "<txs>:vxi</txs>" in v and "<td><jzp>:大息</jzp></td>" in v
+    assert "<txs>:大息</txs>" in v and "<txs>:vxi</txs>" in v and '<div class="ex-out"><jzp>:大息</jzp></div>' in v
 
 
 def test_a_vertical_row_with_an_example_word_of_its_own_has_no_colon():
     r = rows("mod_chuo,,/,,,绰,綽,chuò", "md_9,,9,,,九,,jiǔ", "md_ming,,,s,,名,,míng", "lg_gou,,,k,,勾,,gōu", "md_3,,3,,,三,,sān")
     out = glossary.render(page("1d"), r, {"1d": vertical("1d", {"glyph": "mod_chuo", "usage": ["s9{}k3", "名九{}勾三"]})})
-    assert "<td>/</td>" in out and ":/" not in out and "<jzp>s9<r>/</r>k3</jzp>" in out   # spelled as in its example
+    assert '<td class="ascii">/</td>' in out and ":/" not in out and "<jzp>s9<r>/</r>k3</jzp>" in out   # spelled as in its example
     out = glossary.render(page("1d"), r, {"1d": vertical("1d", {"glyph": "mod_chuo", "usage": [":{}", ""]})})
-    assert "<td>:/</td>" in out                                                # an example on its own keeps the colon
+    assert '<td class="ascii">:/</td>' in out                                                # an example on its own keeps the colon
 
 
 def test_a_default_example_decides_the_table_and_older_files_kind_still_reads():

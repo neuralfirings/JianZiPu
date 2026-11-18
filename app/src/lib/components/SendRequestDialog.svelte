@@ -3,16 +3,19 @@
   // you changed and why, and how you'd like to be credited. Before it goes: the draft is saved,
   // the chosen spellings mustn't clash, and a font built from just those changes must build.
   // Once sent, those changes are locked in the draft until the request is withdrawn or declined.
+  // A new glyph can be tagged with the coming character it draws (the font page's ghost rows,
+  // lib/upcoming.ts): suggested from its spelling, saved in the request's manifest.upcoming.
   // Save as draft keeps the form (ticks, title, notes, credit) with the tester's draft in Supabase,
   // to finish later, here or on another computer; it opens again from where it was.
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
-  import type { Item } from '$lib/merge';
+  import { companions, glyphOf, itemName, type Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
+  import { newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
@@ -35,15 +38,29 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
-  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
+  // coming characters: the font page's list, and which one each new glyph draws ('' for none)
+  let ghosts = $state<Ghost[]>([]);
+  let tags = $state<Record<string, string>>({});
+  $effect(() => {
+    const url = hosted.config?.supabase_url;
+    if (url) void publicGhosts(url).then((g) => (ghosts = g));
+  });
+  const tagOf = (g: string) => (g in tags ? tags[g] : suggestGhost(app.typing[g], ghosts) ?? '');
+  const ghostById = (id: string) => ghosts.find((x) => x.id === id);
+
+  const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
-  /** A new glyph and its spellings go together (Review keeps them together too). */
+  let fresh = $derived(newGlyphs(picked));
+  /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
-    if (it.kind === 'glyph' && it.status === 'added' && `spelling:${it.key}` in next) next[`spelling:${it.key}`] = v;
-    if (it.kind === 'spelling' && v && `glyph:${it.key}` in next && items.find((i) => i.id === `glyph:${it.key}`)?.status === 'added') next[`glyph:${it.key}`] = true;
+    if (it.kind === 'glyph' && it.status === 'added') for (const id of companions(items, it.key)) if (id in next) next[id] = v;
+    const g = v ? glyphOf(items, it) : null;
+    if (g && `glyph:${g}` in next) next[`glyph:${g}`] = true;
     chosen = next;
   }
+  /** Tick or untick every change (a new glyph and its spellings stay together either way). */
+  const setAll = (v: boolean) => (chosen = Object.fromEntries(items.map((i) => [i.id, v])));
 
   /** Build a font from the chosen changes only; resolves with the failure, or null. */
   async function buildCheck(inputs: ReturnType<typeof buildInputs>): Promise<string | null> {
@@ -84,6 +101,8 @@
     try {
       if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
       const { bundle, itemIds } = snapshot(app.bundle(), app.mainSvgs, picked.map((i) => i.id));
+      const tagged = Object.fromEntries(fresh.map((g) => [g, tagOf(g)]).filter(([, id]) => id));
+      if (Object.keys(tagged).length) bundle.manifest.upcoming = tagged;
       const clash = T.issues(bundle.typing, app.known);
       if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → List view, or leave those spellings out.`; return; }
       const failed = await buildCheck(buildInputs(bundle, app.mainSvgs));
@@ -112,6 +131,10 @@
 
     <fieldset>
       <legend>Changes to send <span class="muted">{picked.length} of {items.length}</span></legend>
+      <div class="all">
+        <button class="quiet sm" onclick={() => setAll(true)} disabled={step !== 'form' || picked.length === items.length}>Select all</button>
+        <button class="quiet sm" onclick={() => setAll(false)} disabled={step !== 'form' || !picked.length}>Clear all</button>
+      </div>
       <ul class="pick">
         {#each items as it (it.id)}
           <li><label><input type="checkbox" checked={chosen[it.id]} onchange={(e) => toggle(it, (e.target as HTMLInputElement).checked)} />
@@ -121,15 +144,41 @@
       </ul>
     </fieldset>
 
+    {#if ghosts.length && fresh.length}
+      <fieldset class="coming">
+        <legend>Is this for a coming character?</legend>
+        <p class="muted small">From the font page's Coming next. The maintainer confirms it, then can show your drawing there for comments.</p>
+        {#each fresh as g (g)}
+          {@const gh = ghostById(tagOf(g))}
+          <div class="tagrow">
+            <label class="tagpick"><span class="mono">{g} draws</span>
+              <select value={tagOf(g)} onchange={(e) => (tags = { ...tags, [g]: (e.target as HTMLSelectElement).value })}>
+                <option value="">None of these</option>
+                {#each ghosts as x (x.id)}<option value={x.id}>{x.zh}{x.pinyin ? ` · ${x.pinyin}` : ''} · {stageLabel(x)}</option>{/each}
+              </select>
+            </label>
+            {#if gh}
+              <div class="ghost"><span class="tag">{stageLabel(gh)}</span> <b>{gh.zh}</b>{#if gh.pinyin} <span class="muted">{gh.pinyin}</span>{/if}
+                {#if gh.meaning}<span class="muted"> · {gh.meaning}</span>{/if}<span class="muted small"> · on the font page in {gh.section}{gh.after ? `, after ${gh.after}` : ''}</span></div>
+            {:else}
+              <p class="muted small">Not tagged: nothing about a coming character changes.</p>
+            {/if}
+          </div>
+        {/each}
+      </fieldset>
+    {/if}
+
     <label class="field">Title
+      <span class="muted small hint">Its line in the release notes.</span>
       <input id="cr-title" type="text" bind:value={title} maxlength="200" placeholder="Tighter spacing for 勾 over 七" />
     </label>
     <label class="field">What you changed and why
+      <span class="muted small hint">For the reviewer only, never published.</span>
       <textarea id="cr-notes" bind:value={notes} rows="5" maxlength="20000" placeholder="Which words look better now, what you tried, anything you're unsure about."></textarea>
     </label>
     <label class="field">How would you like to be credited?
+      <span class="muted small hint">After "thanks to" in the release notes; empty for none.</span>
       <input id="cr-credit" type="text" bind:value={credit} maxlength="200" placeholder="Your name here" />
-      <span class="muted small">Your name the way it should read in the release notes, which say "thanks to" before it. Leave it empty for no credit. It's remembered for next time.</span>
     </label>
 
     {#if problem}<div class="banner danger" role="alert"><span class="ic"><I.Problem /></span><span>{problem}</span></div>{/if}
@@ -150,6 +199,7 @@
   .send h3, .send p { margin: 0; }
   fieldset { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin: 0; }
   legend { padding: 0 var(--space-2); font-weight: 600; }
+  .all { display: flex; gap: var(--space-2); margin: 0 0 var(--space-3) calc(-1 * var(--space-3)); }
   .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 220px; overflow: auto; }
   .pick label { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
   .mono { font-family: var(--font-mono); font-size: var(--t-small); }
@@ -157,7 +207,14 @@
   .field { display: flex; flex-direction: column; gap: var(--space-2); font-weight: 600; }
   .field input, .field textarea { font: inherit; font-weight: 400; }
   .field .muted { font-weight: 400; }
+  .field .hint { margin-top: calc(-1 * var(--space-1)); }   /* close under its label */
   .tag.added { color: var(--status-saved); border-color: currentColor; }
   .tag.deleted { color: var(--status-danger); border-color: currentColor; }
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
+  .coming { display: flex; flex-direction: column; gap: var(--space-3); }
+  .coming p { margin: 0; }
+  .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
+  .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .tagpick select { font: inherit; max-width: 100%; }
+  .ghost { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--bg-field); }
 </style>

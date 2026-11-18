@@ -1,5 +1,6 @@
 // Which glyph the Rename box is open for (one box for the whole app, in routes/+layout.svelte).
-// Opened from the glyph editor's name, the Glyphs panel's name and List view's Glyph Name cell.
+// Opened from the glyph editor's name and the Glyphs screen's glyph panel (List view's Glyph Name
+// cell opens that panel).
 // `done` / `undone`: what the screen does after the rename, and after its Undo (go to the new
 // name's page and back, or select the new name and back).
 class Renaming {

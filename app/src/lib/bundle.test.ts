@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { applySvgs, BundleError, diffSvgs, fromJson, fromStored, fromZip, isEmptyBundle, makeBundle, toJson, toZip, validate, zipName } from './bundle';
-import { applyMerge, defaultKeep, designSummary, diffBundle, fontUpdateItems, hunks, lineDiff, revertItems, revertRule, ruleChanges, updateSummary, usesOfGlyph, withChanges } from './merge';
+import { applyMerge, companions, defaultKeep, designSummary, diffBundle, fontUpdateItems, glyphOf, hunks, lineDiff, revertItems, revertRule, ruleChanges, updateSummary, usesOfGlyph, withChanges } from './merge';
 import type { Layout, Relationship } from './api';
 import * as T from './typing';
 import type { GlossaryRows } from './glossary';
@@ -172,6 +172,65 @@ describe('three-way merge', () => {
     const f = design();
     f.areas.left.glyphs.push('md_a', 'md_b');
     expect(designSummary(design(), f)).toEqual(['Area · Left hand: adds md_a, md_b']);
+    f.areas.left.size = [360, 350];
+    f.areas.hui.glyphs = [];
+    expect(designSummary(design(), f)).toEqual(['Area · Left hand: box 350 × 350 → 360 × 350, adds md_a, md_b', 'Area · 徽 position: removes md_7']);
+  });
+});
+
+describe("an area's members, each its own item", () => {
+  const cur = (d = design()) => ({ design: d, typing: {}, svgs: baseSvgs });
+  function twoNew() {
+    const d = design();
+    d.areas.left.glyphs.push('md_a', 'md_b');
+    d.areas.left.size = [360, 350];
+    d.areas.hui.glyphs = [];
+    return makeBundle({ design: d, typing: { md_a: sp('a') }, svgs: { ...baseSvgs, md_a: SVG('M0 0h1v1z'), md_b: SVG('M0 0h2v2z') },
+      baseDesign: design(), baseTyping: {}, baseSvgs, base });
+  }
+  it('lists the box apart from each glyph that joins or leaves', () => {
+    const items = diffBundle(twoNew(), cur());
+    expect(items.filter((i) => i.kind === 'design').map((i) => [i.id, i.status, i.label, ...(i.kind === 'design' ? i.summary : [])])).toEqual([
+      ['design:area:left', 'changed', 'Area · Left hand', 'box 350 × 350 → 360 × 350'],
+      ['design:member:left:md_a', 'added', 'Area · Left hand · md_a', 'adds it'],
+      ['design:member:left:md_b', 'added', 'Area · Left hand · md_b', 'adds it'],
+      ['design:member:hui:md_7', 'deleted', 'Area · 徽 position · md_7', 'removes it']
+    ]);
+  });
+  it('keeps some members and skips others; the box alone leaves the members as they are', () => {
+    const items = diffBundle(twoNew(), cur());
+    const m = applyMerge(items, { 'design:member:left:md_b': true, 'design:member:hui:md_7': true }, cur());
+    expect(m.design.areas.left).toEqual({ label: 'Left hand', size: [350, 350], glyphs: ['md_ming', 'md_b'] });
+    expect(m.design.areas.hui.glyphs).toEqual([]);
+    const now = design();
+    now.areas.left.glyphs.push('md_font');            // the font added one meanwhile
+    const m2 = applyMerge(diffBundle(twoNew(), cur(now)), { 'design:area:left': true }, cur(now));
+    expect(m2.design.areas.left).toEqual({ label: 'Left hand', size: [360, 350], glyphs: ['md_ming', 'md_font'] });
+    expect(Object.keys(m2.design.areas.left)).toEqual(['label', 'size', 'glyphs']);
+  });
+  it('a member of an area the font removed meanwhile conflicts, and is left out', () => {
+    const now = design();
+    delete (now.areas as Record<string, unknown>).left;
+    const items = diffBundle(twoNew(), cur(now)).filter((i) => i.id.startsWith('design:member:left'));
+    expect(items.map((i) => i.conflict)).toEqual([true, true]);
+    expect(applyMerge(items, { 'design:member:left:md_a': true }, cur(now)).design.areas.left).toBeUndefined();
+  });
+  it('a new area is one item, members and all', () => {
+    expect(diffBundle(draft(), cur()).filter((i) => i.id.includes('char')).map((i) => i.id)).toEqual(['design:area:char']);
+  });
+  it('a new glyph takes its spellings and its places in areas along, and one of those takes the glyph', () => {
+    const items = diffBundle(twoNew(), cur());
+    expect(companions(items, 'md_a')).toEqual(['spelling:md_a', 'design:member:left:md_a']);
+    expect(glyphOf(items, items.find((i) => i.id === 'design:member:left:md_b')!)).toBe('md_b');
+    expect(glyphOf(items, items.find((i) => i.id === 'design:member:hui:md_7')!)).toBeNull();
+  });
+  it('undoes one member', () => {
+    const b = twoNew();
+    const items = diffBundle(b, cur()).filter((i) => i.id === 'design:member:left:md_a');
+    expect(revertItems(items, cur(b.design)).design.areas.left.glyphs).toEqual(['md_ming', 'md_b']);
+  });
+  it('counts an area once in a font update', () => {
+    expect(updateSummary(diffBundle(twoNew(), cur()).filter((i) => i.kind === 'design'))).toBe('2 areas');
   });
 });
 
@@ -215,7 +274,7 @@ describe('what a font update brings, in words', () => {
     const gs = (key: string) => ({ id: `glossary:${key}`, kind: 'glossary', key, status: 'changed', conflict: false }) as never;
     expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('c', 'simplified'), gs('3e')]))
       .toBe('2 word types, Chinese spellings for 1 glyph, 1 glyph drawing and more');
-    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary sections');
+    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary changes');
     expect(updateSummary([])).toBe('');
   });
 });
@@ -299,14 +358,15 @@ describe('the glossary in a draft', () => {
     const legacy = fromJson(JSON.stringify({ ...JSON.parse(toJson(old)), words: [{ word: '少息', glyphs: 'md_a md_b' }] }));
     expect((legacy as { words?: unknown }).words).toBeUndefined();
   });
-  it('reviews a section whole: changed, conflicting, and left alone when the Builder has it already', () => {
+  it('reviews a subtitle row by row, its order on its own, and leaves alone what the Builder has already', () => {
     const b = mk({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] },
                  { '3e': [g('md_a')], '1a': [g('md_x'), g('md_y')], '2a': [] });
     const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a'), g('md_c')], '1a': [g('md_x'), g('md_y')], '2a': [g('lg_gou')] } };
-    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary');
-    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['1a', 'changed', false], ['3e', 'changed', true]]);
-    const m = applyMerge(items, { 'glossary:1a': true, 'glossary:3e': true }, cur);
-    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
+    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary' || i.kind === 'glossary-row');
+    expect(items.map((i) => [i.id, i.status, i.conflict])).toEqual([['glossary:1a', 'changed', false], ['glossary-row:3e:w:少息', 'added', false]]);
+    const m = applyMerge(items, { 'glossary:1a': true, 'glossary-row:3e:w:少息': true }, cur);
+    // the new word goes in before md_a, as in the draft; md_c, which the Builder added since, stays
+    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a'), g('md_c')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
     expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).glossary).toBeUndefined();   // left out: untouched
   });
 });

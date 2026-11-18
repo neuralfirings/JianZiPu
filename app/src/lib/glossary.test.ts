@@ -1,5 +1,6 @@
+import * as T from './typing';
 import { describe, expect, it } from 'vitest';
-import { byId, changedLayout, cleanLayout, glossarySearchText, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
+import { rowExample, rowExampleMarked, byId, changedLayout, cleanLayout, glossarySearchText, leftOut, marksGlyph, markWordIn, markdown, newId, sectionList, titlesSummary, exampleHtml, exampleText, usageFrom, verticalTemplate, changedSections, cleanRows, describeUses, moveRow, refuse, renameInRows, sectionSummary, usesOf, type Section } from './glossary';
 
 import type { Typing } from './typing';
 import { empty } from './typing';
@@ -169,5 +170,35 @@ describe("List view's search in the Glossary column", () => {
     expect(glossarySearchText(t, 'a', uses, sections)).toContain('3e: e');
     expect(glossarySearchText(t, 'b', uses, sections)).toBe('not in the glossary');
     expect(glossarySearchText(t, 'c', uses, sections)).toBe('');              // no spelling: nothing to show
+  });
+});
+
+describe('Not in the glossary (the Glossary view\'s list to drag from)', () => {
+  it('holds glyphs with spellings no row shows; a word, a hidden section or a vertical partner counts as in', () => {
+    const sp = (o: Record<string, string>) => ({ ...empty(), ...o });
+    const t: Typing = {
+      a: sp({ latin: 'k' }), b: sp({ simplified: '勾' }), c: sp({ pinyin: 'x' }), d: sp({ latin: 'd' }),
+      e: sp({ latin: 'e', vert_variant: 'f' }), f: sp({ latin: 'f' }), h: sp({ latin: 'h' })
+    };
+    const uses = usesOf({ '1a': [g('a')], '3e': [w('少息', 'h', 'x')], '99': [g('d')] }, sections);
+    const out = Object.keys(t).filter((x) => leftOut(t, x, uses, true));
+    expect(out).toEqual(['b', 'e']);           // c has only pinyin; f is e's vertical form; h is in a word, d in a hidden section
+    expect(Object.keys(t).filter((x) => leftOut(t, x, uses, false))).toEqual([]);   // no glossary at all: nothing asked for
+  });
+});
+
+describe('a row\'s own example, for Review', () => {
+  const t = { yin3_md: { ...T.empty(), latin: 'yin3', simplified: '引', pinyin: 'yǐn' }, md_dai: { ...T.empty(), latin: 'dai', simplified: '带' }, md_qi: { ...T.empty(), latin: 'qi', simplified: '起' } };
+  it('fills {} with the spellings, 中文 first', () => {
+    expect(rowExample({ glyph: 'yin3_md', usage: ['<r>{}</r>shang9', '<r>{}</r>上九'] }, t)).toEqual(['引上九', 'yin3shang9']);
+    expect(rowExample({ word: '带起', glyphs: ['md_dai', 'md_qi'], usage: ['s9k6 {}', '名九勾六 {}'] }, t)).toEqual(['名九勾六 带起', 's9k6 daiqi']);
+    expect(rowExample({ glyph: 'yin3_md' }, t)).toBe(null);
+    expect(rowExample({ glyph: 'yin3_md', usage: ['', ' '] }, t)).toBe(null);
+  });
+
+  it('as the page writes it: red only when the example has more than the row, and its own red marks kept', () => {
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['<r>{}</r>shang9', '<r>{}</r>上九'] }, t)).toEqual(['<r>引</r>上九', '<r>yin3</r>shang9']);
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['{}d7,7<r>|</r>06', '{}中七，七<r>｜</r>散六'] }, t)).toEqual(['<r>引</r>中七，七<r>｜</r>散六', '<r>yin3</r>d7,7<r>|</r>06']);
+    expect(rowExampleMarked({ glyph: 'yin3_md', usage: ['{}', '{}'] }, t)).toEqual(['引', 'yin3']);            // the row on its own: black
   });
 });

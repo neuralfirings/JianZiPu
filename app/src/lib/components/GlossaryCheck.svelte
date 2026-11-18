@@ -147,7 +147,14 @@
   .gloss :global(th) { font-weight: 600; }
   .gloss :global(td.gid a) { pointer-events: none; color: var(--ink-muted); font-family: var(--font-mono); font-size: var(--t-caption); text-decoration: none; }
   .gloss :global(.nw) { white-space: nowrap; }
-  .gloss :global(jzp) { font-family: var(--jzp-family), serif; font-size: 2.25rem; line-height: 1.5; word-break: keep-all; white-space: pre-wrap; }
+  /* the 中文 cell's pinyin, and the Example's slip (what to type → the glyph), as the font page shows them */
+  .gloss :global(.sep) { color: var(--ink-faint); }
+  .gloss :global(.py) { display: block; font-size: var(--t-caption); color: var(--ink-muted); }
+  .gloss :global(.slip) { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: var(--space-3); }
+  .gloss :global(.ex-in), .gloss :global(.ex-out) { justify-self: center; text-align: center; min-width: 0; }
+  .gloss :global(.ex-arrow) { color: var(--ink-faint); }
+  .gloss :global(.slip jzp) { display: inline-block; min-width: 1em; white-space: pre; }   /* a word has no advance of its own: give it its em */
+  .gloss :global(jzp) { font-family: var(--jzp-family), var(--font-cjk), serif; font-size: 2.25rem; line-height: 1.5; word-break: keep-all; white-space: pre-wrap; }
   .gloss :global(txs) { display: block; font-family: var(--font-mono); font-size: var(--t-caption); }
   .gloss :global(r) { color: var(--accent); }
 </style>

@@ -202,6 +202,54 @@ def test_missing_files_are_404_but_screens_get_the_app(server, app_build):
         assert status == 200 and body.startswith(b"<!doctype html><title>app"), p
 
 
+@pytest.fixture
+def site_dir(tmp_path, monkeypatch):
+    d = tmp_path / "site"
+    (d / "help").mkdir(parents=True)
+    (d / "index.html").write_text('<a href="./JianZiPu.ttf">x</a><a href="/help/">h</a>'
+                                  '<script src="https://cdn.example/x.js"></script><a href="//cdn.example/y">y</a>',
+                                  encoding="utf-8")
+    (d / "help" / "index.html").write_text('<link href="/help.md"><a href="/">home</a>', encoding="utf-8")
+    (d / "help.md").write_text("# 减字谱", encoding="utf-8")
+    (d / "JianZiPu.ttf").write_bytes(b"released font")
+    (d / "_headers").write_text("/*\n  X-Frame-Options: SAMEORIGIN", encoding="utf-8")
+    monkeypatch.setattr(config, "SITE_DIR", d)
+    return d
+
+
+def raw_get_headers(base, path):
+    import http.client
+    host, port = base.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port), timeout=10)
+    c.request("GET", path)
+    r = c.getresponse()
+    out = r.status, dict(r.getheaders()), r.read()
+    c.close()
+    return out
+
+
+def test_site_is_served_under_site(server, app_build, site_dir):
+    """/site is the font page folder as jianzipufont.com serves it, for a pull request's preview."""
+    status, headers, body = raw_get_headers(server, "/site")
+    assert status == 301 and headers["Location"] == "/site/"          # its links are relative
+    assert raw_get_headers(server, "/site?x=1")[1]["Location"] == "/site/?x=1"
+    status, headers, body = raw_get_headers(server, "/site/")
+    assert status == 200 and headers["Content-Type"] == "text/html; charset=utf-8"
+    # links from the site's root move under /site; relative and other hosts' links stay
+    assert body.decode() == ('<a href="./JianZiPu.ttf">x</a><a href="/site/help/">h</a>'
+                             '<script src="https://cdn.example/x.js"></script><a href="//cdn.example/y">y</a>')
+    assert raw_get_headers(server, "/site/JianZiPu.ttf")[2] == b"released font"
+    assert raw_get_headers(server, "/site/help")[1]["Location"] == "/site/help/"
+    assert raw_get_headers(server, "/site/help/")[2] == b'<link href="/site/help.md"><a href="/site/">home</a>'
+    status, headers, body = raw_get_headers(server, "/site/help.md")
+    assert headers["Content-Type"].endswith("charset=utf-8") and body.decode() == "# 减字谱"
+    for p in ("/site/_headers", "/site/nope.html", "/site/%2e%2e/builder/pyproject.toml", "/site/../VERSION"):
+        assert raw_get(server, p)[0] == 404, p
+    # the Builder's own paths are untouched
+    assert raw_get(server, "/sitemap.xml")[0] == 404
+    assert raw_get(server, "/layouts")[1].startswith(b"<!doctype html><title>app")
+
+
 def test_safe_path():
     assert webserver._safe_path("/glyphs/md_9/edit")
     assert webserver._safe_path("/_app/immutable/x.js")
@@ -396,3 +444,33 @@ def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, 
     layout["groups"][1]["sections"].remove("2b")
     with pytest.raises(ValueError, match="still has"):
         webserver.write_glossary(rows, r["hash"], layout)
+
+
+def test_words_space_vertical_words_as_the_font_does():
+    """/api/words moves the pen as the font does: a vertical word's colon gives its em back to the
+    space after the word, so two words typed with a space are one em apart, not two (the Glossary's
+    Output showed a gap between them); a colon straight after a word keeps it, a # after a vertical
+    word makes room for it and pulls what follows back. Figures checked against the released font."""
+    from jzpbuild.positioning import schema
+    design = schema.load_design()
+    runs = {
+        "yin": ["blank_colon", "md_yin"],
+        "s9k6": ["md_ming", "md_9", "lg_gou", "md_6"],
+        "daiqi": ["blank_colon", "md_dai", "md_qi"],
+    }
+    def laid(*parts):
+        glyphs = [g for p in parts for g in (runs.get(p) or [p])]
+        w = webserver.words_payload(design, ["x"], runs=[glyphs])["words"][0]
+        return {e["glyph"]: e["x"] for p in w["pieces"] for e in p["elements"]}, w["advance"]
+    alone = {g: x for p in runs for g, x in laid(p)[0].items()}
+    xs, adv = laid("yin", "space", "blank_colon", "md_nao")
+    assert xs["md_nao"] - alone["md_yin"] == 1000 and adv == 1000
+    xs, adv = laid("s9k6", "space", "daiqi")
+    assert xs["md_dai"] - alone["md_dai"] == 1000 and adv == 1000
+    xs, adv = laid("s9k6", "daiqi")                        # s9k6:daiqi: the colon keeps its em
+    assert xs["md_dai"] - alone["md_dai"] == 1000 and adv == 1000
+    assert laid("yin")[1] == 0
+    xs, adv = laid("yin", "numbersign", "s9k6")
+    assert xs["md_ming"] - alone["md_ming"] == 1000 and adv == 2000
+    xs, adv = laid("s9k6", "numbersign", "yin")
+    assert xs["md_yin"] == alone["md_yin"] and adv == 1000
