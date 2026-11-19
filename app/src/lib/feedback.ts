@@ -15,10 +15,11 @@ export type Feedback = {
 export const TABLE = 'feedback';
 export const BUCKET = 'feedback';
 
-/** In the order the status menu lists them. */
-export const STATUSES: FeedbackStatus[] = ['new', 'read', 'need_info', 'wip', 'ticket', 'done', 'wont_do'];
+/** In the order the status menu lists them. A ticket is a link of its own, whatever the status: `ticket`
+ *  stays in the database's list (006) for messages set to it before, but the menu doesn't offer it. */
+export const STATUSES: FeedbackStatus[] = ['new', 'read', 'need_info', 'wip', 'done', 'wont_do'];
 export const STATUS_LABEL: Record<FeedbackStatus, string> = {
-  new: 'New', read: 'Read', need_info: 'Need info', wip: 'Taken on', ticket: 'Ticket', done: 'Done', wont_do: "Won't do"
+  new: 'New', read: 'Read', need_info: 'Need info', wip: 'Taken on', ticket: 'Ticket (old status)', done: 'Done', wont_do: "Won't do"
 };
 /** The pill each status shows (app.css .pill.*): colour + icon + word. */
 export const STATUS_PILL: Record<FeedbackStatus, 'info' | 'draft' | 'saved' | ''> = {

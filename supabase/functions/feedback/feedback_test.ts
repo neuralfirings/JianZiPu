@@ -75,18 +75,18 @@ Deno.test('the email names the row, quotes the message, and says who to reply to
   assertEquals(rowName('2 · 中 · d · zhōng (1.1. Which Finger to Use)'), '中 (row 2)');
   const m = feedbackMail({
     entry: { kind: 'row', glossary_row: '2 · 中 · d · zhōng (1.1. Which Finger to Use)', link: 'https://jianzipufont.com/#2', message: 'Should be <b>zhòng</b>.', name: 'Lin', email: 'lin@example.com', upcoming_id: null, details: null },
-    pictures: 2, tableUrl: 'https://supabase.com/dashboard/project/abc/editor',
+    pictures: 2, reviewUrl: 'https://builder.example/review?tab=feedback&f=abc',
   });
   assertEquals(m.subject, 'Feedback on 中 (row 2)');
   assertStringIncludes(m.text, 'Lin (lin@example.com) wrote with 2 pictures, attached.');
   assertStringIncludes(m.text, 'Reply to this email to answer them.');
   assertStringIncludes(m.html, 'Should be &lt;b&gt;zhòng&lt;/b&gt;.');
   assertStringIncludes(m.html, 'JianZiPu font page');
-  assertStringIncludes(m.html, 'https://supabase.com/dashboard/project/abc/editor');
+  assertStringIncludes(m.html, 'https://builder.example/review?tab=feedback&amp;f=abc');
 });
 
 Deno.test('feedback on the page, from someone who left nothing', () => {
-  const m = feedbackMail({ entry: { kind: 'page', glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null, upcoming_id: null, details: null }, pictures: 0, tableUrl: 'u' });
+  const m = feedbackMail({ entry: { kind: 'page', glossary_row: null, link: null, message: 'Lovely font.', name: null, email: null, upcoming_id: null, details: null }, pictures: 0, reviewUrl: 'u' });
   assertEquals(m.subject, 'Feedback on the font page');
   assertStringIncludes(m.text, 'Someone who left no name or email wrote.');
   assertStringIncludes(m.text, 'no one to reply to');
@@ -98,7 +98,7 @@ Deno.test('Contact me: kept as contact, needs an email, and its email says so', 
   assert(p.ok && !p.spam);
   assertEquals(p.entry.kind, 'contact');
   assertEquals(p.entry.glossary_row, null);                    // a note to you, not about a row
-  const m = feedbackMail({ entry: p.entry, pictures: 0, tableUrl: 'u' });
+  const m = feedbackMail({ entry: p.entry, pictures: 0, reviewUrl: 'u' });
   assertEquals(m.subject, "Message from Lin (the font page's Contact me)");
   assertStringIncludes(m.text, 'Reply to this email to answer them.');
 });
@@ -152,12 +152,12 @@ Deno.test('before supabase/008: a request is kept as feedback on the page, its d
 
 Deno.test('the emails for a request and a comment', () => {
   const req = feedbackMail({ entry: { kind: 'request', glossary_row: null, link: null, message: 'Keep the hand still.', name: 'Lin', email: 'lin@example.com',
-    upcoming_id: null, details: { zh: '不动', pinyin: 'bù dòng', seen: '《梅庵琴谱》' } }, pictures: 1, tableUrl: 'u' });
+    upcoming_id: null, details: { zh: '不动', pinyin: 'bù dòng', seen: '《梅庵琴谱》' } }, pictures: 1, reviewUrl: 'u' });
   assertEquals(req.subject, 'Request: 不动 (bù dòng)');
   assertStringIncludes(req.text, 'Lin (lin@example.com) asked for 不动 (bù dòng) with a picture, attached.');
   assertStringIncludes(req.text, 'Where they saw it: 《梅庵琴谱》.');
   const com = feedbackMail({ entry: { kind: 'comment', glossary_row: null, link: null, message: 'Too long.', name: null, email: null,
-    upcoming_id: 'u12', details: { about: '不动 · bù dòng' } }, pictures: 0, tableUrl: 'u' });
+    upcoming_id: 'u12', details: { about: '不动 · bù dòng' } }, pictures: 0, reviewUrl: 'u' });
   assertEquals(com.subject, 'Comment on 不动 · bù dòng (coming next)');
   assertStringIncludes(com.text, 'commented on the coming character 不动 · bù dòng (u12).');
 });

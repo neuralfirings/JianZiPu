@@ -239,7 +239,7 @@
     {#if !hosted.user || !hosted.isAdmin}
       <!-- not an admin: nothing more -->
     {:else if tab === 'feedback'}
-      <FeedbackInbox onupcoming={(id) => toTab('glossary', `&u=${encodeURIComponent(id)}`)} oncount={(n) => (newFeedback = n)} />
+      <FeedbackInbox focus={page.url.searchParams.get('f')} onupcoming={(id) => toTab('glossary', `&u=${encodeURIComponent(id)}`)} oncount={(n) => (newFeedback = n)} />
     {:else if tab === 'glossary'}
       <GlossaryDrafts focus={page.url.searchParams.get('u')} oncount={(n) => (coming = n)} />
     {:else}

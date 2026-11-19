@@ -114,7 +114,7 @@ the tester's guide. In short:
      the draft on the glossary**, or the same glyph in a later request) updates
      the same row; it never adds a second one.
    - It doesn't depend on your decisions, and declining the request doesn't take
-     a draft down. To take one down, delete its row in Supabase (below).
+     a draft down. To take one down, **Delete…** it in Review › Glossary drafts (below).
    - If the After drawing shows the word in pieces, the new glyph fits no word
      type: it's in no area, or the design's spacing rules don't name it. That's
      the tester's draft to fix; Build & test's warning says which.
@@ -151,9 +151,10 @@ Review has two more tabs for admins, online and local:
 
 - **Feedback**: the font page's messages (the `feedback` table) as an inbox,
   with their pictures from the private `feedback` bucket. Set a status (New,
-  Read, Need info, Taken on, Ticket, Done, Won't do), a ticket link and your own
-  note. Opening a New message marks it Read. A character request set to **Taken
-  on** adds its coming character (the `feedback_take_on` trigger).
+  Read, Need info, Taken on, Done, Won't do), a ticket link (whatever the
+  status) and your own note. Opening a New message marks it Read. A character
+  request set to **Taken on** adds its coming character (the
+  `feedback_take_on` trigger). The admins' email for each message opens it here.
 - **Glossary drafts**: every row of `upcoming`, by stage, each shown as the
   font page will show it: in its section's table (read from `/site/`), between
   the rows around it.
@@ -161,8 +162,8 @@ Review has two more tabs for admins, online and local:
   public note; **Delete…** removes the row and its drawing. A row without a
   section isn't on the font page.
 
-You can still do all of this in the Supabase dashboard; these screens write the
-same rows.
+Use these screens rather than the Supabase dashboard: they show the pictures
+and the page, and write the same rows.
 
 ## Statuses
 

@@ -7,7 +7,8 @@
   import { day, hhmm, pilot } from '$lib/pilot.svelte';
   import { aboutOf, allFeedback, KIND_LABEL, OPEN, otherDetails, pictureBlobs, STATUSES, STATUS_LABEL, STATUS_PILL, updateFeedback, type Feedback, type FeedbackKind, type FeedbackStatus } from '$lib/feedback';
 
-  let { onupcoming, oncount }: { onupcoming?: (id: string) => void; oncount?: (n: number) => void } = $props();
+  /** `focus`: a message to open (the admins' email links to it: ?tab=feedback&f=<id>). */
+  let { focus = null, onupcoming, oncount }: { focus?: string | null; onupcoming?: (id: string) => void; oncount?: (n: number) => void } = $props();
 
   let list = $state<Feedback[] | null>(null);
   let err = $state<string | null>(null);
@@ -25,6 +26,14 @@
     err = null;
     try { list = await allFeedback(hosted.client!); } catch (e) { err = (e as Error).message; list = []; }
   }
+  let focused = '';
+  $effect(() => {
+    const f = focus && list?.find((x) => x.id === focus);
+    if (!f || focused === f.id) return;
+    focused = f.id;
+    if (!shown.includes(f)) { show = 'all'; kind = 'all'; }
+    void open(f);
+  });
 
   // the open message's form
   let status = $state<FeedbackStatus>('new');
@@ -107,6 +116,7 @@
               <span class="muted small">{f.name || 'no name'}</span>
               {#if f.pictures.length}<span class="muted small"><I.Preview size={12} /> {f.pictures.length}</span>{/if}
               {#if f.note}<span class="muted small"><I.Description size={12} /> note</span>{/if}
+              {#if f.ticket}<span class="muted small"><I.Link size={12} /> ticket</span>{/if}
             </span>
           </button>
         </li>
@@ -152,14 +162,16 @@
           <label>Status
             <select id="fb-status" bind:value={status}>
               {#each STATUSES as s}<option value={s}>{STATUS_LABEL[s]}</option>{/each}
+              {#if !STATUSES.includes(current.status)}<option value={current.status}>{STATUS_LABEL[current.status]}</option>{/if}
             </select>
           </label>
           {#if status === 'wip' && current.kind === 'request' && !current.upcoming_id}
             <p class="muted small">Taken on adds this character to Glossary drafts as Planned.</p>
           {/if}
-          {#if status === 'ticket' || current.ticket}
-            <label>Ticket <input id="fb-ticket" type="url" placeholder="https://github.com/…/issues/…" bind:value={ticket} /></label>
-          {/if}
+          <label>Ticket <span class="muted small">(a link, if it became one)</span>
+            <span class="ticket"><input id="fb-ticket" type="url" placeholder="https://github.com/…/issues/…" bind:value={ticket} />
+              {#if current.ticket}<a href={current.ticket} target="_blank" rel="noopener" data-tip="Open the ticket" aria-label="Open the ticket"><I.Opens /></a>{/if}</span>
+          </label>
           <label>Your note <span class="muted small">(only admins see it)</span>
             <textarea id="fb-note" rows="3" bind:value={note}></textarea>
           </label>
@@ -202,6 +214,8 @@
   .form { display: flex; flex-direction: column; gap: var(--space-4); border-top: 1px solid var(--border); padding-top: var(--space-5); }
   .form label { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--t-small); }
   .form select { max-width: 220px; }
+  .ticket { display: flex; gap: var(--space-3); align-items: center; }
+  .ticket input { flex: 1; }
   .row { display: flex; gap: var(--space-4); align-items: center; }
   .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; font-weight: 400; }
   @media (max-width: 759.98px) { .inbox { grid-template-columns: 1fr; } }

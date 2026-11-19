@@ -24,11 +24,12 @@ subject, plain text and HTML (the same look as the auth emails in `supabase/emai
    ```bash
    supabase secrets set RESEND_API_KEY=re_... MAIL_FROM="JZP Font Builder <builder@jianzipufont.com>" \
      NOTIFY_WEBHOOK_SECRET=<a long random string> \
-     BUILDER_URL=https://builder.jianzipufont.com REVIEW_URL=http://127.0.0.1:5713
+     BUILDER_URL=https://builder.jianzipufont.com REVIEW_URL=https://builder.jianzipufont.com
    ```
 
    `BUILDER_URL` is where testers' links go (Your Change Requests); `REVIEW_URL` is
-   where admins review (the local Builder). `SUPABASE_URL` and
+   where admins review: the online Builder by default (admins see Review there), or
+   `http://127.0.0.1:5713` for the local one. The feedback emails link there too. `SUPABASE_URL` and
    `SUPABASE_SERVICE_ROLE_KEY` are given to every Edge Function by Supabase.
 3. **Deploy**: `supabase functions deploy notify --no-verify-jwt` (the webhook proves
    itself with the secret header instead of a user's sign-in).
