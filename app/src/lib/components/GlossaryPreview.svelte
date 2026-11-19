@@ -39,7 +39,7 @@
   $effect(() => { pageFont(); void sitePage().then((d) => (doc = d)); });
 
   const STAGE: Record<Exclude<Stage, 'released'>, (g: Ghost) => string> = {
-    planned: () => 'Planned', draft: () => 'Draft design · comments welcome',
+    planned: () => 'Planned', draft: () => 'Draft (not live yet)',
     test: (g) => `In release ${(g.version ?? '').replace(/-rc\.\d+$/, '')}`.trim()
   };
   function el(tag: string, cls = '', txt: string | null = null) {

@@ -115,7 +115,8 @@ the tester's guide. In short:
      same preview when tagging the glyph in **Send Change Request**.
    - **Publish draft to glossary** uploads each example to the public `upcoming`
      bucket and writes its row in the `upcoming` table (stage `draft`); the font
-     page shows it as **Draft design** within a minute. Publishing again (**Update
+     page shows it as **Draft (not live yet)** within a minute: it isn't in the font
+     people download until the release. Publishing again (**Update
      the draft on the glossary**, or the same glyph in a later request) updates
      the same row; it never adds a second one.
    - It doesn't depend on your decisions, and declining the request doesn't take
