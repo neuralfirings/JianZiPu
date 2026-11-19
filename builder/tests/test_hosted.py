@@ -104,6 +104,58 @@ def test_base_font_is_left_alone_when_present(tmp_path):
     assert "missing" in hosted.fetch_base_font(hosted.Settings(), tmp_path / "none.ttf")
 
 
+def _serve_once(body: bytes):
+    """A local server that answers every GET with `body`; returns (url, headers seen, stop)."""
+    from http.server import BaseHTTPRequestHandler
+    seen = []
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append(dict(self.headers))
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{srv.server_address[1]}/TW-Kai-98.ttf", seen, srv.shutdown
+
+
+def test_base_font_comes_from_its_url_without_the_service_key(tmp_path):
+    font = b"\x00\x01\x00\x00" + b"rest of the font"
+    url, seen, stop = _serve_once(font)
+    try:
+        s = hosted.Settings(supabase_url="https://x.supabase.co", supabase_service_key="secret",
+                            base_font_url=url)
+        dest = tmp_path / "src_font" / "TW-Kai-98.ttf"
+        assert "fetched" in hosted.fetch_base_font(s, dest)
+        assert dest.read_bytes() == font
+        assert len(seen) == 1
+        assert not any("secret" in v for v in seen[0].values())   # Supabase isn't asked, its key isn't sent
+    finally:
+        stop()
+
+
+def test_base_font_that_isnt_a_font_is_not_kept(tmp_path):
+    url, _, stop = _serve_once(b"<html>not found</html>")
+    try:
+        dest = tmp_path / "TW-Kai-98.ttf"
+        assert "didn't send a font" in hosted.fetch_base_font(hosted.Settings(base_font_url=url), dest)
+        assert not dest.exists()
+    finally:
+        stop()
+
+
+def test_base_font_url_setting(monkeypatch):
+    monkeypatch.setenv("JZP_BASE_FONT_URL", " https://fonts.example/TW-Kai-98.ttf ")
+    assert hosted.Settings.from_env().base_font_url == "https://fonts.example/TW-Kai-98.ttf"
+    assert "fonts.example" not in json.dumps(hosted.Settings.from_env().public())
+
+
 # ---------------------------------------------------------------- HTTP
 
 def test_env_file(tmp_path, monkeypatch):

@@ -9,7 +9,10 @@ folder on request. Settings come from the environment:
   SUPABASE_URL               https://<project>.supabase.co
   SUPABASE_ANON_KEY          the public anon key (also handed to the app)
   SUPABASE_SERVICE_KEY       server-only key, used to fetch the base font from Storage
-  JZP_BASE_FONT_OBJECT       Storage object of the base font (default assets/TW-Kai-98.ttf)
+  JZP_BASE_FONT_URL          where to download the base font (e.g. a Cloudflare R2 public URL, free
+                             egress); when set, Supabase Storage isn't asked for it
+  JZP_BASE_FONT_OBJECT       else, its Storage object (default assets/TW-Kai-98.ttf); every server
+                             start downloads it (37 MB), which counts against Supabase's egress
   RAILWAY_GIT_COMMIT_SHA     the deployed commit (set by Railway); else `git rev-parse HEAD`
 
 Stdlib only (urllib), like the rest of the server.
@@ -63,6 +66,7 @@ class Settings:
     supabase_anon_key: str = ""
     supabase_service_key: str = field(default="", repr=False)
     base_font_object: str = "assets/TW-Kai-98.ttf"
+    base_font_url: str = ""
     commit: str | None = None
 
     @classmethod
@@ -73,6 +77,7 @@ class Settings:
             supabase_anon_key=os.environ.get("SUPABASE_ANON_KEY", ""),
             supabase_service_key=os.environ.get("SUPABASE_SERVICE_KEY", ""),
             base_font_object=os.environ.get("JZP_BASE_FONT_OBJECT", "assets/TW-Kai-98.ttf"),
+            base_font_url=os.environ.get("JZP_BASE_FONT_URL", "").strip(),
             commit=current_commit(),
         )
 
@@ -164,23 +169,32 @@ class Auth:
 # ---------------------------------------------------------------- base font
 
 def fetch_base_font(settings: Settings, dest: Path | None = None) -> str:
-    """Put the base font (TW-Kai, gitignored) in place for builds: download it from Supabase
-    Storage with the service key when it isn't on disk. Returns what happened, for the log."""
+    """Put the base font (TW-Kai, gitignored) in place for builds when it isn't on disk: download it
+    from JZP_BASE_FONT_URL (no keys sent), else from Supabase Storage with the service key. Every
+    server start (each deploy, each pull request preview) downloads it, so a host with free egress
+    is the better place. Returns what happened, for the log."""
     dest = dest or config.SOURCE_FONT
     if dest.exists():
         return f"base font: {dest.name} present"
-    if not (settings.supabase_url and settings.supabase_service_key):
-        return f"base font: {dest} missing and no SUPABASE_URL / SUPABASE_SERVICE_KEY to fetch it -- builds will fail"
-    url = f"{settings.supabase_url}/storage/v1/object/{settings.base_font_object}"
-    req = urllib.request.Request(url, headers={"apikey": settings.supabase_service_key,
-                                               "Authorization": f"Bearer {settings.supabase_service_key}"})
+    if settings.base_font_url:
+        source, req = settings.base_font_url, urllib.request.Request(settings.base_font_url)
+    elif settings.supabase_url and settings.supabase_service_key:
+        source = settings.base_font_object
+        req = urllib.request.Request(f"{settings.supabase_url}/storage/v1/object/{settings.base_font_object}",
+                                     headers={"apikey": settings.supabase_service_key,
+                                              "Authorization": f"Bearer {settings.supabase_service_key}"})
+    else:
+        return (f"base font: {dest} missing and no JZP_BASE_FONT_URL (or SUPABASE_URL / SUPABASE_SERVICE_KEY)"
+                " to fetch it -- builds will fail")
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             body = resp.read()
-    except urllib.error.URLError as err:
-        return f"base font: download from {settings.base_font_object} failed ({err}) -- builds will fail"
+    except (urllib.error.URLError, OSError) as err:
+        return f"base font: download from {source} failed ({err}) -- builds will fail"
+    if body[:4] not in (b"\x00\x01\x00\x00", b"true", b"OTTO", b"ttcf"):
+        return f"base font: {source} didn't send a font file ({len(body)} bytes) -- builds will fail"
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".part")
     tmp.write_bytes(body)
     tmp.replace(dest)
-    return f"base font: fetched {settings.base_font_object} ({len(body) // 1024} KB)"
+    return f"base font: fetched {source} ({len(body) // 1024} KB)"

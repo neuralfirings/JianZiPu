@@ -6,7 +6,7 @@ where the settings live. Secrets never go in this repository.
 | Part | What it does | Where |
 | --- | --- | --- |
 | Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
-| Supabase | Sign-in, drafts, Change Requests, the base font, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
+| Supabase | Sign-in, drafts, Change Requests, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
 | Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
 | Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
@@ -56,8 +56,10 @@ where the settings live. Secrets never go in this repository.
 4. **People.** Invite each tester and yourself (Authentication → Users →
    Invite). Make yourself admin: set `role = 'admin'` on your row in
    `profiles`.
-5. **The base font.** Upload `TW-Kai-98.ttf` to the `assets` bucket. The online
-   Builder downloads it at start.
+5. **The base font** isn't kept here any more: see Cloudflare R2 below. (The
+   online Builder still falls back to `TW-Kai-98.ttf` in the `assets` bucket when
+   `JZP_BASE_FONT_URL` isn't set, but each start downloads its 37 MB, and the
+   pull request previews alone used up the free plan's egress in November 2026.)
 
 Moving drafts from the old Storage bucket into the table is a one-off, done in
 October 2026. The steps are in `builder/README.md`, "Moving drafts from the old
@@ -69,8 +71,9 @@ bucket".
    deploys `main` on every merge.
 2. Set these variables:
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`;
-   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it, to read the base
-     font).
+   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it);
+   - `JZP_BASE_FONT_URL`, the base font's address on R2 (below). Set it on the
+     project's shared variables so pull request previews get it too.
 
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA` itself.
 3. Add the custom domain `builder.jianzipufont.com`.
@@ -205,6 +208,24 @@ and write to the person who asked.
   modified" reply), so people get a new release as soon as it deploys. A
   release replaces the font at the same URL, so a longer cache would keep the
   old font in browsers that saw it before.
+
+## Cloudflare R2 (the base font)
+
+The online Builder downloads the base font, `TW-Kai-98.ttf` (37 MB), every time
+it starts: each deploy, each pull request preview, each restart. R2 doesn't
+charge for downloads, so the font lives there.
+
+1. In the Cloudflare dashboard, open R2 → Create bucket (for example
+   `jzp-builder`).
+2. Upload `TW-Kai-98.ttf` from `builder/src_font/`.
+3. In the bucket's Settings → Public access, turn on the `r2.dev` address (or
+   connect a custom domain). TW-Kai is published under Taiwan's Open Government
+   Data License, so a public copy is fine.
+4. Copy the file's public URL (`https://pub-….r2.dev/TW-Kai-98.ttf`) into the
+   Railway variable `JZP_BASE_FONT_URL`, then redeploy. The deploy log should say
+   `base font: fetched https://pub-….r2.dev/TW-Kai-98.ttf (35962 KB)`.
+
+Once that works, you can delete the copy in Supabase's `assets` bucket.
 
 ## EmailOctopus
 

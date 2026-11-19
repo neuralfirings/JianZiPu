@@ -1,7 +1,8 @@
 # The hosted Builder pilot (Railway): the Builder app plus the Python server in hosted,
 # read-only mode. Testers' drafts live in Supabase; the server never writes the repo files.
 # Env (Railway variables): SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY,
-# JZP_FEEDBACK_URL, optional JZP_BASE_FONT_OBJECT (default assets/TW-Kai-98.ttf). Railway sets PORT.
+# JZP_FEEDBACK_URL, JZP_BASE_FONT_URL (where the base font is downloaded from, e.g. Cloudflare R2;
+# without it, Supabase Storage's JZP_BASE_FONT_OBJECT, default assets/TW-Kai-98.ttf). Railway sets PORT.
 # Local try: docker build -t jzp-builder . && docker run --rm -p 5713:5713 --env-file .env jzp-builder
 
 FROM node:26-slim AS app
@@ -26,5 +27,5 @@ COPY site/ /repo/site/
 COPY --from=app /repo/app/build /repo/app/build
 RUN useradd --create-home builder && mkdir -p src_font && chown -R builder /repo/builder
 USER builder
-# the base font (TW-Kai) is fetched from Supabase Storage at startup, then main's font is built once
+# the base font (TW-Kai) is downloaded at startup (JZP_BASE_FONT_URL), then main's font is built once
 CMD ["python3", "-m", "jzpbuild.webserver", "--hosted", "--host", "0.0.0.0"]

@@ -122,7 +122,7 @@ changes the repo. Spec and copy: `docs/PILOT-UX.md` (local notes).
 browser (app/, hosted mode) ──magic link──▶ Supabase Auth (invite-only)
         │  draft (bundle JSON) ◀─────────▶ Supabase table drafts (one row per tester)
         └─ /api/* + Bearer token ──▶ Railway: webserver --hosted (read-only; builds a draft's font
-                                      in a temp dir; base font fetched from Storage assets/)
+                                      in a temp dir; base font from JZP_BASE_FONT_URL)
         └─ Change Requests ──▶ Supabase table change_requests ──webhook──▶ Edge Function notify ──▶ email
 your machine: webserver (local) → /review (decide) → /release (candidate branch, tags) → GitHub
 ```
@@ -131,8 +131,10 @@ your machine: webserver (local) → /review (decide) → /release (candidate bra
   every POST needs a signed-in tester (the token is checked with Supabase `GET /auth/v1/user`, cached
   5 min); builds are per tester, random ids, and take the draft as inputs (`--design`,
   `--input-components`, `--input-svg-dir`); `/api/words` and typing previews use the tester's latest
-  build, else main's. At start it downloads the base font from Storage (`JZP_BASE_FONT_OBJECT`, default
-  `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`) and builds main's font once. On a Railway pull
+  build, else main's. At start it downloads the base font (37 MB) from `JZP_BASE_FONT_URL` (Cloudflare R2, which charges
+  nothing for downloads; no key is sent there), or, without it, from Supabase Storage
+  (`JZP_BASE_FONT_OBJECT`, default `assets/TW-Kai-98.ttf`, with `SUPABASE_SERVICE_KEY`; every deploy and
+  pull request preview counts against Supabase's egress) and builds main's font once. On a Railway pull
   request preview (`…-pr-29.up.railway.app`) the page's tab icon is the PR number in dark brown
   (`jzpbuild/preview_favicon.py`); builder.jianzipufont.com keeps its icons.
 - **App** (`app/src/lib/hosted.svelte.ts`, `drafts.ts`, `bundle.ts`, `merge.ts`, `state.svelte.ts`):
@@ -155,8 +157,7 @@ cd builder && SUPABASE_URL=https://placeholder.supabase.co SUPABASE_ANON_KEY=pla
 
 ### Setting it up
 
-Supabase (the SQL files in order, auth settings, email templates, invites, the base font in
-`assets`), Railway (the variables, the domain) and your local `builder/.env` are in
+Supabase (the SQL files in order, auth settings, email templates, invites), the base font on Cloudflare R2, Railway (the variables, the domain) and your local `builder/.env` are in
 [docs/maintainers/setup.md](../docs/maintainers/setup.md). To run the hosted image locally:
 
 ```bash
