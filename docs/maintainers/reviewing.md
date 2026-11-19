@@ -26,9 +26,10 @@ the tester's guide. In short:
 - Before a request goes, the Builder saves the draft, checks the spellings
   don't clash, and builds a font from just those changes. A request that
   arrives has built at least once.
-- A new glyph for a character on the font page's **Coming next** is tagged with
-  it (**Is this for a coming character?**, suggested from its spelling), so you
-  can put its drawing on the page (step 6 below).
+- A new glyph's glossary entry for a character on the font page's **Coming
+  next** is tagged with it (**Is this for a coming character?**, under each
+  glossary entry they send, suggested from its spelling, with the character
+  Before and After), so you can put its drawing on the page (step 6 below).
 - Sent changes are **locked** in their draft. They can see them but not edit or
   undo them. Everything else in the draft stays editable, and a change you skip
   unlocks as soon as you save your decisions.

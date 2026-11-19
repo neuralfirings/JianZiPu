@@ -224,6 +224,18 @@ describe("an area's members, each its own item", () => {
     expect(glyphOf(items, items.find((i) => i.id === 'design:member:left:md_b')!)).toBe('md_b');
     expect(glyphOf(items, items.find((i) => i.id === 'design:member:hui:md_7')!)).toBeNull();
   });
+  it("a new glyph's glossary entry travels with it, and takes the glyph along", () => {
+    const items = [
+      { id: 'glyph:md_a', kind: 'glyph', key: 'md_a', status: 'added' },
+      { id: 'glossary-row:1e:g:md_a', kind: 'glossary-row', key: '1e:g:md_a', section: '1e', row: 'g:md_a', status: 'added' },
+      { id: 'glossary-row:1e:g:md_yin', kind: 'glossary-row', key: '1e:g:md_yin', section: '1e', row: 'g:md_yin', status: 'added' },
+      { id: 'glossary-row:1e:w:带起', kind: 'glossary-row', key: '1e:w:带起', section: '1e', row: 'w:带起', status: 'added' }
+    ] as unknown as Parameters<typeof companions>[0];
+    expect(companions(items, 'md_a')).toEqual(['glossary-row:1e:g:md_a']);
+    expect(glyphOf(items, items[1])).toBe('md_a');
+    expect(glyphOf(items, items[2])).toBeNull();   // a glyph the font has already
+    expect(glyphOf(items, items[3])).toBeNull();   // a word
+  });
   it('undoes one member', () => {
     const b = twoNew();
     const items = diffBundle(b, cur()).filter((i) => i.id === 'design:member:left:md_a');

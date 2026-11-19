@@ -448,14 +448,16 @@ export function withChanges(b: Bundle, cur: Current): Merged {
   return applyMerge(items, Object.fromEntries(items.map((i) => [i.id, true])), cur);
 }
 
-/** What travels with a new glyph when it is kept, skipped or sent: its spellings and its place in
- *  each area it joins. (One of those kept on its own takes the new glyph along: `glyphOf`.) */
+/** What travels with a new glyph when it is kept, skipped or sent: its spellings, its place in each area it joins and its
+ *  glossary entry. (One of those kept on its own takes the new glyph along: `glyphOf`.) */
 export function companions(items: Item[], g: string): string[] {
-  return items.filter((i) => i.id === `spelling:${g}` || (i.kind === 'design' && i.unit.type === 'member' && i.unit.glyph === g && i.status === 'added')).map((i) => i.id);
+  return items.filter((i) => i.id === `spelling:${g}` || (i.kind === 'design' && i.unit.type === 'member' && i.unit.glyph === g && i.status === 'added')
+    || (i.kind === 'glossary-row' && i.status === 'added' && i.row === `g:${g}`)).map((i) => i.id);
 }
-/** The new glyph a spelling or area-member item belongs to, if the items add one. */
+/** The new glyph a spelling, area-member or added glossary-row item belongs to, if the items add one. */
 export function glyphOf(items: Item[], it: Item): string | null {
-  const g = it.kind === 'spelling' ? it.key : it.kind === 'design' && it.unit.type === 'member' && it.status === 'added' ? it.unit.glyph! : null;
+  const g = it.kind === 'spelling' ? it.key : it.kind === 'design' && it.unit.type === 'member' && it.status === 'added' ? it.unit.glyph!
+    : it.kind === 'glossary-row' && it.status === 'added' && it.row.startsWith('g:') ? it.row.slice(2) : null;
   return g && items.find((i) => i.id === `glyph:${g}`)?.status === 'added' ? g : null;
 }
 

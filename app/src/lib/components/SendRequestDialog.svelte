@@ -15,7 +15,7 @@
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
-  import { draftRows, newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import { draftRows, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
   import GlossaryPreview from './GlossaryPreview.svelte';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
@@ -50,7 +50,10 @@
   const ghostById = (id: string) => ghosts.find((x) => x.id === id);
   const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
-  let fresh = $derived(newGlyphs(picked));
+  /** The new glyphs whose glossary entry goes in this request: each can be for a coming character (the
+   *  entry is what the font page shows). A glyph row, not a word; the glyph must be new in the draft. */
+  let fresh = $derived([...new Set(picked.flatMap((i) => (i.kind === 'glossary-row' && i.status === 'added' && i.row.startsWith('g:') ? [i.row.slice(2)] : []))
+    .filter((g) => items.find((x) => x.id === `glyph:${g}`)?.status === 'added'))]);
   // what the page will show once the maintainer publishes your drawing for the coming character you picked
   // (Review's Publish draft to glossary): your glossary row's words over the entry's, and your drawing
   let plan = $derived(fresh.length && app.design ? draftRows(app.bundle(), Object.fromEntries(fresh.map((g) => [g, tagOf(g) || null])), app.mainLayout) : { rows: [], unplaced: [] });
@@ -181,21 +184,21 @@
     {#if ghosts.length && fresh.length}
       <fieldset class="coming">
         <legend>Is this for a coming character?</legend>
-        <p class="muted small">From the font page's Coming next. The maintainer confirms it, then can show your drawing there for comments.</p>
+        <p class="muted small">A glossary entry you're sending can be for a character on the font page's Coming next. The maintainer confirms it, then can show your entry and drawing there for comments.</p>
         {#each fresh as g (g)}
           {@const gh = ghostById(tagOf(g))}
           <div class="tagrow">
-            <label class="tagpick"><span class="mono">{g} draws</span>
+            <label class="tagpick"><span><span class="mono">Glossary · {g}</span> is for</span>
               <select value={tagOf(g)} onchange={(e) => (tags = { ...tags, [g]: (e.target as HTMLSelectElement).value })}>
                 <option value="">None of these</option>
                 {#each ghosts as x (x.id)}<option value={x.id}>{x.zh}{x.pinyin ? ` · ${x.pinyin}` : ''} · {stageLabel(x)}</option>{/each}
               </select>
             </label>
             {#if gh}
-              <p class="when"><b>Now</b> <span class="muted small">· on the font page today</span></p>
+              <p class="when"><b>Before</b> <span class="muted small">· the coming character on the font page today</span></p>
               <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={nowPics[gh.id] ?? null} />
               {#if rowFor(g)}
-                <p class="when"><b>After you link it</b> <span class="muted small">· once the maintainer shows your drawing: your glossary row's words replace {gh.zh.split(' · ')[0]}'s, and what your row leaves empty stays as it is</span></p>
+                <p class="when"><b>After</b> <span class="muted small">· your glossary entry, once the maintainer shows it: its words replace {gh.zh.split(' · ')[0]}'s (what it leaves empty stays), and your drawing replaces the old one</span></p>
                 <GlossaryPreview g={after(gh, g)} drawing={myPics[g] ?? null} />
               {:else}
                 <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first.</p>
