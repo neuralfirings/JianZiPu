@@ -209,7 +209,10 @@
     <div class="row top">
       <h2>Review</h2>
       <span class="spacer"></span>
-      {#if !hosted.isHosted}<a href="/release">Release <I.Opens size={14} /></a>{/if}
+      {#if hosted.isHosted}
+        <span class="muted small">Only on your own computer</span>
+        <button aria-disabled="true" onclick={(e) => e.preventDefault()} data-tip="Releases run git and push to GitHub, so they're made in the Builder on your own computer. Your decisions here are saved in Supabase; its Release screen finds them.">Release</button>
+      {:else}<a href="/release">Release <I.Opens size={14} /></a>{/if}
       <button onclick={() => fileInput?.click()}>Open a .zip…</button>
     </div>
     {#if !hosted.canSignIn}
@@ -321,6 +324,7 @@
   h2 { margin: 0; font-size: var(--t-heading); font-weight: 600; }
   .top { align-items: center; }
   .spacer { flex: 1; }
+  button[aria-disabled='true'], button[aria-disabled='true']:hover { color: var(--ink-faint); border-color: var(--border); background: transparent; cursor: not-allowed; }
   .tabs { display: flex; gap: var(--space-3); flex-wrap: wrap; }
   .tabs .count { margin-left: var(--space-2); font-size: var(--t-caption); font-weight: 600; color: var(--status-info); }
   .tabs .count.muted { color: var(--ink-muted); }
