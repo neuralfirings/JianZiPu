@@ -9,10 +9,10 @@
   import { pilot } from '$lib/pilot.svelte';
   import { app } from '$lib/state.svelte';
   import type { ChangeRequest } from '$lib/requests';
-  import { allUpcoming, draftRows, exampleSvg, fitToInk, placedGhosts, publishDrafts, stageLabel, type UpcomingRow } from '$lib/upcoming';
+  import { allUpcoming, drawingBlob, draftRows, exampleSvg, fitToInk, placedGhosts, publishDrafts, stageLabel, type DraftRow, type UpcomingRow } from '$lib/upcoming';
+  import GlossaryPreview from './GlossaryPreview.svelte';
   import { api } from '$lib/api';
   import * as T from '$lib/typing';
-  import SvgText from './SvgText.svelte';
 
   let { request }: { request: ChangeRequest } = $props();
 
@@ -42,14 +42,18 @@
   // drawing the page shows (glyph → SVG); drawn once per request
   let pictures = $state<Record<string, string>>({});
   let drewFor = '';
-  $effect(() => {
+  let drawing: Promise<Record<string, string>> = Promise.resolve({});
+  /** Draw the examples (once per request and set of examples); Publish waits for this, so a quick press
+   *  never puts the glyph alone on the page where the example word belongs. */
+  function drawPictures(): Promise<Record<string, string>> {
     const b = request.bundle, rows = plan.rows.filter((r) => r.example);
     const key = request.id + rows.map((r) => r.glyph + (r.example ?? []).join('|')).join(',');
-    if (!rows.length || key === drewFor) return;
+    if (key === drewFor) return drawing;
     drewFor = key;
+    if (!rows.length) return (drawing = Promise.resolve({}));
     const words = rows.map((r) => plain(r.example![1] || r.example![0]));   // the red marks are for the page, not to type
-    void api.words(b.design, words, { rows: T.toRecords(b.typing), svgs: b.svgs }).then((res) => {
-      if (!res.ok) return;
+    drawing = api.words(b.design, words, { rows: T.toRecords(b.typing), svgs: b.svgs }).then((res) => {
+      if (!res.ok) return {};
       const svgs = { ...app.svgs, ...b.svgs }, out: Record<string, string> = {};
       rows.forEach((r, i) => {
         const w = res.words[i];
@@ -58,10 +62,38 @@
         const svg = w && exampleSvg(w.pieces, svgs, mark, app.control);
         if (svg) out[r.glyph] = fitToInk(svg);
       });
-      pictures = out;
-    }).catch(() => { /* the glyph alone is shown and published */ });
-  });
+      return out;
+    }).catch(() => ({}));
+    void drawing.then((out) => { if (drewFor === key) pictures = out; });
+    return drawing;
+  }
+  $effect(() => { void drawPictures(); });
   let open = $derived((upcoming ?? []).filter((u) => u.stage !== 'released'));
+  // Now and After as the font page shows them (GlossaryPreview): the drawings as blob: URLs, since the
+  // Builder's content policy loads images only from itself. Now: the row's drawing on the page.
+  let nowPics = $state<Record<string, string>>({});
+  const nowFor: Record<string, string> = {};
+  $effect(() => {
+    for (const u of upcoming ?? []) {
+      const key = `${u.drawing}:${u.updated_at}`;
+      if (!u.drawing || nowFor[u.id] === key) continue;
+      nowFor[u.id] = key;
+      void drawingBlob(hosted.client!, u.drawing).then((url) => { if (url && nowFor[u.id] === key) nowPics = { ...nowPics, [u.id]: url }; });
+    }
+  });
+  // After: what Publish puts there, the example word when the row has one, else the glyph alone
+  let afterPics = $derived(Object.fromEntries(plan.rows.map((r) => {
+    const svg = (r.example ? pictures[r.glyph] : undefined) ?? request.bundle.svgs[r.glyph];
+    return [r.glyph, svg ? URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })) : null];
+  })));
+  $effect(() => { const m = afterPics; return () => { for (const u of Object.values(m)) if (u) URL.revokeObjectURL(u); }; });
+  $effect(() => () => { for (const u of Object.values(nowPics)) URL.revokeObjectURL(u); });
+  /** The row as Publish writes it: the request's words over the entry's (what they leave empty stays). */
+  const afterOf = (r: DraftRow, now: UpcomingRow | undefined) => ({
+    zh: r.zh, pinyin: r.pinyin || now?.pinyin || null, ascii: r.ascii || now?.ascii || null, meaning: r.meaning || now?.meaning || null,
+    section: r.section, after: r.after, stage: 'draft' as const, note: now?.note ?? null, version: null,
+    example: r.example && pictures[r.glyph] ? r.example : null
+  });
   /** "1.4. Vibratos and Slides" for 1e: the request's own subtitles, else the font's. */
   const sectionName = (id: string) => request.bundle.glossaryLayout?.sections[id]?.title ?? app.mainLayout?.sections[id]?.title ?? id;
   const rowOf = (id: string | null) => (id ? (upcoming ?? []).find((u) => u.id === id) : undefined);
@@ -69,15 +101,15 @@
   let published = $derived(plan.rows.length > 0 && plan.rows.every((r) => rowOf(r.ghost)?.change_request_id === request.id));
 
   const plain = (t: string) => t.replace(/<\/?r>/g, '');
-  /** An example line's parts, red where the page will show red (<r>…</r>), as text. */
-  const marks = (t: string) => t.split(/(<r>[^<]*<\/r>)/).filter(Boolean).map((p) => ({ red: /^<r>/.test(p), text: plain(p) }));
-  /** At Glyphs › Glossary's size for an example (GlossaryExample, 0.04 px per font unit), from its width in units. */
-  const picWidth = (svg: string) => Math.max(16, Math.round(Number(/width="([\d.]+)"/.exec(svg)?.[1] ?? 400) * 0.04));
 
   async function publish() {
     busy = true; err = null;
     try {
-      const ids = await publishDrafts(hosted.client!, request.id, plan.rows, request.bundle.svgs, pictures);
+      // an example's whole word must be drawn first: without it the page would show the glyph alone
+      const pics = await drawPictures();
+      const missing = plan.rows.filter((r) => r.example && !pics[r.glyph]).map((r) => r.glyph);
+      if (missing.length) throw new Error(`Couldn't draw the example word for ${missing.join(', ')}, so nothing was published. Check that it types in Build & test, then try again.`);
+      const ids = await publishDrafts(hosted.client!, request.id, plan.rows, request.bundle.svgs, pics);
       // new ghosts take the ids they were given, so a second press updates them
       const fresh = plan.rows.filter((r) => !r.ghost);
       await load();
@@ -119,29 +151,14 @@
           {#if request.bundle.manifest.upcoming?.[r.glyph]}<span class="muted small">tagged by the tester: {request.bundle.manifest.upcoming[r.glyph]}</span>{/if}
           {#if now}<span class="spacer"></span><a href="{SITE}#coming-{now.id}" target="_blank" rel="noopener">On the font page <I.Opens size={14} /></a>{/if}
         </div>
-        <div class="rows">
-          <div class="when">Now</div>
-          {#if now}
-            <div class="grow now">
-              <span class="zh">{now.zh}{#if now.pinyin}<small>{now.pinyin}</small>{/if}</span>
-              <span class="mono muted">{now.ascii ?? 'to come'}</span>
-              <span class="tag">{stageLabel(now)}</span>
-              <span>{now.meaning ?? ''}{#if !now.section} <span class="muted small">· not on the page yet (no section)</span>{/if}</span>
-            </div>
-          {:else}
-            <div class="grow none muted small">Nothing on the page: a new row is added.</div>
-          {/if}
-          <div class="when">After</div>
-          <div class="grow after">
-            <span class="zh">{r.zh}{#if r.pinyin}<small>{r.pinyin}</small>{/if}</span>
-            <span class="mono">{r.ascii ?? ''}</span>
-            {#if r.example && pictures[r.glyph]}
-              <span class="exin"><span class="zh">{#each marks(r.example[0]) as m, k (k)}{#if m.red}<span class="red">{m.text}</span>{:else}{m.text}{/if}{/each}</span><span class="mono">{#each marks(r.example[1]) as m, k (k)}{#if m.red}<span class="red">{m.text}</span>{:else}{m.text}{/if}{/each}</span></span>
-              <span class="pic" style="width: {picWidth(pictures[r.glyph])}px">{@html pictures[r.glyph]}</span>
-            {:else}<SvgText text={request.bundle.svgs[r.glyph]} size={56} />{/if}
-            <span><span class="tag">Draft design</span> {r.meaning ?? ''} <span class="muted small">· in {sectionName(r.section)}{r.after ? `, after ${r.after}` : ''}</span></span>
-          </div>
-        </div>
+        <p class="when"><b>Now</b> <span class="muted small">· on the font page today</span></p>
+        {#if now}
+          <GlossaryPreview g={now} drawing={nowPics[now.id] ?? null} />
+        {:else}
+          <p class="muted small">Nothing on the page: a new row is added.</p>
+        {/if}
+        <p class="when"><b>After</b> <span class="muted small">· once you publish{r.example && !pictures[r.glyph] ? ' (drawing its example word…)' : ''}</span></p>
+        <GlossaryPreview g={afterOf(r, now)} drawing={afterPics[r.glyph] ?? null} />
       </div>
     {/each}
     {#if plan.unplaced.length}
@@ -156,23 +173,10 @@
   .head, .ihead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
   .head h3 { margin: 0; }
   .spacer { flex: 1; }
+  .when { margin: var(--space-2) 0 0; }
   .item { display: flex; flex-direction: column; gap: var(--space-3); border-top: 1px solid var(--hairline); padding-top: var(--space-4); }
   .pick { display: inline-flex; align-items: center; gap: var(--space-2); }
   .pick select { max-width: 100%; }
-  .rows { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); align-items: center; }
-  .when { font-size: var(--t-small); font-weight: 600; color: var(--ink-muted); }
-  .grow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto minmax(0, 2fr); gap: var(--space-4); align-items: center; padding: var(--space-2) var(--space-3);
-    border: 1px dashed var(--border); border-radius: var(--radius-md); background: var(--bg-field); }
-  .grow.none { display: block; }
-  .grow.after:has(.exin) { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) auto auto minmax(0, 2fr); }
-  .exin { display: flex; flex-direction: column; align-items: center; }
-  .exin .red { color: var(--accent); }
-  .pic { display: block; }
-  .pic :global(svg) { display: block; width: 100%; height: auto; }
-  .grow.after { border-color: var(--border-strong); }
-  .zh { font-family: var(--font-cjk); }
-  .zh small { display: block; font-family: var(--font-serif); color: var(--ink-muted); }
   .mono { font-family: var(--font-mono); font-size: var(--t-small); }
   .small { font-size: var(--t-small); }
-  @media (max-width: 759.98px) { .grow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 </style>
