@@ -5,9 +5,9 @@ where the settings live. Secrets never go in this repository.
 
 | Part | What it does | Where |
 | --- | --- | --- |
-| Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
+| Your computer | The local Builder: releases, git (Review works online too) | this repo, `builder/.env` |
 | Supabase | Sign-in, drafts, Change Requests, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
-| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
+| Railway | The online Builder at builder.jianzipufont.com (Review too, for admins) | railway.com, `Dockerfile` |
 | Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
@@ -95,7 +95,9 @@ Deployments tab.
    `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`,
    or in the dashboard under Edge Functions → Secrets. `NOTIFY_WEBHOOK_SECRET` is
    a random string you make (`openssl rand -hex 32`); `BUILDER_URL` is
-   `https://builder.jianzipufont.com`, `REVIEW_URL` `http://127.0.0.1:5713`.
+   `https://builder.jianzipufont.com`, and so is `REVIEW_URL` (admins review
+   online; set it to `http://127.0.0.1:5713` to have the links open your local
+   Builder instead). The feedback emails use `REVIEW_URL` too.
 3. Deploy with `supabase functions deploy notify --no-verify-jwt`. Without the
    CLI: `deno bundle supabase/functions/notify/index.ts -o notify-index.ts`, then
    Edge Functions → Deploy a new function → Via Editor, name `notify`, paste the
@@ -139,9 +141,10 @@ In short:
 "Contact me" on the page opens the same form, asks for an email, and is kept
 with `kind` = `contact`.
 
-Answer a message by replying to its email. Set its status in Table Editor →
-`feedback`: `new`, `read`, `wip`, `ticket` (put the ticket's link in `ticket`),
-`wont_do`, `need_info` or `done`.
+Answer a message by replying to its email. Its **Open it in Review** button
+opens it in the Builder's Review › Feedback (signed in as an admin, online or
+on your computer), with its pictures: set its status there (New, Read, Need
+info, WIP, Done, Won't do), a ticket link and your own note.
 
 ### Spam check (Cloudflare Turnstile)
 
@@ -166,18 +169,22 @@ steps:
 
 ### Coming characters (the glossary's ghost rows)
 
-A visitor's **Request a character** arrives as a `request` in `feedback`. To take
-one on, set its status to `wip`: a row appears in Table Editor → `upcoming`,
-filled from the request. Check its words (the meaning is the visitor's), then
-set `section` (the glossary subtitle's id, such as `1e`) and `after` (the 中文 of
-the row it follows; empty for the section's end). The font page shows it as
-**Planned** within a minute. A second request for the same character: put the
-first one's `upcoming_id` on it before setting it to `wip`.
+A visitor's **Request a character** arrives in Review › Feedback as a
+**Character request**. To take one on, set it to **WIP** and Save: it
+appears in Review › Glossary drafts, filled from the request. **Edit** it there:
+check its words (the definition is the visitor's), pick its **Section** and type
+**After** (the 中文 of the row it follows; empty for the section's end). The
+preview shows it as the page will, and the font page shows it as **Planned**
+within a minute. A second request for the same character: under **Coming
+character** in the message, **Link…** it to the one the first request made
+before setting it to WIP (WIP makes a new one only when none is linked).
+Feedback that isn't a request (a glossary row, the page) can get one too:
+**Link…** → **New coming character**.
 
 From there the Builder moves it on: Review's **Publish draft to glossary** shows a
 tester's drawing (**Draft design**), a release candidate makes it **In release**,
-and publishing the release takes it off the list. Set the request to `done` then,
-and write to the person who asked.
+and publishing the release takes it off the list. Set the request to **Done**
+then (Review › Feedback), and write to the person who asked.
 
 ## GitHub
 

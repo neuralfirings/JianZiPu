@@ -44,7 +44,8 @@ Deno.serve(async (req) => {
     const mail = TEMPLATES[email.template]({
       request, authorName: author?.name || author?.email || 'A tester',
       builderUrl: env('BUILDER_URL', 'https://builder.jianzipufont.com').replace(/\/$/, ''),
-      reviewUrl: env('REVIEW_URL', 'http://127.0.0.1:5713').replace(/\/$/, '')
+      // where admins review: the online Builder (admins see Review there), or a local one
+      reviewUrl: env('REVIEW_URL', 'https://builder.jianzipufont.com').replace(/\/$/, '')
     });
     await send(to, mail);
     return Response.json({ sent: to.length, template: email.template });

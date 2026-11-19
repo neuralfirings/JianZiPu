@@ -11,7 +11,7 @@ one looks like.
 
 ## The short version
 
-1. On Review, decide on the Change Requests (see [reviewing.md](reviewing.md)):
+1. On Review, online or on your computer, decide on the Change Requests (see [reviewing.md](reviewing.md)):
    try each one first with **Try in Build & test** (Test the design, then
    Undo), and, if you like, put new glyphs on the font page as drafts for
    comments with **Publish draft to glossary**.
@@ -22,8 +22,8 @@ one looks like.
    something needs fixing.
 6. Merge the pull request with **Create a merge commit**, not squash or rebase.
 7. Release → **Publish**. This tags `v3.300` and GitHub publishes the release.
-8. In Supabase, set the visitors' requests for characters this release added
-   to `done`, and write to the people who asked ([Coming characters](#coming-characters)).
+8. In Review › Feedback, set the visitors' requests for characters this release
+   added to **Done**, and write to the people who asked ([Coming characters](#coming-characters)).
 
 ## Before you start
 
@@ -136,7 +136,7 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
    the candidate's tag in `version`). Only rows you published as drafts
    (Review's **Publish draft to glossary**) move; a kept glyph you never
    published has no row, and shows only once released. A character drawn with
-   two glyphs moves when both are in. A **Planned** row (a request taken on, not
+   two glyphs moves when both are in. A **Planned** row (a request set to WIP, not
    drawn yet) has no glyphs and stays as it is.
 
 So every candidate is **two commits**: the design, then the built font. The
@@ -355,27 +355,31 @@ through the feedback function's `GET`, which gives only what the page shows.
 
 | Stage | How it gets there | The font page shows |
 | --- | --- | --- |
-| a request | A visitor presses **Request a character** (中文, pinyin, meaning, where seen, photo, email). You get an email; it's a `feedback` row, kind `request`. | nothing |
-| **Planned** | You set the request's `status` to `wip` (Table Editor → `feedback`). A trigger adds its row to `upcoming`, filled from the request; you set `section` (the subtitle's id, `1e`) and `after` (the 中文 of the row above; empty for the end) and check the meaning. | a faded row, "not drawn yet", once `section` is set |
+| a request | A visitor presses **Request a character** (中文, pinyin, meaning, where seen, photo, email). You get an email; it's in Review › Feedback as a **Character request**. | nothing |
+| **Planned** | In Review › Feedback you set the request to **WIP**. A trigger adds it to Review › Glossary drafts, filled from the request; there you **Edit** it: pick its **Section**, type **After** (the 中文 of the row above; empty for the end) and check the definition. The preview shows it as the page will. | a faded row, "not drawn yet", once it has a section |
 | **Draft design** | A tester draws it and tags the glyph with it when sending the Change Request. In Review, **Publish draft to glossary** (any new glyph with a glossary row, tagged or not). | the example word as the font will set it, and its input lines |
 | **In release 3.300** | **Build candidate** moves every draft whose glyphs are all in it. | the same, with **Download the test font** |
 | released | **Publish** takes it off. | the real row, no badge |
 
-What you do by hand:
+What you do by hand, all in Review (online or on your computer):
 
-- Take a request on (`wip`), and place its row (`section`, `after`).
+- Take a request on (**WIP** in Feedback), and place its row (**Section**
+  and **After** in Glossary drafts). A duplicate request: **Link…** it to the
+  first one's coming character before setting it to WIP.
 - Reply to people from your inbox: the request's email replies to them.
-- After a release, set those requests to `done`, and write to the people who
-  asked. Filtering `feedback` on `done` lists them with their emails.
+- After a release, set those requests to **Done** in Feedback, and write to the
+  people who asked. **Show: Done** lists them, each with its email.
 
-Comments on a ghost arrive by email and as `feedback` rows of kind `comment`,
-with the ghost's id in `upcoming_id`; they're never shown on the page.
+Comments on a ghost arrive by email and in Review › Feedback as **Coming
+character**, with a link to its card in Glossary drafts; they're never shown on
+the page.
 
-**Editing or removing a ghost.** Edit any column in Table Editor → `upcoming`;
-the page shows it within a minute. Deleting a row is safe: it leaves the page,
-and nothing else depends on it (a comment keeps its `upcoming_id`, pointing
-nowhere). Delete its drawing in Storage → `upcoming` too if you like. A request
-for it keeps its own status.
+**Editing or removing a ghost.** In Review › Glossary drafts, **Edit** changes
+its words, section, place, stage, version or public note, with a preview of the
+page as you type; the page shows it within a minute of **Save**. **Delete…**
+takes it off the page for good, its drawing too. That's safe: nothing else
+depends on it (a comment keeps its `upcoming_id`, pointing nowhere), and a
+request for it keeps its own status.
 
 **Duplicates.** Publishing a glyph again updates the row it's already in, from
 the same request or another. Rows made twice before that fix (Nov 18) can be

@@ -6,8 +6,8 @@ import type { Entry } from './check.ts';
 export type FeedbackContext = {
   entry: Entry;
   pictures: number;
-  /** The Supabase dashboard's table of feedback, where its status is set. */
-  tableUrl: string;
+  /** The message in the Builder's Review › Feedback, where its status, ticket and note are set. */
+  reviewUrl: string;
 };
 
 /** "2 · 中 · d · zhōng (1.1. Which Finger to Use)" → "中 (row 2)". */
@@ -49,7 +49,7 @@ export function feedbackMail(c: FeedbackContext): Mail {
       e.email ? 'Reply to this email to answer them.' : 'They left no email, so there is no one to reply to.',
     ],
     quote: [{ label: e.kind === 'request' ? 'What it means, or how it’s played' : 'Their message', text: e.message }],
-    button: { label: 'Set its status', url: c.tableUrl },
-    footer: 'You get this email because you are an admin of the JianZiPu font. Every message is kept in Supabase, in the feedback table (kind: row, page, contact, request or comment), with its status: new, read, ticket, wont_do or need_info.',
+    button: { label: 'Open it in Review', url: c.reviewUrl },
+    footer: 'You get this email because you are an admin of the JianZiPu font. Every message is in the Builder’s Review › Feedback (signed in as an admin), with its pictures, where you set its status, a ticket link and your own note.',
   });
 }

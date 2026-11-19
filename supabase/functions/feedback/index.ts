@@ -151,8 +151,9 @@ Deno.serve(async (req) => {
     try {
       const to = await recipients();
       if (to.length) {
-        const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
-        const m = feedbackMail({ entry: p.entry, pictures: paths.length, tableUrl: `https://supabase.com/dashboard/project/${ref}/editor` });
+        // REVIEW_URL: the Builder admins review in (the Change Request emails' secret too); online by default
+        const review = env('REVIEW_URL', 'https://builder.jianzipufont.com').replace(/\/$/, '');
+        const m = feedbackMail({ entry: p.entry, pictures: paths.length, reviewUrl: `${review}/review?tab=feedback&f=${id}` });
         const attachments = await Promise.all(p.pictures.map(async (pic, i) => ({
           filename: paths[i].split('/')[1], content: base64(new Uint8Array(await pic.file.arrayBuffer())),
         })));
