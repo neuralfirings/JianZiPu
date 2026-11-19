@@ -144,7 +144,7 @@ with `kind` = `contact`.
 Answer a message by replying to its email. Its **Open it in Review** button
 opens it in the Builder's Review › Feedback (signed in as an admin, online or
 on your computer), with its pictures: set its status there (New, Read, Need
-info, Taken on, Done, Won't do), a ticket link and your own note.
+info, WIP, Done, Won't do), a ticket link and your own note.
 
 ### Spam check (Cloudflare Turnstile)
 
@@ -170,7 +170,7 @@ steps:
 ### Coming characters (the glossary's ghost rows)
 
 A visitor's **Request a character** arrives in Review › Feedback as a
-**Character request**. To take one on, set it to **Taken on** and Save: it
+**Character request**. To take one on, set it to **WIP** and Save: it
 appears in Review › Glossary drafts, filled from the request. **Edit** it there:
 check its words (the definition is the visitor's), pick its **Section** and type
 **After** (the 中文 of the row it follows; empty for the section's end). The

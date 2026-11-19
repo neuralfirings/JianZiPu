@@ -151,9 +151,9 @@ Review has two more tabs for admins, online and local:
 
 - **Feedback**: the font page's messages (the `feedback` table) as an inbox,
   with their pictures from the private `feedback` bucket. Set a status (New,
-  Read, Need info, Taken on, Done, Won't do), a ticket link (whatever the
+  Read, Need info, WIP, Done, Won't do), a ticket link (whatever the
   status) and your own note. Opening a New message marks it Read. A character
-  request set to **Taken on** adds its coming character (the
+  request set to **WIP** adds its coming character (the
   `feedback_take_on` trigger). The admins' email for each message opens it here.
 - **Glossary drafts**: every row of `upcoming`, by stage, each shown as the
   font page will show it: in its section's table (read from `/site/`), between

@@ -136,7 +136,7 @@ and the GitHub release notes. Use the Keep a Changelog headings: `### Added`,
    the candidate's tag in `version`). Only rows you published as drafts
    (Review's **Publish draft to glossary**) move; a kept glyph you never
    published has no row, and shows only once released. A character drawn with
-   two glyphs moves when both are in. A **Planned** row (a request taken on, not
+   two glyphs moves when both are in. A **Planned** row (a request set to WIP, not
    drawn yet) has no glyphs and stays as it is.
 
 So every candidate is **two commits**: the design, then the built font. The
@@ -356,14 +356,14 @@ through the feedback function's `GET`, which gives only what the page shows.
 | Stage | How it gets there | The font page shows |
 | --- | --- | --- |
 | a request | A visitor presses **Request a character** (中文, pinyin, meaning, where seen, photo, email). You get an email; it's in Review › Feedback as a **Character request**. | nothing |
-| **Planned** | In Review › Feedback you set the request to **Taken on**. A trigger adds it to Review › Glossary drafts, filled from the request; there you **Edit** it: pick its **Section**, type **After** (the 中文 of the row above; empty for the end) and check the definition. The preview shows it as the page will. | a faded row, "not drawn yet", once it has a section |
+| **Planned** | In Review › Feedback you set the request to **WIP**. A trigger adds it to Review › Glossary drafts, filled from the request; there you **Edit** it: pick its **Section**, type **After** (the 中文 of the row above; empty for the end) and check the definition. The preview shows it as the page will. | a faded row, "not drawn yet", once it has a section |
 | **Draft design** | A tester draws it and tags the glyph with it when sending the Change Request. In Review, **Publish draft to glossary** (any new glyph with a glossary row, tagged or not). | the example word as the font will set it, and its input lines |
 | **In release 3.300** | **Build candidate** moves every draft whose glyphs are all in it. | the same, with **Download the test font** |
 | released | **Publish** takes it off. | the real row, no badge |
 
 What you do by hand, all in Review (online or on your computer):
 
-- Take a request on (**Taken on** in Feedback), and place its row (**Section**
+- Take a request on (**WIP** in Feedback), and place its row (**Section**
   and **After** in Glossary drafts).
 - Reply to people from your inbox: the request's email replies to them.
 - After a release, set those requests to **Done** in Feedback, and write to the

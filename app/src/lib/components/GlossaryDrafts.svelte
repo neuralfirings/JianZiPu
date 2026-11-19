@@ -18,7 +18,7 @@
   let releasedOpen = $state(false);
   const STAGES: Stage[] = ['planned', 'draft', 'test', 'released'];
   const STAGE_HELP: Record<Stage, string> = {
-    planned: 'Taken on, not drawn yet: the page shows the character with a Planned badge.',
+    planned: 'Set to WIP, not drawn yet: the page shows the character with a Planned badge.',
     draft: 'A drawing on the page for people to comment on (Draft design).',
     test: 'In a release candidate: the page offers its test font (In release …).',
     released: 'In the font: the page shows its real row instead.'
@@ -97,7 +97,7 @@
 </script>
 
 <div class="bar">
-  <p class="muted small">The font page's coming characters. A request set to Taken on in Feedback adds one; Publish draft to glossary on a Change Request gives it a drawing; releases move it on.</p>
+  <p class="muted small">The font page's coming characters. A request set to WIP in Feedback adds one; Publish draft to glossary on a Change Request gives it a drawing; releases move it on.</p>
   <span class="spacer"></span>
   <button class="quiet sm" onclick={() => { rows = null; }} data-tip="Load the list again" aria-label="Reload"><I.Refresh /></button>
 </div>

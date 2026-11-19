@@ -77,7 +77,7 @@ and your own note.
 | New | `new` | Not looked at (every message starts here; opening it in Review marks it Read) |
 | Read | `read` | Seen |
 | Need info | `need_info` | Asked the sender for more |
-| Taken on | `wip` | Taken on. A request taken on appears in Review › Glossary drafts, and the font page shows it as Planned once you give it a section there |
+| WIP | `wip` | Being worked on. A request set to WIP appears in Review › Glossary drafts, and the font page shows it as Planned once you give it a section there |
 | Done | `done` | Its character is released: write to them |
 | Won't do | `wont_do` | Not changing it |
 

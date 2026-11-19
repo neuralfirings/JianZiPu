@@ -83,7 +83,7 @@
 <div class="bar">
   <label class="muted small">Show
     <select id="fb-show" bind:value={show}>
-      <option value="open">To deal with ({nStatus('open')})</option>
+      <option value="open">Open: New, Read, Need info ({nStatus('open')})</option>
       {#each showable as s}<option value={s}>{STATUS_LABEL[s]} ({nStatus(s)})</option>{/each}
       <option value="all">All ({nStatus('all')})</option>
     </select>
@@ -103,7 +103,7 @@
 {#if list === null}
   <p class="muted">Loading feedback…</p>
 {:else if !shown.length}
-  <p class="muted">{show === 'open' ? 'Nothing to deal with: every message has a status.' : 'None.'}</p>
+  <p class="muted">{show === 'open' ? 'Nothing open: no message is New, Read or Need info.' : 'None.'}</p>
 {:else}
   <div class="inbox">
     <ul class="msgs" aria-label="Messages">
@@ -173,7 +173,7 @@
             </select>
           </label>
           {#if status === 'wip' && current.kind === 'request' && !current.upcoming_id}
-            <p class="muted small">Taken on adds this character to Glossary drafts as Planned.</p>
+            <p class="muted small">WIP adds this character to Glossary drafts as Planned.</p>
           {/if}
           <label>Ticket <span class="muted small">(a link, if it became one)</span>
             <span class="ticket"><input id="fb-ticket" type="url" placeholder="https://github.com/…/issues/…" bind:value={ticket} />

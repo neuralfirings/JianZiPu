@@ -19,13 +19,13 @@ export const BUCKET = 'feedback';
  *  stays in the database's list (006) for messages set to it before, but the menu doesn't offer it. */
 export const STATUSES: FeedbackStatus[] = ['new', 'read', 'need_info', 'wip', 'done', 'wont_do'];
 export const STATUS_LABEL: Record<FeedbackStatus, string> = {
-  new: 'New', read: 'Read', need_info: 'Need info', wip: 'Taken on', ticket: 'Ticket (old status)', done: 'Done', wont_do: "Won't do"
+  new: 'New', read: 'Read', need_info: 'Need info', wip: 'WIP', ticket: 'Ticket (old status)', done: 'Done', wont_do: "Won't do"
 };
 /** The pill each status shows (app.css .pill.*): colour + icon + word. */
 export const STATUS_PILL: Record<FeedbackStatus, 'info' | 'draft' | 'saved' | ''> = {
   new: 'info', read: '', need_info: 'draft', wip: 'draft', ticket: 'saved', done: 'saved', wont_do: ''
 };
-/** Still yours to deal with. */
+/** Still yours to deal with: the Show menu's first choice, Open. */
 export const OPEN: FeedbackStatus[] = ['new', 'read', 'need_info'];
 export const KIND_LABEL: Record<FeedbackKind, string> = {
   row: 'Glossary row', page: 'The page', contact: 'Contact me', request: 'Character request', comment: 'Coming character'
@@ -57,7 +57,7 @@ export async function allFeedback(c: SupabaseClient): Promise<Feedback[]> {
   return ((data ?? []) as Feedback[]).map((f) => ({ ...f, kind: f.kind ?? 'page', pictures: f.pictures ?? [] }));
 }
 
-/** Change its status, ticket link or your note; returns the row as saved (a request set to Taken on
+/** Change its status, ticket link or your note; returns the row as saved (a request set to WIP
  *  gets its coming character's id from the database). */
 export async function updateFeedback(c: SupabaseClient, id: string, patch: Partial<Pick<Feedback, 'status' | 'ticket' | 'note'>>): Promise<Feedback> {
   const { data, error } = await c.from(TABLE).update(patch).eq('id', id).select().single();
