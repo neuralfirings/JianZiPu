@@ -11,7 +11,7 @@ same text becomes the GitHub release notes.
 ## [Unreleased]
 
 ### Added
-- 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7, and so is `名九徽七弦` (弦 wins over a point before its number). In a chord it closes the first half: `撥大九四六弦|散五` is the same as `Bv9.4,6|05`.
+- 弦 (絃) after a number marks it as a string: `名九七弦` is 9 hui, string 7, not 9.7, and so is `名九徽七弦` (弦 wins over a point before its number), with the numbers in digits too (`名9徽7弦`). In a chord it closes the first half: `撥大九四六弦|散五` is the same as `Bv9.4,6|05`.
 
 ### Changed
 - 十一, 十二 and 十三 typed in Chinese are always hui 11, 12 and 13 (they were 10.1, 10.2, 10.3): 10.2 is written `十徽二`, `十徽二分` or `十点二`. `十四` to `十九` are still 10.4 to 10.9.

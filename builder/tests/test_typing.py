@@ -526,3 +526,24 @@ def test_the_rules_for_hui_and_xian_are_generated():
     assert "sub ch_hui' ch_ban" in fea and "by comma;" in fea                       # 徽 before 半轮: a comma
     assert "sub @area_left ch_10 ch_2' by md_10.2;" not in fea                      # 十二 is twelve
     assert "sub md_7 ch_xian by md_7;" in fea and "lookup string_marks;" in fea
+
+
+# the same with the numbers in digits (名9徽7弦): it reads like the Chinese, whatever the point or 弦
+MIXED = [("名九半轮六", "名9.5轮6"), ("名九，半轮六", "名9,半轮6"), ("名九徽半轮六", "名9徽半轮6"), ("名九徽半勾六", "名9徽半勾6"),
+         ("名十二勾五", "名12勾5"), ("名十二徽勾五", "名12徽勾5"), ("名十徽勾五", "名10徽勾5"), ("名十徽二勾五", "名10徽2勾5"),
+         ("名十徽二分勾五", "名10徽2分勾5"), ("名十点二勾五", "名10点2勾5"), ("名七徽六挑五", "名7徽6挑5"), ("名九七", "名97"),
+         ("名九七弦", "名97弦"), ("名九徽七弦", "名9徽7弦"), ("名九点七弦", "名9点7弦"), ("名九点七弦", "名9.7弦"),
+         ("撥大九四六弦|散五", "撥大9.46弦|散5"), ("撮名七徽五弦|二", "撮名7徽5弦|2")]
+
+
+def test_numbers_in_digits_read_like_the_chinese(built_font):
+    hb = pytest.importorskip("uharfbuzz")
+    font = hb.Font(hb.Face(hb.Blob.from_file_path(str(built_font))))
+
+    def shape(text):
+        buf = hb.Buffer()
+        buf.add_str(text)
+        buf.guess_segment_properties()
+        hb.shape(font, buf, {})
+        return [font.glyph_to_string(i.codepoint) for i in buf.glyph_infos]
+    assert {m: shape(m) for _, m in MIXED} == {m: shape(z) for z, m in MIXED}

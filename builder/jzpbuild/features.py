@@ -359,15 +359,17 @@ def gen_c2j_char_left(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
 
 def gen_c2j_hui_before_word(rows: list[GlyphRow], c2g: dict[str, str]) -> list[str]:
     """徽 before a word that starts with 半 (半轮, 半扶…) ends the hui number, as a comma does: 名九徽半轮六
-    is 9, then 半轮 (名九，半轮六), where 徽半 would otherwise be .5. So does a point (徽 点 點 。) before a
-    number that 弦 marks as a string: 名九徽七弦 is 9, string 7. Runs before the decimal lookups."""
+    is 9, then 半轮 (名九，半轮六), where 徽半 would otherwise be .5. So does a point (徽 点 點 。 or a dot)
+    before a number, in Chinese or in digits, that 弦 marks as a string: 名九徽七弦 and 名9徽7弦 are 9,
+    string 7. Runs before every decimal lookup, the Latin-digit ones included."""
     seconds = sorted({c2g[v[1]] for r in rows for v in (r.simplified, r.traditional)
                       if len(v) >= 2 and v[0] == "半" and v[1] in c2g})
     lines = ["lookup c2j_hui_before_word {"]
     lines += [f"  sub {HUI_END}' ch_ban {g} by comma;" for g in seconds] or ["  sub ch_hui' ch_ban ch_hui by ch_hui;"]
     # a number then 弦 is a string, whatever point comes before it: 名九徽七弦 = 名九，七弦 (9, string 7), not 9.7
-    digits = " ".join(hui_ch(d) for d in range(1, 10))
-    lines.append(f"  sub @area_period_subs' [ {digits} ] {XIAN} by comma;")
+    # the number in Chinese or in digits (名9徽7弦), the point Chinese or a dot (名9.7弦)
+    digits = " ".join([hui_ch(d) for d in range(1, 10)] + [DIGIT[d] for d in range(1, 10)])
+    lines.append(f"  sub [ {' '.join(PERIOD_SUBS)} period ]' [ {digits} ] {XIAN} by comma;")
     lines.append("} c2j_hui_before_word;")
     return lines
 
@@ -640,6 +642,9 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         lines += ["  # latin spellings with a digit (zhi4, xi4): before the numbers read the digit",
                   "  lookup l2j_digit_liga;", ""]
     lines += [
+        "  # a point that ends the hui number (名九徽半轮, 名9徽7弦): before any decimal reads it",
+        "  lookup c2j_hui_before_word; # 名九徽半轮 = 名九，半轮",
+        "",
         "  # common inputs",
         "  lookup s2j_lat_ch_period_liga; # 7点6",
         "  lookup s2j_liga; # 7.6",
@@ -648,7 +653,6 @@ def gen_liga_feature(digit_lookup: bool = True, bracket_lookup: bool = False) ->
         "  # chinese input",
         "  lookup c2j_char_symbols;",
         "  lookup c2j_char_left;",
-        "  lookup c2j_hui_before_word; # 名九徽半轮 = 名九，半轮",
         "  lookup c2j_char_deci_period_liga;",
         "  lookup c2j_char_deci_liga_part1;",
         "  lookup c2j_char_deci_liga_part2;",
@@ -709,6 +713,7 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         # defined before the number lookups: lookups run in definition order
         gen_c2j_bracket_symbols(rows),
         gen_l2j_digit_liga(rows), [""],
+        gen_c2j_hui_before_word(rows, c2g),
         gen_s2j_lat_ch_period_liga(),
         gen_s2j_liga(),
         gen_s2j_single(), [""],
@@ -716,7 +721,6 @@ def gen_gsub(rows: list[GlyphRow] | None = None, validate: bool = True) -> list[
         gen_l2j_single(rows), [""],
         gen_c2j_char_symbols(),
         gen_c2j_char_left(rows, c2g),
-        gen_c2j_hui_before_word(rows, c2g),
         gen_c2j_char_deci_period_liga(),
         gen_c2j_char_deci_liga_parts(),
         gen_c2j_liga(rows, c2g, "simplified", "c2j_char_liga"),
