@@ -3,11 +3,12 @@
 Testers improve the font in the online Builder (builder.jianzipufont.com). Each
 tester works in a private **draft**. When some of their changes are ready, they
 send them as a **Change Request** (a CR). The maintainer decides on each change
-in the **local** Builder. Kept changes reach the font only through a release
-([releasing.md](releasing.md)).
+on the Review screen, in the local Builder or in the online one (where only
+admins see Review). Kept changes reach the font only through a release, made in
+the **local** Builder ([releasing.md](releasing.md)).
 
 ```
-tester (online Builder)                 maintainer (local Builder)
+tester (online Builder)          maintainer (Review: online or local; Release: local)
   draft ──Send Change Request──▶ Sent ──Review: Keep / Skip──▶ In review ──Build candidate──▶
   In a release candidate ──Publish──▶ Released
                          (all skipped: Declined; the tester can Withdraw until a change is kept)
@@ -44,7 +45,11 @@ the tester's guide. In short:
 1. You get an email ("New Change Request: …") with a link to Review. (No email?
    The `notify` function and its webhook must be set up: see
    [setup.md](setup.md), "Change Request emails".)
-2. Start the local Builder and open http://127.0.0.1:5713/review. Sign in with
+2. Open Review, in either Builder. Online (builder.jianzipufont.com), the
+   **Review** tab shows once you're signed in with an account whose `role` in
+   `profiles` is `admin`; testers don't see it. Your decisions are saved in
+   Supabase, so the local Builder's Release screen finds them later. Locally:
+   start the local Builder and open http://127.0.0.1:5713/review. Sign in with
    your admin email (a magic link). The list shows the open requests; the
    filter shows the rest. Work on `main` (or the PR branch you're testing) with
    a rebuilt app: `git pull`, then `cd app && npm run build`, then restart the
@@ -72,7 +77,8 @@ the tester's guide. In short:
    and opens Build & test on the request's words (each new glyph's spelling and
    its glossary example). Use **Test the design**: it draws them live and saves
    nothing. Don't press **Save & build**: on your computer it saves first, which
-   writes the tried changes into the font files. To try several requests
+   writes the tried changes into the font files. Online, your own draft saves
+   as you go, so the tried changes stay in it until you Undo them. To try several requests
    together, go back and press it on each; every request is its own undo step.
    **Undo** (once per request) takes them back out; the header returns to
    **Saved**. A change your Builder already has is left alone; one your Builder has
@@ -115,7 +121,9 @@ the tester's guide. In short:
 7. If you like, write a reply. The tester sees it on Your Change Requests and in
    the email.
 8. **Save decisions.** The request becomes **In review** and its author gets an
-   email. If you skipped everything, it becomes **Declined** instead.
+   email. If you skipped everything, it becomes **Declined** instead. Keep /
+   Skip and the reply stay on the page until then: leaving the request first
+   asks whether to save them.
 
 Saving decisions doesn't change the font or your files. The kept changes wait
 for the next release candidate. Until then, you can open the request again and
@@ -136,6 +144,25 @@ To try kept changes together, use the Release screen's **Add kept changes** on
 a release branch ([releasing.md](releasing.md)). Or open the tester's current
 draft (below) and **Apply** it, then look in Build & test's **Test the design**
 without saving.
+
+## Feedback and Glossary drafts
+
+Review has two more tabs for admins, online and local:
+
+- **Feedback**: the font page's messages (the `feedback` table) as an inbox,
+  with their pictures from the private `feedback` bucket. Set a status (New,
+  Read, Need info, Taken on, Ticket, Done, Won't do), a ticket link and your own
+  note. Opening a New message marks it Read. A character request set to **Taken
+  on** adds its coming character (the `feedback_take_on` trigger).
+- **Glossary drafts**: every row of `upcoming`, by stage, each shown as the
+  font page will show it: in its section's table (read from `/site/`), between
+  the rows around it.
+  **Edit** changes the words, section, place (`after`), stage, version or the
+  public note; **Delete…** removes the row and its drawing. A row without a
+  section isn't on the font page.
+
+You can still do all of this in the Supabase dashboard; these screens write the
+same rows.
 
 ## Statuses
 

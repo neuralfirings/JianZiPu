@@ -15,6 +15,7 @@
   import type { Layout } from '$lib/api';
   import { applyMerge, companions, diffBundle, glossarySection, glossaryWhat, itemName, gapText, hunks, lineDiff, pretty, revertItems, revertRule, ruleChanges, usesOfGlyph, type DesignItem, type Item, type RuleChange } from '$lib/merge';
   import { app } from '$lib/state.svelte';
+  import { hosted } from '$lib/hosted.svelte';
   import { canWithdraw, inTheFont, releasedItems, startSvgs, tryWords } from '$lib/requests';
   import { goto } from '$app/navigation';
   import { day, fontName, fontOf, hhmm, pilot } from '$lib/pilot.svelte';
@@ -25,7 +26,7 @@
   import SvgText from './SvgText.svelte';
   import WordTester from './WordTester.svelte';
 
-  let { bundle, mode, name, onapplied, onexport, decisions = {}, ondecide, send = false }: {
+  let { bundle, mode, name, onapplied, onexport, decisions = {}, ondecide, send = false, edited = $bindable(false), choices = $bindable({}) }: {
     bundle: Bundle; mode: 'owner' | 'import' | 'mine' | 'sent' | 'decide'; name: string;
     onapplied?: (r: { count: number; message: string }) => void;
     onexport?: () => void;
@@ -34,6 +35,9 @@
     /** decide: the saved decisions to start from, and what Save decisions hands back. */
     decisions?: Record<string, 'keep' | 'skip'>;
     ondecide?: (d: Record<string, 'keep' | 'skip'>) => void;
+    /** decide: whether Keep / Skip moved since the request opened, and the picks as Save decisions would send them. */
+    edited?: boolean;
+    choices?: Record<string, 'keep' | 'skip'>;
   } = $props();
 
   /** What the draft is compared with: the app now, or (mine) what the draft started from. */
@@ -50,6 +54,14 @@
     if (key === seeded) return;
     seeded = key;
     picks = Object.fromEntries(items.map((i) => [i.id, i.conflict ? undefined : decisions[i.id] !== 'skip']));
+    seededPicks = JSON.stringify(picks);
+  });
+  let seededPicks = '';
+  const decided = () => Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'] as const));
+  $effect(() => {
+    if (mode !== 'decide') return;
+    choices = decided();
+    edited = JSON.stringify(picks) !== seededPicks;
   });
   let filter = $state<'all' | 'conflicts' | 'skipped'>('all');
   let open = $state<Record<string, boolean>>({});
@@ -130,7 +142,7 @@
     const m = applyMerge(its, Object.fromEntries(its.map((i) => [i.id, ids.has(i.id)])), cur);
     if (!m.applied.length) { pilot.say('Nothing to try: your Builder already has these changes.'); return; }
     app.applyChanges(`Try: ${name}`, m);
-    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length === 1 ? 'this one replaces' : 'these replace'} what your Builder had (changed there too, so the request's version is shown): ${clash.map((i) => itemName(i)).join(', ')}` : ''}. Test the design shows them; Build would save them to your files. Undo takes them back out.`, { undo: true });
+    pilot.say(`Trying ${m.applied.length} change${m.applied.length === 1 ? '' : 's'} from "${name}"${clash.length ? `; ${clash.length === 1 ? 'this one replaces' : 'these replace'} what your Builder had (changed there too, so the request's version is shown): ${clash.map((i) => itemName(i)).join(', ')}` : ''}. ${hosted.isHosted ? 'Test the design shows them. This site saves your own draft as you go, so they stay in it until you Undo them.' : 'Test the design shows them; Build would save them to your files. Undo takes them back out.'}`, { undo: true });
     void goto(`/test?view=words&words=${encodeURIComponent(tryWords(bundle).join(' '))}`);
   }
 
@@ -393,7 +405,7 @@
       <span class="muted small">Decisions are saved on the request; nothing goes into the font yet. Kept changes go into the next release candidate.</span>
       <span class="spacer"></span>
       <button onclick={tryIt} data-tip="Bring the changes you're keeping into your Builder as unsaved changes, and see them in Build & test. Undo takes them back out.">Try in Build & test</button>
-      <button class="primary" onclick={() => ondecide?.(Object.fromEntries(items.map((i) => [i.id, picks[i.id] ? 'keep' : 'skip'])))}>Save decisions</button>
+      <button class="primary" onclick={() => ondecide?.(decided())}>Save decisions</button>
     </div>
   {:else if mode === 'mine' && phone.on && items.length}
     <!-- a phone: Send stays in reach at the bottom while the list scrolls -->

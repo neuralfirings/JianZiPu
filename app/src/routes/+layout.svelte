@@ -38,7 +38,8 @@
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
     ['/test', 'Build & test'],
-    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : []),
+    // Review: always on your own computer; online only for admins (profiles.role = 'admin')
+    ...(hosted.ready && (!hosted.isHosted || hosted.isAdmin) ? [['/review', 'Review']] : []),
     ['/help', 'Help']
   ]);
 

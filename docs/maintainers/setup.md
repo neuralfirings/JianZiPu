@@ -7,7 +7,7 @@ where the settings live. Secrets never go in this repository.
 | --- | --- | --- |
 | Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
 | Supabase | Sign-in, drafts, Change Requests, the base font, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
-| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
+| Railway | The online Builder at builder.jianzipufont.com (Review too, for admins) | railway.com, `Dockerfile` |
 | Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |

@@ -247,3 +247,27 @@ export async function toReleased(c: SupabaseClient, glyphs: Set<string>, version
   }
   return rows;
 }
+
+/** What Review › Glossary drafts may change on a row. */
+export type UpcomingPatch = Partial<Pick<UpcomingRow, 'zh' | 'pinyin' | 'ascii' | 'meaning' | 'section' | 'after' | 'stage' | 'note' | 'version'>>;
+
+/** Admin: change a coming character's row; returns it as saved. */
+export async function updateUpcoming(c: SupabaseClient, id: string, patch: UpcomingPatch): Promise<UpcomingRow> {
+  const { data, error } = await c.from(TABLE).update(patch).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data as UpcomingRow;
+}
+
+/** Admin: take a coming character off the page for good: its row and its drawing. */
+export async function deleteUpcoming(c: SupabaseClient, row: Pick<UpcomingRow, 'id' | 'drawing'>) {
+  const { error } = await c.from(TABLE).delete().eq('id', row.id);
+  if (error) throw new Error(error.message);
+  if (row.drawing) await c.storage.from(BUCKET).remove([row.drawing]);
+}
+
+/** A drawing from the upcoming bucket as a local blob: URL (the Builder's content policy loads images
+ *  only from itself), or null when it can't be read. Revoke it (URL.revokeObjectURL) when done. */
+export async function drawingBlob(c: SupabaseClient, file: string): Promise<string | null> {
+  const { data, error } = await c.storage.from(BUCKET).download(file);
+  return error || !data ? null : URL.createObjectURL(data.type ? data : new Blob([data], { type: 'image/svg+xml' }));
+}

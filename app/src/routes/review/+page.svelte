@@ -1,12 +1,13 @@
 <script lang="ts">
-  // Review (docs/PILOT-UX.md "Review"). Local Builder, signed in as an admin: testers' Change
+  // Review (docs/PILOT-UX.md "Review"). Signed in as an admin (local, or online): testers' Change
   // Requests (Keep / Skip each change and reply; saved on the request, applied later in a release
-  // candidate, see /release), their current drafts, or a .zip, applied into your unsaved changes.
-  // Hosted: a tester's Your changes (?mine) or an imported .zip (set by the ⋯ menu through `pilot.review`).
+  // candidate, see /release, which is local only), their current drafts, or a .zip, applied into your
+  // unsaved changes (online: into your own draft).
+  // Hosted, not an admin: a tester's Your changes (?mine) or an imported .zip (set by the ⋯ menu through `pilot.review`).
   // ?request=<id> opens one Change Request (the link in the admins' email).
   import * as I from '$lib/icons';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
   import { BundleError, fromZip } from '$lib/bundle';
   import { listDrafts, loadDraftOf, type DraftRow } from '$lib/drafts';
   import { hosted } from '$lib/hosted.svelte';
@@ -17,8 +18,15 @@
   import ReviewView from '$lib/components/ReviewView.svelte';
   import RequestStatusPill from '$lib/components/RequestStatus.svelte';
   import ComingDrafts from '$lib/components/ComingDrafts.svelte';
+  import FeedbackInbox from '$lib/components/FeedbackInbox.svelte';
+  import GlossaryDrafts from '$lib/components/GlossaryDrafts.svelte';
 
   let mine = $derived(page.url.searchParams.has('mine'));
+  /** The admin's three lists: ?tab=feedback, ?tab=glossary (&u=<id> opens one), else Change Requests. */
+  let tab = $derived<'requests' | 'feedback' | 'glossary'>(page.url.searchParams.get('tab') === 'feedback' ? 'feedback' : page.url.searchParams.get('tab') === 'glossary' ? 'glossary' : 'requests');
+  let newFeedback = $state<number | null>(null);
+  let coming = $state<number | null>(null);
+  const toTab = (t: string, extra = '') => goto(`/review${t === 'requests' ? '' : `?tab=${t}${extra}`}`, { keepFocus: true, noScroll: true });
   let err = $state<string | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
 
@@ -40,7 +48,10 @@
     }
   }
 
-  // ---- Change Requests (local Builder signed in as the admin)
+  /** The admin's screen: Change Requests and testers' drafts (online too, for admins). */
+  let owner = $derived(!hosted.isHosted || hosted.isAdmin);
+
+  // ---- Change Requests (signed in as an admin)
   let requests = $state<ChangeRequest[] | null>(null);
   let reqErr = $state<string | null>(null);
   let show = $state<'open' | RequestStatus | 'all'>('open');
@@ -48,7 +59,7 @@
   let reply = $state('');
   let shown = $derived((requests ?? []).filter((r) => show === 'all' || (show === 'open' ? OPEN.includes(r.status) : r.status === show)));
   $effect(() => {
-    if (!hosted.isHosted && hosted.user && hosted.isAdmin && requests === null && app.design) void loadRequests();
+    if (hosted.user && hosted.isAdmin && requests === null && app.design) void loadRequests();
   });
   async function loadRequests() {
     reqErr = null;
@@ -66,7 +77,7 @@
     current = r;
     reply = r.reply;
   }
-  async function decide(d: Record<string, 'keep' | 'skip'>) {
+  async function decide(d: Record<string, 'keep' | 'skip'>): Promise<boolean> {
     const r = current!;
     try {
       await saveDecisions(hosted.client!, r, d, reply);
@@ -74,9 +85,38 @@
       pilot.say(kept ? `Saved: keeping ${kept} of ${r.item_ids.length} from "${r.title}". ${r.author_name} gets an email. Kept changes go into the next release candidate.` : `Declined "${r.title}". ${r.author_name} gets an email, and its changes unlock in their draft.`);
       current = null;
       requests = null;
+      return true;
     } catch (e) {
       err = (e as Error).message;
+      return false;
     }
+  }
+
+  // Keep / Skip and the reply live on this page until Save decisions: ask before leaving them.
+  let edited = $state(false);
+  let choices = $state<Record<string, 'keep' | 'skip'>>({});
+  let unsaved = $derived(!!current && (edited || reply.trim() !== current.reply.trim()));
+  /** Where to go after the question: a path, or null for the list of requests. */
+  let leave = $state<{ to: string | null } | null>(null);
+  let leaving = false;
+  beforeNavigate((nav) => {
+    // the app's own moves (Try in Build & test, after an Apply) aren't leaving the decisions behind
+    if (!unsaved || leaving || nav.type === 'goto') return;
+    nav.cancel();
+    if (nav.type !== 'leave' && nav.to) leave = { to: nav.to.url.pathname + nav.to.url.search };
+  });
+  function backToList() {
+    if (unsaved) leave = { to: null };
+    else current = null;
+  }
+  async function doLeave(how: 'discard' | 'save') {
+    if (!leave) return;
+    const to = leave.to;
+    if (how === 'save' && !(await decide(choices))) { leave = null; return; }
+    leave = null;
+    current = null;
+    edited = false;
+    if (to) { leaving = true; await goto(to); leaving = false; }
   }
   const changesText = (r: ChangeRequest) => {
     const k = keptIds(r).length, n = r.item_ids.length;
@@ -92,7 +132,7 @@
   let sent = $state<string | null>(null);
 
   $effect(() => {
-    if (!hosted.isHosted && hosted.user && hosted.isAdmin && rows === null && app.design) void loadRows();
+    if (hosted.user && hosted.isAdmin && rows === null && app.design) void loadRows();
   });
   async function loadRows() {
     listErr = null;
@@ -135,7 +175,7 @@
     if (hosted.isHosted) pilot.say(`Applied ${r.count} change${r.count === 1 ? '' : 's'} from ${src?.name}. They're unsaved until Save (or the next autosave).`, { undo: true });
     else pilot.say(`Applied ${r.count} change${r.count === 1 ? '' : 's'} from ${src?.name}'s draft. They're unsaved: look them over, then Save and commit.`, { undo: true, copy: r.message });
     pilot.review = null;
-    goto(hosted.isHosted ? '/layouts' : '/review');
+    goto(hosted.isHosted && !owner ? '/layouts' : '/review');
   }
 </script>
 
@@ -144,7 +184,7 @@
   {#if err}<div class="err">{err} <button onclick={() => { err = null; fileInput?.click(); }}>Choose another file</button></div>{/if}
 
   {#if current}
-    <div class="back"><button class="link" onclick={() => (current = null)}><I.Back size={14} /> All Change Requests</button></div>
+    <div class="back"><button class="link" onclick={backToList}><I.Back size={14} /> All Change Requests</button></div>
     <div class="crhead">
       <h2>{current.title}</h2>
       <RequestStatusPill status={current.status} release={current.release} />
@@ -155,13 +195,13 @@
       <textarea id="cr-reply" bind:value={reply} rows="3" maxlength="20000"></textarea>
     </label>
     <ComingDrafts request={current} />
-    <ReviewView bundle={current.bundle} mode="decide" name={current.title} decisions={current.decisions} ondecide={decide} />
+    <ReviewView bundle={current.bundle} mode="decide" name={current.title} decisions={current.decisions} ondecide={decide} bind:edited bind:choices />
   {:else if mine && myBundle}
     <ReviewView bundle={myBundle} mode="mine" name="You" onexport={() => (pilot.dialog = 'export')} send={page.url.searchParams.has('send')} />
   {:else if pilot.review}
-    <div class="back"><button class="link" onclick={() => (pilot.review = null)}><I.Back size={14} /> {hosted.isHosted ? 'Cancel' : 'All drafts'}</button></div>
+    <div class="back"><button class="link" onclick={() => (pilot.review = null)}><I.Back size={14} /> {owner ? 'All drafts' : 'Cancel'}</button></div>
     <ReviewView bundle={pilot.review.bundle} mode={hosted.isHosted ? 'import' : 'owner'} name={pilot.review.source.name} onapplied={applied} />
-  {:else if hosted.isHosted}
+  {:else if !owner}
     <h2>Import a draft</h2>
     <p class="muted">Open a draft .zip (yours, or one someone sent you). You'll see every change before anything goes into your draft.</p>
     <button class="primary" onclick={() => fileInput?.click()}>Choose a .zip…</button>
@@ -169,7 +209,7 @@
     <div class="row top">
       <h2>Review</h2>
       <span class="spacer"></span>
-      <a href="/release">Release <I.Opens size={14} /></a>
+      {#if !hosted.isHosted}<a href="/release">Release <I.Opens size={14} /></a>{/if}
       <button onclick={() => fileInput?.click()}>Open a .zip…</button>
     </div>
     {#if !hosted.canSignIn}
@@ -185,6 +225,20 @@
       </div>
     {:else if !hosted.isAdmin}
       <p class="muted">Signed in as {hosted.user.email}, which isn't an admin: only admins see testers' drafts. <button class="link" onclick={() => hosted.signOut()}>Sign out</button></p>
+    {/if}
+    {#if hosted.user && hosted.isAdmin}
+      <div class="tabs" role="group" aria-label="What to review">
+        <button class="chip" aria-pressed={tab === 'requests'} onclick={() => toTab('requests')}>Change Requests</button>
+        <button class="chip" aria-pressed={tab === 'feedback'} onclick={() => toTab('feedback')}>Feedback{#if newFeedback}<span class="count">{newFeedback} new</span>{/if}</button>
+        <button class="chip" aria-pressed={tab === 'glossary'} onclick={() => toTab('glossary')}>Glossary drafts{#if coming != null}<span class="count muted">{coming}</span>{/if}</button>
+      </div>
+    {/if}
+    {#if !hosted.user || !hosted.isAdmin}
+      <!-- not an admin: nothing more -->
+    {:else if tab === 'feedback'}
+      <FeedbackInbox onupcoming={(id) => toTab('glossary', `&u=${encodeURIComponent(id)}`)} oncount={(n) => (newFeedback = n)} />
+    {:else if tab === 'glossary'}
+      <GlossaryDrafts focus={page.url.searchParams.get('u')} oncount={(n) => (coming = n)} />
     {:else}
       <div class="row top">
         <h3>Change Requests</h3>
@@ -221,10 +275,10 @@
         </table>
       {/if}
       <h3>Current drafts</h3>
-      <p class="muted small">What each tester is working on now, sent or not. Applying a draft directly skips the Change Request; use it for a .zip or to look ahead.</p>
+      <p class="muted small">What each tester is working on now, sent or not. Applying a draft directly skips the Change Request; use it for a .zip or to look ahead.{#if hosted.isHosted}{' '}Here, Apply puts the changes into your own draft.{/if}</p>
     {/if}
-    {#if !hosted.canSignIn || !hosted.user || !hosted.isAdmin}
-      <!-- signed out: nothing more -->
+    {#if !hosted.canSignIn || !hosted.user || !hosted.isAdmin || tab !== 'requests'}
+      <!-- signed out, or another list: nothing more -->
     {:else if rows === null}
       <p class="muted">Loading drafts…</p>
     {:else if listErr}
@@ -252,11 +306,24 @@
   {/if}
 </div>
 
+{#if leave}
+  <div class="modal-bg" role="presentation">
+    <div class="modal" role="dialog" aria-labelledby="leave-title" tabindex="-1">
+      <h3 id="leave-title" style="margin:0">Decisions not saved</h3>
+      <p>Your Keep / Skip choices{reply.trim() !== (current?.reply ?? '').trim() ? ' and reply' : ''} on "{current?.title}" aren't saved on the request yet.</p>
+      <div class="row"><button onclick={() => (leave = null)}>Keep reviewing</button><button onclick={() => doLeave('discard')}>Leave without saving</button><button class="primary" onclick={() => doLeave('save')}>Save decisions and leave</button></div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .page { padding: var(--space-7) max(var(--space-6), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--space-5); }
   h2 { margin: 0; font-size: var(--t-heading); font-weight: 600; }
   .top { align-items: center; }
   .spacer { flex: 1; }
+  .tabs { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+  .tabs .count { margin-left: var(--space-2); font-size: var(--t-caption); font-weight: 600; color: var(--status-info); }
+  .tabs .count.muted { color: var(--ink-muted); }
   .err { color: var(--status-danger); display: flex; gap: var(--space-4); align-items: center; }
   .link { border: 0; background: none; color: var(--link); padding: 0; height: auto; }
   .signin { display: flex; flex-direction: column; gap: var(--space-4); max-width: 520px; }
