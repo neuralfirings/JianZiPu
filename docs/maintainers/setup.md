@@ -5,9 +5,9 @@ where the settings live. Secrets never go in this repository.
 
 | Part | What it does | Where |
 | --- | --- | --- |
-| Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
-| Supabase | Sign-in, drafts, Change Requests, the base font, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
-| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
+| Your computer | The local Builder: releases, git (Review works online too) | this repo, `builder/.env` |
+| Supabase | Sign-in, drafts, Change Requests, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
+| Railway | The online Builder at builder.jianzipufont.com (Review too, for admins) | railway.com, `Dockerfile` |
 | Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
@@ -56,8 +56,10 @@ where the settings live. Secrets never go in this repository.
 4. **People.** Invite each tester and yourself (Authentication → Users →
    Invite). Make yourself admin: set `role = 'admin'` on your row in
    `profiles`.
-5. **The base font.** Upload `TW-Kai-98.ttf` to the `assets` bucket. The online
-   Builder downloads it at start.
+5. **The base font** isn't kept here any more: see Cloudflare R2 below. (The
+   online Builder still falls back to `TW-Kai-98.ttf` in the `assets` bucket when
+   `JZP_BASE_FONT_URL` isn't set, but each start downloads its 37 MB, and the
+   pull request previews alone used up the free plan's egress in November 2026.)
 
 Moving drafts from the old Storage bucket into the table is a one-off, done in
 October 2026. The steps are in `builder/README.md`, "Moving drafts from the old
@@ -69,8 +71,9 @@ bucket".
    deploys `main` on every merge.
 2. Set these variables:
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`;
-   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it, to read the base
-     font).
+   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it);
+   - `JZP_BASE_FONT_URL`, the base font's address on R2 (below). Set it on the
+     project's shared variables so pull request previews get it too.
 
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA` itself.
 3. Add the custom domain `builder.jianzipufont.com`.
@@ -92,7 +95,9 @@ Deployments tab.
    `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`,
    or in the dashboard under Edge Functions → Secrets. `NOTIFY_WEBHOOK_SECRET` is
    a random string you make (`openssl rand -hex 32`); `BUILDER_URL` is
-   `https://builder.jianzipufont.com`, `REVIEW_URL` `http://127.0.0.1:5713`.
+   `https://builder.jianzipufont.com`, and so is `REVIEW_URL` (admins review
+   online; set it to `http://127.0.0.1:5713` to have the links open your local
+   Builder instead). The feedback emails use `REVIEW_URL` too.
 3. Deploy with `supabase functions deploy notify --no-verify-jwt`. Without the
    CLI: `deno bundle supabase/functions/notify/index.ts -o notify-index.ts`, then
    Edge Functions → Deploy a new function → Via Editor, name `notify`, paste the
@@ -136,9 +141,10 @@ In short:
 "Contact me" on the page opens the same form, asks for an email, and is kept
 with `kind` = `contact`.
 
-Answer a message by replying to its email. Set its status in Table Editor →
-`feedback`: `new`, `read`, `wip`, `ticket` (put the ticket's link in `ticket`),
-`wont_do`, `need_info` or `done`.
+Answer a message by replying to its email. Its **Open it in Review** button
+opens it in the Builder's Review › Feedback (signed in as an admin, online or
+on your computer), with its pictures: set its status there (New, Read, Need
+info, WIP, Done, Won't do), a ticket link and your own note.
 
 ### Spam check (Cloudflare Turnstile)
 
@@ -163,18 +169,22 @@ steps:
 
 ### Coming characters (the glossary's ghost rows)
 
-A visitor's **Request a character** arrives as a `request` in `feedback`. To take
-one on, set its status to `wip`: a row appears in Table Editor → `upcoming`,
-filled from the request. Check its words (the meaning is the visitor's), then
-set `section` (the glossary subtitle's id, such as `1e`) and `after` (the 中文 of
-the row it follows; empty for the section's end). The font page shows it as
-**Planned** within a minute. A second request for the same character: put the
-first one's `upcoming_id` on it before setting it to `wip`.
+A visitor's **Request a character** arrives in Review › Feedback as a
+**Character request**. To take one on, set it to **WIP** and Save: it
+appears in Review › Glossary drafts, filled from the request. **Edit** it there:
+check its words (the definition is the visitor's), pick its **Section** and type
+**After** (the 中文 of the row it follows; empty for the section's end). The
+preview shows it as the page will, and the font page shows it as **Planned**
+within a minute. A second request for the same character: under **Coming
+character** in the message, **Link…** it to the one the first request made
+before setting it to WIP (WIP makes a new one only when none is linked).
+Feedback that isn't a request (a glossary row, the page) can get one too:
+**Link…** → **New coming character**.
 
 From there the Builder moves it on: Review's **Publish draft to glossary** shows a
 tester's drawing (**Draft design**), a release candidate makes it **In release**,
-and publishing the release takes it off the list. Set the request to `done` then,
-and write to the person who asked.
+and publishing the release takes it off the list. Set the request to **Done**
+then (Review › Feedback), and write to the person who asked.
 
 ## GitHub
 
@@ -205,6 +215,24 @@ and write to the person who asked.
   modified" reply), so people get a new release as soon as it deploys. A
   release replaces the font at the same URL, so a longer cache would keep the
   old font in browsers that saw it before.
+
+## Cloudflare R2 (the base font)
+
+The online Builder downloads the base font, `TW-Kai-98.ttf` (37 MB), every time
+it starts: each deploy, each pull request preview, each restart. R2 doesn't
+charge for downloads, so the font lives there.
+
+1. In the Cloudflare dashboard, open R2 → Create bucket (for example
+   `jzp-builder`).
+2. Upload `TW-Kai-98.ttf` from `builder/src_font/`.
+3. In the bucket's Settings → Public access, turn on the `r2.dev` address (or
+   connect a custom domain). TW-Kai is published under Taiwan's Open Government
+   Data License, so a public copy is fine.
+4. Copy the file's public URL (`https://pub-….r2.dev/TW-Kai-98.ttf`) into the
+   Railway variable `JZP_BASE_FONT_URL`, then redeploy. The deploy log should say
+   `base font: fetched https://pub-….r2.dev/TW-Kai-98.ttf (35962 KB)`.
+
+Once that works, you can delete the copy in Supabase's `assets` bucket.
 
 ## EmailOctopus
 

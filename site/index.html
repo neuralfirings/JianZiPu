@@ -376,6 +376,25 @@
       body.typing .download-bar { display: none; }
     }
 
+    /* ---- A wide screen (1200px and up): the contents as a panel down the left, under the download bar.
+       The script after the phone one builds it from the phone menu's links and the glossary's subtitles,
+       marks the part you're reading, and moves the page over to make room. ---- */
+    .toc { display: none; }
+    @media (min-width: 1200px) {
+      .toc { display: block; position: fixed; left: 0; top: var(--toc-top, 0px); bottom: 0; width: 248px; overflow-y: auto; z-index: 1000;
+        padding: 16px 12px 32px 16px; border-right: 1px solid var(--hairline); background: var(--bg-app); font-size: 0.9rem; }
+      .toc-title { margin: 0 0 6px 8px; font-size: 0.75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); }
+      .toc a { display: block; padding: 3px 8px; border-left: 2px solid transparent; color: var(--ink-muted); text-decoration: none; line-height: 1.35; }
+      .toc a:hover { color: var(--ink); background: var(--bg-hover); }
+      .toc a.l1 { margin-top: 8px; color: var(--ink); font-weight: 600; }
+      .toc a.l2 { margin-top: 4px; padding-left: 16px; color: var(--ink); }
+      .toc a.l3 { padding-left: 28px; font-size: 0.85rem; }
+      .toc a[aria-current="true"] { border-left-color: var(--accent); background: var(--bg-hover); color: var(--ink); }
+      /* the page's columns, centred in the room right of the panel */
+      body.has-toc .container { max-width: min(1140px, calc(100vw - 248px - 48px)); margin-left: calc(248px + max(24px, (100vw - 248px - 1140px) / 2)); margin-right: auto; }
+    }
+    @media print { .toc { display: none !important; } body.has-toc .container { margin-left: auto !important; } }
+
     /* "How to type": five rules, then the folded extras */
     .rules { padding-left: 1.2rem; margin-bottom: 8px; }
     .rules li, details.more li { margin: 4px 0; }
@@ -2675,7 +2694,7 @@
       // section, after the row it names, until the glossary on this page has the character itself.
       var STAGE = {
         planned: function () { return 'Planned'; },
-        draft: function () { return 'Draft design · comments welcome'; },
+        draft: function () { return 'Draft (not live yet)'; },   // a drawing to comment on: not in the font you download yet
         test: function (g) { return 'In release ' + g.release; },
       };
       function ghostPicture(g) {
@@ -3041,6 +3060,59 @@
         });
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phoneDemos); else phoneDemos();
+    })();
+  </script>
+  <script>
+    // On a wide screen: the contents down the left (.toc, styled above). Built from the phone menu's links
+    // (the glossary's section titles come from glossary.py's nav markers) and each section title's subtitles
+    // on the page; it starts under the download bar, and marks the part you're reading.
+    (function () {
+      const src = document.querySelector('.contents nav'), bar = document.querySelector('.download-bar');
+      if (!src) return;
+      const toc = document.createElement('nav');
+      toc.className = 'toc';
+      toc.setAttribute('aria-label', 'Contents');
+      const title = document.createElement('p');
+      title.className = 'toc-title';
+      title.textContent = 'Contents';
+      toc.appendChild(title);
+      const link = (id, text, cls) => {
+        const a = document.createElement('a');
+        a.href = '#' + id; a.textContent = text; a.className = cls;
+        toc.appendChild(a);
+      };
+      for (const a of src.querySelectorAll('a')) {
+        const id = a.getAttribute('href').slice(1), el = document.getElementById(id);
+        if (!a.classList.contains('sub')) { link(id, a.textContent.trim(), 'l1'); continue; }
+        // a section title, as the page names it ("1. Left Hand"), then the subtitles under it
+        link(id, el ? el.textContent.trim() : a.textContent.trim(), 'l2');
+        for (let e = el && el.nextElementSibling; e && e.tagName !== 'H4' && e.tagName !== 'H3'; e = e.nextElementSibling)
+          if (e.tagName === 'LABEL' && /^glossary-/.test(e.id)) link(e.id, e.textContent.trim(), 'l3');
+      }
+      document.body.appendChild(toc);
+      document.body.classList.add('has-toc');
+      const links = [...toc.querySelectorAll('a')];
+      const targets = links.map((a) => document.getElementById(a.getAttribute('href').slice(1)));
+      let shown = null;
+      function place() {
+        const top = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+        toc.style.setProperty('--toc-top', top + 'px');
+        let cur = 0;
+        targets.forEach((t, i) => { if (t && t.offsetParent !== null && t.getBoundingClientRect().top < Math.max(top + 24, 104)) cur = i; });   // a heading scrolled to sits 96px down (scroll-padding-top)
+        if (shown === cur) return;
+        shown = cur;
+        links.forEach((a, i) => (i === cur ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+        // keep the marked one in view in a long panel
+        const a = links[cur], r = a.getBoundingClientRect(), p = toc.getBoundingClientRect();
+        if (r.top < p.top + 32 || r.bottom > p.bottom - 32) toc.scrollTop += r.top - p.top - p.height / 3;
+      }
+      addEventListener('scroll', place, { passive: true });
+      addEventListener('resize', place);
+      // fonts, examples and the coming characters load after this and move the bar down: place it again
+      if (window.ResizeObserver) new ResizeObserver(() => place()).observe(document.body);
+      addEventListener('load', place);
+      if (document.fonts) document.fonts.ready.then(place);
+      place();
     })();
   </script>
   <script type="module">

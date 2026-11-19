@@ -66,19 +66,23 @@ may read it; it's kept for a minute.
 
 ## Reading and answering
 
-Each message arrives as an email: reply to it to answer the sender. All of them are
-in Dashboard → Table Editor → `feedback`, newest first by `created_at`. Set
-`status` from its drop-down:
+Each message arrives as an email: reply to it to answer the sender. Its **Open it
+in Review** button (`REVIEW_URL`, the online Builder unless set) opens it in the
+Builder's Review › Feedback, signed in as an admin: every message, newest first,
+with its pictures, where you set its status, a ticket link (whatever the status)
+and your own note.
 
-| status | Meaning |
-| --- | --- |
-| `new` | Not looked at (every message starts here) |
-| `read` | Seen |
-| `wip` | Taken on. A request set to `wip` gets its row in `upcoming`, and the font page shows it as Planned once you set its `section` |
-| `ticket` | Made into a ticket: put its link in `ticket` |
-| `wont_do` | Not changing it |
-| `need_info` | Asked the sender for more |
-| `done` | Its character is released: write to them |
+| Status in Review | `status` | Meaning |
+| --- | --- | --- |
+| New | `new` | Not looked at (every message starts here; opening it in Review marks it Read) |
+| Read | `read` | Seen |
+| Need info | `need_info` | Asked the sender for more |
+| WIP | `wip` | Being worked on. A request set to WIP (and not linked to a coming character yet) appears in Review › Glossary drafts, and the font page shows it as Planned once you give it a section there |
+| Done | `done` | Its character is released: write to them |
+| Won't do | `wont_do` | Not changing it |
+
+`ticket` is still a value of `status` for messages set to it before; Review no
+longer offers it, since the ticket is a link of its own.
 
 `kind` says what it is: `row` (the button on a glossary row), `page` (Feedback in the
 sticky bar, "tell me", Send feedback), `contact` (Contact me, which asks for an email
@@ -87,7 +91,8 @@ in the glossary's intro and under a search that finds nothing: `details` holds i
 `zh`, `pinyin` and where it was `seen`, the message what it means; the email says
 "Request: 不动 (bù dòng)") or `comment` (on a coming character, `upcoming_id` naming
 it, e.g. `u12`, and `details.about` its name as the page showed it; needs an email, as a request does). `note` is yours, for anything else. The pictures are in Storage → `feedback`, one
-folder per message (the message's `id`); `pictures` lists their paths.
+folder per message (the message's `id`); `pictures` lists their paths. Review shows them
+with the message.
 
 ## Changing it
 

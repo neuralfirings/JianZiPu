@@ -15,7 +15,8 @@
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
-  import { newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import { draftRows, exampleSvg, fitToInk, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import GlossaryPreview from './GlossaryPreview.svelte';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
@@ -47,10 +48,65 @@
   });
   const tagOf = (g: string) => (g in tags ? tags[g] : suggestGhost(app.typing[g], ghosts) ?? '');
   const ghostById = (id: string) => ghosts.find((x) => x.id === id);
-
   const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
-  let fresh = $derived(newGlyphs(picked));
+  /** The new glyphs whose glossary entry goes in this request: each can be for a coming character (the
+   *  entry is what the font page shows). A glyph row, not a word; the glyph must be new in the draft. */
+  let fresh = $derived([...new Set(picked.flatMap((i) => (i.kind === 'glossary-row' && i.status === 'added' && i.row.startsWith('g:') ? [i.row.slice(2)] : []))
+    .filter((g) => items.find((x) => x.id === `glyph:${g}`)?.status === 'added'))]);
+  // what the page will show once the maintainer publishes your drawing for the coming character you picked
+  // (Review's Publish draft to glossary): your glossary row's words over the entry's, and your drawing
+  let plan = $derived(fresh.length && app.design ? draftRows(app.bundle(), Object.fromEntries(fresh.map((g) => [g, tagOf(g) || null])), app.mainLayout) : { rows: [], unplaced: [] });
+  const rowFor = (g: string) => plan.rows.find((r) => r.glyph === g);
+  function after(gh: Ghost, g: string) {
+    const r = rowFor(g);
+    if (!r) return { ...gh, version: gh.release };
+    const set = (v: string | null, old: string | null) => v || old;
+    return { ...gh, version: null, stage: 'draft' as const, zh: r.zh, pinyin: set(r.pinyin, gh.pinyin), ascii: set(r.ascii, gh.ascii),
+      meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: r.example };
+  }
+  // the chosen entries' drawings as they are on the page now (a public address; fetched, since the content
+  // policy loads images only from the Builder itself), entry id → blob: URL
+  let nowPics = $state<Record<string, string>>({});
+  const fetching = new Set<string>();
+  $effect(() => {
+    for (const g of fresh) {
+      const gh = ghostById(tagOf(g));
+      if (!gh?.drawing || fetching.has(gh.id)) continue;
+      fetching.add(gh.id);
+      void fetch(gh.drawing).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) nowPics = { ...nowPics, [gh.id]: URL.createObjectURL(b) }; }).catch(() => {});
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(nowPics)) URL.revokeObjectURL(u); });
+  // your drawings as blob: URLs (the Builder's content policy loads images only from itself): an entry with
+  // an example is drawn as the whole example word, laid out by your draft as the font will set it (what
+  // Publish draft to glossary puts on the page); else the glyph on its own. Drawn once per glyph and example.
+  let myPics = $state<Record<string, string>>({});
+  const drawnFor: Record<string, string> = {};
+  const plainLine = (t: string) => t.replace(/<\/?r>/g, '');
+  $effect(() => {
+    const design = app.design;
+    if (!design) return;
+    for (const g of fresh) {
+      const r = rowFor(g), key = JSON.stringify(r?.example ?? null);
+      if (drawnFor[g] === key || !app.svgs[g]) continue;
+      drawnFor[g] = key;
+      const put = (svg: string) => {
+        if (drawnFor[g] !== key) return;
+        if (myPics[g]) URL.revokeObjectURL(myPics[g]);
+        myPics = { ...myPics, [g]: URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })) };
+      };
+      if (!r?.example) { put(app.svgs[g]); continue; }
+      const mark = r.marked ? [g, T.get(app.typing, g).vert_variant].filter(Boolean) : [];
+      void api.words(design, [plainLine(r.example[1] || r.example[0])], app.typedWith).then((res) => {
+        const w = res.ok ? res.words[0] : null;
+        const svg = w && exampleSvg(w.pieces, app.svgs, mark, app.control);
+        put(svg ? fitToInk(svg) : app.svgs[g]);
+      }).catch(() => put(app.svgs[g]));
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(myPics)) URL.revokeObjectURL(u); });
+
   /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
@@ -147,19 +203,25 @@
     {#if ghosts.length && fresh.length}
       <fieldset class="coming">
         <legend>Is this for a coming character?</legend>
-        <p class="muted small">From the font page's Coming next. The maintainer confirms it, then can show your drawing there for comments.</p>
+        <p class="muted small">A glossary entry you're sending can be for a character on the font page's Coming next. The maintainer confirms it, then can show your entry and drawing there for comments.</p>
         {#each fresh as g (g)}
           {@const gh = ghostById(tagOf(g))}
           <div class="tagrow">
-            <label class="tagpick"><span class="mono">{g} draws</span>
+            <label class="tagpick"><span><span class="mono">Glossary · {g}</span> is for</span>
               <select value={tagOf(g)} onchange={(e) => (tags = { ...tags, [g]: (e.target as HTMLSelectElement).value })}>
                 <option value="">None of these</option>
                 {#each ghosts as x (x.id)}<option value={x.id}>{x.zh}{x.pinyin ? ` · ${x.pinyin}` : ''} · {stageLabel(x)}</option>{/each}
               </select>
             </label>
             {#if gh}
-              <div class="ghost"><span class="tag">{stageLabel(gh)}</span> <b>{gh.zh}</b>{#if gh.pinyin} <span class="muted">{gh.pinyin}</span>{/if}
-                {#if gh.meaning}<span class="muted"> · {gh.meaning}</span>{/if}<span class="muted small"> · on the font page in {gh.section}{gh.after ? `, after ${gh.after}` : ''}</span></div>
+              <p class="when"><b>Before</b> <span class="muted small">· the coming character on the font page today</span></p>
+              <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={nowPics[gh.id] ?? null} />
+              {#if rowFor(g)}
+                <p class="when"><b>After</b> <span class="muted small">· your glossary entry, once the maintainer shows it: its words replace {gh.zh.split(' · ')[0]}'s (what it leaves empty stays), and your drawing replaces the old one</span></p>
+                <GlossaryPreview g={after(gh, g)} drawing={myPics[g] ?? null} />
+              {:else}
+                <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first.</p>
+              {/if}
             {:else}
               <p class="muted small">Not tagged: nothing about a coming character changes.</p>
             {/if}
@@ -213,8 +275,8 @@
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
   .coming { display: flex; flex-direction: column; gap: var(--space-3); }
   .coming p { margin: 0; }
+  .when { margin: var(--space-3) 0 0; }
   .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
   .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
   .tagpick select { font: inherit; max-width: 100%; }
-  .ghost { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--bg-field); }
 </style>

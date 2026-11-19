@@ -10,7 +10,8 @@
 --
 -- Messages come in only through the Edge Function supabase/functions/feedback (its README), which
 -- uses the service key: there is no insert policy, so nobody can write here from a browser.
--- Change a message's status in Dashboard → Table Editor → feedback (status is a drop-down).
+-- Admins read and answer them in the Builder's Review › Feedback (status, ticket link, note, pictures).
+-- 'ticket' stays a status for messages set to it before; Review keeps the ticket as a link of its own.
 
 do $$ begin
   create type public.feedback_status as enum ('new', 'read', 'ticket', 'wont_do', 'need_info');

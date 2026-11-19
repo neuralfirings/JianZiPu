@@ -213,8 +213,11 @@ export async function publishDrafts(c: SupabaseClient, requestId: string, rows: 
     const file = `${id}.svg`;
     const up = await c.storage.from(BUCKET).upload(file, new Blob([svg], { type: 'image/svg+xml' }), { upsert: true, contentType: 'image/svg+xml' });
     if (up.error) throw new Error(`Uploading ${file}: ${up.error.message}`);
+    // the request's glossary row replaces the entry's words; what the row leaves empty (a definition it
+    // hasn't got yet, say) keeps the entry's own, such as the definition from a visitor's request
+    const keep = Object.fromEntries((['pinyin', 'ascii', 'meaning'] as const).filter((k) => first[k]).map((k) => [k, first[k]]));
     const { error } = await c.from(TABLE).update({
-      zh: first.zh, pinyin: first.pinyin, ascii: first.ascii, meaning: first.meaning, section: first.section, after: first.after,
+      zh: first.zh, ...keep, section: first.section, after: first.after,
       stage: 'draft', drawing: file, version: null, glyphs: group.map((r) => r.glyph), change_request_id: requestId,
       example: picture ? first.example : null
     }).eq('id', id);
@@ -246,4 +249,36 @@ export async function toReleased(c: SupabaseClient, glyphs: Set<string>, version
     if (error) throw new Error(error.message);
   }
   return rows;
+}
+
+/** What Review › Glossary drafts may change on a row. */
+export type UpcomingPatch = Partial<Pick<UpcomingRow, 'zh' | 'pinyin' | 'ascii' | 'meaning' | 'section' | 'after' | 'stage' | 'note' | 'version'>>;
+
+/** Admin: change a coming character's row; returns it as saved. */
+export async function updateUpcoming(c: SupabaseClient, id: string, patch: UpcomingPatch): Promise<UpcomingRow> {
+  const { data, error } = await c.from(TABLE).update(patch).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data as UpcomingRow;
+}
+
+/** Admin: a new coming character (Planned, no section yet: not on the page until it has one), from a
+ *  message; returns its row. The message is linked to it separately (feedback.upcoming_id). */
+export async function createUpcoming(c: SupabaseClient, row: { zh: string; pinyin?: string | null; meaning?: string | null; feedback_id?: string | null }): Promise<UpcomingRow> {
+  const { data, error } = await c.from(TABLE).insert({ stage: 'planned', ...row }).select().single();
+  if (error) throw new Error(error.message);
+  return data as UpcomingRow;
+}
+
+/** Admin: take a coming character off the page for good: its row and its drawing. */
+export async function deleteUpcoming(c: SupabaseClient, row: Pick<UpcomingRow, 'id' | 'drawing'>) {
+  const { error } = await c.from(TABLE).delete().eq('id', row.id);
+  if (error) throw new Error(error.message);
+  if (row.drawing) await c.storage.from(BUCKET).remove([row.drawing]);
+}
+
+/** A drawing from the upcoming bucket as a local blob: URL (the Builder's content policy loads images
+ *  only from itself), or null when it can't be read. Revoke it (URL.revokeObjectURL) when done. */
+export async function drawingBlob(c: SupabaseClient, file: string): Promise<string | null> {
+  const { data, error } = await c.storage.from(BUCKET).download(file);
+  return error || !data ? null : URL.createObjectURL(data.type ? data : new Blob([data], { type: 'image/svg+xml' }));
 }

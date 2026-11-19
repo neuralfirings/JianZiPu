@@ -10,8 +10,8 @@
 --                     upcoming_id is already set (a second request for the same character) adds none
 --   bucket upcoming   public; the drawings the page shows (u12.svg), named in upcoming.drawing
 --
--- You edit upcoming in Dashboard → Table Editor; the local Builder writes it as an admin
--- (Review's Publish draft to glossary, Release's candidate and publish steps).
+-- Admins edit and delete rows in the Builder's Review › Glossary drafts, which shows each as the page
+-- will; the Builder also writes it (Review's Publish draft to glossary, Release's candidate and publish steps).
 
 alter type public.feedback_status add value if not exists 'wip' after 'read';
 alter type public.feedback_status add value if not exists 'done';
