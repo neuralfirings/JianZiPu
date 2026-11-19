@@ -62,6 +62,19 @@
     return { ...gh, version: null, stage: 'draft' as const, zh: r.zh, pinyin: set(r.pinyin, gh.pinyin), ascii: set(r.ascii, gh.ascii),
       meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: null };
   }
+  // the chosen entries' drawings as they are on the page now (a public address; fetched, since the content
+  // policy loads images only from the Builder itself), entry id → blob: URL
+  let nowPics = $state<Record<string, string>>({});
+  const fetching = new Set<string>();
+  $effect(() => {
+    for (const g of fresh) {
+      const gh = ghostById(tagOf(g));
+      if (!gh?.drawing || fetching.has(gh.id)) continue;
+      fetching.add(gh.id);
+      void fetch(gh.drawing).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) nowPics = { ...nowPics, [gh.id]: URL.createObjectURL(b) }; }).catch(() => {});
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(nowPics)) URL.revokeObjectURL(u); });
   // your drawings as blob: URLs (the Builder's content policy loads images only from itself)
   let myPics = $state<Record<string, string>>({});
   $effect(() => {
@@ -179,12 +192,13 @@
               </select>
             </label>
             {#if gh}
+              <p class="when"><b>Now</b> <span class="muted small">· on the font page today</span></p>
+              <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={nowPics[gh.id] ?? null} />
               {#if rowFor(g)}
-                <p class="muted small">Once the maintainer shows your drawing for it, the font page shows this. Your glossary row's words replace {gh.zh.split(' · ')[0]}'s; what your row leaves empty stays as it is.</p>
+                <p class="when"><b>After you link it</b> <span class="muted small">· once the maintainer shows your drawing: your glossary row's words replace {gh.zh.split(' · ')[0]}'s, and what your row leaves empty stays as it is</span></p>
                 <GlossaryPreview g={after(gh, g)} drawing={myPics[g] ?? null} />
               {:else}
-                <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first. On the font page now:</p>
-                <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={null} />
+                <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first.</p>
               {/if}
             {:else}
               <p class="muted small">Not tagged: nothing about a coming character changes.</p>
@@ -239,6 +253,7 @@
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
   .coming { display: flex; flex-direction: column; gap: var(--space-3); }
   .coming p { margin: 0; }
+  .when { margin: var(--space-3) 0 0; }
   .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
   .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
   .tagpick select { font: inherit; max-width: 100%; }
