@@ -15,7 +15,14 @@
   let show = $state<'open' | FeedbackStatus | 'all'>('open');
   let kind = $state<'all' | FeedbackKind>('all');
   let openId = $state<string | null>(null);
-  let shown = $derived((list ?? []).filter((f) => (show === 'all' || (show === 'open' ? OPEN.includes(f.status) : f.status === show)) && (kind === 'all' || f.kind === kind)));
+  const byStatus = (f: Feedback, v: typeof show) => v === 'all' || (v === 'open' ? OPEN.includes(f.status) : f.status === v);
+  const byKind = (f: Feedback, v: typeof kind) => v === 'all' || f.kind === v;
+  let shown = $derived((list ?? []).filter((f) => byStatus(f, show) && byKind(f, kind)));
+  /** How many each choice would show, given the other menu's choice (the Show counts are for the chosen kind). */
+  const nStatus = (v: typeof show) => (list ?? []).filter((f) => byStatus(f, v) && byKind(f, kind)).length;
+  const nKind = (v: typeof kind) => (list ?? []).filter((f) => byStatus(f, show) && byKind(f, v)).length;
+  /** The statuses to offer: the menu's, and an old one (ticket) while any message still has it. */
+  let showable = $derived([...STATUSES, ...[...new Set((list ?? []).map((f) => f.status))].filter((s) => !STATUSES.includes(s))]);
   let current = $derived(list?.find((f) => f.id === openId) ?? null);
 
   const ICON = { new: I.Info, read: I.Check, need_info: I.Help, wip: I.Draft, ticket: I.Link, done: I.Check, wont_do: I.Close };
@@ -76,15 +83,15 @@
 <div class="bar">
   <label class="muted small">Show
     <select id="fb-show" bind:value={show}>
-      <option value="open">To deal with</option>
-      {#each STATUSES as s}<option value={s}>{STATUS_LABEL[s]}</option>{/each}
-      <option value="all">All</option>
+      <option value="open">To deal with ({nStatus('open')})</option>
+      {#each showable as s}<option value={s}>{STATUS_LABEL[s]} ({nStatus(s)})</option>{/each}
+      <option value="all">All ({nStatus('all')})</option>
     </select>
   </label>
   <label class="muted small">Kind
     <select id="fb-kind" bind:value={kind}>
-      <option value="all">All kinds</option>
-      {#each Object.entries(KIND_LABEL) as [k, label]}<option value={k}>{label}</option>{/each}
+      <option value="all">All kinds ({nKind('all')})</option>
+      {#each Object.entries(KIND_LABEL) as [k, label]}<option value={k}>{label} ({nKind(k as FeedbackKind)})</option>{/each}
     </select>
   </label>
   <span class="spacer"></span>
