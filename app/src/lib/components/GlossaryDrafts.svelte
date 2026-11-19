@@ -57,10 +57,15 @@
 
   // the row being edited
   let editing = $state<string | null>(null);
+  // 中文 is kept as the page shows it, simplified · traditional (one when they're the same): edited as two boxes
+  let simp = $state(''), trad = $state('');
+  const splitZh = (zh: string): [string, string] => { const [a = '', b = ''] = zh.split(/\s*·\s*/); return [a.trim(), b.trim()]; };
+  let zhJoined = $derived([...new Set([simp.trim(), trad.trim()].filter(Boolean))].join(' · '));
   let form = $state<Required<{ [K in keyof UpcomingPatch]: string }>>({ zh: '', pinyin: '', ascii: '', meaning: '', section: '', after: '', stage: 'planned', note: '', version: '' });
   let saving = $state(false);
   function edit(r: UpcomingRow) {
     editing = r.id;
+    [simp, trad] = splitZh(r.zh);
     form = { zh: r.zh, pinyin: r.pinyin ?? '', ascii: r.ascii ?? '', meaning: r.meaning ?? '', section: r.section ?? '', after: r.after ?? '', stage: r.stage, note: r.note ?? '', version: r.version ?? '' };
   }
   async function save(r: UpcomingRow) {
@@ -68,7 +73,7 @@
     const t = (s: string) => s.trim() || null;
     try {
       const row = await updateUpcoming(hosted.client!, r.id, {
-        zh: form.zh.trim(), pinyin: t(form.pinyin), ascii: t(form.ascii), meaning: t(form.meaning), section: t(form.section),
+        zh: zhJoined, pinyin: t(form.pinyin), ascii: t(form.ascii), meaning: t(form.meaning), section: t(form.section),
         after: t(form.after), stage: form.stage as Stage, note: t(form.note), version: t(form.version)
       });
       rows = rows!.map((x) => (x.id === row.id ? row : x));
@@ -130,12 +135,10 @@
                 {#if editing === r.id}
                   <div class="form">
                     <div class="grid">
-                      <label>中文 <input bind:value={form.zh} placeholder="不动, or 索铃 · 索鈴" /></label>
-                      <label>Pinyin <input bind:value={form.pinyin} /></label>
-                      <label>Spelling <input class="mono" bind:value={form.ascii} placeholder="budong" /></label>
-                      <label>Stage
-                        <select bind:value={form.stage}>{#each STAGES as s}<option value={s}>{stageLabel({ stage: s, version: form.version })}</option>{/each}</select>
-                      </label>
+                      <label>Simplified <input bind:value={simp} placeholder="e.g. 索铃" /></label>
+                      <label>Traditional <input bind:value={trad} placeholder="e.g. 索鈴, if it's different" /></label>
+                      <label>Pinyin <input bind:value={form.pinyin} placeholder="e.g. suǒ líng" /></label>
+                      <label>Spelling <input class="mono" bind:value={form.ascii} placeholder="e.g. suoling" /></label>
                       <label class="wide">Definition <textarea rows="2" bind:value={form.meaning}></textarea></label>
                       <label>Section
                         <select bind:value={form.section}>
@@ -143,22 +146,25 @@
                           {#each sections as s}<option value={s.id}>{s.title}</option>{/each}
                         </select>
                       </label>
-                      <label>After <input bind:value={form.after} placeholder="the row's 中文; empty: the end" /></label>
+                      <label>After <input bind:value={form.after} placeholder="e.g. 吟; empty: at the end" /></label>
+                      <label>Stage
+                        <select bind:value={form.stage}>{#each STAGES as s}<option value={s}>{stageLabel({ stage: s, version: form.version })}</option>{/each}</select>
+                      </label>
                       {#if form.stage === 'test' || form.stage === 'released' || form.version}
-                        <label>Version <input class="mono" bind:value={form.version} placeholder="3.400-rc.1" /></label>
+                        <label>Version <input class="mono" bind:value={form.version} placeholder="e.g. 3.400-rc.1" /></label>
                       {/if}
-                      <label class="wide">Note on the page <input bind:value={form.note} placeholder="Redrawn Nov 24: the hook is shorter" /></label>
+                      <label class="wide">Note on the page <input bind:value={form.note} placeholder="e.g. Redrawn Nov 24: the hook is shorter" /></label>
                     </div>
                   </div>
                   {#if form.stage !== 'released'}
                     <p class="muted small">As the font page will show it:</p>
-                    <GlossaryPreview g={{ ...r, ...nul(form), stage: form.stage as Stage }} drawing={pics[r.id] ?? null} />
+                    <GlossaryPreview g={{ ...r, ...nul(form), zh: zhJoined, stage: form.stage as Stage }} drawing={pics[r.id] ?? null} />
                   {/if}
                   <div class="row">
                     <button class="danger sm" onclick={() => remove(r)}>Delete…</button>
                     <span class="spacer"></span>
                     <button onclick={() => (editing = null)}>Cancel</button>
-                    <button class="primary" onclick={() => save(r)} disabled={saving || !form.zh.trim()}>{saving ? 'Saving…' : 'Save'}</button>
+                    <button class="primary" onclick={() => save(r)} disabled={saving || !zhJoined}>{saving ? 'Saving…' : 'Save'}</button>
                   </div>
                 {:else}
                   <div class="foot">
