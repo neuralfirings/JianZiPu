@@ -136,6 +136,7 @@ def test_base_font_comes_from_its_url_without_the_service_key(tmp_path):
         assert dest.read_bytes() == font
         assert len(seen) == 1
         assert not any("secret" in v for v in seen[0].values())   # Supabase isn't asked, its key isn't sent
+        assert seen[0]["User-Agent"] == "JianZiPu-Builder"         # r2.dev refuses Python-urllib's
     finally:
         stop()
 

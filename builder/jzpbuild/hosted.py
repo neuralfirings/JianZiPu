@@ -176,12 +176,14 @@ def fetch_base_font(settings: Settings, dest: Path | None = None) -> str:
     dest = dest or config.SOURCE_FONT
     if dest.exists():
         return f"base font: {dest.name} present"
+    # Cloudflare (R2's r2.dev) answers Python's default User-Agent, Python-urllib/3.x, with 403
+    ua = {"User-Agent": "JianZiPu-Builder"}
     if settings.base_font_url:
-        source, req = settings.base_font_url, urllib.request.Request(settings.base_font_url)
+        source, req = settings.base_font_url, urllib.request.Request(settings.base_font_url, headers=ua)
     elif settings.supabase_url and settings.supabase_service_key:
         source = settings.base_font_object
         req = urllib.request.Request(f"{settings.supabase_url}/storage/v1/object/{settings.base_font_object}",
-                                     headers={"apikey": settings.supabase_service_key,
+                                     headers={**ua, "apikey": settings.supabase_service_key,
                                               "Authorization": f"Bearer {settings.supabase_service_key}"})
     else:
         return (f"base font: {dest} missing and no JZP_BASE_FONT_URL (or SUPABASE_URL / SUPABASE_SERVICE_KEY)"
