@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Design } from './api';
 import { makeBundle } from './bundle';
-import { draftRows, exampleSvg, placedGhosts, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type UpcomingRow } from './upcoming';
+import { draftRows, exampleSvg, placedGhosts, publishDrafts, functionUrl, heldBy, newGlyphs, stageLabel, suggestGhost, zhOf, type DraftRow, type UpcomingRow } from './upcoming';
 import * as T from './typing';
 import type { Item } from './merge';
 
@@ -77,5 +77,36 @@ describe('coming characters', () => {
     const rows = [row('u20', ['qc2s_md'], 'cr-1', '2026-11-17'), row('u22', ['qc2s_md'], 'cr-1', '2026-11-18'), row('u21', ['qc3s_md'], 'cr-0', '2026-11-18'),
       row('u5', ['qc3s_md'], 'cr-1', '2026-11-01'), row('u9', ['old_md'], 'cr-1', '2026-11-18', 'released')];
     expect(placedGhosts(rows, ['qc2s_md', 'qc3s_md', 'old_md', 'new_md'], 'cr-1')).toEqual({ qc2s_md: 'u22', qc3s_md: 'u5' });
+  });
+});
+
+describe('publishDrafts', () => {
+  // a stand-in for the Supabase client: records what's written
+  function fake() {
+    const updates: Record<string, unknown>[] = [];
+    const c = {
+      from: () => ({
+        insert: () => ({ select: () => ({ single: async () => ({ data: { id: 'u9' }, error: null }) }) }),
+        update: (patch: Record<string, unknown>) => { updates.push(patch); return { eq: async () => ({ error: null }) }; }
+      }),
+      storage: { from: () => ({ upload: async () => ({ error: null }) }) }
+    };
+    return { c: c as unknown as Parameters<typeof publishDrafts>[0], updates };
+  }
+  const row = (o: Partial<DraftRow> = {}): DraftRow => ({ glyph: 'dang4yin2_md', ghost: 'u5', zh: '荡吟', pinyin: null, ascii: 'dangyin', meaning: null,
+    section: '1e', after: '吟', example: null, marked: false, ...o });
+
+  it("puts the request's row over the entry, and keeps what the row leaves empty", async () => {
+    const { c, updates } = fake();
+    await publishDrafts(c, 'cr1', [row()], { dang4yin2_md: '<svg/>' });
+    expect(updates[0]).toMatchObject({ zh: '荡吟', ascii: 'dangyin', section: '1e', after: '吟', stage: 'draft', glyphs: ['dang4yin2_md'] });
+    expect(updates[0]).not.toHaveProperty('meaning');   // the visitor's definition stays
+    expect(updates[0]).not.toHaveProperty('pinyin');
+  });
+
+  it("writes the row's definition when it has one", async () => {
+    const { c, updates } = fake();
+    await publishDrafts(c, 'cr1', [row({ meaning: 'a wide vibrato' })], { dang4yin2_md: '<svg/>' });
+    expect(updates[0]).toMatchObject({ meaning: 'a wide vibrato' });
   });
 });

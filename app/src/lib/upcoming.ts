@@ -213,8 +213,11 @@ export async function publishDrafts(c: SupabaseClient, requestId: string, rows: 
     const file = `${id}.svg`;
     const up = await c.storage.from(BUCKET).upload(file, new Blob([svg], { type: 'image/svg+xml' }), { upsert: true, contentType: 'image/svg+xml' });
     if (up.error) throw new Error(`Uploading ${file}: ${up.error.message}`);
+    // the request's glossary row replaces the entry's words; what the row leaves empty (a definition it
+    // hasn't got yet, say) keeps the entry's own, such as the definition from a visitor's request
+    const keep = Object.fromEntries((['pinyin', 'ascii', 'meaning'] as const).filter((k) => first[k]).map((k) => [k, first[k]]));
     const { error } = await c.from(TABLE).update({
-      zh: first.zh, pinyin: first.pinyin, ascii: first.ascii, meaning: first.meaning, section: first.section, after: first.after,
+      zh: first.zh, ...keep, section: first.section, after: first.after,
       stage: 'draft', drawing: file, version: null, glyphs: group.map((r) => r.glyph), change_request_id: requestId,
       example: picture ? first.example : null
     }).eq('id', id);

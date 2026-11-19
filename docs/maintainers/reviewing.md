@@ -108,6 +108,10 @@ the tester's guide. In short:
      Glossary shows for it (its own, like 引上九; else its section's default,
      like 散抹勾五; else the row typed on its own), as the font sets it, red
      where the page puts red.
+   - The request's glossary row replaces the coming character's words (中文,
+     spelling, definition, section, place, example); what the row leaves empty,
+     such as a definition from a visitor's request, stays. The tester sees the
+     same preview when tagging the glyph in **Send Change Request**.
    - **Publish draft to glossary** uploads each example to the public `upcoming`
      bucket and writes its row in the `upcoming` table (stage `draft`); the font
      page shows it as **Draft design** within a minute. Publishing again (**Update

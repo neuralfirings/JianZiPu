@@ -15,7 +15,8 @@
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
-  import { newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import { draftRows, newGlyphs, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import GlossaryPreview from './GlossaryPreview.svelte';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
@@ -47,10 +48,30 @@
   });
   const tagOf = (g: string) => (g in tags ? tags[g] : suggestGhost(app.typing[g], ghosts) ?? '');
   const ghostById = (id: string) => ghosts.find((x) => x.id === id);
-
   const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
   let fresh = $derived(newGlyphs(picked));
+  // what the page will show once the maintainer publishes your drawing for the coming character you picked
+  // (Review's Publish draft to glossary): your glossary row's words over the entry's, and your drawing
+  let plan = $derived(fresh.length && app.design ? draftRows(app.bundle(), Object.fromEntries(fresh.map((g) => [g, tagOf(g) || null])), app.mainLayout) : { rows: [], unplaced: [] });
+  const rowFor = (g: string) => plan.rows.find((r) => r.glyph === g);
+  function after(gh: Ghost, g: string) {
+    const r = rowFor(g);
+    if (!r) return { ...gh, version: gh.release };
+    const set = (v: string | null, old: string | null) => v || old;
+    return { ...gh, version: null, stage: 'draft' as const, zh: r.zh, pinyin: set(r.pinyin, gh.pinyin), ascii: set(r.ascii, gh.ascii),
+      meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: null };
+  }
+  // your drawings as blob: URLs (the Builder's content policy loads images only from itself)
+  let myPics = $state<Record<string, string>>({});
+  $effect(() => {
+    for (const g of fresh) {
+      if (myPics[g] || !app.svgs[g]) continue;
+      myPics = { ...myPics, [g]: URL.createObjectURL(new Blob([app.svgs[g]], { type: 'image/svg+xml' })) };
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(myPics)) URL.revokeObjectURL(u); });
+
   /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
@@ -158,8 +179,13 @@
               </select>
             </label>
             {#if gh}
-              <div class="ghost"><span class="tag">{stageLabel(gh)}</span> <b>{gh.zh}</b>{#if gh.pinyin} <span class="muted">{gh.pinyin}</span>{/if}
-                {#if gh.meaning}<span class="muted"> · {gh.meaning}</span>{/if}<span class="muted small"> · on the font page in {gh.section}{gh.after ? `, after ${gh.after}` : ''}</span></div>
+              {#if rowFor(g)}
+                <p class="muted small">Once the maintainer shows your drawing for it, the font page shows this. Your glossary row's words replace {gh.zh.split(' · ')[0]}'s; what your row leaves empty stays as it is.</p>
+                <GlossaryPreview g={after(gh, g)} drawing={myPics[g] ?? null} />
+              {:else}
+                <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first. On the font page now:</p>
+                <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={null} />
+              {/if}
             {:else}
               <p class="muted small">Not tagged: nothing about a coming character changes.</p>
             {/if}
@@ -216,5 +242,4 @@
   .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
   .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
   .tagpick select { font: inherit; max-width: 100%; }
-  .ghost { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--bg-field); }
 </style>
