@@ -158,6 +158,8 @@ WIDTHS = {
     "名九勾五": 0, "名九勾五 名九勾五": 1000, "名九勾五 名九勾五 ": 2000, "上三四 上三四 ": 2000, "勾五+勾五+": 2000,
     "#名九勾五": 1000, "名九勾五 #名九勾五": 2000, "五": 0, "上": 0, "散": 0, "散+": 1000,
     "shang34 上三七 ": 2000, "上三七 shang34": 2000,
+    # a + ends a word and the next one starts after it; the + of 13+ is a spelling inside a word
+    "s9k3+s9k3": 2000, "k5+k5+k5": 3000, "k7+": 1000, "s13+u6": 1000, "s13+u6 s13+u6": 2000,
 }
 # Word shapes Chinese text and the space after it as separate runs: a Chinese word alone is 0 wide,
 # so the two come to one cell however they are cut

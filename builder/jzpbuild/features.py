@@ -570,7 +570,8 @@ def gen_word_mark() -> list[str]:
         counted once per character;
       - Word shapes Chinese and the space after it as separate runs, so a word that took its
         width when it saw no space would take it before every space too.
-    A character after any other typed character is inside a word and gets no mark. The mark is
+    A character after any other typed character is inside a word and gets no mark, except after a
+    +, which ends a word. The mark is
     told apart by where it came from, not by script: Safari mishandles a rule that only one script
     has when a line mixes Latin and Chinese (all measured with test fonts, 2026-11)."""
     starters = word_starters()
@@ -581,6 +582,10 @@ def gen_word_mark() -> list[str]:
             + [f"  sub {c} by {WORD_MARK} {c};" for c in starters]
             + ["} word_mark_insert;",
                "lookup word_mark_latin {",
+               # a + ends a word (it is an advance), so what follows it starts one: k7+k7. Not the +
+               # of 13+, which is a spelling (past the 13th hui) inside a word
+               f"  ignore sub one three plus {cls}';",
+               f"  sub plus {cls}' lookup word_mark_insert;",
                f"  ignore sub @typed {cls}';",
                f"  sub {cls}' lookup word_mark_insert;",
                "} word_mark_latin;"])
