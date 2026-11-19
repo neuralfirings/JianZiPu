@@ -15,7 +15,7 @@
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
-  import { draftRows, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import { draftRows, exampleSvg, fitToInk, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
   import GlossaryPreview from './GlossaryPreview.svelte';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
@@ -63,7 +63,7 @@
     if (!r) return { ...gh, version: gh.release };
     const set = (v: string | null, old: string | null) => v || old;
     return { ...gh, version: null, stage: 'draft' as const, zh: r.zh, pinyin: set(r.pinyin, gh.pinyin), ascii: set(r.ascii, gh.ascii),
-      meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: null };
+      meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: r.example };
   }
   // the chosen entries' drawings as they are on the page now (a public address; fetched, since the content
   // policy loads images only from the Builder itself), entry id → blob: URL
@@ -78,12 +78,31 @@
     }
   });
   $effect(() => () => { for (const u of Object.values(nowPics)) URL.revokeObjectURL(u); });
-  // your drawings as blob: URLs (the Builder's content policy loads images only from itself)
+  // your drawings as blob: URLs (the Builder's content policy loads images only from itself): an entry with
+  // an example is drawn as the whole example word, laid out by your draft as the font will set it (what
+  // Publish draft to glossary puts on the page); else the glyph on its own. Drawn once per glyph and example.
   let myPics = $state<Record<string, string>>({});
+  const drawnFor: Record<string, string> = {};
+  const plainLine = (t: string) => t.replace(/<\/?r>/g, '');
   $effect(() => {
+    const design = app.design;
+    if (!design) return;
     for (const g of fresh) {
-      if (myPics[g] || !app.svgs[g]) continue;
-      myPics = { ...myPics, [g]: URL.createObjectURL(new Blob([app.svgs[g]], { type: 'image/svg+xml' })) };
+      const r = rowFor(g), key = JSON.stringify(r?.example ?? null);
+      if (drawnFor[g] === key || !app.svgs[g]) continue;
+      drawnFor[g] = key;
+      const put = (svg: string) => {
+        if (drawnFor[g] !== key) return;
+        if (myPics[g]) URL.revokeObjectURL(myPics[g]);
+        myPics = { ...myPics, [g]: URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })) };
+      };
+      if (!r?.example) { put(app.svgs[g]); continue; }
+      const mark = r.marked ? [g, T.get(app.typing, g).vert_variant].filter(Boolean) : [];
+      void api.words(design, [plainLine(r.example[1] || r.example[0])], app.typedWith).then((res) => {
+        const w = res.ok ? res.words[0] : null;
+        const svg = w && exampleSvg(w.pieces, app.svgs, mark, app.control);
+        put(svg ? fitToInk(svg) : app.svgs[g]);
+      }).catch(() => put(app.svgs[g]));
     }
   });
   $effect(() => () => { for (const u of Object.values(myPics)) URL.revokeObjectURL(u); });
