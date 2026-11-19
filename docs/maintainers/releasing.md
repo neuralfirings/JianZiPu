@@ -364,7 +364,8 @@ through the feedback function's `GET`, which gives only what the page shows.
 What you do by hand, all in Review (online or on your computer):
 
 - Take a request on (**WIP** in Feedback), and place its row (**Section**
-  and **After** in Glossary drafts).
+  and **After** in Glossary drafts). A duplicate request: **Link…** it to the
+  first one's coming character before setting it to WIP.
 - Reply to people from your inbox: the request's email replies to them.
 - After a release, set those requests to **Done** in Feedback, and write to the
   people who asked. **Show: Done** lists them, each with its email.

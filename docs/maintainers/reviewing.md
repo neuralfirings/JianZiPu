@@ -154,7 +154,13 @@ Review has two more tabs for admins, online and local:
   Read, Need info, WIP, Done, Won't do), a ticket link (whatever the
   status) and your own note. Opening a New message marks it Read. A character
   request set to **WIP** adds its coming character (the
-  `feedback_take_on` trigger). The admins' email for each message opens it here.
+  `feedback_take_on` trigger) when none is linked yet. Under **Coming
+  character** a message shows its linked character as the font page will;
+  **Link…** links it to an existing one (a duplicate request) or makes a **New
+  coming character** from it, and **Unlink** takes the link off. Each message
+  shows a short id (`#a1b2c3d4`, **Copy** for a "dup of feedback …" note), and
+  **Find** looks one up by it or by its words. The admins' email for each
+  message opens it here.
 - **Glossary drafts**: every row of `upcoming`, by stage, each shown as the
   font page will show it: in its section's table (read from `/site/`), between
   the rows around it.

@@ -31,6 +31,9 @@ export const KIND_LABEL: Record<FeedbackKind, string> = {
   row: 'Glossary row', page: 'The page', contact: 'Contact me', request: 'Character request', comment: 'Coming character'
 };
 
+/** A message's id as you'd write it in a note ("dup of feedback #a1b2c3d4"): its first 8 characters. */
+export const shortId = (id: string) => id.slice(0, 8);
+
 /** What a message is about, in one line. */
 export function aboutOf(f: Pick<Feedback, 'kind' | 'glossary_row' | 'details' | 'upcoming_id'>): string {
   const d = f.details ?? {};
@@ -59,7 +62,7 @@ export async function allFeedback(c: SupabaseClient): Promise<Feedback[]> {
 
 /** Change its status, ticket link or your note; returns the row as saved (a request set to WIP
  *  gets its coming character's id from the database). */
-export async function updateFeedback(c: SupabaseClient, id: string, patch: Partial<Pick<Feedback, 'status' | 'ticket' | 'note'>>): Promise<Feedback> {
+export async function updateFeedback(c: SupabaseClient, id: string, patch: Partial<Pick<Feedback, 'status' | 'ticket' | 'note' | 'upcoming_id'>>): Promise<Feedback> {
   const { data, error } = await c.from(TABLE).update(patch).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data as Feedback;

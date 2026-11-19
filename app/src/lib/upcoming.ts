@@ -258,6 +258,14 @@ export async function updateUpcoming(c: SupabaseClient, id: string, patch: Upcom
   return data as UpcomingRow;
 }
 
+/** Admin: a new coming character (Planned, no section yet: not on the page until it has one), from a
+ *  message; returns its row. The message is linked to it separately (feedback.upcoming_id). */
+export async function createUpcoming(c: SupabaseClient, row: { zh: string; pinyin?: string | null; meaning?: string | null; feedback_id?: string | null }): Promise<UpcomingRow> {
+  const { data, error } = await c.from(TABLE).insert({ stage: 'planned', ...row }).select().single();
+  if (error) throw new Error(error.message);
+  return data as UpcomingRow;
+}
+
 /** Admin: take a coming character off the page for good: its row and its drawing. */
 export async function deleteUpcoming(c: SupabaseClient, row: Pick<UpcomingRow, 'id' | 'drawing'>) {
   const { error } = await c.from(TABLE).delete().eq('id', row.id);

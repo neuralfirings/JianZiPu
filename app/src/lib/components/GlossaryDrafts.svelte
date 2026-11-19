@@ -9,6 +9,7 @@
   import { app } from '$lib/state.svelte';
   import { sectionList } from '$lib/glossary';
   import GlossaryPreview from './GlossaryPreview.svelte';
+  import { shortId } from '$lib/feedback';
   import { allUpcoming, deleteUpcoming, drawingBlob, stageLabel, updateUpcoming, type Stage, type UpcomingPatch, type UpcomingRow } from '$lib/upcoming';
 
   let { focus = null, oncount }: { focus?: string | null; oncount?: (n: number) => void } = $props();
@@ -166,6 +167,7 @@
                     {#if hiddenWhy(r)}<span class="pill danger sm"><I.Hidden size={12} />{hiddenWhy(r)}</span>{/if}
                     <span class="muted small">{r.id} · {r.section ? titleOf(r.section) : 'no section'} · changed {day(r.updated_at)}</span>
                     {#if r.change_request_id}<a class="small" href={`/review?request=${r.change_request_id}`}>Change Request</a>{/if}
+                    {#if r.feedback_id}<a class="small" href={`/review?tab=feedback&f=${r.feedback_id}`}>Feedback #{shortId(r.feedback_id)}</a>{/if}
                     <span class="spacer"></span>
                     <button class="sm" onclick={() => edit(r)}><I.EditRow size={14} /> Edit</button>
                   </div>

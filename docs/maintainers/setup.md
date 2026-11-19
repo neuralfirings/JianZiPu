@@ -175,9 +175,11 @@ appears in Review › Glossary drafts, filled from the request. **Edit** it ther
 check its words (the definition is the visitor's), pick its **Section** and type
 **After** (the 中文 of the row it follows; empty for the section's end). The
 preview shows it as the page will, and the font page shows it as **Planned**
-within a minute. A second request for the same character: put the first one's
-`upcoming_id` on it (Supabase, Table Editor → `feedback`) before taking it on,
-or just mark it Done once the first is released.
+within a minute. A second request for the same character: under **Coming
+character** in the message, **Link…** it to the one the first request made
+before setting it to WIP (WIP makes a new one only when none is linked).
+Feedback that isn't a request (a glossary row, the page) can get one too:
+**Link…** → **New coming character**.
 
 From there the Builder moves it on: Review's **Publish draft to glossary** shows a
 tester's drawing (**Draft design**), a release candidate makes it **In release**,
