@@ -67,6 +67,18 @@ def test_every_example_on_the_page_types_what_it_shows():
     assert problems == [], "\n".join(problems)
 
 
+def test_the_next_releases_page_is_up_to_date_and_its_examples_type():
+    """site/vnext.html, the next release's page while there is one: the same tables, and its examples
+    typed through the spellings like index.html's."""
+    if not config.SITE_VNEXT.exists():
+        pytest.skip("no site/vnext.html")
+    text = config.SITE_VNEXT.read_text(encoding="utf-8")
+    assert glossary.render(text) == text, "run `cd builder && python3 -m jzpbuild.glossary` and commit site/vnext.html"
+    pytest.importorskip("uharfbuzz")
+    problems = glossary.check_typing(page=text)
+    assert problems == [], "\n".join(problems)
+
+
 # ---------------------------------------------------------------- the generator
 
 def test_the_columns_match_the_builders():
@@ -215,6 +227,13 @@ def test_hand_written_examples_are_split_at_sentences():
 
 
 # ---------------------------------------------------------------- the Definition column
+
+def test_a_hand_written_table_row_is_one_example():
+    text = ('<table><tr><th>Type</th></tr><tr><td><text>名九七弦</text><span><text>名97弦</text> · '
+            '<text>s9,7</text></span></td><td><jzp>名九七弦</jzp></td><td>hui 9 · string 7</td></tr></table>')
+    out = glossary.examples(page=text, rows={}, sections={}, groups=[])
+    assert [ex for _, ex in out] == [["名九七弦", "名97弦", "s9,7", "名九七弦"]]
+
 
 def test_a_meaning_column_joins_only_a_section_that_has_one():
     r = rows("lg_gou,,,k,,勾,,gōu", "lg_tiao,,,u,,挑,,tiāo", "lg_lun,,,lun,,轮,,lún")
@@ -433,6 +452,7 @@ def test_write_and_the_command_leave_out_the_colon_the_pages_font_adds(tmp_path,
     assert glossary.write(index, csv_, secs) and '<td class="ascii">shaoxi</td>' in index.read_text(encoding="utf-8")
     assert asked == [tmp_path / "JianZiPu.ttf"]                     # the font beside the page
     monkeypatch.setattr(config, "SITE_INDEX", index)
+    monkeypatch.setattr(config, "SITE_VNEXT", tmp_path / "vnext.html")   # none: main() must not touch the real one
     monkeypatch.setattr(config, "COMPONENTS_CSV", csv_)
     monkeypatch.setattr(config, "GLOSSARY_SECTIONS", secs)
     index.write_text(page("3e"), encoding="utf-8")

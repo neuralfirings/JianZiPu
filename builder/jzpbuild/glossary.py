@@ -740,7 +740,8 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     # the hand-written page, and the descriptions the glossary is written with
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<!--(?! glossary| /glossary).*?-->", " ",
                   strip_generated(page) + "\n" + descriptions_html(sections, groups), flags=re.S)
-    for m in re.finditer(r"<(li|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
+    # a hand-written table row is one example: what you type in one cell, what it gives in the next
+    for m in re.finditer(r"<(li|tr|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
         where = "page: " + re.sub(r"\s+", " ", _plain(m.group(2))).strip()[:60]
         # an example is a run of spellings and the rendering they give (`a or b → <jzp>`), joined
         # by a few words at most; a sentence end or a longer gap drops the spellings before it
@@ -909,24 +910,29 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="jzpbuild.glossary", description=__doc__.split("\n\n")[0])
     ap.add_argument("--check", action="store_true", help="change nothing; exit 1 if the page is out of date")
     args = ap.parse_args(argv)
+    # site/index.html, and site/vnext.html (the next release's page) while there is one
+    pages = [p for p in (config.SITE_INDEX, config.SITE_VNEXT) if p.exists()]
     try:
         rows, sections, groups = load_rows(), load_sections(), load_groups()
         problems = missing(rows, sections) + missing_layout(sections, groups)
-        page = config.SITE_INDEX.read_text(encoding="utf-8")
-        new = render(page, rows, sections, groups, vertical_only=site_vertical_only(rows=rows))
+        texts = {p: p.read_text(encoding="utf-8") for p in pages}
+        news = {p: render(t, rows, sections, groups, vertical_only=site_vertical_only(rows=rows)) for p, t in texts.items()}
     except GlossaryError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
     for p in problems:
         print(f"error: {p}", file=sys.stderr)
+    stale = [p for p in pages if news[p] != texts[p]]
     if args.check:
-        if new != page:
-            print("error: site/index.html's glossary is out of date: run `cd builder && python3 -m jzpbuild.glossary`.",
+        for p in stale:
+            print(f"error: site/{p.name}'s glossary is out of date: run `cd builder && python3 -m jzpbuild.glossary`.",
                   file=sys.stderr)
+        if stale:
             return 1
-    elif new != page:
-        config.SITE_INDEX.write_text(new, encoding="utf-8")
-        print(f"wrote {config.SITE_INDEX}")
+    elif stale:
+        for p in stale:
+            p.write_text(news[p], encoding="utf-8")
+            print(f"wrote {p}")
     else:
         print("the glossary is up to date")
     return 1 if problems else 0

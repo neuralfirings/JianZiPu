@@ -344,6 +344,21 @@ when a glyph with a spelling has no row, or when an example anywhere on the
 page (the lessons too) doesn't type what it shows. A new glyph in a release
 needs a Glossary section before the candidate's tests pass.
 
+## The next release's page (vnext)
+
+When the font page needs to change with a release (new rules it explains, examples only the next
+font draws right), the new page waits in `site/vnext.html` and `site/index.html` stays as it is.
+`vnext.html` draws its examples with `site/JianZiPu-vnext.ttf`, a font built from main
+(`cd builder && python3 -m jzpbuild -o ../site/JianZiPu-vnext.ttf`; rebuild it when the font's
+inputs change), while its Download buttons still give the released font. It is kept out of search
+results (`noindex`, and `X-Robots-Tag` in `site/_headers`). `python3 -m jzpbuild.glossary` updates
+the glossary tables in both pages, and `tests/test_glossary.py` checks both.
+
+After the release is published, open a pull request that moves `vnext.html` into `index.html`:
+copy it over, point its `@font-face` and the SVG/PNG download's `fetch` back at `./JianZiPu.ttf`,
+take out the `noindex` meta, the `.vnext-note` paragraph and its CSS and the `<title>` change, and
+delete `vnext.html`, `JianZiPu-vnext.ttf` and their lines in `_headers`.
+
 ## Coming characters
 
 The font page's glossary shows characters on their way into the font as faded

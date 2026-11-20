@@ -21,3 +21,12 @@
   Content-Type: text/markdown; charset=utf-8
 /llms.txt
   Content-Type: text/plain; charset=utf-8
+
+# The next release's preview (vnext.html, until a release puts it in index.html): its font is rebuilt
+# in place, and the page stays out of search results
+/JianZiPu-vnext.ttf
+  Cache-Control: no-cache
+/vnext.html
+  X-Robots-Tag: noindex
+/vnext
+  X-Robots-Tag: noindex
