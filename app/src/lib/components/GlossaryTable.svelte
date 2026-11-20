@@ -886,7 +886,7 @@
               {:else}
               <td class="zh">{chinese(r, s)}{#if !isWord(r) && linkedTo[r.glyph]}<span class="tag coming" data-tip="Its 中文 matches the font page's coming {linkedTo[r.glyph].zh} ({stageLabel(linkedTo[r.glyph])}): Send Change Request links them">for coming {linkedTo[r.glyph].zh.split(' · ')[0]}</span>{/if}{#if noAreaNote(r)} <button type="button" class="noarea" data-tip={noAreaNote(r)} aria-label={noAreaNote(r)}><I.Warn size={12} /></button>{/if}</td>
               <td class="mono">{ascii(r, s)}</td>
-              <td>{pinyin(r)}</td>
+              <td class="py">{pinyin(r)}</td>
               {/if}
               <td class="use" class:def={shared(r, s)}>
                   <div class="lines">
@@ -1227,13 +1227,15 @@
   .scroll { overflow: visible; }
   /* automatic layout: a column's width is its minimum, and a cell that doesn't wrap widens it; Definition (100%)
      takes what's left and wraps */
-  table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: auto; font-size: var(--t-small); }
+  /* the sizes of the font page's glossary (jianzipufont.com): 16 px text, 中文 in Kai, the example's two lines
+     centred over each other, the glyph at 40 px (GlossaryExample's scale) */
+  table { border-collapse: collapse; width: 100%; min-width: 760px; table-layout: auto; font-size: var(--t-panel); }
   .c-grip { width: 32px; } .c-a, .c-z, .c-p, .c-in, .c-out { width: 100px; } .c-m { width: 100%; } .c-act { width: 92px; }
   td:nth-child(-n+4) { white-space: nowrap; }
   th:nth-child(n+2):nth-child(-n+6) { min-width: 100px; }
   th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: var(--t-caption); color: var(--ink-muted); }
   /* clip, not hidden: a hidden cell is a scroller, and the wheel over it stopped scrolling the page */
-  td { padding: 1px var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
+  td { padding: var(--space-2); border-bottom: 1px solid var(--hairline); vertical-align: middle; overflow: clip; text-overflow: ellipsis; }
   tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--status-draft); }
   tr.on td { background: var(--sel-bg); }
   tr.lifted td { opacity: .4; }
@@ -1250,8 +1252,10 @@
   .ga { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer; vertical-align: middle; }
   .ga.vert { width: auto; height: auto; min-width: 28px; min-height: 28px; padding: 2px; }
   .ga:hover { border-color: var(--sel-border); background: var(--sel-bg); }
-  .zh { font-family: var(--font-serif); font-size: 15px; }
+  .zh { font-family: var(--font-cjk); font-size: var(--t-panel); }
   .mono { font-family: var(--font-mono); }
+  td.mono { font-size: var(--t-body); }
+  td.py { font-size: var(--t-body); color: var(--ink-muted); }
   .meaning { width: 100%; height: 26px; border-color: transparent; background: transparent; }
   textarea.meaning { display: block; min-height: 26px; resize: none; overflow: hidden; padding: 3px var(--space-2); font: inherit; line-height: 1.4; white-space: pre-wrap; }
   td.def { padding-top: var(--space-1); padding-bottom: var(--space-1); }
@@ -1276,12 +1280,12 @@
   .defex input { width: 15rem; height: 24px; font-size: var(--t-small); }
   td.out, th.out { text-align: center; }
   .lines { display: flex; flex-direction: column; min-width: 0; }
-  .line { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 24px; height: auto; font-size: var(--t-small); color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
+  .line { display: block; width: 100%; text-align: center; border: 1px solid transparent; background: transparent; padding: 0 4px; min-height: 26px; height: auto; font-size: var(--t-panel); font-weight: 400; color: var(--ink); cursor: text; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
   .line:hover:not(:disabled) { border-color: var(--border); }
   .line:disabled { cursor: default; }
   .line :global(.r) { color: var(--accent); }
   td.use.def .line, td.out.def :global(svg.ex) { opacity: .55; }
-  .lines input { height: 24px; width: 100%; font-size: var(--t-small); }
+  .lines input { height: 26px; width: 100%; font-size: var(--t-body); }
   .note { display: block; color: var(--status-draft); white-space: normal; }
   .note.bad { color: var(--status-danger); }
   .addrow td { border-bottom: 0; padding-top: var(--space-2); }
@@ -1298,6 +1302,7 @@
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (max-width: 759.98px) {
     .scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+    table { min-width: 980px; }   /* it scrolls sideways here: room for the definition at the page's 16 px */
     .act .ic, .grip .g, .outlist .g { width: var(--control-sm); min-height: var(--control-sm); height: var(--control-sm); }
     .c-grip { width: 40px; } .c-act { width: 112px; }
     .add input { width: 100%; }
