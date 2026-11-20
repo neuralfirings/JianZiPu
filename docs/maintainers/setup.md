@@ -5,10 +5,10 @@ where the settings live. Secrets never go in this repository.
 
 | Part | What it does | Where |
 | --- | --- | --- |
-| Your computer | The local Builder: Review, releases, git | this repo, `builder/.env` |
-| Supabase | Sign-in, drafts, Change Requests, the base font, emails | supabase.com dashboard, `supabase/` |
-| Railway | The online Builder at builder.jianzipufont.com | railway.com, `Dockerfile` |
-| Resend | Sends the Change Request emails | resend.com, `supabase/functions/notify/` |
+| Your computer | The local Builder: releases, git (Review works online too) | this repo, `builder/.env` |
+| Supabase | Sign-in, drafts, Change Requests, emails, the font page's feedback | supabase.com dashboard, `supabase/` |
+| Railway | The online Builder at builder.jianzipufont.com (Review too, for admins) | railway.com, `Dockerfile` |
+| Resend | Sends the Change Request and feedback emails | resend.com, `supabase/functions/notify/`, `supabase/functions/feedback/` |
 | GitHub | Code, tags, releases, the ruleset on main | repository Settings, `.github/workflows/` |
 | Cloudflare Pages | The font page at jianzipufont.com | dash.cloudflare.com, `site/` |
 | EmailOctopus | The "send me the font" email on the font page, and the email list shared with Guqin Tabs | emailoctopus.com, `site/index.html` |
@@ -41,6 +41,10 @@ where the settings live. Secrets never go in this repository.
    | `003_drop_drafts_bucket.sql` | removes the old drafts bucket's policies; only needed if the bucket ever existed |
    | `004_change_requests.sql` | Change Requests, credit, `withdraw_change_request()` |
    | `005_request_drafts.sql` | unsent Change Requests saved with a draft |
+   | `006_feedback.sql` | the font page's feedback (`feedback` table with a status, private `feedback` bucket) |
+   | `007_feedback_kind.sql` | each message's `kind`: a glossary row, the page, or Contact me |
+   | `008_feedback_requests.sql` | two more kinds, `request` (Request a character) and `comment` (on a coming character), with `upcoming_id` and `details` |
+   | `009_upcoming.sql` | coming characters (the glossary's ghost rows): the `upcoming` table, statuses `wip` and `done`, the trigger that makes a row when a request is set to `wip`, the public `upcoming` bucket |
 
 2. **Auth**, following the comments at the top of `001_setup.sql`:
    - Turn off sign-ups.
@@ -52,8 +56,10 @@ where the settings live. Secrets never go in this repository.
 4. **People.** Invite each tester and yourself (Authentication → Users →
    Invite). Make yourself admin: set `role = 'admin'` on your row in
    `profiles`.
-5. **The base font.** Upload `TW-Kai-98.ttf` to the `assets` bucket. The online
-   Builder downloads it at start.
+5. **The base font** isn't kept here any more: see Cloudflare R2 below. (The
+   online Builder still falls back to `TW-Kai-98.ttf` in the `assets` bucket when
+   `JZP_BASE_FONT_URL` isn't set, but each start downloads its 37 MB, and the
+   pull request previews alone used up the free plan's egress in November 2026.)
 
 Moving drafts from the old Storage bucket into the table is a one-off, done in
 October 2026. The steps are in `builder/README.md`, "Moving drafts from the old
@@ -65,8 +71,9 @@ bucket".
    deploys `main` on every merge.
 2. Set these variables:
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`;
-   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it, to read the base
-     font).
+   - `SUPABASE_SERVICE_KEY` (secret; only the server uses it);
+   - `JZP_BASE_FONT_URL`, the base font's address on R2 (below). Set it on the
+     project's shared variables so pull request previews get it too.
 
    Railway sets `PORT` and `RAILWAY_GIT_COMMIT_SHA` itself.
 3. Add the custom domain `builder.jianzipufont.com`.
@@ -85,14 +92,99 @@ Deployments tab.
 1. Create a Resend account, add and verify the `jianzipufont.com` domain (DNS
    records), and create an API key.
 2. Set the secrets with
-   `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`.
-3. Deploy with `supabase functions deploy notify --no-verify-jwt`.
-4. Create a Database Webhook on `change_requests` (Insert and Update) that calls
-   `notify` with the header `x-webhook-secret`.
+   `supabase secrets set RESEND_API_KEY=… MAIL_FROM=… NOTIFY_WEBHOOK_SECRET=… BUILDER_URL=… REVIEW_URL=…`,
+   or in the dashboard under Edge Functions → Secrets. `NOTIFY_WEBHOOK_SECRET` is
+   a random string you make (`openssl rand -hex 32`); `BUILDER_URL` is
+   `https://builder.jianzipufont.com`, and so is `REVIEW_URL` (admins review
+   online; set it to `http://127.0.0.1:5713` to have the links open your local
+   Builder instead). The feedback emails use `REVIEW_URL` too.
+3. Deploy with `supabase functions deploy notify --no-verify-jwt`. Without the
+   CLI: `deno bundle supabase/functions/notify/index.ts -o notify-index.ts`, then
+   Edge Functions → Deploy a new function → Via Editor, name `notify`, paste the
+   file over `index.ts`, deploy, and turn off **Enforce JWT verification** in its
+   settings.
+4. Create a database webhook: in the dashboard's left bar, **Integrations** →
+   **Database Webhooks** (enable them first if asked) → Create a new hook. Name
+   it `notify_change_requests`; table `change_requests`, events Insert and
+   Update, type Supabase Edge Functions, function `notify`, method POST, and the
+   HTTP header `x-webhook-secret` with the same string as the secret.
+
+To check it: https://<project>.supabase.co/functions/v1/notify should answer
+`forbidden` (deployed; it wants the webhook's secret), not "Requested function
+was not found". Each status change shows in Edge Functions → `notify` → Logs, and
+each email in Resend's logs. An email goes only when a request's status changes,
+and never for a change made before the hook existed.
 
 The email templates are in git (`supabase/functions/notify/templates.ts`). To
 change one, edit it, run `deno test supabase/functions/notify`, and deploy
 again.
+
+## Feedback from the font page
+
+The feedback button on each glossary row on jianzipufont.com, Feedback in the
+sticky bar, "Tell me" under a search that finds nothing, and "Send feedback" at
+the foot of the page send a message with optional photos or a
+drawing to the `feedback` Edge Function. It keeps each one in the `feedback`
+table (pictures in the `feedback` bucket) and emails the admins through Resend,
+pictures attached. `supabase/functions/feedback/README.md` has the full steps.
+In short:
+
+1. Run `supabase/006_feedback.sql`, `supabase/007_feedback_kind.sql`,
+   `supabase/008_feedback_requests.sql` and `supabase/009_upcoming.sql`.
+2. Deploy with `supabase functions deploy feedback --no-verify-jwt`. It uses the
+   Change Request emails' `RESEND_API_KEY` and `MAIL_FROM`; optionally set
+   `FEEDBACK_SALT` to a long random string.
+3. Set `window.FEEDBACK_URL` near the top of `site/index.html` to
+   `https://<project>.supabase.co/functions/v1/feedback` and merge. Until then
+   the page shows no feedback buttons or links.
+
+"Contact me" on the page opens the same form, asks for an email, and is kept
+with `kind` = `contact`.
+
+Answer a message by replying to its email. Its **Open it in Review** button
+opens it in the Builder's Review › Feedback (signed in as an admin, online or
+on your computer), with its pictures: set its status there (New, Read, Need
+info, WIP, Done, Won't do), a ticket link and your own note.
+
+### Spam check (Cloudflare Turnstile)
+
+The form runs Cloudflare Turnstile once it has a site key; until then it works
+without it. The secret is shared by every copy of the page, while the site key
+reaches jianzipufont.com only when its pull request merges, so it goes on in two
+steps:
+
+1. Cloudflare dashboard → Turnstile → **Add widget**. Hostnames:
+   `jianzipufont.com`, `jianzipu.pages.dev` (the previews), `builder.jianzipufont.com`
+   and `up.railway.app` (the Builder's copy of the page and its previews).
+   Widget mode: **Managed**. It gives a site key and a secret key.
+2. Supabase → Edge Functions → Secrets: add `TURNSTILE_SECRET` with the secret
+   key. From then on a check that was sent must pass, but a message without one
+   (the live page, before step 3 merges) still goes through.
+3. Set `window.TURNSTILE_SITEKEY` near the top of `site/index.html` to the site
+   key, try the form on the pull request's preview, and merge. A page on your
+   own computer uses Cloudflare's test key.
+4. Once jianzipufont.com has the site key (a minute after the merge), add the
+   secret `TURNSTILE_REQUIRED` = `1`: a message without a passing check is
+   refused from then on.
+
+### Coming characters (the glossary's ghost rows)
+
+A visitor's **Request a character** arrives in Review › Feedback as a
+**Character request**. To take one on, set it to **WIP** and Save: it
+appears in Review › Glossary drafts, filled from the request. **Edit** it there:
+check its words (the definition is the visitor's), pick its **Section** and type
+**After** (the 中文 of the row it follows; empty for the section's end). The
+preview shows it as the page will, and the font page shows it as **Planned**
+within a minute. A second request for the same character: under **Coming
+character** in the message, **Link…** it to the one the first request made
+before setting it to WIP (WIP makes a new one only when none is linked).
+Feedback that isn't a request (a glossary row, the page) can get one too:
+**Link…** → **New coming character**.
+
+From there the Builder moves it on: Review's **Publish draft to glossary** shows a
+tester's drawing (**Draft design**), a release candidate makes it **In release**,
+and publishing the release takes it off the list. Set the request to **Done**
+then (Review › Feedback), and write to the person who asked.
 
 ## GitHub
 
@@ -123,6 +215,24 @@ again.
   modified" reply), so people get a new release as soon as it deploys. A
   release replaces the font at the same URL, so a longer cache would keep the
   old font in browsers that saw it before.
+
+## Cloudflare R2 (the base font)
+
+The online Builder downloads the base font, `TW-Kai-98.ttf` (37 MB), every time
+it starts: each deploy, each pull request preview, each restart. R2 doesn't
+charge for downloads, so the font lives there.
+
+1. In the Cloudflare dashboard, open R2 → Create bucket (for example
+   `jzp-builder`).
+2. Upload `TW-Kai-98.ttf` from `builder/src_font/`.
+3. In the bucket's Settings → Public access, turn on the `r2.dev` address (or
+   connect a custom domain). TW-Kai is published under Taiwan's Open Government
+   Data License, so a public copy is fine.
+4. Copy the file's public URL (`https://pub-….r2.dev/TW-Kai-98.ttf`) into the
+   Railway variable `JZP_BASE_FONT_URL`, then redeploy. The deploy log should say
+   `base font: fetched https://pub-….r2.dev/TW-Kai-98.ttf (35962 KB)`.
+
+Once that works, you can delete the copy in Supabase's `assets` bucket.
 
 ## EmailOctopus
 

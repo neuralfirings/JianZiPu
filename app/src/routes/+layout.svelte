@@ -38,7 +38,8 @@
     ['/glyphs', 'Glyphs'],
     ['/layouts', 'Layouts'],
     ['/test', 'Build & test'],
-    ...(hosted.ready && !hosted.isHosted ? [['/review', 'Review']] : []),
+    // Review: always on your own computer; online only for admins (profiles.role = 'admin')
+    ...(hosted.ready && (!hosted.isHosted || hosted.isAdmin) ? [['/review', 'Review']] : []),
     ['/help', 'Help']
   ]);
 
@@ -179,6 +180,7 @@
   <button onclick={() => (pilot.dialog = 'export')}>Export my draft (.zip)…</button>
   <button onclick={() => { pilot.review = null; goto('/review'); }}>Import a draft (.zip)…</button>
   <button onclick={() => (dialog = 'glossary')} title="The glossary on jianzipufont.com as it would be with your draft's changes, and what it would leave out">Check the glossary…</button>
+  {#if hosted.isAdmin}<button disabled title="Releases are made in the Builder on your own computer">Make a release… (only on your own computer)</button>{/if}
   <button onclick={() => (pilot.dialog = 'update')} disabled={!app.fontMoved}>{app.fontMoved ? `${app.bringLabel}…` : "Your draft has the font's latest updates"}</button>
   <button onclick={() => (feedback = true)}>Send feedback…</button>
   <button onclick={() => (pilot.dialog = 'welcome')}>Welcome note</button>

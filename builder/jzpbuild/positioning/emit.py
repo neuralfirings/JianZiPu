@@ -257,6 +257,47 @@ HASH_WIDTH = [
 ]
 
 
+def run_spacing(design: Design, glyphs: list[str]) -> tuple[list[int], list[int]]:
+    """What the font's width rules do to a run of glyphs, for the Builder's preview (/api/words):
+    each glyph's advance and its extra x placement, after COLON_WIDTH, word_advance and HASH_WIDTH
+    above. Advances start as the font's own: a control glyph's is its area's advance
+    (base.control_widths), the space, `advance` and `#` one em, a part of a word and the mark of a
+    word typed in Latin nothing. No rule moves a glyph any more, so the placements are all 0.
+    Change this with those rules."""
+    def width(g: str) -> int:
+        if g in config.CONTROL_GLYPHS:
+            return next((a.advance for a in design.areas.values() if g in a.glyphs and a.advance > 0),
+                        config.CONTROL_GLYPHS[g][1])
+        if g in ("space", HASH):
+            return SPACE
+        return next((a.advance for a in design.areas.values() if g in a.glyphs), 0)
+    wild = set(design.all_glyphs()) | {"blank", "blank_bar", COLON}
+    spaces = ("space", "advance")
+    own_width = {g for a in design.areas.values() if a.advance for g in a.glyphs}
+    adv = [width(g) for g in glyphs]
+    dx = [0] * len(glyphs)
+
+    def starts_word(i: int) -> bool:
+        """`[# mark] WILD{n} glyph'` for some n in 0..10: a # or a mark within reach, only parts between."""
+        for n in range(_DEPTH + 1):
+            j = i - 1 - n
+            if j < 0 or (n and glyphs[j + 1] not in wild):
+                return False
+            if glyphs[j] in (HASH, MARK):
+                return True
+        return False
+    colon = any(COLON in a.glyphs and a.advance for a in design.areas.values())
+    for i, g in enumerate(glyphs):
+        after = glyphs[i + 1] if i + 1 < len(glyphs) else None
+        if colon and g == COLON and not (i and glyphs[i - 1] in wild):
+            adv[i] -= SPACE                                    # COLON_WIDTH
+        if g in wild and after not in wild and after not in spaces and g not in own_width and starts_word(i):
+            adv[i] += SPACE                                    # word_advance
+        if g == HASH and (after in wild or after in spaces):
+            adv[i] -= SPACE                                    # HASH_WIDTH
+    return adv, dx
+
+
 def gen_gpos(design: Design) -> Emission:
     rules, skipped, reg = build_rules(design)
     lines = ["# --- positioning (jzpbuild.positioning): one rule per word shape, cursive chains ---"]

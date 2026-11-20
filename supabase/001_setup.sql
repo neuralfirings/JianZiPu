@@ -4,8 +4,10 @@
 -- What it makes:
 --   profiles        one row per invited person (name, email, role 'tester' | 'admin')
 --   bucket assets   private; only the server's service key reads it (the TW-Kai base font)
--- Then run 002_drafts_table.sql (testers' drafts), 004_change_requests.sql (Change Requests) and
--- 005_request_drafts.sql (a Change Request saved before sending).
+-- Then run 002_drafts_table.sql (testers' drafts), 004_change_requests.sql (Change Requests),
+-- 005_request_drafts.sql (a Change Request saved before sending), 006_feedback.sql (feedback
+-- from the font page), 007_feedback_kind.sql (what each message is), 008_feedback_requests.sql
+-- (requests for a character, comments on a coming one) and 009_upcoming.sql (coming characters).
 --
 -- After running it (docs: builder/README.md "Hosted pilot"):
 --   Authentication → Sign In / Providers → Email: turn OFF "Allow new users to sign up"

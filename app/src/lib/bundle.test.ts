@@ -224,6 +224,18 @@ describe("an area's members, each its own item", () => {
     expect(glyphOf(items, items.find((i) => i.id === 'design:member:left:md_b')!)).toBe('md_b');
     expect(glyphOf(items, items.find((i) => i.id === 'design:member:hui:md_7')!)).toBeNull();
   });
+  it("a new glyph's glossary entry travels with it, and takes the glyph along", () => {
+    const items = [
+      { id: 'glyph:md_a', kind: 'glyph', key: 'md_a', status: 'added' },
+      { id: 'glossary-row:1e:g:md_a', kind: 'glossary-row', key: '1e:g:md_a', section: '1e', row: 'g:md_a', status: 'added' },
+      { id: 'glossary-row:1e:g:md_yin', kind: 'glossary-row', key: '1e:g:md_yin', section: '1e', row: 'g:md_yin', status: 'added' },
+      { id: 'glossary-row:1e:w:带起', kind: 'glossary-row', key: '1e:w:带起', section: '1e', row: 'w:带起', status: 'added' }
+    ] as unknown as Parameters<typeof companions>[0];
+    expect(companions(items, 'md_a')).toEqual(['glossary-row:1e:g:md_a']);
+    expect(glyphOf(items, items[1])).toBe('md_a');
+    expect(glyphOf(items, items[2])).toBeNull();   // a glyph the font has already
+    expect(glyphOf(items, items[3])).toBeNull();   // a word
+  });
   it('undoes one member', () => {
     const b = twoNew();
     const items = diffBundle(b, cur()).filter((i) => i.id === 'design:member:left:md_a');
@@ -274,7 +286,7 @@ describe('what a font update brings, in words', () => {
     const gs = (key: string) => ({ id: `glossary:${key}`, kind: 'glossary', key, status: 'changed', conflict: false }) as never;
     expect(updateSummary([lay('standard'), lay('chord'), gl('a'), sp('c', 'simplified'), gs('3e')]))
       .toBe('2 word types, Chinese spellings for 1 glyph, 1 glyph drawing and more');
-    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary sections');
+    expect(updateSummary([gs('3e'), gs('1a')])).toBe('2 glossary changes');
     expect(updateSummary([])).toBe('');
   });
 });
@@ -358,14 +370,15 @@ describe('the glossary in a draft', () => {
     const legacy = fromJson(JSON.stringify({ ...JSON.parse(toJson(old)), words: [{ word: '少息', glyphs: 'md_a md_b' }] }));
     expect((legacy as { words?: unknown }).words).toBeUndefined();
   });
-  it('reviews a section whole: changed, conflicting, and left alone when the Builder has it already', () => {
+  it('reviews a subtitle row by row, its order on its own, and leaves alone what the Builder has already', () => {
     const b = mk({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] },
                  { '3e': [g('md_a')], '1a': [g('md_x'), g('md_y')], '2a': [] });
     const cur = { design: design(), typing: {}, svgs: baseSvgs, glossary: { '3e': [g('md_a'), g('md_c')], '1a': [g('md_x'), g('md_y')], '2a': [g('lg_gou')] } };
-    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary');
-    expect(items.map((i) => [i.key, i.status, i.conflict])).toEqual([['1a', 'changed', false], ['3e', 'changed', true]]);
-    const m = applyMerge(items, { 'glossary:1a': true, 'glossary:3e': true }, cur);
-    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
+    const items = diffBundle(b, cur).filter((i) => i.kind === 'glossary' || i.kind === 'glossary-row');
+    expect(items.map((i) => [i.id, i.status, i.conflict])).toEqual([['glossary:1a', 'changed', false], ['glossary-row:3e:w:少息', 'added', false]]);
+    const m = applyMerge(items, { 'glossary:1a': true, 'glossary-row:3e:w:少息': true }, cur);
+    // the new word goes in before md_a, as in the draft; md_c, which the Builder added since, stays
+    expect(m.glossary).toEqual({ '3e': [w('少息'), g('md_a'), g('md_c')], '1a': [g('md_y'), g('md_x')], '2a': [g('lg_gou')] });
     expect(applyMerge(items, {}, { design: design(), typing: {}, svgs: baseSvgs }).glossary).toBeUndefined();   // left out: untouched
   });
 });

@@ -3,16 +3,20 @@
   // you changed and why, and how you'd like to be credited. Before it goes: the draft is saved,
   // the chosen spellings mustn't clash, and a font built from just those changes must build.
   // Once sent, those changes are locked in the draft until the request is withdrawn or declined.
+  // A new glyph can be tagged with the coming character it draws (the font page's ghost rows,
+  // lib/upcoming.ts): suggested from its spelling, saved in the request's manifest.upcoming.
   // Save as draft keeps the form (ticks, title, notes, credit) with the tester's draft in Supabase,
   // to finish later, here or on another computer; it opens again from where it was.
   import * as I from '$lib/icons';
   import { api } from '$lib/api';
   import { hosted } from '$lib/hosted.svelte';
-  import { companions, glyphOf, type Item } from '$lib/merge';
+  import { companions, glyphOf, itemName, type Item } from '$lib/merge';
   import { pilot } from '$lib/pilot.svelte';
   import { buildInputs, myCredit, sendRequest, setCredit, snapshot, startingTicks } from '$lib/requests';
   import { app } from '$lib/state.svelte';
   import * as T from '$lib/typing';
+  import { draftRows, exampleSvg, fitToInk, publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
+  import GlossaryPreview from './GlossaryPreview.svelte';
 
   let { items, onclose }: { items: Item[]; onclose: () => void } = $props();
 
@@ -35,8 +39,74 @@
     if (c && uid) void myCredit(c, uid).then((v) => { savedCredit = v; if (!credit) credit = v; });
   });
 
-  const nameOf = (i: Item) => (i.kind === 'design' ? i.label : i.kind === 'spelling' ? `Spellings · ${i.key}` : i.kind === 'glossary' ? `Glossary · ${i.key}` : i.kind === 'glossary-titles' ? 'Glossary · section titles' : `Glyph · ${i.key}`);
+  // coming characters: the font page's list, and which one each new glyph draws ('' for none)
+  let ghosts = $state<Ghost[]>([]);
+  let tags = $state<Record<string, string>>({});
+  $effect(() => {
+    const url = hosted.config?.supabase_url;
+    if (url) void publicGhosts(url).then((g) => (ghosts = g));
+  });
+  const tagOf = (g: string) => (g in tags ? tags[g] : suggestGhost(app.typing[g], ghosts) ?? '');
+  const ghostById = (id: string) => ghosts.find((x) => x.id === id);
+  const nameOf = itemName;
   let picked = $derived(items.filter((i) => chosen[i.id]));
+  /** The new glyphs whose glossary entry goes in this request: each can be for a coming character (the
+   *  entry is what the font page shows). A glyph row, not a word; the glyph must be new in the draft. */
+  let fresh = $derived([...new Set(picked.flatMap((i) => (i.kind === 'glossary-row' && i.status === 'added' && i.row.startsWith('g:') ? [i.row.slice(2)] : []))
+    .filter((g) => items.find((x) => x.id === `glyph:${g}`)?.status === 'added'))]);
+  // what the page will show once the maintainer publishes your drawing for the coming character you picked
+  // (Review's Publish draft to glossary): your glossary row's words over the entry's, and your drawing
+  let plan = $derived(fresh.length && app.design ? draftRows(app.bundle(), Object.fromEntries(fresh.map((g) => [g, tagOf(g) || null])), app.mainLayout) : { rows: [], unplaced: [] });
+  const rowFor = (g: string) => plan.rows.find((r) => r.glyph === g);
+  function after(gh: Ghost, g: string) {
+    const r = rowFor(g);
+    if (!r) return { ...gh, version: gh.release };
+    const set = (v: string | null, old: string | null) => v || old;
+    return { ...gh, version: null, stage: 'draft' as const, zh: r.zh, pinyin: set(r.pinyin, gh.pinyin), ascii: set(r.ascii, gh.ascii),
+      meaning: set(r.meaning, gh.meaning), section: r.section, after: r.after, example: r.example };
+  }
+  // the chosen entries' drawings as they are on the page now (a public address; fetched, since the content
+  // policy loads images only from the Builder itself), entry id → blob: URL
+  let nowPics = $state<Record<string, string>>({});
+  const fetching = new Set<string>();
+  $effect(() => {
+    for (const g of fresh) {
+      const gh = ghostById(tagOf(g));
+      if (!gh?.drawing || fetching.has(gh.id)) continue;
+      fetching.add(gh.id);
+      void fetch(gh.drawing).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) nowPics = { ...nowPics, [gh.id]: URL.createObjectURL(b) }; }).catch(() => {});
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(nowPics)) URL.revokeObjectURL(u); });
+  // your drawings as blob: URLs (the Builder's content policy loads images only from itself): an entry with
+  // an example is drawn as the whole example word, laid out by your draft as the font will set it (what
+  // Publish draft to glossary puts on the page); else the glyph on its own. Drawn once per glyph and example.
+  let myPics = $state<Record<string, string>>({});
+  const drawnFor: Record<string, string> = {};
+  const plainLine = (t: string) => t.replace(/<\/?r>/g, '');
+  $effect(() => {
+    const design = app.design;
+    if (!design) return;
+    for (const g of fresh) {
+      const r = rowFor(g), key = JSON.stringify(r?.example ?? null);
+      if (drawnFor[g] === key || !app.svgs[g]) continue;
+      drawnFor[g] = key;
+      const put = (svg: string) => {
+        if (drawnFor[g] !== key) return;
+        if (myPics[g]) URL.revokeObjectURL(myPics[g]);
+        myPics = { ...myPics, [g]: URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })) };
+      };
+      if (!r?.example) { put(app.svgs[g]); continue; }
+      const mark = r.marked ? [g, T.get(app.typing, g).vert_variant].filter(Boolean) : [];
+      void api.words(design, [plainLine(r.example[1] || r.example[0])], app.typedWith).then((res) => {
+        const w = res.ok ? res.words[0] : null;
+        const svg = w && exampleSvg(w.pieces, app.svgs, mark, app.control);
+        put(svg ? fitToInk(svg) : app.svgs[g]);
+      }).catch(() => put(app.svgs[g]));
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(myPics)) URL.revokeObjectURL(u); });
+
   /** A new glyph, its spellings and its place in an area go together (Review keeps them together too). */
   function toggle(it: Item, v: boolean) {
     const next = { ...chosen, [it.id]: v };
@@ -87,6 +157,8 @@
     try {
       if (app.dirty && !(await app.save())) { problem = "Your draft couldn't be saved first. Try again in a moment."; return; }
       const { bundle, itemIds } = snapshot(app.bundle(), app.mainSvgs, picked.map((i) => i.id));
+      const tagged = Object.fromEntries(fresh.map((g) => [g, tagOf(g)]).filter(([, id]) => id));
+      if (Object.keys(tagged).length) bundle.manifest.upcoming = tagged;
       const clash = T.issues(bundle.typing, app.known);
       if (clash.length) { problem = `${clash.length} spelling problem${clash.length === 1 ? '' : 's'} in the chosen changes. Fix them in Glyphs → List view, or leave those spellings out.`; return; }
       const failed = await buildCheck(buildInputs(bundle, app.mainSvgs));
@@ -128,15 +200,47 @@
       </ul>
     </fieldset>
 
+    {#if ghosts.length && fresh.length}
+      <fieldset class="coming">
+        <legend>Is this for a coming character?</legend>
+        <p class="muted small">A glossary entry you're sending can be for a character on the font page's Coming next. The maintainer confirms it, then can show your entry and drawing there for comments.</p>
+        {#each fresh as g (g)}
+          {@const gh = ghostById(tagOf(g))}
+          <div class="tagrow">
+            <label class="tagpick"><span><span class="mono">Glossary · {g}</span> is for</span>
+              <select value={tagOf(g)} onchange={(e) => (tags = { ...tags, [g]: (e.target as HTMLSelectElement).value })}>
+                <option value="">None of these</option>
+                {#each ghosts as x (x.id)}<option value={x.id}>{x.zh}{x.pinyin ? ` · ${x.pinyin}` : ''} · {stageLabel(x)}</option>{/each}
+              </select>
+            </label>
+            {#if gh}
+              <p class="when"><b>Before</b> <span class="muted small">· the coming character on the font page today</span></p>
+              <GlossaryPreview g={{ ...gh, version: gh.release }} drawing={nowPics[gh.id] ?? null} />
+              {#if rowFor(g)}
+                <p class="when"><b>After</b> <span class="muted small">· your glossary entry, once the maintainer shows it: its words replace {gh.zh.split(' · ')[0]}'s (what it leaves empty stays), and your drawing replaces the old one</span></p>
+                <GlossaryPreview g={after(gh, g)} drawing={myPics[g] ?? null} />
+              {:else}
+                <p class="muted small">{g} has no row in Glyphs › Glossary, so the maintainer can't show it for {gh.zh.split(' · ')[0]}: add its row there first.</p>
+              {/if}
+            {:else}
+              <p class="muted small">Not tagged: nothing about a coming character changes.</p>
+            {/if}
+          </div>
+        {/each}
+      </fieldset>
+    {/if}
+
     <label class="field">Title
+      <span class="muted small hint">Its line in the release notes.</span>
       <input id="cr-title" type="text" bind:value={title} maxlength="200" placeholder="Tighter spacing for 勾 over 七" />
     </label>
     <label class="field">What you changed and why
+      <span class="muted small hint">For the reviewer only, never published.</span>
       <textarea id="cr-notes" bind:value={notes} rows="5" maxlength="20000" placeholder="Which words look better now, what you tried, anything you're unsure about."></textarea>
     </label>
     <label class="field">How would you like to be credited?
+      <span class="muted small hint">After "thanks to" in the release notes; empty for none.</span>
       <input id="cr-credit" type="text" bind:value={credit} maxlength="200" placeholder="Your name here" />
-      <span class="muted small">Your name the way it should read in the release notes, which say "thanks to" before it. Leave it empty for no credit. It's remembered for next time.</span>
     </label>
 
     {#if problem}<div class="banner danger" role="alert"><span class="ic"><I.Problem /></span><span>{problem}</span></div>{/if}
@@ -165,7 +269,14 @@
   .field { display: flex; flex-direction: column; gap: var(--space-2); font-weight: 600; }
   .field input, .field textarea { font: inherit; font-weight: 400; }
   .field .muted { font-weight: 400; }
+  .field .hint { margin-top: calc(-1 * var(--space-1)); }   /* close under its label */
   .tag.added { color: var(--status-saved); border-color: currentColor; }
   .tag.deleted { color: var(--status-danger); border-color: currentColor; }
   .row.end { display: flex; justify-content: flex-end; gap: var(--space-4); }
+  .coming { display: flex; flex-direction: column; gap: var(--space-3); }
+  .coming p { margin: 0; }
+  .when { margin: var(--space-3) 0 0; }
+  .tagrow { display: flex; flex-direction: column; gap: var(--space-2); }
+  .tagpick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .tagpick select { font: inherit; max-width: 100%; }
 </style>

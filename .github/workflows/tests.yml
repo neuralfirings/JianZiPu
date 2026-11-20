@@ -81,5 +81,5 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno test supabase/functions/notify
-      - run: deno check supabase/functions/notify/index.ts
+      - run: deno test supabase/functions/notify supabase/functions/feedback
+      - run: deno check supabase/functions/notify/index.ts supabase/functions/feedback/index.ts

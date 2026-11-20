@@ -191,8 +191,7 @@ class WordShaper:
             buf.add_str(w)
             buf.guess_segment_properties()
             hb.shape(f, buf, {"liga": True, "kern": False})
-            names = [f.glyph_to_string(i.codepoint) for i in buf.glyph_infos]
-            out.append([n for n in names if n != "word_mark"])     # zero-width, no part of a word
+            out.append([f.glyph_to_string(i.codepoint) for i in buf.glyph_infos])
         return out
 
     @staticmethod
@@ -236,30 +235,38 @@ def words_payload(design: schema.Design, words: list[str], runs: list[list[str]]
     for word, glyphs in zip(words, runs):
         pieces = []
         pen = 0
-        matched = list(WordShaper.match(design, rules, glyphs, reg.other))
-        for i, piece in enumerate(matched):
+        i = 0                          # where the piece starts in the run
+        # the pen moves as in the font: a vertical word's colon gives its width back to the space
+        # after the word, a word typed in Latin takes its own (emit.run_spacing), so the gap between
+        # two words is the font's, not a colon's em more
+        advs, dxs = emit.run_spacing(design, glyphs)
+        # the mark in front of a word typed in Latin counts for the spacing and is no part of the word
+        keep = [k for k, g in enumerate(glyphs) if g != emit.MARK]
+        glyphs, advs, dxs = [glyphs[k] for k in keep], [advs[k] for k in keep], [dxs[k] for k in keep]
+        for piece in WordShaper.match(design, rules, glyphs, reg.other):
             if piece["layout"] is None:
-                g = piece["glyphs"][0]
-                adv = next((a.advance for a in design.areas.values() if g in a.glyphs), 0)
-                pieces.append({"glyphs": [g], "layout": None, "elements": [], "pen": pen})
-                # a # is an empty cell only on its own: before a word or a space it is 0 wide (emit.HASH_WIDTH)
-                after = matched[i + 1]["glyphs"][0] if i + 1 < len(matched) else None
-                leads = g == "numbersign" and after is not None and after != "numbersign"
-                pen += adv or (1000 if g in ("space", "advance", "numbersign") and not leads else 0)
+                pieces.append({"glyphs": piece["glyphs"], "layout": None, "elements": [], "pen": pen})
+                pen += advs[i]
+                i += 1
                 continue
             r = piece["rule"]
             layout = design.layout(r.layout)
             pinned = {k: v for k, v in r.bucket if v}
             pos = resolve.resolve(design, layout, r.shape, pinned)
             els = []
-            for e, g in zip(r.shape.elements, piece["glyphs"]):
+            moved = 0                  # how far the font's pen has moved in the word, less what emit counted
+            for k, (e, g) in enumerate(zip(r.shape.elements, piece["glyphs"])):
                 x, y = pos[e.name]
-                els.append({"name": e.name, "area": e.area, "glyph": g, "x": x + pen, "y": y,
+                els.append({"name": e.name, "area": e.area, "glyph": g, "x": x + pen + moved + dxs[i + k], "y": y,
                             "size": design.areas[e.area].size})
+                adv = design.areas[e.area].advance
+                moved += advs[i + k] - (adv - (emit.SPACE if emit.COLON in design.areas[e.area].glyphs else 0) if adv else 0)
             pieces.append({"glyphs": piece["glyphs"], "layout": r.layout, "shape": r.shape.names,
                            "choice": [list(c) if isinstance(c, tuple) else c for c in r.shape.choice],
                            "pinned": pinned, "elements": els, "pen": pen})
-            pen += sum(design.areas[e.area].advance for e in r.shape.elements)
+            n = len(piece["glyphs"])
+            pen += sum(advs[i:i + n])
+            i += n
         out.append({"word": word, "glyphs": glyphs, "pieces": pieces, "advance": pen})
     return {"ok": True, "words": out}
 

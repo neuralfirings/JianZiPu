@@ -7,7 +7,9 @@
   // title. + Add types a glyph or a word as in the font (unsaved spellings and new glyphs
   // included). Every edit is one undo step, saved with Save. Above the sections, Not in the glossary
   // lists the glyphs with spellings that no row shows (what the glossary check asks for); drag one into a
-  // section to add it there.
+  // section to add it there. The font page's coming characters (lib/upcoming.ts) show as faded rows in their
+  // sections; Use for my glyph… starts a row from one (its place, definition, and the 中文 and pinyin into
+  // empty spellings, which is what Send Change Request matches it by). Only coming characters filters to them.
   import * as I from '$lib/icons';
   import { api, type WordPiece } from '$lib/api';
   import { app } from '$lib/state.svelte';
@@ -16,6 +18,8 @@
   import { exampleHtml, exampleText, glyphsOfRow, isWord, leftOut, mainSpellings, markdown, markWordIn, marksGlyph, moveRow, newId, refuse, rowKey, rowName, usageFrom, usesOf, verticalTemplate,
     type GRow, type Section } from '$lib/glossary';
   import GlossaryExample from './GlossaryExample.svelte';
+  import { hosted } from '$lib/hosted.svelte';
+  import { publicGhosts, stageLabel, suggestGhost, type Ghost } from '$lib/upcoming';
   import Glyph from './Glyph.svelte';
 
   let { q = '', focus = null, onnotice, onopen }: {
@@ -91,6 +95,15 @@
     return zhOf(r.glyph).map((z) => pre + z).join(', ');
   }
   const pinyin = (r: GRow) => glyphsOfRow(r).map(pyOf).filter(Boolean).join(' ');
+  /** Why a row's glyph can't be drawn yet: it's in no area (a new glyph not added to one in Layouts). Its
+   *  example then also keeps the colon, since only an area the font sets vertically drops it. */
+  function noAreaNote(r: GRow): string {
+    const areas = Object.values(app.design?.areas ?? {});
+    const lost = glyphsOfRow(r).filter((g) => !areas.some((a) => a.glyphs.includes(g)));
+    if (!lost.length) return '';
+    const one = lost.length === 1;
+    return `${lost.join(', ')} ${one ? "isn't" : "aren't"} in an area yet, so the font can't draw ${one ? 'it' : 'them'}, and the row is typed after a colon. Add ${one ? 'it' : 'them'} to an area in Layouts › Area Properties: in a vertical one, the colon goes.`;
+  }
   /** Not in the glossary: glyphs with spellings that no row shows (vertical forms count as their partner),
    *  in the Glyphs screen's order; the search narrows it like the rows. Dragged as section OUT. */
   const OUT = '~out';
@@ -111,6 +124,81 @@
     const t = q.trim().toLowerCase();
     return !t || [rowName(r), ...glyphsOfRow(r), ascii(r, s), chinese(r, s), pinyin(r), r.meaning ?? ''].join(' ').toLowerCase().includes(t);
   };
+
+  // ---------------------------------------------------------------- coming characters
+  /** The font page's coming characters (Planned, Draft design, In release; each with a section). */
+  let ghosts = $state<Ghost[]>([]);
+  $effect(() => { const url = hosted.config?.supabase_url; if (url) void publicGhosts(url).then((g) => (ghosts = g)); });
+  let comingOnly = $state(false);
+  /** A row's 中文 as the page names it (a coming character's `after`). */
+  const rowZh = (r: GRow) => (isWord(r) ? r.word : zhOf(r.glyph)[0] ?? '');
+  /** Each coming character a glyph row in its section stands for (its spellings match it, as Send Change
+   *  Request's suggestion does; the page likewise hides a coming row once its 中文 is in the section): id → glyph. */
+  let linked = $derived.by(() => {
+    const out: Record<string, string> = {};
+    for (const g of ghosts) {
+      const r = (app.glossary[g.section] ?? []).find((x) => !isWord(x) && suggestGhost(app.typing[x.glyph], [g]) === g.id);
+      if (r && !isWord(r)) out[g.id] = r.glyph;
+    }
+    return out;
+  });
+  let linkedTo = $derived(Object.fromEntries(Object.entries(linked).map(([id, g]) => [g, ghosts.find((x) => x.id === id)!])));
+  /** A section's coming characters not stood for by a row yet: each after the row it names (index), else at the end (-1). */
+  const ghostsIn = (sid: string) => ghosts.filter((g) => g.section === sid && !linked[g.id])
+    .map((g) => ({ g, at: g.after ? rowsOf(sid).findIndex((r) => rowZh(r) === g.after) : -1 }));
+  const hasComing = (sid: string) => ghosts.some((g) => g.section === sid);
+  // their drawings, fetched (the content policy loads images only from the Builder): id → blob: URL
+  let ghostPics = $state<Record<string, string>>({});
+  const fetchingPics = new Set<string>();
+  $effect(() => {
+    for (const g of ghosts) {
+      if (!g.drawing || fetchingPics.has(g.id)) continue;
+      fetchingPics.add(g.id);
+      void fetch(g.drawing).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) ghostPics = { ...ghostPics, [g.id]: URL.createObjectURL(b) }; }).catch(() => {});
+    }
+  });
+  $effect(() => () => { for (const u of Object.values(ghostPics)) URL.revokeObjectURL(u); });
+  const plainLine = (t: string) => t.replace(/<\/?r>/g, '');
+  /** The glyphs a coming character could be drawn by, with no glossary row yet: the ones its 中文 or pinyin
+   *  matches and the ones new in this draft (not in the font), matches first; all of them when there are none such. */
+  function candidates(g: Ghost): string[] {
+    const used = new Set(Object.values(app.glossary).flat().flatMap(glyphsOfRow));
+    const all = app.glyphs.map((r) => r.glyph).filter((x) => !used.has(x) && x in app.svgs && !app.control.includes(x));
+    const match = (x: string) => !!suggestGhost(app.typing[x], [g]), fresh = (x: string) => !(x in app.mainSvgs);
+    const near = all.filter((x) => match(x) || fresh(x)).sort((a, b) => Number(match(b)) - Number(match(a)));
+    return near.length ? near : all;
+  }
+  let using = $state<{ g: Ghost; top: number; right: number } | null>(null);
+  function openUse(g: Ghost, e: MouseEvent) {
+    if (using?.g.id === g.id) { using = null; return; }
+    const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    using = { g, top: b.bottom + 4, right: Math.max(8, innerWidth - b.right) };
+  }
+  $effect(() => {
+    if (!using) return;
+    const close = (e: Event) => { if (!(e.target instanceof Element && e.target.closest('.usemenu, [data-use]'))) using = null; };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') using = null; };
+    addEventListener('pointerdown', close); addEventListener('keydown', key);
+    return () => { removeEventListener('pointerdown', close); removeEventListener('keydown', key); };
+  });
+  /** Start a row from a coming character: the glyph's row where the faded one was, with its definition, and
+   *  its 中文 and pinyin in the glyph's empty spellings. One undo step. */
+  function useGhost(g: Ghost, glyph: string) {
+    using = null;
+    const rows = JSON.parse(JSON.stringify(app.glossary)) as Record<string, GRow[]>;
+    const list = (rows[g.section] ??= []);
+    const at = g.after ? list.findIndex((r) => rowZh(r) === g.after) : -1;
+    list.splice(at >= 0 ? at + 1 : list.length, 0, { glyph, ...(g.meaning ? { meaning: g.meaning } : {}) });
+    const typing = JSON.parse(JSON.stringify(app.typing)) as T.Typing;
+    const sp = (typing[glyph] ??= T.empty());
+    const [zs, zt] = g.zh.split(/\s*·\s*/).map((x) => x.trim());
+    const filled: string[] = [];
+    if (!sp.simplified && !sp.traditional) { sp.simplified = zs ?? ''; if (zt && zt !== zs) sp.traditional = zt; filled.push('中文'); }
+    if (!sp.pinyin && g.pinyin) { sp.pinyin = g.pinyin; filled.push('pinyin'); }
+    app.applyChanges(`${glyph} for the coming ${zs}`, { glossary: rows, typing });
+    const noAscii = !sp.latin && !sp.latin_alt && !sp.common;
+    onnotice?.(`Added ${glyph} to ${sec(g.section)?.title ?? g.section} for the coming ${zs}${filled.length ? `, with its ${filled.join(' and ')}` : ''}.${noAscii ? ' Give it an ASCII spelling in List view.' : ''} Send Change Request links it.`, true);
+  }
 
   // ---------------------------------------------------------------- edits
 
@@ -301,13 +389,13 @@
   let folded = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem(FOLD_KEY) ?? '[]'); } catch { return []; } })());
   $effect(() => { const v = JSON.stringify(folded); try { localStorage.setItem(FOLD_KEY, v); } catch { /* not kept */ } });
   /** Folded, unless a search or a glyph from List view needs it open. */
-  const isFolded = (sid: string) => folded.includes(sid) && !q.trim() && shownGlyph?.sid !== sid;
+  const isFolded = (sid: string) => folded.includes(sid) && !q.trim() && !comingOnly && shownGlyph?.sid !== sid;
   const fold = (sid: string) => (folded = folded.includes(sid) ? folded.filter((x) => x !== sid) : [...folded, sid]);
   // section titles fold too: everything under one (its description, subtitles and add button) goes
   const GFOLD_KEY = 'jzp-glossary-folded-titles';
   let gfolded = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem(GFOLD_KEY) ?? '[]'); } catch { return []; } })());
   $effect(() => { const v = JSON.stringify(gfolded); try { localStorage.setItem(GFOLD_KEY, v); } catch { /* not kept */ } });
-  const groupFolded = (gid: string) => gfolded.includes(gid) && !q.trim()
+  const groupFolded = (gid: string) => gfolded.includes(gid) && !q.trim() && !comingOnly
     && !(shownGlyph?.sid && layout.groups.find((g) => g.id === gid)?.sections.includes(shownGlyph.sid));
   const gfold = (gid: string) => (gfolded = gfolded.includes(gid) ? gfolded.filter((x) => x !== gid) : [...gfolded, gid]);
 
@@ -731,8 +819,9 @@
 
 {#snippet subtitle(s: Section & { description?: string })}
     {@const rows = rowsOf(s.id)}
-    {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s))}
-    {#if !q.trim() || shown.length}
+    {@const shown = rows.map((r, i) => ({ r, i })).filter(({ r }) => matches(r, s) && (!comingOnly || (!isWord(r) && !!linkedTo[r.glyph])))}
+    {@const coming = ghostsIn(s.id)}
+    {#if comingOnly ? hasComing(s.id) : !q.trim() || shown.length}
     {@const usage = !!s.usage}
     {@const plain = !s.title.trim()}
     <section class="sec" class:plain class:off={s.hidden} aria-labelledby="gs-{s.id}" data-sid={s.id}
@@ -795,7 +884,7 @@
                   {#if rowNote?.sid === s.id && rowNote.i === i}<span class="small bad" role="status"><I.Problem size={12} /> {rowNote.text}</span>{/if}
                 </td>
               {:else}
-              <td class="zh">{chinese(r, s)}</td>
+              <td class="zh">{chinese(r, s)}{#if !isWord(r) && linkedTo[r.glyph]}<span class="tag coming" data-tip="Its 中文 matches the font page's coming {linkedTo[r.glyph].zh} ({stageLabel(linkedTo[r.glyph])}): Send Change Request links them">for coming {linkedTo[r.glyph].zh.split(' · ')[0]}</span>{/if}{#if noAreaNote(r)} <button type="button" class="noarea" data-tip={noAreaNote(r)} aria-label={noAreaNote(r)}><I.Warn size={12} /></button>{/if}</td>
               <td class="mono">{ascii(r, s)}</td>
               <td>{pinyin(r)}</td>
               {/if}
@@ -845,7 +934,10 @@
                 <button class="quiet ic" onclick={() => remove(s.id, i)} aria-label="Remove {rowName(r)} from {s.id}" data-tip="Remove from this section (Undo brings it back)"><I.Close size={14} /></button>
               </td>
             </tr>
+            {#each coming.filter((x) => x.at === i) as { g } (g.id)}{@render ghostRow(g)}{/each}
           {/each}
+          {#each coming.filter((x) => x.at < 0 || (comingOnly && !shown.some((y) => y.i === x.at))) as { g } (g.id)}{@render ghostRow(g)}{/each}
+          {#if !comingOnly}
           <tr class="addrow" data-drop="end" data-sid={s.id} data-i={rows.length} class:gap-before={gapBefore(s.id, rows.length) && !rows.length}
             class:no={!okDrop && drop?.sid === s.id}>
             <td colspan="8" class="addcell">
@@ -865,6 +957,7 @@
               </span>
             </td>
           </tr>
+          {/if}
         </tbody>
       </table>
       </div>
@@ -872,6 +965,23 @@
     </section>
     {/if}
   {/snippet}
+
+{#snippet ghostRow(g: Ghost)}
+  <tr class="ghost-row {g.stage}">
+    <td class="grip"></td>
+    <td class="zh">{g.zh}</td>
+    <td class="mono">{#if g.ascii}{g.ascii}{:else}<span class="tbd">to come</span>{/if}</td>
+    <td>{g.pinyin ?? ''}</td>
+    <td class="use">{#if g.example}<div class="lines"><span class="zh">{plainLine(g.example[0])}</span><span class="mono">{plainLine(g.example[1])}</span></div>{/if}</td>
+    <td class="out">{#if ghostPics[g.id]}<img class="gdraw" src={ghostPics[g.id]} alt="Draft drawing of {g.zh}" />{:else}<span class="notdrawn">not drawn yet</span>{/if}</td>
+    <td class="def"><span class="pill sm {g.stage === 'planned' ? '' : g.stage === 'draft' ? 'draft' : 'info'}">{stageLabel(g)}</span>{#if g.meaning}<span class="gmean">{g.meaning}</span>{/if}</td>
+    <td class="act">
+      {#if g.stage === 'planned'}
+        <button class="sm" data-use onclick={(e) => openUse(g, e)} aria-haspopup="menu" aria-expanded={using?.g.id === g.id}>Use for my glyph…</button>
+      {:else}<span class="muted small">being drawn</span>{/if}
+    </td>
+  </tr>
+{/snippet}
 
 {#snippet editors(key: string, desc: string, cls: string, folded = false)}
   {#if titleEdit?.key === key}
@@ -919,6 +1029,12 @@
   {#if !sections.length}
     <div class="banner info"><span class="ic"><I.Info /></span> This copy of the Builder has no site/glossary.json, so there's no glossary to edit here.</div>
   {/if}
+  {#if ghosts.length}
+    <div class="comingbar">
+      <button class="chip" aria-pressed={comingOnly} onclick={() => (comingOnly = !comingOnly)}>Only coming characters ({ghosts.length})</button>
+      <span class="muted small">Faded rows are the font page's <em>Coming next</em>. <strong>Use for my glyph…</strong> starts your glyph's row from one; Send Change Request then links them.</span>
+    </div>
+  {/if}
   {#if shownGlyph && !shownGlyph.sid}
     <div class="banner draft"><span class="ic"><I.Warn /></span>
       <span>{shownGlyph.glyph} isn't in the glossary, so the glossary check reports it. Add it to</span>
@@ -931,7 +1047,7 @@
     </div>
   {/if}
 
-  {#if outGlyphs.length}
+  {#if outGlyphs.length && !comingOnly}
     <section class="outs" aria-labelledby="g-out">
       <h2 id="g-out">
         <button class="quiet fold gfold" onclick={() => (outFolded = !outFolded)} aria-expanded={!outFolded} aria-controls="gc-out">
@@ -957,7 +1073,7 @@
 
   {#each layout.groups as g (g.id)}
     {@const subs = g.sections.map((id) => sections.find((x) => x.id === id)).filter((x) => !!x)}
-    {#if !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
+    {#if comingOnly ? subs.some((x) => hasComing(x.id)) : !q.trim() || subs.some((x) => rowsOf(x.id).some((r) => matches(r, x)))}
     <section class="grp" aria-labelledby="gg-{g.id}" data-gid={g.id} class:off={g.hidden}
       class:hd-before={headDrop?.kind === 'g' && headDrop.id === g.id && headDrop.before} class:hd-after={headDrop?.kind === 'g' && headDrop.id === g.id && !headDrop.before}
       class:lifted={headDrag?.kind === 'g' && headDrag.id === g.id}>
@@ -1069,9 +1185,39 @@
   </div>
 {/if}
 
+{#if using}
+  {@const cands = candidates(using.g)}
+  <div class="pick usemenu float" role="menu" aria-label="Use the coming {using.g.zh} for a glyph" style="top: {using.top}px; right: {using.right}px">
+    <span class="small muted">Which glyph draws {using.g.zh}? Its row goes {using.g.after ? `after ${using.g.after}` : 'at the end'}, with the definition.</span>
+    {#each cands.slice(0, 12) as x (x)}
+      <button role="menuitem" onclick={() => useGhost(using!.g, x)}>
+        <span class="gbox"><Glyph name={x} size={26} /></span><span class="zh">{zhOf(x)[0] ?? ''}</span><span class="mono small">{x}</span>
+        {#if !(x in app.mainSvgs)}<span class="tag">new</span>{/if}</button>
+    {:else}
+      <span class="small">Every glyph has a glossary row already. Draw the glyph first (Glyphs › New glyph), then come back.</span>
+    {/each}
+    {#if cands.length > 12}<span class="small muted">{cands.length - 12} more without a glossary row: search the glossary, or draw a new one first.</span>{/if}
+  </div>
+{/if}
+
 <style>
+  /* a row whose glyph is in no area: hover, tap or focus the warning for why */
+  button.noarea { height: auto; padding: 0; border: 0; background: none; color: var(--status-draft); vertical-align: -1px; cursor: help; }
   .gloss { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-7); }
   .gloss.dragging { user-select: none; cursor: grabbing; }
+  /* the font page's coming characters, faded in their sections */
+  .comingbar { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); align-items: center; }
+  tr.ghost-row td { background: var(--bg-field); border-bottom-style: dashed; color: var(--ink-muted); }
+  tr.ghost-row.planned td.zh, tr.ghost-row.planned .gmean { opacity: .8; }
+  tr.ghost-row .tbd { font-style: italic; color: var(--ink-faint); }
+  tr.ghost-row .notdrawn { display: inline-grid; place-items: center; width: 48px; height: 48px; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); font-size: var(--t-caption); color: var(--ink-faint); text-align: center; line-height: 1.1; }
+  tr.ghost-row .gdraw { display: block; max-width: 64px; max-height: 64px; }
+  tr.ghost-row .gmean { display: block; margin-top: var(--space-1); }
+  tr.ghost-row .lines { display: flex; flex-direction: column; }
+  .pill.sm { height: 20px; padding: 0 var(--space-3); font-size: var(--t-caption); }
+  .tag.coming { margin-left: var(--space-2); color: var(--status-draft); border-color: currentColor; font-family: var(--font-serif); }
+  .usemenu { max-width: 360px; }
+  .usemenu > span { padding: var(--space-2) var(--space-3); }
   .intro { margin: 0; max-width: 760px; }
   .banner select { height: 26px; }
   .sec h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
