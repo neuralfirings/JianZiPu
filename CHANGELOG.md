@@ -10,6 +10,12 @@ same text becomes the GitHub release notes.
 
 ## [Unreleased]
 
+### Changed
+
+- A character typed in ASCII now takes its own width: `k5` is one cell wide, `k5 k5` two and `k5  k5` three, where the last character of a line used to have no width until a space followed it. Text with a space after every character looks the same as before. A character typed in Chinese is unchanged: it still needs a space or `+` after it.
+- `#` no longer moves the character after it. Before a character or a space it takes no room; on its own it is still an empty cell. Typed before a character in Chinese (`#名九勾五`) it gives that character its own width, which is the way to type Chinese lyrics in a music program.
+- In Safari and on iPhone, text typed with `#` is now drawn where it is measured; it used to be drawn a cell wider than the room it was given.
+
 ## [3.301] - 2026-11-13
 
 ### Fixed

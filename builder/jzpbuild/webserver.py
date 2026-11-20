@@ -236,12 +236,16 @@ def words_payload(design: schema.Design, words: list[str], runs: list[list[str]]
     for word, glyphs in zip(words, runs):
         pieces = []
         pen = 0
-        for piece in WordShaper.match(design, rules, glyphs, reg.other):
+        matched = list(WordShaper.match(design, rules, glyphs, reg.other))
+        for i, piece in enumerate(matched):
             if piece["layout"] is None:
                 g = piece["glyphs"][0]
                 adv = next((a.advance for a in design.areas.values() if g in a.glyphs), 0)
                 pieces.append({"glyphs": [g], "layout": None, "elements": [], "pen": pen})
-                pen += adv or (1000 if g in ("space", "advance", "numbersign") else 0)
+                # a # is an empty cell only on its own: before a word or a space it is 0 wide (emit.HASH_WIDTH)
+                after = matched[i + 1]["glyphs"][0] if i + 1 < len(matched) else None
+                leads = g == "numbersign" and after is not None and after != "numbersign"
+                pen += adv or (1000 if g in ("space", "advance", "numbersign") and not leads else 0)
                 continue
             r = piece["rule"]
             layout = design.layout(r.layout)

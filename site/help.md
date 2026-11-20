@@ -36,7 +36,7 @@ Every box where you type words in the Builder, and the font itself, read the sam
 | `fys9k5` | `fy` (or `fanyin`) adds 泛音. |
 | `:fenkai` `:shang79` | A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon. New in 3.300: a word with a part only a vertical word can hold (上, 下, 分开…) gets its colon without one: `shang79` is `:shang79`. Type the colon for a word that would otherwise be read as a standard note: `:lun3`, `:v8`. |
 | `C03\|s6,5` | Chords: `C` 撮 (also `DC`, `FC`), the left note, `\|`, the right note. `TT` 双弹 and `BL` 拨剌 work the same way. |
-| `#` `+` | `#` starts a new word without a space; `+` adds an advance between words. |
+| `#` `+` | A word typed in ASCII takes its own width. A word typed in Chinese has none: it needs a space or `+` after it, or `#` before it. `+` is an advance that is not a space, for lyrics in a music program; `#` on its own is an empty cell. |
 
 The exact keys for each part are its spellings, listed and edited in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing). The **Sample set…** menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).
 
