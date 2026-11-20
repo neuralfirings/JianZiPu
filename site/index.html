@@ -30,7 +30,7 @@
   <noscript><link href="https://font.emtech.cc/css/CNSKai/400" rel="stylesheet"></noscript>
   
   <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
-  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Music&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
   
   <script>document.documentElement.classList.add('fonts-loading');</script>
   <style>
@@ -100,7 +100,7 @@
       color: var(--ink);
       padding: 5px;
       border-radius: 5px;
-      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code',  monospace;
+      font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace;
       font-size: 0.8rem;
     }
     .alert-tip text {
@@ -108,7 +108,7 @@
     }
     txs {
       display: block;
-      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace;
+      font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace;
       font-size: 1rem;
       word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
       /* background-color: #eee;
@@ -129,7 +129,7 @@
     /* a JianZiPu word has no advance of its own (the space after it pays it): give it its em, so centring centres its ink */
     .slip jzp { display: inline-block; min-width: 1em; white-space: pre; }
     .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
-    td.gid a { font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    td.gid a { font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace; font-size: 0.75rem; color: var(--ink-faint); }
     tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
     /* the glossary's search box (script at the end of the page) */
     [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
@@ -202,7 +202,7 @@
     .jzp-download .note.bad { color: var(--accent); }
     @media (max-width: 759.98px) { .jzp-download button { min-height: 44px; padding: 0 16px; } }
     .lat-entry, .text-entry {
-      font-family: "Roboto Mono", "CNSKai", "M PLUS 1 Code", monospace;
+      font-family: "Roboto Mono", "Noto Sans SC", "Noto Sans TC", monospace;
       font-size: 1.2rem;
       height: 100%;
     }
