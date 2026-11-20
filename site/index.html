@@ -392,6 +392,8 @@
       .toc a[aria-current="true"] { border-left-color: var(--accent); background: var(--bg-hover); color: var(--ink); }
       /* the page's columns, centred in the room right of the panel */
       body.has-toc .container { max-width: min(1140px, calc(100vw - 248px - 48px)); margin-left: calc(248px + max(24px, (100vw - 248px - 1140px) / 2)); margin-right: auto; }
+      /* the top (title, preview) is above the download bar, where the panel isn't: centred in the window */
+      body.has-toc #top > .container { margin-left: auto; margin-right: auto; }
     }
     @media print { .toc { display: none !important; } body.has-toc .container { margin-left: auto !important; } }
 
