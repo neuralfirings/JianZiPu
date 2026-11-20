@@ -399,6 +399,27 @@
     .rules { padding-left: 1.2rem; margin-bottom: 8px; }
     .rules li, details.more li { margin: 4px 0; }
     .rules jzp, details.more jzp { font-size: 2rem; }
+    /* Hui and string numbers: a table per rule */
+    #hui-numbers .hn-intro { color: var(--ink-muted); margin: 0 0 4px; }
+    #hui-numbers .hn-h { display: flex; align-items: center; gap: 10px; margin: 22px 0 2px; font-size: 1.15rem; }
+    #hui-numbers .hn-h .num { flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--ink); color: var(--bg-app); display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+    #hui-numbers .hn-rule { margin: 0 0 6px; color: var(--ink-muted); }
+    table.hn { width: 100%; max-width: 760px; border-collapse: collapse; table-layout: fixed; }
+    table.hn th { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; border-bottom: 1px solid var(--ink); padding: 4px 8px; text-align: left; }
+    table.hn th:nth-child(1) { width: 42%; } table.hn th:nth-child(2) { width: 22%; text-align: center; }
+    table.hn td { border-bottom: 1px solid var(--hairline); padding: 6px 8px; vertical-align: middle; }
+    table.hn td.hn-in > text { font-size: 1.1rem; }
+    table.hn .hn-alt { display: block; font-size: 0.85rem; color: var(--ink-muted); }
+    table.hn .hn-alt text { background: none; padding: 0; font-size: 0.85rem; color: var(--ink-muted); }
+    table.hn td.hn-out { text-align: center; }
+    table.hn td.hn-out jzp { font-size: 3.2rem; line-height: 1.3; }
+    @media (max-width: 759.98px) {
+      table.hn th:nth-child(1) { width: 44%; } table.hn th:nth-child(2) { width: 24%; }
+      table.hn td { padding: 6px 4px; }
+      table.hn td.hn-in > text { font-size: 0.95rem; padding: 2px 4px; }
+      table.hn td.hn-out jzp { font-size: 2.6rem; }
+      table.hn td.hn-rd { font-size: 0.85rem; }
+    }
     details.more { margin: 4px 0 8px; }
     details.more summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
     details.more[open] summary { margin-bottom: 8px; }
@@ -640,17 +661,45 @@
     </details>
 
     <details class="more" id="hui-numbers">
-      <summary>Hui numbers in Chinese: 半, 十一 to 十三, 徽 and 弦</summary>
-      <ul>
-        <li>Right after a hui number, 半 is .5: <text>名九<r>半</r>轮六</text> or <text>s9<r>.5</r>lun6</text> → <jzp>s9.5lun6</jzp> 9.5 hui, 轮, string 6.</li>
-        <li>To keep the number whole before 半轮 or 半扶, put 徽 or a comma in front: <text>名九<r>徽</r>半轮六</text> or <text>名九<r>，</r>半轮六</text> or <text>s9<r>,</r>banlun6</text> → <jzp>s9,banlun6</jzp> 9 hui, 半轮, string 6.</li>
-        <li>十一, 十二 and 十三 are hui 11, 12 and 13: <text>名<r>十二</r>勾五</text> or <text>s<r>12</r>k5</text> → <jzp>s12k5</jzp></li>
-        <li>For 10.2, put 徽 or 点 between the numbers; 分 at the end is optional: <text>名十<r>徽</r>二勾五</text> or <text>名十<r>点</r>二勾五</text> or <text>s10<r>.</r>2k5</text> → <jzp>s10.2k5</jzp> 名十徽 alone is 10.</li>
-        <li>徽 works as a decimal point, like 点: <text>名七<r>徽</r>六挑五</text> or <text>s7<r>.</r>6u5</text> → <jzp>s7.6u5</jzp> 7.6 hui, string 5.</li>
-        <li>弦 after a number makes it the string, even after 徽: <text>名九七<r>弦</r></text> or <text>名九徽七<r>弦</r></text> or <text>s9<r>,</r>7</text> → <jzp>s9,7</jzp> 9 hui, string 7 (<text>名九七</text> without 弦 is 9.7).</li>
-        <li>In a chord, <text>|</text> splits the two halves and 弦 is optional: <text>撮名九四六<r>｜</r>二</text> or <text>撮名九四六<r>弦｜</r>二</text> or <text>Cs9.4,6<r>|</r>2</text> → <jzp>Cs9.4,6|2</jzp> 9.4 hui on string 6, with open string 2.</li>
-        <li>Two numbers before <text>|</text> make a decimal: <text>撮名七五<r>｜</r>二</text> or <text>Cs75<r>|</r>2</text> → <jzp>Cs75|2</jzp> 7.5 hui, with open string 2. Add 弦 or a comma to make the second number the string: <text>撮名七五<r>弦</r>｜二</text> or <text>撮名七<r>，</r>五｜二</text> or <text>Cs7<r>,</r>5|2</text> → <jzp>Cs7,5|2</jzp> 7 hui on string 5, with open string 2.</li>
-      </ul>
+      <summary>Hui and string numbers: 半, 十一 to 十三, 徽, 弦 and chords</summary>
+      <p class="hn-intro">Grey: the same with the numbers in digits, and in ASCII.</p>
+      <h5 class="hn-h"><span class="num">1</span>半: a half, or the start of 半轮</h5>
+      <p class="hn-rule">Right after a hui number, 半 is .5. Put 徽 or a comma before 半轮 or 半扶 to keep the number whole.</p>
+      <table class="hn"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
+        <tr><td class="hn-in"><text>名九<r>半</r>轮六</text><span class="hn-alt"><text>名9.5轮6</text> · <text>s9.5lun6</text></span></td><td class="hn-out"><jzp>名九半轮六</jzp></td><td class="hn-rd">hui 9.5 · 轮 · string 6</td></tr>
+        <tr><td class="hn-in"><text>名九<r>徽</r>半轮六</text><span class="hn-alt"><text>名9徽半轮6</text> · <text>s9,banlun6</text></span></td><td class="hn-out"><jzp>名九徽半轮六</jzp></td><td class="hn-rd">hui 9 · 半轮 · string 6</td></tr>
+        <tr><td class="hn-in"><text>名九<r>，</r>半轮六</text><span class="hn-alt"><text>名9,半轮6</text> · <text>s9,bl6</text></span></td><td class="hn-out"><jzp>名九，半轮六</jzp></td><td class="hn-rd">hui 9 · 半轮 · string 6</td></tr>
+        <tr><td class="hn-in"><text>名九徽<r>半</r>勾六</text><span class="hn-alt"><text>名9徽半勾6</text> · <text>s9.5k6</text></span></td><td class="hn-out"><jzp>名九徽半勾六</jzp></td><td class="hn-rd">hui 9.5 · 勾 · string 6</td></tr>
+      </tbody></table>
+      <h5 class="hn-h"><span class="num">2</span>十一, 十二, 十三 are hui 11, 12, 13</h5>
+      <p class="hn-rule">For 10.2, put 徽 or 点 between the numbers. 分 at the end is optional.</p>
+      <table class="hn"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
+        <tr><td class="hn-in"><text>名<r>十二</r>勾五</text><span class="hn-alt"><text>名12勾5</text> · <text>s12k5</text></span></td><td class="hn-out"><jzp>名十二勾五</jzp></td><td class="hn-rd">hui 12 · 勾 · string 5</td></tr>
+        <tr><td class="hn-in"><text>名十<r>徽</r>二勾五</text><span class="hn-alt"><text>名10徽2勾5</text> · <text>s10.2k5</text></span></td><td class="hn-out"><jzp>名十徽二勾五</jzp></td><td class="hn-rd">hui 10.2 · 勾 · string 5</td></tr>
+        <tr><td class="hn-in"><text>名十<r>点</r>二勾五</text><span class="hn-alt"><text>名10点2勾5</text> · <text>s10.2k5</text></span></td><td class="hn-out"><jzp>名十点二勾五</jzp></td><td class="hn-rd">hui 10.2 · 勾 · string 5</td></tr>
+        <tr><td class="hn-in"><text>名十<r>徽</r>勾五</text><span class="hn-alt"><text>名10徽勾5</text> · <text>s10k5</text></span></td><td class="hn-out"><jzp>名十徽勾五</jzp></td><td class="hn-rd">hui 10 · 勾 · string 5</td></tr>
+      </tbody></table>
+      <h5 class="hn-h"><span class="num">3</span>徽 works as a decimal point</h5>
+      <p class="hn-rule">Like 点, or two numbers written together.</p>
+      <table class="hn"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
+        <tr><td class="hn-in"><text>名七六挑五</text><span class="hn-alt"><text>名76挑5</text> · <text>s76u5</text></span></td><td class="hn-out"><jzp>名七六挑五</jzp></td><td class="hn-rd">hui 7.6 · 挑 · string 5</td></tr>
+        <tr><td class="hn-in"><text>名七<r>徽</r>六挑五</text><span class="hn-alt"><text>名7徽6挑5</text> · <text>s7.6u5</text></span></td><td class="hn-out"><jzp>名七徽六挑五</jzp></td><td class="hn-rd">hui 7.6 · 挑 · string 5</td></tr>
+      </tbody></table>
+      <h5 class="hn-h"><span class="num">4</span>弦 marks a string</h5>
+      <p class="hn-rule">Two numbers after a finger make a decimal. 弦 after the second makes it the string, even after 徽.</p>
+      <table class="hn"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
+        <tr><td class="hn-in"><text>名九七</text><span class="hn-alt"><text>名97</text> · <text>s97</text></span></td><td class="hn-out"><jzp>名九七</jzp></td><td class="hn-rd">hui 9.7</td></tr>
+        <tr><td class="hn-in"><text>名九七<r>弦</r></text><span class="hn-alt"><text>名97弦</text> · <text>s9,7</text></span></td><td class="hn-out"><jzp>名九七弦</jzp></td><td class="hn-rd">hui 9 · string 7</td></tr>
+        <tr><td class="hn-in"><text>名九徽七<r>弦</r></text><span class="hn-alt"><text>名9徽7弦</text> · <text>s9,7</text></span></td><td class="hn-out"><jzp>名九徽七弦</jzp></td><td class="hn-rd">hui 9 · string 7</td></tr>
+      </tbody></table>
+      <h5 class="hn-h"><span class="num">5</span>Chords: | splits the halves</h5>
+      <p class="hn-rule">弦 is optional. Use it, or a comma, when two numbers would otherwise make a decimal.</p>
+      <table class="hn"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
+        <tr><td class="hn-in"><text>撮名九四六<r>｜</r>二</text><span class="hn-alt"><text>撮名9.46|2</text> · <text>Cs9.4,6|2</text></span></td><td class="hn-out"><jzp>撮名九四六｜二</jzp></td><td class="hn-rd">撮 · hui 9.4 · string 6, with open string 2</td></tr>
+        <tr><td class="hn-in"><text>撮名七五<r>｜</r>二</text><span class="hn-alt"><text>撮名75|2</text> · <text>Cs75|2</text></span></td><td class="hn-out"><jzp>撮名七五｜二</jzp></td><td class="hn-rd">撮 · hui 7.5, with open string 2</td></tr>
+        <tr><td class="hn-in"><text>撮名七五<r>弦</r>｜二</text><span class="hn-alt"><text>撮名75弦|2</text> · <text>Cs7,5|2</text></span></td><td class="hn-out"><jzp>撮名七五弦｜二</jzp></td><td class="hn-rd">撮 · hui 7 · string 5, with open string 2</td></tr>
+        <tr><td class="hn-in"><text>撮名七<r>，</r>五｜二</text><span class="hn-alt"><text>撮名7,5|2</text> · <text>Cs7,5|2</text></span></td><td class="hn-out"><jzp>撮名七，五｜二</jzp></td><td class="hn-rd">the same, with a comma</td></tr>
+      </tbody></table>
     </details>
 
     <details class="more">

@@ -216,6 +216,13 @@ def test_hand_written_examples_are_split_at_sentences():
 
 # ---------------------------------------------------------------- the Definition column
 
+def test_a_hand_written_table_row_is_one_example():
+    text = ('<table><tr><th>Type</th></tr><tr><td><text>名九七弦</text><span><text>名97弦</text> · '
+            '<text>s9,7</text></span></td><td><jzp>名九七弦</jzp></td><td>hui 9 · string 7</td></tr></table>')
+    out = glossary.examples(page=text, rows={}, sections={}, groups=[])
+    assert [ex for _, ex in out] == [["名九七弦", "名97弦", "s9,7", "名九七弦"]]
+
+
 def test_a_meaning_column_joins_only_a_section_that_has_one():
     r = rows("lg_gou,,,k,,勾,,gōu", "lg_tiao,,,u,,挑,,tiāo", "lg_lun,,,lun,,轮,,lún")
     sec = {"2a": usage("2a", g("lg_gou", "Pluck the string inward with the middle finger <m>"), g("lg_tiao"), template=("0{}5", "散{}五")),

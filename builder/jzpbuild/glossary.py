@@ -740,7 +740,8 @@ def examples(page: str | None = None, rows: dict[str, dict] | None = None,
     # the hand-written page, and the descriptions the glossary is written with
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<!--(?! glossary| /glossary).*?-->", " ",
                   strip_generated(page) + "\n" + descriptions_html(sections, groups), flags=re.S)
-    for m in re.finditer(r"<(li|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
+    # a hand-written table row is one example: what you type in one cell, what it gives in the next
+    for m in re.finditer(r"<(li|tr|td|p)\b[^>]*>(.*?)</\1>", text, re.S):
         where = "page: " + re.sub(r"\s+", " ", _plain(m.group(2))).strip()[:60]
         # an example is a run of spellings and the rendering they give (`a or b → <jzp>`), joined
         # by a few words at most; a sentence end or a longer gap drops the spellings before it
