@@ -626,7 +626,7 @@
       <small class="font-version-top" id="font-version-top"></small>
 
       <div class="alert alert-secondary jzp-example-container">
-        <small>Type here to preview. Press space after each character, or type # before it.</small>
+        <small>Type here to preview. In ASCII, put a space between characters. In 中文, press space after each one, or type # before it.</small>
         <input type="text" class="form-control text-entry" autocorrect="off" autocapitalize="off" spellcheck="false" />
         <div class="text-entry-examples">
           <span>See example in </span>
@@ -669,11 +669,11 @@
     <h3 id="how-to-type">How to type</h3>
     <p class="ty-intro">Type each character the way you read it, in 中文 or ASCII. Under each example in grey: the same in ASCII.</p>
 
-    <h4 class="ty-h" id="basic-layout"><span class="num">1</span>A space after each character</h4>
-    <p class="ty-rule">A character has no width of its own: press <strong>space</strong> after it, or type <strong>#</strong> before it.</p>
+    <h4 class="ty-h" id="basic-layout"><span class="num">1</span>A space between characters</h4>
+    <p class="ty-rule">Typed in ASCII, a character takes its own width: put a <strong>space</strong> between characters, and each extra space leaves an empty cell. Typed in 中文, a character has no width of its own: press space after each one, the last too, or type <strong>#</strong> before each.</p>
     <table class="ty ty-wide"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text>名九勾五 中七挑三</text><span class="ty-alt"><text>s9k5 d7u3</text></span></td><td class="ty-out"><jzp>s9k5 d7u3</jzp></td><td class="ty-rd">a space after each</td></tr>
-      <tr><td class="ty-in"><text>#名九勾五#中七挑三</text><span class="ty-alt"><text>#s9k5#d7u3</text></span></td><td class="ty-out"><jzp>#s9k5#d7u3</jzp></td><td class="ty-rd"># before each</td></tr>
+      <tr><td class="ty-in"><text>名九勾五 中七挑三</text><span class="ty-alt"><text>s9k5 d7u3</text></span></td><td class="ty-out"><jzp>s9k5 d7u3</jzp></td><td class="ty-rd">a space between them</td></tr>
+      <tr><td class="ty-in"><text>#名九勾五#中七挑三</text><span class="ty-alt"><text>#s9k5#d7u3</text></span></td><td class="ty-out"><jzp>#s9k5#d7u3</jzp></td><td class="ty-rd"># before each, with no spaces</td></tr>
     </tbody></table>
 
     <h4 class="ty-h" id="ascii"><span class="num">2</span>ASCII: pinyin and the keyboard</h4>
@@ -779,9 +779,27 @@
       </tbody></table>
     </details>
 
-    <details class="more">
-      <summary>Using the font in Sibelius or MuseScore</summary>
-      <p>To be decided. We'll include this in a future update.</p>
+    <details class="more" id="music-programs">
+      <summary>Using the font in Sibelius, Dorico or MuseScore</summary>
+      <p>There the spacebar moves lyrics to the next note. In ASCII, type the character and press space to move on. In 中文, type <text>#</text> before each character. To put two characters on one note, join them with <text>+</text> in ASCII, or type them one after the other with <text>#</text> in 中文.</p>
+      <ul>
+        <li><text>k7</text> → <jzp>k7</jzp></li>
+        <li><text>#勾七</text> → <jzp>#勾七</jzp></li>
+        <li><text>:fanqi+s9u6</text> → <jzp>:fanqi+s9u6</jzp> two characters, on one note.</li>
+        <li><text>#：泛起#名九挑六</text> → <jzp>#：泛起#名九挑六</jzp> the same, typed in 中文.</li>
+        <li>If a character shows as an empty box, it has no width: in 中文, check that it starts with <text>#</text>.</li>
+      </ul>
+    </details>
+
+    <details class="more" id="word-and-web">
+      <summary>Using the font in Word or on a web page</summary>
+      <ul>
+        <li>In Word, open the Font dialog and set both the Latin text font and the Asian text font to JianZiPu. On its Advanced tab, set Ligatures to Standard Only and tick Kerning for fonts. Without these Word shows the letters you typed.</li>
+        <li>In Word, turn off the AutoCorrect option that capitalises the first letter of a sentence: <text>s</text> and <text>S</text> are different characters.</li>
+        <li>In Word, typing in 中文: press space after each character. Word cannot join <text>#</text> to the character after it. The last character on a line can run past the margin; press Shift+Enter before it.</li>
+        <li>PowerPoint may show the letters you typed, not the notation. Set the notation in Word and paste it into the slide as a picture.</li>
+        <li>On a web page, give the notation <text>word-break: keep-all</text> so Safari keeps a character typed in 中文 whole, and <text>white-space: pre-wrap</text> so extra spaces stay as empty cells. Leave <text>letter-spacing</text> alone: any value turns the notation back into letters.</li>
+      </ul>
     </details>
 
     <h3 id="glossary">Glossary</h3>
@@ -3050,7 +3068,9 @@
     function updateTargets(input) {
       const inputValue = input.value;
       const target = input.closest(".jzp-example-container").querySelector(".jzp-example")//getAttribute("data-jzp-class");
-      target.textContent = inputValue;
+      // a character typed in 中文 has no width until something follows it, and Safari draws nothing
+      // for text it measures as zero wide: a space after the last character makes it show
+      target.textContent = inputValue && !/\s$/.test(inputValue) ? inputValue + " " : inputValue;
     }
 
     // Attach listeners and update on load

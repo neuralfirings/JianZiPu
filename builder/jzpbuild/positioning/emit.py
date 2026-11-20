@@ -195,75 +195,106 @@ def _with_breaks(lines: list[str]) -> list[str]:
     return out
 
 
-# A vertical word's width (its colon area's advance) is paid out as the space after it, like every
-# other word's, never by a rule that reaches back over the word to the space: Safari and every
-# iPhone browser shape a word and the space after it apart, so such a rule never fires there and
-# the word came out a whole width too wide. So the colon gives back the space's width
-# (COLON_WIDTH below) and the positioning counts its advance less that width (build_rules). Only
-# a colon typed straight after a word, with no space, keeps its full advance: that word needs the
-# room, and the rule that sees it stays inside the run of text. Likewise a # straight after a
-# vertical word makes room for it, unless an earlier # in the same run already did (a # pulls the
-# parts after it back into its own width).
+# Widths. A word's parts are 0 wide and the space after the word is its width, as it always was.
+# A word typed in Latin with no space after it now takes its width itself (word_advance): its last
+# part gets the space's width, so `k5` is 1000, `k5 k5` 2000 and `k5  k5` 3000. A word typed in
+# Chinese is as before: end it with a space or a +.
+#
+# What shapes these rules (measured with test fonts on an iPhone and in Word, 2026-11):
+#   - Safari and every iPhone browser draw a typed space at the width the font file gives it,
+#     whatever a rule says; the rule only changes the measured width, so text is drawn in one
+#     place and measured in another. So no rule here changes a space: a rule changes the word,
+#     the colon or the #, and looks at the space after it, never the other way round.
+#   - Safari measures text in pieces between the places a line may break. A word typed in Latin
+#     is one piece with the space after it, so a rule sees both. Each Chinese character is a
+#     piece of its own.
+#   - Word shapes Chinese text and the space after it as separate runs, so a rule never sees a
+#     Chinese word and its space together.
+#   Both are why only a word typed in Latin takes its width: the font marks those words
+#   (features.gen_word_mark), and a rule on a marked word is safe in all three places.
+#
+# A vertical word's width (its colon area's advance) is likewise paid out as the space after it:
+# the colon gives back the space's width (COLON_WIDTH) and the positioning counts its advance
+# less that width (build_rules). Only a colon typed straight after a word, with no space, keeps
+# its full advance: it is that word's width, which word_advance leaves alone (a part with a part
+# after it is not the last one).
+#
+# A typed # is a blank cell on its own. In front of a word or a space it is 0 wide (HASH_WIDTH)
+# and moves nothing; a word after a # takes its width like a word typed in Latin.
 COLON = "blank_colon"
-SPACE = config.UPEM          # the space's advance (base.py)
-_DEPTH = 10                  # how far back a rule looks, as in CLEANUP_RULES
+SPACE = config.UPEM          # the space's advance (base.py); a lone # is as wide
+HASH = "numbersign"
+MARK = "word_mark"             # in front of a word typed in Latin letters (features.gen_word_mark)
 COLON_WIDTH = [
     "  lookup colon_width {",
     f"    ignore pos {WILD} {COLON}';",
     f"    pos {COLON}' <0 0 -{SPACE} 0>;",
-    "    ignore pos " + ", ".join(" ".join(["numbersign"] + [WILD] * n + ["numbersign'"])
-                                  for n in range(_DEPTH, -1, -1)) + ";",
-    *(f"    pos {' '.join([COLON] + [WILD] * n)} numbersign' <0 0 {SPACE} 0>;"
-      for n in range(_DEPTH, -1, -1)),
     "  } colon_width;",
 ]
+_DEPTH = 10                  # the most parts a word has
 
-CLEANUP_RULES = (
-    # hide stray glyphs of half-formed words (up to 10 deep), and give space
-    # its advance back at word boundaries -- carried over from the classic build.
-    # Only a # word: a vertical word's space keeps its advance (COLON_WIDTH above).
-    ("numbersign", WILD, "<-1000 0 0 0>"),
-    ("numbersign", "@space_char", "<0 0 -1000 0>"),
-)
+
+def word_advance(own_width: list[str]) -> list[str]:
+    """The last part of a word takes the space's width when no space follows, if the word starts
+    with the mark of a word typed in Latin or with a #. A word typed in Chinese has neither and is
+    left alone (features.gen_word_mark says why)."""
+    starts = f"[{HASH} {MARK}]"
+    return [
+        "  lookup word_advance {",
+        f"    ignore pos {WILD}' {WILD};",            # not the word's last part
+        f"    ignore pos {WILD}' @space_char;",       # the space is the width
+        *([f"    ignore pos [{' '.join(own_width)}]';"] if own_width else []),   # : and | have a width already
+        *(f"    pos {' '.join([starts] + [WILD] * n)} {WILD}' <0 0 {SPACE} 0>;" for n in range(_DEPTH, -1, -1)),
+        "  } word_advance;",
+    ]
+
+
+HASH_WIDTH = [
+    "  lookup hash_width {",
+    f"    pos {HASH}' {WILD} <0 0 -{SPACE} 0>;",
+    f"    pos {HASH}' @space_char <0 0 -{SPACE} 0>;",
+    "  } hash_width;",
+]
 
 
 def run_spacing(design: Design, glyphs: list[str]) -> tuple[list[int], list[int]]:
-    """What the font's control rules do to a run of glyphs, for the Builder's preview (/api/words):
-    each glyph's advance and its extra x placement, after COLON_WIDTH and CLEANUP_RULES above.
-    Advances start as the font's own: a control glyph's is its area's advance (base.control_widths),
-    the space, `advance` and `#` one em, a part of a word nothing. Change this with those rules."""
+    """What the font's width rules do to a run of glyphs, for the Builder's preview (/api/words):
+    each glyph's advance and its extra x placement, after COLON_WIDTH, word_advance and HASH_WIDTH
+    above. Advances start as the font's own: a control glyph's is its area's advance
+    (base.control_widths), the space, `advance` and `#` one em, a part of a word and the mark of a
+    word typed in Latin nothing. No rule moves a glyph any more, so the placements are all 0.
+    Change this with those rules."""
     def width(g: str) -> int:
         if g in config.CONTROL_GLYPHS:
             return next((a.advance for a in design.areas.values() if g in a.glyphs and a.advance > 0),
                         config.CONTROL_GLYPHS[g][1])
-        if g in ("space", "numbersign"):
+        if g in ("space", HASH):
             return SPACE
         return next((a.advance for a in design.areas.values() if g in a.glyphs), 0)
     wild = set(design.all_glyphs()) | {"blank", "blank_bar", COLON}
+    spaces = ("space", "advance")
+    own_width = {g for a in design.areas.values() if a.advance for g in a.glyphs}
     adv = [width(g) for g in glyphs]
     dx = [0] * len(glyphs)
 
-    def after(i: int, mark: str) -> bool:
-        """`mark WILD{n} glyph'` for some n in 0..10: within reach, with only word parts between."""
+    def starts_word(i: int) -> bool:
+        """`[# mark] WILD{n} glyph'` for some n in 0..10: a # or a mark within reach, only parts between."""
         for n in range(_DEPTH + 1):
             j = i - 1 - n
             if j < 0 or (n and glyphs[j + 1] not in wild):
                 return False
-            if glyphs[j] == mark:
+            if glyphs[j] in (HASH, MARK):
                 return True
         return False
-    if any(COLON in a.glyphs and a.advance for a in design.areas.values()):
-        for i, g in enumerate(glyphs):
-            if g == COLON and not (i and glyphs[i - 1] in wild):
-                adv[i] -= SPACE
-            elif g == "numbersign" and not after(i, "numbersign") and after(i, COLON):
-                adv[i] += SPACE
+    colon = any(COLON in a.glyphs and a.advance for a in design.areas.values())
     for i, g in enumerate(glyphs):
-        if after(i, "numbersign"):
-            if g in wild:
-                dx[i] -= SPACE
-            elif g in ("space", "advance"):
-                adv[i] -= SPACE
+        after = glyphs[i + 1] if i + 1 < len(glyphs) else None
+        if colon and g == COLON and not (i and glyphs[i - 1] in wild):
+            adv[i] -= SPACE                                    # COLON_WIDTH
+        if g in wild and after not in wild and after not in spaces and g not in own_width and starts_word(i):
+            adv[i] += SPACE                                    # word_advance
+        if g == HASH and (after in wild or after in spaces):
+            adv[i] -= SPACE                                    # HASH_WIDTH
     return adv, dx
 
 
@@ -278,12 +309,11 @@ def gen_gpos(design: Design) -> Emission:
     lines += _with_breaks([r.render("x") for r in rules])
     lines.append("} pos_x;")
     lines += ["", "feature kern {", "  lookup pos_y;", "  lookup pos_x;"]
-    if any(COLON in a.glyphs and a.advance for a in design.areas.values()):
+    colon = any(COLON in a.glyphs and a.advance for a in design.areas.values())
+    if colon:
         lines += COLON_WIDTH
-    for context, marked, value in CLEANUP_RULES:
-        for n in range(10, -1, -1):
-            tokens = " ".join([context] + [WILD] * n + [f"{marked}'"])
-            lines.append(f"  pos {tokens} {value};")
+    own_width = sorted({g for a in design.areas.values() if a.advance for g in a.glyphs})
+    lines += word_advance(own_width) + HASH_WIDTH
     lines.append("} kern;")
     return Emission(lines=lines, rules=rules, skipped=skipped, pair_lookups=len(reg.pairs),
                     other_classes=dict(reg.other))

@@ -204,16 +204,38 @@ def test_emit_structure(design):
     assert "@pos_word__a__other = [ g_a2 ];" in text
 
 
-def test_vertical_word_width_stays_inside_the_word(design):
-    """Safari shapes a word and the space after it apart, so no rule may reach back over a word to
-    the space: the colon gives the space's width back, and only a colon or # typed straight after a
-    word, with no space, makes room for it."""
+def test_no_rule_changes_a_space(design):
+    """Safari draws a typed space as wide as the font file says, whatever a rule says, so a rule that
+    changes a space is measured in one place and drawn in another. The colon gives the space's width
+    back itself, and nothing reaches for the space."""
     text = "\n".join(emit.gen_gpos(design).lines)
-    assert "@space_char' <0 0 -1000 0>" in text            # a # word's space, as before
-    assert "@new_word_char" not in text                      # but never a vertical word's
+    assert "@space_char'" not in text and "space'" not in text
+    assert "@new_word_char" not in text
     assert "    ignore pos @area_wild blank_colon';\n    pos blank_colon' <0 0 -1000 0>;" in text
-    assert "    pos blank_colon @area_wild numbersign' <0 0 1000 0>;" in text
-    assert "numbersign @area_wild numbersign', numbersign numbersign';" in text   # unless a # came first
+
+
+def test_a_latin_word_without_a_space_takes_its_width(design):
+    """The last part of a word gets the space's width when no space follows, if the word starts with
+    the mark of a word typed in Latin or with a #: `k5` is 1000 wide. A word typed in Chinese has
+    neither and is as before; Safari and Word never show the font such a word with what is around it."""
+    text = "\n".join(emit.gen_gpos(design).lines)
+    assert ("  lookup word_advance {\n"
+            "    ignore pos @area_wild' @area_wild;\n"
+            "    ignore pos @area_wild' @space_char;\n"
+            "    ignore pos [blank_colon]';\n") in text
+    assert "    pos [numbersign word_mark] @area_wild' <0 0 1000 0>;\n  } word_advance;" in text
+    assert "    pos [numbersign word_mark] @area_wild @area_wild @area_wild' <0 0 1000 0>;" in text
+    assert "    pos @area_wild @area_wild' <0 0 1000 0>;" not in text       # never without the mark or a #
+    assert not any(l.strip().startswith("script ") for l in emit.gen_gpos(design).lines)   # Safari mishandles that
+
+
+def test_a_hash_moves_nothing(design):
+    """A # is a blank cell on its own and 0 wide before a word or a space; it no longer pulls the
+    parts after it back, and the space after a # word keeps its width."""
+    text = "\n".join(emit.gen_gpos(design).lines)
+    assert "    pos numbersign' @area_wild <0 0 -1000 0>;" in text
+    assert "    pos numbersign' @space_char <0 0 -1000 0>;" in text
+    assert "<-1000 0 0 0>" not in text
 
 
 def test_big_lookups_are_broken_into_subtables(monkeypatch):
