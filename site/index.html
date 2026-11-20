@@ -30,7 +30,7 @@
   <noscript><link href="https://font.emtech.cc/css/CNSKai/400" rel="stylesheet"></noscript>
   
   <!-- <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Color+Emoji&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"> -->
-  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Music&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Eczar:wght@400..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=LXGW+WenKai+TC:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=M+PLUS+1+Code:wght@100..700&family=Noto+Music&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Yuji+Mai&display=swap" rel="stylesheet">  
   
   <script>document.documentElement.classList.add('fonts-loading');</script>
   <style>
@@ -100,7 +100,7 @@
       color: var(--ink);
       padding: 5px;
       border-radius: 5px;
-      font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace;
+      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code',  monospace;
       font-size: 0.8rem;
     }
     .alert-tip text {
@@ -108,7 +108,7 @@
     }
     txs {
       display: block;
-      font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace;
+      font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace;
       font-size: 1rem;
       word-break: keep-all;   /* a Chinese spelling wraps whole, not between its characters */
       /* background-color: #eee;
@@ -129,7 +129,7 @@
     /* a JianZiPu word has no advance of its own (the space after it pays it): give it its em, so centring centres its ink */
     .slip jzp { display: inline-block; min-width: 1em; white-space: pre; }
     .table .nw { white-space: nowrap; }   /* one of a cell's spellings (:半轮, :半輪): a phone breaks at the comma */
-    td.gid a { font-family: 'Roboto Mono', "Noto Sans SC", "Noto Sans TC", monospace; font-size: 0.75rem; color: var(--ink-faint); }
+    td.gid a { font-family: 'Roboto Mono', "CNSKai", 'M PLUS 1 Code', monospace; font-size: 0.75rem; color: var(--ink-faint); }
     tr:target { --bs-table-bg: var(--target); background-color: var(--target); }
     /* the glossary's search box (script at the end of the page) */
     [hidden] { display: none !important; }   /* what the search hides, whatever display it had (label is block) */
@@ -202,7 +202,7 @@
     .jzp-download .note.bad { color: var(--accent); }
     @media (max-width: 759.98px) { .jzp-download button { min-height: 44px; padding: 0 16px; } }
     .lat-entry, .text-entry {
-      font-family: "Roboto Mono", "Noto Sans SC", "Noto Sans TC", monospace;
+      font-family: "Roboto Mono", "CNSKai", "M PLUS 1 Code", monospace;
       font-size: 1.2rem;
       height: 100%;
     }
@@ -395,57 +395,10 @@
     }
     @media print { .toc { display: none !important; } body.has-toc .container { margin-left: auto !important; } }
 
-    /* "How to type": numbered rules, each a one-line rule and a table of examples (Type | You get | Reads as),
-       a keyboard for the ASCII fingerings, a tip for Chrome and Word; the hui numbers in detail fold out below */
-    .ty-intro { color: var(--ink-muted); margin: 0 0 4px; }
-    .ty-h { display: flex; align-items: center; gap: 10px; margin: 26px 0 2px; font-size: 1.15rem; padding: 0; border: 0; }
-    .ty-h .num { flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--ink); color: var(--bg-app); display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; }
-    .ty-rule { margin: 0 0 6px; color: var(--ink-muted); max-width: 760px; }
-    .ty-more { margin: 6px 0 0; font-size: 0.9rem; color: var(--ink-muted); }
-    table.ty { width: 100%; max-width: 760px; border-collapse: collapse; table-layout: fixed; }
-    table.ty th { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; border-bottom: 1px solid var(--ink); padding: 4px 8px; text-align: left; }
-    table.ty th:nth-child(1) { width: 42%; } table.ty th:nth-child(2) { width: 22%; text-align: center; }
-    table.ty td { border-bottom: 1px solid var(--hairline); padding: 6px 8px; vertical-align: middle; }
-    table.ty td.ty-in > text { font-size: 1.1rem; }
-    table.ty .ty-alt { display: block; font-size: 0.85rem; color: var(--ink-muted); }
-    table.ty .ty-alt text { background: none; padding: 0; font-size: 0.85rem; color: var(--ink-muted); }
-    table.ty td.ty-out { text-align: center; }
-    table.ty td.ty-out jzp { font-size: 3.2rem; line-height: 1.3; white-space: pre; }
-    /* the keyboard: the QWERTY letters split into the two hands, the fingering keys inked */
-    .ty-kb { --key: 44px; display: flex; flex-wrap: nowrap; gap: calc(var(--key) * 0.6); margin: 10px 0 4px; max-width: 760px; }
-    .ty-kb-row { display: flex; gap: 4px; margin-bottom: 4px; }
-    .ty-kb-row:nth-child(2) { margin-left: calc(var(--key) * 0.25); }
-    .ty-kb-row:nth-child(3) { margin-left: calc(var(--key) * 0.6); }
-    .ty-kb-row span { position: relative; width: var(--key); height: var(--key); flex: none; border: 1px solid var(--hairline); border-radius: 4px;
-      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; line-height: 1; color: var(--ink-faint); padding: 4px 5px; }
-    .ty-kb-row span.on { border-color: var(--border-strong); background: var(--bg-panel); color: var(--ink-muted); font-weight: 600; }
-    .ty-kb-row span b { position: absolute; right: 5px; bottom: 4px; font-family: "CNSKai", "LXGW WenKai TC", serif; font-size: 1.25rem; font-weight: 400; color: var(--ink); }
-    .ty-kb-cap { margin: 2px 0 0; text-align: center; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; }
-    /* the tip: what the browser or Word can get wrong */
-    .ty-tip { max-width: 760px; margin: 28px 0 12px; padding: 10px 16px; border-left: 4px solid var(--ink); background: var(--well); }
-    .ty-tip-h { margin: 0 0 4px; padding: 0; border: 0; font-size: 1rem; font-weight: 600; }
-    .ty-tip p { margin: 0 0 6px; }
-    .ty-tip p:last-child { margin-bottom: 0; }
-    #hui-numbers .ty-h { margin-top: 22px; }
-    @media (max-width: 759.98px) {
-      table.ty th:nth-child(1) { width: 44%; } table.ty th:nth-child(2) { width: 24%; }
-      table.ty td { padding: 6px 4px; }
-      table.ty td.ty-in > text { font-size: 0.95rem; padding: 2px 4px; }
-      table.ty td.ty-out jzp { font-size: 2.6rem; }
-      table.ty td.ty-rd { font-size: 0.85rem; }
-      /* two glyphs side by side: more room for You get */
-      table.ty td.ty-in > text { word-break: keep-all; }   /* a typed example breaks at its spaces, not inside a character */
-      table.ty-wide th:nth-child(1) { width: 48%; } table.ty-wide th:nth-child(2) { width: 26%; }
-      table.ty-wide td.ty-out jzp { font-size: 2.2rem; }
-      /* 12 keys and the gap fit 366 px */
-      .ty-kb { --key: 32px; gap: 10px; justify-content: center; }
-      .ty-kb-row { gap: 2px; margin-bottom: 2px; }
-      .ty-kb-row:nth-child(2) { margin-left: 4px; } .ty-kb-row:nth-child(3) { margin-left: 8px; }
-      .ty-kb-row span { padding: 2px 3px; font-size: 0.6rem; }
-      .ty-kb-row span b { right: 2px; bottom: 1px; font-size: 0.95rem; }
-      .ty-tip { padding: 10px 12px; }
-      .ty-tip text { line-height: 1.9; }
-    }
+    /* "How to type": five rules, then the folded extras */
+    .rules { padding-left: 1.2rem; margin-bottom: 8px; }
+    .rules li, details.more li { margin: 4px 0; }
+    .rules jzp, details.more jzp { font-size: 2rem; }
     details.more { margin: 4px 0 8px; }
     details.more summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
     details.more[open] summary { margin-bottom: 8px; }
@@ -662,121 +615,36 @@
   </div>
   <div class="container">
     <h3 id="how-to-type">How to type</h3>
-    <p class="ty-intro">Type each character the way you read it, in 中文 or ASCII. Under each example in grey: the same in ASCII.</p>
+    <ul class="rules">
+      <li id="basic-layout">Type each character the way you read it, in 中文 or ASCII. A character has no width of its own, so press <strong>space</strong> after it: <text>名九勾五 中七挑三</text> or <text>s9k5 d7u3</text> → <jzp>s9k5 d7u3</jzp>. Or type <strong>#</strong> before it: <text>#名九勾五#中七挑三</text> or <text>#s9k5#d7u3</text> → <jzp>#s9k5#d7u3</jzp></li>
+      <li id="ascii">In ASCII, most characters are spelled with their pinyin or its initials, like 泛音 (which goes first): <text><r>泛音</r>名九挑六</text> or <text><r>fanyin</r>s9u6</text> or <text><r>fy</r>s9u6</text> → <jzp><r>fy</r>s9u6</jzp>. The main fingerings sit where your fingers rest on a QWERTY keyboard. The left hand's fingers are on the left, <text>s</text> 名, <text>d</text> 中 and <text>f</text> 食, with <text>v</text> 大 and <text>x</text> 跪 below. The right hand's strokes are on the right, <text>h</text> 托, <text>j</text> 抹, <text>k</text> 勾 and <text>l</text> 打, with <text>u</text> 挑, <text>i</text> 剔 and <text>o</text> 摘 above and <text>n</text> 劈 below.</li>
+      <li id="numbers">Hui and strings are numbers, and .5 shows as 半: <text>中<r>八五</r>勾五</text> or <text>d<r>8.5</r>k5</text> → <jzp>d<r>8.5</r>k5</jzp></li>
+      <li>A comma keeps a hui and a string apart: <text>名七<r>，</r>六</text> or <text>s7<r>,</r>6</text> → <jzp>s7,6</jzp></li>
+      <li id="chords">A chord puts <text>|</text> between its left and right sides. <text><r>撮</r>大九，六<r>｜</r>散三</text> or <text><r>C</r>v9,6<r>|</r>03</text> → <jzp><r>C</r>v9,6<r>|</r>03</jzp></li>
+      <li id="overlap">In Chrome (or if you see overlapping characters), type the word in Chinese: <text>带起</text> rather than <text>daiqi</text>. While you type in ASCII, Chrome can redraw only the end of a word. Cutting the text and pasting it back puts it right.</li>
+    </ul>
 
-    <h4 class="ty-h" id="basic-layout"><span class="num">1</span>A space after each character</h4>
-    <p class="ty-rule">A character has no width of its own: press <strong>space</strong> after it, or type <strong>#</strong> before it.</p>
-    <table class="ty ty-wide"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text>名九勾五 中七挑三</text><span class="ty-alt"><text>s9k5 d7u3</text></span></td><td class="ty-out"><jzp>s9k5 d7u3</jzp></td><td class="ty-rd">a space after each</td></tr>
-      <tr><td class="ty-in"><text>#名九勾五#中七挑三</text><span class="ty-alt"><text>#s9k5#d7u3</text></span></td><td class="ty-out"><jzp>#s9k5#d7u3</jzp></td><td class="ty-rd"># before each</td></tr>
-    </tbody></table>
-
-    <h4 class="ty-h" id="ascii"><span class="num">2</span>ASCII: pinyin and the keyboard</h4>
-    <p class="ty-rule">Most characters are spelled with their pinyin or its initials. 泛音 goes first.</p>
-    <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text><r>泛音</r>名九挑六</text><span class="ty-alt"><text><r>fanyin</r>s9u6</text> · <text><r>fy</r>s9u6</text></span></td><td class="ty-out"><jzp><r>fy</r>s9u6</jzp></td><td class="ty-rd">泛音&nbsp;· hui&nbsp;9&nbsp;· 挑&nbsp;· string&nbsp;6</td></tr>
-    </tbody></table>
-    <p class="ty-rule ty-kb-lead">The main fingerings sit where your fingers rest on a QWERTY keyboard: the left hand's fingers on the left, the right hand's strokes on the right.</p>
-    <div class="ty-kb" role="img" aria-label="Left hand: s 名, d 中 and f 食, with v 大 and x 跪 below. Right hand: h 托, j 抹, k 勾 and l 打, with u 挑, i 剔 and o 摘 above and n 劈 below.">
-      <div class="ty-kb-half">
-        <div class="ty-kb-row"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span></div>
-        <div class="ty-kb-row"><span>a</span><span class="on">s<b>名</b></span><span class="on">d<b>中</b></span><span class="on">f<b>食</b></span><span>g</span></div>
-        <div class="ty-kb-row"><span>z</span><span class="on">x<b>跪</b></span><span>c</span><span class="on">v<b>大</b></span><span>b</span></div>
-        <p class="ty-kb-cap">Left hand</p>
-      </div>
-      <div class="ty-kb-half">
-        <div class="ty-kb-row"><span>y</span><span class="on">u<b>挑</b></span><span class="on">i<b>剔</b></span><span class="on">o<b>摘</b></span><span>p</span></div>
-        <div class="ty-kb-row"><span class="on">h<b>托</b></span><span class="on">j<b>抹</b></span><span class="on">k<b>勾</b></span><span class="on">l<b>打</b></span><span>;</span></div>
-        <div class="ty-kb-row"><span class="on">n<b>劈</b></span><span>m</span><span>,</span><span>.</span><span>/</span></div>
-        <p class="ty-kb-cap">Right hand</p>
-      </div>
-    </div>
-
-    <h4 class="ty-h" id="numbers"><span class="num">3</span>Hui and strings are numbers</h4>
-    <p class="ty-rule">Half a hui, .5, shows as 半. A comma keeps a hui and a string apart. An open string is 散 or 0, and past the 13th hui is 外 or 13+.</p>
-    <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text>中<r>八五</r>勾五</text><span class="ty-alt"><text>d<r>8.5</r>k5</text></span></td><td class="ty-out"><jzp>d<r>8.5</r>k5</jzp></td><td class="ty-rd">hui&nbsp;8.5&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-      <tr><td class="ty-in"><text>名七<r>，</r>六</text><span class="ty-alt"><text>s7<r>,</r>6</text></span></td><td class="ty-out"><jzp>s7,6</jzp></td><td class="ty-rd">hui&nbsp;7&nbsp;· string&nbsp;6</td></tr>
-      <tr><td class="ty-in"><text><r>散</r>勾三</text><span class="ty-alt"><text><r>0</r>k3</text></span></td><td class="ty-out"><jzp><r>0</r>k3</jzp></td><td class="ty-rd">open&nbsp;· 勾&nbsp;· string&nbsp;3</td></tr>
-      <tr><td class="ty-in"><text>名<r>外</r>挑六</text><span class="ty-alt"><text>s<r>13+</r>u6</text></span></td><td class="ty-out"><jzp>s<r>13+</r>u6</jzp></td><td class="ty-rd">past hui&nbsp;13&nbsp;· 挑&nbsp;· string&nbsp;6</td></tr>
-    </tbody></table>
-    <p class="ty-more">Decimals, 十一 to 十三, 徽 and 弦: <a href="#hui-numbers">Hui and string numbers</a>, below.</p>
-
-    <h4 class="ty-h" id="modifiers"><span class="num">4</span>急, 绰, 注 and 就</h4>
-    <p class="ty-rule">急 &gt;, 绰 / and 注 \ go after the hui. 就 repeats the left hand of the character before.</p>
-    <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text>名九<r>绰</r>勾六</text><span class="ty-alt"><text>s9<r>/</r>k6</text></span></td><td class="ty-out"><jzp>s9<r>/</r>k6</jzp></td><td class="ty-rd">hui&nbsp;9&nbsp;· 绰&nbsp;· 勾&nbsp;· string&nbsp;6</td></tr>
-      <tr><td class="ty-in"><text><r>就</r>勾五</text><span class="ty-alt"><text><r>jiu</r>k5</text></span></td><td class="ty-out"><jzp>就勾五</jzp></td><td class="ty-rd">the same left hand&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-    </tbody></table>
-
-    <h4 class="ty-h" id="chords"><span class="num">5</span>Chords: | between the two sides</h4>
-    <p class="ty-rule">A chord puts | between its left and right sides.</p>
-    <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-      <tr><td class="ty-in"><text><r>撮</r>大九，六<r>｜</r>散三</text><span class="ty-alt"><text><r>C</r>v9,6<r>|</r>03</text></span></td><td class="ty-out"><jzp><r>C</r>v9,6<r>|</r>03</jzp></td><td class="ty-rd">撮&nbsp;· hui&nbsp;9&nbsp;· string&nbsp;6, with open string&nbsp;3</td></tr>
-    </tbody></table>
-
-    <div class="ty-tip" id="overlap">
-      <h4 class="ty-tip-h">In Chrome and Word</h4>
-      <p>In Chrome, or wherever characters overlap, type the word in Chinese: <text>带起</text> rather than <text>daiqi</text>. While you type in ASCII, Chrome can redraw only the end of a word. Cutting the text and pasting it back puts it right.</p>
-      <p>Keep each character in one script: <text>勾3</text> or <text>k三</text> may show in a browser but not in Word.</p>
-    </div>
-
-    <details class="more" id="hui-numbers">
-      <summary>Hui and string numbers: decimals, 半, 十一 to 十三, 徽, 弦 and chords</summary>
-      <p class="ty-intro">Grey: the same with the numbers in digits, and in ASCII.</p>
-      <h5 class="ty-h"><span class="num">1</span>Two digits after a finger make a decimal</h5>
-      <p class="ty-rule">But only right after a left-hand finger: after 历 they are two strings.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>名七六</text><span class="ty-alt"><text>s76</text></span></td><td class="ty-out"><jzp>s76</jzp></td><td class="ty-rd">hui&nbsp;7.6, no string</td></tr>
-        <tr><td class="ty-in"><text>名七六<r>六</r></text><span class="ty-alt"><text>s76<r>6</r></text></span></td><td class="ty-out"><jzp>s766</jzp></td><td class="ty-rd">hui&nbsp;7.6&nbsp;· string&nbsp;6</td></tr>
-        <tr><td class="ty-in"><text><r>历</r>七六</text><span class="ty-alt"><text><r>U</r>76</text></span></td><td class="ty-out"><jzp>U76</jzp></td><td class="ty-rd">历&nbsp;· strings&nbsp;7 and&nbsp;6</td></tr>
-      </tbody></table>
-      <h5 class="ty-h"><span class="num">2</span>半: a half, or the start of 半轮</h5>
-      <p class="ty-rule">Right after a hui number, 半 is .5. Put 徽 or a comma before 半轮 or 半扶 to keep the number whole.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>名九<r>半</r>轮六</text><span class="ty-alt"><text>名9.5轮6</text> · <text>s9.5lun6</text></span></td><td class="ty-out"><jzp>名九半轮六</jzp></td><td class="ty-rd">hui&nbsp;9.5&nbsp;· 轮&nbsp;· string&nbsp;6</td></tr>
-        <tr><td class="ty-in"><text>名九<r>徽</r>半轮六</text><span class="ty-alt"><text>名9徽半轮6</text> · <text>s9,banlun6</text></span></td><td class="ty-out"><jzp>名九徽半轮六</jzp></td><td class="ty-rd">hui&nbsp;9&nbsp;· 半轮&nbsp;· string&nbsp;6</td></tr>
-        <tr><td class="ty-in"><text>名九<r>，</r>半轮六</text><span class="ty-alt"><text>名9,半轮6</text> · <text>s9,bl6</text></span></td><td class="ty-out"><jzp>名九，半轮六</jzp></td><td class="ty-rd">hui&nbsp;9&nbsp;· 半轮&nbsp;· string&nbsp;6</td></tr>
-        <tr><td class="ty-in"><text>名九徽<r>半</r>勾六</text><span class="ty-alt"><text>名9徽半勾6</text> · <text>s9.5k6</text></span></td><td class="ty-out"><jzp>名九徽半勾六</jzp></td><td class="ty-rd">hui&nbsp;9.5&nbsp;· 勾&nbsp;· string&nbsp;6</td></tr>
-      </tbody></table>
-      <h5 class="ty-h"><span class="num">3</span>十一, 十二, 十三 are hui 11, 12, 13</h5>
-      <p class="ty-rule">For 10.2, put 徽 or 点 between the numbers. 分 at the end is optional.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>名<r>十二</r>勾五</text><span class="ty-alt"><text>名12勾5</text> · <text>s12k5</text></span></td><td class="ty-out"><jzp>名十二勾五</jzp></td><td class="ty-rd">hui&nbsp;12&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名十<r>徽</r>二勾五</text><span class="ty-alt"><text>名10徽2勾5</text> · <text>s10.2k5</text></span></td><td class="ty-out"><jzp>名十徽二勾五</jzp></td><td class="ty-rd">hui&nbsp;10.2&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名十<r>点</r>二勾五</text><span class="ty-alt"><text>名10点2勾5</text> · <text>s10.2k5</text></span></td><td class="ty-out"><jzp>名十点二勾五</jzp></td><td class="ty-rd">hui&nbsp;10.2&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名十<r>徽</r>勾五</text><span class="ty-alt"><text>名10徽勾5</text> · <text>s10k5</text></span></td><td class="ty-out"><jzp>名十徽勾五</jzp></td><td class="ty-rd">hui&nbsp;10&nbsp;· 勾&nbsp;· string&nbsp;5</td></tr>
-      </tbody></table>
-      <h5 class="ty-h"><span class="num">4</span>徽 and 点 work as a decimal point</h5>
-      <p class="ty-rule">So does 點, or the two numbers written together.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>名七六挑五</text><span class="ty-alt"><text>名76挑5</text> · <text>s76u5</text></span></td><td class="ty-out"><jzp>名七六挑五</jzp></td><td class="ty-rd">hui&nbsp;7.6&nbsp;· 挑&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名七<r>徽</r>六挑五</text><span class="ty-alt"><text>名7徽6挑5</text> · <text>s7.6u5</text></span></td><td class="ty-out"><jzp>名七徽六挑五</jzp></td><td class="ty-rd">hui&nbsp;7.6&nbsp;· 挑&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名七<r>点</r>六挑五</text><span class="ty-alt"><text>名7点6挑5</text> · <text>s7.6u5</text></span></td><td class="ty-out"><jzp>名七点六挑五</jzp></td><td class="ty-rd">hui&nbsp;7.6&nbsp;· 挑&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名七<r>點</r>六挑五</text><span class="ty-alt"><text>名7點6挑5</text> · <text>s7.6u5</text></span></td><td class="ty-out"><jzp>名七點六挑五</jzp></td><td class="ty-rd">hui&nbsp;7.6&nbsp;· 挑&nbsp;· string&nbsp;5</td></tr>
-        <tr><td class="ty-in"><text>名九<r>点</r>五勾三</text><span class="ty-alt"><text>名9点5勾3</text> · <text>s9.5k3</text></span></td><td class="ty-out"><jzp>名九点五勾三</jzp></td><td class="ty-rd">hui&nbsp;9.5&nbsp;· 勾&nbsp;· string&nbsp;3</td></tr>
-        <tr><td class="ty-in"><text>名七<r>点</r>九</text><span class="ty-alt">in Chinese only</span></td><td class="ty-out"><jzp>名七点九</jzp></td><td class="ty-rd">hui&nbsp;7.9</td></tr>
-      </tbody></table>
-      <h5 class="ty-h"><span class="num">5</span>弦 marks a string</h5>
-      <p class="ty-rule">Two numbers after a finger make a decimal. 弦 after the second makes it the string, even after 徽.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>名九七</text><span class="ty-alt"><text>名97</text> · <text>s97</text></span></td><td class="ty-out"><jzp>名九七</jzp></td><td class="ty-rd">hui&nbsp;9.7</td></tr>
-        <tr><td class="ty-in"><text>名九七<r>弦</r></text><span class="ty-alt"><text>名97弦</text> · <text>s9,7</text></span></td><td class="ty-out"><jzp>名九七弦</jzp></td><td class="ty-rd">hui&nbsp;9&nbsp;· string&nbsp;7</td></tr>
-        <tr><td class="ty-in"><text>名九徽七<r>弦</r></text><span class="ty-alt"><text>名9徽7弦</text> · <text>s9,7</text></span></td><td class="ty-out"><jzp>名九徽七弦</jzp></td><td class="ty-rd">hui&nbsp;9&nbsp;· string&nbsp;7</td></tr>
-      </tbody></table>
-      <h5 class="ty-h"><span class="num">6</span>Chords: | splits the halves</h5>
-      <p class="ty-rule">弦 is optional. Use it, or a comma, when two numbers would otherwise make a decimal.</p>
-      <table class="ty"><thead><tr><th>Type</th><th>You get</th><th>Reads as</th></tr></thead><tbody>
-        <tr><td class="ty-in"><text>撮名九四六<r>｜</r>二</text><span class="ty-alt"><text>撮名9.46|2</text> · <text>Cs9.4,6|2</text></span></td><td class="ty-out"><jzp>撮名九四六｜二</jzp></td><td class="ty-rd">撮&nbsp;· hui&nbsp;9.4&nbsp;· string&nbsp;6, with open string&nbsp;2</td></tr>
-        <tr><td class="ty-in"><text>撮名七五<r>｜</r>二</text><span class="ty-alt"><text>撮名75|2</text> · <text>Cs75|2</text></span></td><td class="ty-out"><jzp>撮名七五｜二</jzp></td><td class="ty-rd">撮&nbsp;· hui&nbsp;7.5, with open string&nbsp;2</td></tr>
-        <tr><td class="ty-in"><text>撮名七五<r>弦</r>｜二</text><span class="ty-alt"><text>撮名75弦|2</text> · <text>Cs7,5|2</text></span></td><td class="ty-out"><jzp>撮名七五弦｜二</jzp></td><td class="ty-rd">撮&nbsp;· hui&nbsp;7&nbsp;· string&nbsp;5, with open string&nbsp;2</td></tr>
-        <tr><td class="ty-in"><text>撮名七<r>，</r>五｜二</text><span class="ty-alt"><text>撮名7,5|2</text> · <text>Cs7,5|2</text></span></td><td class="ty-out"><jzp>撮名七，五｜二</jzp></td><td class="ty-rd">the same, with a comma</td></tr>
-      </tbody></table>
+    <details class="more" id="modifiers">
+      <summary>More rules: open strings, 外, 急 绰 注 and numbers</summary>
+      <ul>
+        <li>An open string is 散 or 0. <text><r>散</r>勾三</text> or <text><r>0</r>k3</text> → <jzp><r>0</r>k3</jzp></li>
+        <li>Past the 13th hui is 外 or 13+. <text>名<r>外</r>挑六</text> or <text>s<r>13+</r>u6</text> → <jzp>s<r>13+</r>u6</jzp></li>
+        <li>急 &gt;, 绰 / and 注 \ go after the hui. <text>名九<r>绰</r>勾六</text> or <text>s9<r>/</r>k6</text> → <jzp>s9<r>/</r>k6</jzp></li>
+        <li><text>名七六</text> or <text>s76</text> → <jzp>s76</jzp> 7.6 hui, no string.</li>
+        <li><text>名七六六</text> or <text>s766</text> → <jzp>s766</jzp> 7.6 hui, string 6.</li>
+        <li><text>历七六</text> or <text>U76</text> → <jzp>U76</jzp> strings 7 and 6: digits only make a decimal right after a left-hand finger.</li>
+        <li><text>名七点九</text> → <jzp>名七点九</jzp> In Chinese, 点 or 徽 between the digits also marks the decimal.</li>
+        <li><text>就勾五</text> or <text>jiuk5</text> → <jzp>就勾五</jzp> 就 repeats the left hand of the character before.</li>
+        <li>Keep each character in one script: <text>勾3</text> or <text>k三</text> may show in a browser but not in Word.</li>
+      </ul>
     </details>
 
     <details class="more">
       <summary>Using the font in Sibelius or MuseScore</summary>
-      <p>To be decided. We'll include this in a future update.</p>
+      <p>There the spacebar moves lyrics to the next note. End each character with <text>+</text> instead to give it its width, then press space to move on.</p>
+      <ul>
+        <li><text>勾七+</text> or <text>k7+</text> → <jzp>k7+</jzp></li>
+      </ul>
     </details>
 
     <h3 id="glossary">Glossary</h3>
