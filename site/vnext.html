@@ -495,10 +495,11 @@
     .gh-dl { display: inline-flex; gap: 6px; align-items: center; background: var(--ink); color: var(--bg-panel); border-radius: 4px; padding: 4px 12px; text-decoration: none; font-weight: 600; }
     .gh-dl:hover { color: var(--bg-panel); background: #45403b; }
     .gh-draw { display: block; width: 64px; height: 64px; object-fit: contain; }
-    .gh-draw.word { width: auto; height: auto; max-width: 100%; }   /* a whole example word: sized from its font units when it loads */
+    .gh-draw.word { font-size: 2.5rem; width: auto; height: auto; max-width: 100%; }   /* a whole example word: the examples' font size, sized in ems from its font units (sizeWord) */
     .gh-notdrawn { width: 64px; height: 64px; border: 1.5px dashed var(--border-strong); border-radius: 4px; display: grid; place-items: center; color: var(--ink-faint); font-size: 0.75rem; text-align: center; line-height: 1.2; }
     .only-coming .table > tbody > tr:not(.ghost), .only-coming .gh-none { display: none !important; }
     #fb .fb-ctx .gh-draw, #fb .fb-ctx .gh-notdrawn { flex: none; }
+    #fb .fb-ctx .gh-draw.word { font-size: 2.6rem; }   /* as the dialog's jzp */
     #fb .fb-ts:empty { display: none; }
     /* a text-first inline-flex button: its baseline is its text's, so it sits on Download's line */
     .bar-feedback { display: inline-flex; align-items: center; gap: 6px; margin-left: 22px; padding: 0 2px; border: 0; background: none;
@@ -2852,16 +2853,27 @@
         draft: function () { return 'Draft (not live yet)'; },   // a drawing to comment on: not in the font you download yet
         test: function (g) { return 'In release ' + g.release; },
       };
+      // a word's drawing sized in ems from its <svg> width and height (its viewBox without them);
+      // until then, or if it can't be read, one em wide
+      function sizeWord(im, url) {
+        im.style.width = '1em';
+        fetch(url).then(function (r) { return r.ok ? r.text() : ''; }).then(function (text) {
+          var svg = text && new DOMParser().parseFromString(text, 'image/svg+xml').documentElement;
+          if (!svg || svg.nodeName !== 'svg') return;
+          var vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+          var w = parseFloat(svg.getAttribute('width')) || vb[2], h = parseFloat(svg.getAttribute('height')) || vb[3];
+          if (!(w > 0 && h > 0)) return;
+          im.style.width = (w / 1000).toFixed(3) + 'em'; im.style.height = (h / 1000).toFixed(3) + 'em';
+        }).catch(function () { /* left one em wide */ });
+      }
       function ghostPicture(g) {
         if (g.drawing) {
           var im = document.createElement('img'); im.className = 'gh-draw' + (g.example ? ' word' : ''); im.src = g.drawing; im.loading = 'lazy';
           // a whole example word is drawn in the font's units (1000 to the em): show it at the size the
-          // real rows' examples are set in, so its characters match theirs
-          if (g.example) im.addEventListener('load', function () {
-            var ref = document.querySelector('table td.ex .ex-out jzp');   // a real row's example, at this width
-            var em = ref ? parseFloat(getComputedStyle(ref).fontSize) : 2.5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-            if (im.naturalWidth) im.style.width = Math.round(im.naturalWidth * em / 1000) + 'px';
-          });
+          // real rows' examples are set in (.gh-draw.word has their font size), so its characters match
+          // theirs. Its size is read from the file, not the image: Safari on a phone gives an SVG a
+          // naturalWidth that isn't its width, which drew a vertical word a quarter of its size.
+          if (g.example) sizeWord(im, g.drawing);
           im.alt = 'Draft drawing of ' + (g.example ? g.example[0].replace(/<\/?r>/g, '') : g.zh);
           return im;
         }
