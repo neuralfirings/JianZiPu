@@ -43,6 +43,10 @@
   let leave = $state<null | { to: string }>(null);
   let importAsk = $state<null | { text: string; box: [number, number] | null; dropped: string[]; strokes: number; fit: boolean; replace: boolean }>(null);
   let shortcuts = $state(false);
+  // the Text tool's box: focused when a click places the text (or moves it), not while the size is typed
+  let textInput = $state<HTMLInputElement | null>(null);
+  const textAt = $derived(ed.text?.at);
+  $effect(() => { if (textAt && textInput) textInput.focus(); });
   let toast = $state<string | null>(null);
   let starting = $state<'file' | 'image' | null>(from);
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -152,6 +156,7 @@
     }
     if (mod) return;
     if (ed.trace) { if (e.key === 'Escape') ed.endTrace(); return; }
+    if (ed.text && (e.key === 'Escape' || e.key === 'Enter')) { if (e.key === 'Enter') ed.useText(); else ed.endText(); return; }
     switch (e.key) {
       case 'Escape': if (popover) cancelPopover(); else if (ghostPick) ghostPick = null; else if (ed.drawing) ed.finishPen(); else if (ed.pointsOpen) ed.closePoints(); else ed.clearSelection(); return;
       case 'Enter': if (popover) applyPopover(); else if (ed.drawing) ed.finishPen(); return;
@@ -175,7 +180,7 @@
       }
       return;
     }
-    const modes: Record<string, Mode> = { v: 'select', p: 'pen', r: 'rect', o: 'ellipse', h: 'hand', z: 'zoom', a: 'select' };
+    const modes: Record<string, Mode> = { v: 'select', p: 'pen', r: 'rect', o: 'ellipse', t: 'text', h: 'hand', z: 'zoom', a: 'select' };
     if (modes[e.key]) { ed.setMode(modes[e.key]); return; }
     if (e.key === 'd') ed.setDot(!ed.dot);
     else if (e.key === 'l') ed.setGhostSaved(!ed.ghostSaved);
@@ -244,8 +249,8 @@
   }
   const r1 = (v: number) => Math.round(v * 10) / 10;
   const num = (e: Event) => +(e.target as HTMLInputElement).value;
-  const TOOLS: [Mode, string, string][] = [['select', 'V', 'Select'], ['pen', 'P', 'Pen'], ['pencil', '⇧P', 'Pencil'], ['rect', 'R', 'Rectangle'], ['ellipse', 'O', 'Ellipse'], ['hand', 'H', 'Hand'], ['zoom', 'Z', 'Zoom']];
-  const ICON = { select: I.ToolSelect, pen: I.ToolPen, pencil: I.ToolPencil, rect: I.ToolRect, ellipse: I.ToolEllipse, hand: I.ToolHand, zoom: I.ToolZoom } satisfies Record<Mode, unknown>;
+  const TOOLS: [Mode, string, string][] = [['select', 'V', 'Select'], ['pen', 'P', 'Pen'], ['pencil', '⇧P', 'Pencil'], ['rect', 'R', 'Rectangle'], ['ellipse', 'O', 'Ellipse'], ['text', 'T', 'Text'], ['hand', 'H', 'Hand'], ['zoom', 'Z', 'Zoom']];
+  const ICON = { select: I.ToolSelect, pen: I.ToolPen, pencil: I.ToolPencil, rect: I.ToolRect, ellipse: I.ToolEllipse, text: I.ToolText, hand: I.ToolHand, zoom: I.ToolZoom } satisfies Record<Mode, unknown>;
 </script>
 
 {#snippet body(id: EditorPanelId)}
@@ -425,6 +430,23 @@
           <span class="spacer"></span><button onclick={() => (starting = null)}>Not now</button>
         </div>
       {/if}
+      {#if ed.mode === 'text'}
+        <div class="pop textbar">
+          {#if !ed.text}<span>Click on the canvas where the text goes: it's typed in TW-Kai, the font's Chinese characters, then becomes shapes you can edit.</span>
+          {:else}
+            {@const t = ed.text}
+            <label class="f"><span>Text</span><input class="cjk" type="text" bind:this={textInput} value={t.value} placeholder="撇" maxlength="20" aria-label="Characters to type"
+              oninput={(e) => ed.updateText({ value: (e.target as HTMLInputElement).value })}
+              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ed.useText(); } else if (e.key === 'Escape') { e.preventDefault(); ed.endText(); } }} /></label>
+            <label class="f"><span>Size</span><input type="number" min="10" max="2000" step="10" value={t.size} onchange={(e) => ed.updateText({ size: num(e) })} style="width: 72px" aria-label="Size, units to the em" /><span class="muted">units</span></label>
+            {#if t.busy}<span class="muted">…</span>{/if}
+            {#if t.error}<span class="error"><I.Warn size={14} /> {t.error}</span>{:else if t.note}<span class="badge-warn"><I.Warn size={14} /> {t.note}</span>{/if}
+            <span class="spacer"></span>
+            <button onclick={() => ed.endText()}>Cancel</button>
+            <button class="primary" disabled={!t.ready} onclick={() => ed.useText()} title="Turn the characters into shapes of this glyph (Enter)">Make shapes</button>
+          {/if}
+        </div>
+      {/if}
       {#if ed.draftRestored}
         <div class="pop">Restored unsaved edits to this glyph from your last session. <button onclick={() => (ed.draftRestored = false)}>Keep</button> <button onclick={() => { ed.discard(); ed.draftRestored = false; }}>Discard</button></div>
       {/if}
@@ -439,6 +461,7 @@
         <span class="mono">{ed.cursor ? `${ed.cursor.x}, ${ed.cursor.y}` : '—'}</span>
         <span>{ed.stats.paths} shape{ed.stats.paths === 1 ? '' : 's'} · {ed.stats.nodes} points{ed.stats.selPaths ? ` · ${ed.stats.selPaths} selected` : ''}{ed.stats.selNodes ? ` · ${ed.stats.selNodes} point${ed.stats.selNodes === 1 ? '' : 's'}` : ''}</span>
         {#if ed.stats.outside}<span class="badge-warn">outside the box</span>{/if}
+        {#if ed.text}<span class="muted">text: click to move it, Enter makes shapes, Esc cancels</span>{/if}
         {#if ed.drawing}<span class="muted">pen: click to add points, click the first point to close, Enter for a line, Esc to stop</span>{/if}
         <span class="spacer"></span>
         <span class="muted">{Math.round(ed.zoom * 100)}%</span>
@@ -502,10 +525,10 @@
       <h3 style="margin:0">Keyboard shortcuts</h3>
       <table class="keys"><tbody>
         <tr><td><kbd>V</kbd></td><td>Select</td><td><kbd>P</kbd> / <kbd>⇧P</kbd></td><td>Pen / Pencil</td></tr>
-        <tr><td><kbd>R</kbd> / <kbd>O</kbd></td><td>Rectangle / Ellipse</td><td><kbd>H</kbd> / <kbd>Space</kbd></td><td>Hand (pan)</td></tr>
+        <tr><td><kbd>R</kbd> / <kbd>O</kbd> / <kbd>T</kbd></td><td>Rectangle / Ellipse / Text</td><td><kbd>H</kbd> / <kbd>Space</kbd></td><td>Hand (pan)</td></tr>
         <tr><td><kbd>Z</kbd></td><td>Zoom (⌥ out)</td><td><kbd>⌘</kbd> + wheel</td><td>Zoom at the pointer</td></tr>
         <tr><td><kbd>⇧1</kbd> / <kbd>⇧0</kbd> / <kbd>⇧2</kbd></td><td>Fit / 100% / fit selection</td><td><kbd>⇧G</kbd></td><td>Grid</td></tr>
-        <tr><td><kbd>Enter</kbd></td><td>Finish the pen path as a line · apply a popover</td><td><kbd>Esc</kbd></td><td>Cancel popover · stop the pen · deselect</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Finish the pen path as a line · make typed text shapes · apply a popover</td><td><kbd>Esc</kbd></td><td>Cancel popover · stop the pen · deselect</td></tr>
         <tr><td><kbd>⌫</kbd></td><td>Delete points or shapes</td><td>arrows</td><td>Nudge 1 unit (⇧ 10)</td></tr>
         <tr><td><kbd>⇧H</kbd> / <kbd>⇧V</kbd></td><td>Flip</td><td><kbd>⌥⇧U S I E</kbd></td><td>Union · Subtract · Intersect · Exclude</td></tr>
         <tr><td><kbd>⌥⌘O</kbd></td><td>Outline lines</td><td><kbd>D</kbd> / <kbd>G</kbd> / <kbd>L</kbd></td><td>Dot · compare glyph · last saved</td></tr>
@@ -542,9 +565,12 @@
   .zoom button { min-width: 28px; }
   .pop { display: flex; align-items: center; gap: var(--space-4); padding: 6px var(--space-5); background: var(--sel-bg); border-bottom: 1px solid var(--border); font-size: var(--t-small); flex-wrap: wrap; }
   .pop input[type=range] { width: 180px; }
+  .textbar .f > span:first-child { width: auto; }
+  .textbar input.cjk { width: 10em; font-family: var(--font-cjk); font-size: var(--t-panel); }
+  .textbar .error, .textbar .badge-warn { display: inline-flex; align-items: center; gap: var(--space-2); }
   .wrap { flex: 1; min-height: 240px; background: var(--bg-canvas); position: relative; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  canvas.m-hand { cursor: grab; } canvas.m-zoom { cursor: zoom-in; } canvas.m-pen, canvas.m-pencil, canvas.m-rect, canvas.m-ellipse { cursor: crosshair; }
+  canvas.m-hand { cursor: grab; } canvas.m-zoom { cursor: zoom-in; } canvas.m-pen, canvas.m-pencil, canvas.m-rect, canvas.m-ellipse { cursor: crosshair; } canvas.m-text { cursor: text; }
   .toast { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 6px 12px; font-size: var(--t-small); max-width: 80%; }
   .tracehint { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); background: var(--sel-bg); color: var(--ink); padding: 4px 10px; border-radius: 6px; font-size: var(--t-small); }
   .status { display: flex; gap: var(--space-5); align-items: center; padding: 4px var(--space-5); border-top: 1px solid var(--border); font-size: var(--t-caption); color: var(--ink-muted); }

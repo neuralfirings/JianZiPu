@@ -74,6 +74,7 @@ export { default as ToolPen } from '@lucide/svelte/icons/pen-tool';
 export { default as ToolPencil } from '@lucide/svelte/icons/pencil';
 export { default as ToolRect } from '@lucide/svelte/icons/square';
 export { default as ToolEllipse } from '@lucide/svelte/icons/circle';
+export { default as ToolText } from '@lucide/svelte/icons/type';
 export { default as ToolHand } from '@lucide/svelte/icons/hand';
 export { default as ToolZoom } from '@lucide/svelte/icons/zoom-in';
 export { default as Grid } from '@lucide/svelte/icons/grid-3x3';

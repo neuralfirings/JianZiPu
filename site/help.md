@@ -113,11 +113,12 @@ Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), 
 
 ### Drawing
 
-- Tools: Select `V`, Pen `P`, Pencil `⇧P`, Rectangle `R`, Ellipse `O`, Hand `H` (or hold Space), Zoom `Z`. **Keyboard shortcuts** on the rail lists every shortcut.
+- Tools: Select `V`, Pen `P`, Pencil `⇧P`, Rectangle `R`, Ellipse `O`, Text `T`, Hand `H` (or hold Space), Zoom `Z`. **Keyboard shortcuts** on the rail lists every shortcut.
 - Select (`V`) picks shapes: a click picks one and draws a box round it; `⇧`-click adds or removes a shape, and the box holds them all. Drag inside the box to move them; drag a corner or an edge of the box to scale them from the opposite side (`⇧` keeps the proportions). Dragging across empty canvas picks every shape the box touches.
 - To edit points, double-click a shape: its points show (`Esc`, or a click off it, closes them). Click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
 - Combine two selected shapes with Union, Subtract, Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
 - Lines drawn with the Pen or Pencil are strokes until **Outline line(s)** turns them into filled shapes. Save does this for you.
+- Text (`T`) starts a glyph from a Chinese character in TW-Kai, the font the Chinese characters come from. Click on the canvas where it goes and type, one character or a few: it shows faded, centred on your click (click again to move it). **Size** is how many units the character's em takes, at first the box's height. `Enter` (or **Make shapes**) turns it into shapes you edit like any other, as one Undo step; `Esc` leaves it. Take away what you don't need with Select and `⌫`, or double-click a shape for its points; the strokes of a character overlap, which **Clean up** (or the build) merges.
 - **SVG file…** imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.
 - **Image to trace…** turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then **Use this outline**. The image itself stays in your browser.
 
@@ -372,6 +373,8 @@ What the Builder's messages say, word for word, and what to do about each. Words
 - **“Unable to convert to picosvg: BadElement: …”**: The SVG holds something that isn't a shape, most often text. Convert text to outlines (paths) in the drawing program and import again.
 - **“syntax error: line *n*, column *n*”**: The file isn't a valid SVG. Export it again from the drawing program.
 - **“glyph names use letters, digits, '_', '-' and '.', e.g. md_9 or lg_gou”**: Rename the glyph with only those characters (the new-glyph dialog says “Letters, digits, _ - and. only.”).
+- **“TW-Kai has no *字*. A simplified character may be there in its traditional form.”**: The Text tool's font hasn't got that character, so it's left out. TW-Kai is a traditional font: type the traditional form (这 → 這), or draw the character another way.
+- **“The base font isn't here: copy TW-Kai-98.ttf into builder/src_font/.”**: On your own computer, the Text tool reads the base font, which isn't in the repository. Copy `TW-Kai-98.ttf` into `builder/src_font/` (the font build needs it there too) and type again.
 - **“Can't trace *file*: it isn't an image this browser can read. Try a PNG or JPEG.”**: The file isn't an image, or is a kind the browser can't open (HEIC, TIFF, PDF…). Save it as PNG or JPEG and open that. “trace failed: …” means the image opened but couldn't be traced: try another image or a different Threshold.
 
 ### Layouts and areas

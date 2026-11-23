@@ -40,6 +40,9 @@ API (all JSON):
   GET  /api/preview-fonts/<key>.ttf a preview font the glossary check compiled (the last build plus new
                                    glyphs drawn in from their SVGs, the unsaved spellings and positioning)
   GET  /api/svgs                   {name: svg text}
+  GET  /api/base-font/outline?text=…  the glyph editor's Text tool: each character's outline in the base font
+                                   (TW-Kai), SVG path data in its units, y down: {upm, chars: [{char, d, advance}],
+                                   missing: [characters it hasn't got]}; 404 without the base font
   POST /api/svg/check              {svg} -> what the build makes of it (flattened outline, counts, bounds)
   DELETE /api/svg/<name>           remove inputs/svg/<name>.svg (local mode; applying a reviewed draft)
   PUT  /api/svg/<name>             {svg, base_hash?, overwrite?} -> write inputs/svg/<name>.svg; 409 when the file
@@ -82,9 +85,9 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
-from . import config, data, glossary, glyphs, hosted, preview_favicon, release, typing_preview
+from . import base_outline, config, data, glossary, glyphs, hosted, preview_favicon, release, typing_preview
 from .positioning import emit, resolve, schema, shapes
 
 APP_BUILD_DIR = config.BUILDER_DIR.parent / "app" / "build"
@@ -1021,6 +1024,12 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/svgs":
                 return self._json({p.stem: p.read_text(encoding="utf-8")
                                    for p in sorted(config.COMPONENTS_DIR.glob("*.svg"))})
+            if path == "/api/base-font/outline":
+                text = (parse_qs(urlparse(self.path).query).get("text") or [""])[0]
+                try:
+                    return self._json(base_outline.outlines(text))
+                except base_outline.NoBaseFont as err:
+                    return self._json({"ok": False, "error": str(err)}, 404)
             if path == "/api/config":
                 return self._json(SETTINGS.public())
             if path == "/api/base":

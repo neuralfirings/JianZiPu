@@ -2,12 +2,13 @@
 // box round the selection (drag inside it to move, its corners and edges to scale, ⇧ keeps the
 // proportions), ⇧-click adds or removes one; a double-click opens a shape's points (Esc, or a click
 // off it, closes them). Pen draws, Pencil
-// sketches, Rect/Ellipse stamp, Hand pans, Zoom zooms. One paper.Tool
+// sketches, Rect/Ellipse stamp, Text places typed characters (the editor sets them, onTextClick),
+// Hand pans, Zoom zooms. One paper.Tool
 // dispatches on `mode`; keyboard shortcuts live in the Svelte component.
 import paper from 'paper';
 import type { Scene, PathLike, Overlay } from './scene';
 
-export type Mode = 'select' | 'pen' | 'pencil' | 'rect' | 'ellipse' | 'hand' | 'zoom';
+export type Mode = 'select' | 'pen' | 'pencil' | 'rect' | 'ellipse' | 'text' | 'hand' | 'zoom';
 
 /** The DOM event behind a Paper.js event (present at runtime, missing from the typings). */
 const native = <T extends Event>(e: paper.ToolEvent | paper.KeyEvent) => (e as unknown as { event: T }).event;
@@ -41,6 +42,8 @@ export class Tools {
   onChange: () => void = () => {};
   onCursor: (p: paper.Point | null) => void = () => {};
   onPan: () => void = () => {};
+  /** The Text tool's click: where the typed characters go. */
+  onTextClick: (p: paper.Point) => void = () => {};
   /** Set while the pen has an unfinished path. */
   drawing: paper.Path | null = null;
   private drag: Drag | null = null;
@@ -179,6 +182,7 @@ export class Tools {
       case 'pencil': { const path = new paper.Path({ segments: [p], closed: false }); this.scene.adopt(path); this.clearSelection(); this.drag = { kind: 'pencil', moved: false, path }; return; }
       case 'rect': case 'ellipse': this.clearSelection(); this.drag = { kind: 'shape', moved: false, start: p, path: null, ellipse: this.mode === 'ellipse' }; return;
       case 'zoom': this.drag = { kind: 'zoom', moved: false, start: p }; return;
+      case 'text': this.onTextClick(p); return;
     }
   }
 
