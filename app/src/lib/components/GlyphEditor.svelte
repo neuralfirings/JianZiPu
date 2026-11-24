@@ -141,6 +141,13 @@
     goto(to);
   }
 
+  /** A click on the canvas takes the keys back from a text field (the Tester's words, a panel's number):
+   *  the canvas can't hold focus itself, so Delete, arrows and the tool keys went on typing into the
+   *  field. The Text tool's box takes focus again when the click places its text. */
+  function releaseField() {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) a.blur();
+  }
   function typing(e: KeyboardEvent) { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
   function key(e: KeyboardEvent) {
     if (leave || importAsk || ed.conflictDisk != null) return;
@@ -452,7 +459,7 @@
       {/if}
 
       <div class="wrap" bind:this={wrap}>
-        <canvas bind:this={canvas} class="m-{ed.mode}" onwheel={(e) => ed.wheel(e)} ondblclick={(e) => ed.doubleClick(e)}></canvas>
+        <canvas bind:this={canvas} class="m-{ed.mode}" onpointerdown={releaseField} onwheel={(e) => ed.wheel(e)} ondblclick={(e) => ed.doubleClick(e)}></canvas>
         {#if toast}<div class="toast">{toast}</div>{/if}
         {#if ed.trace}<div class="tracehint">Trace mode · adjust in the Trace panel, then <strong>Use this outline</strong></div>{/if}
       </div>
