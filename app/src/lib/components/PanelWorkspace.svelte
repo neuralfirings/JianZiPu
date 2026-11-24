@@ -73,6 +73,10 @@
   /** Panels that have something to show right now. */
   const shown = (dock: Dock) => store.a.docks[dock].filter((id) => !meta(id).hidden);
   const visible = (dock: Dock) => shown(dock).length > 0 && !store.a.hidden[dock];
+  /** Every panel in the bottom strip folded: the strip is just its tabs, right under the center, so a
+   *  folded panel stays in sight (at the strip's full height its tab sat at the window's bottom edge,
+   *  out of view when the screen ran taller than the window) and the center gets the room back. */
+  const bottomFolded = () => shown('bottom').every((id) => store.isFolded(id)) && !store.dragging;
   let cols = $derived.by(() => {
     const a = store.a;
     // a dock keeps its saved width while there is room and gives way (down to DOCK_MIN) when the
@@ -129,8 +133,12 @@
   <section class="center">
     {@render children()}
     {#if visible('bottom')}
-      <div class="split h" title="Drag to resize; drag shut to hide" onpointerdown={(e) => startResize('bottom', e)}></div>
-      <div class="bottom" style="height: {store.a.size.bottom}px"><PanelDock dock="bottom" {panel} {meta} {store} /></div>
+      {#if bottomFolded()}
+        <div class="bottom folded"><PanelDock dock="bottom" {panel} {meta} {store} /></div>
+      {:else}
+        <div class="split h" title="Drag to resize; drag shut to hide" onpointerdown={(e) => startResize('bottom', e)}></div>
+        <div class="bottom" style="height: {store.a.size.bottom}px"><PanelDock dock="bottom" {panel} {meta} {store} /></div>
+      {/if}
     {:else if shown('bottom').length}
       <button class="rail hrail" data-dock="bottom" title="Show the bottom strip" onclick={() => store.show('bottom')}>{dockNames('bottom')}</button>
     {:else if store.dragging}
@@ -148,7 +156,11 @@
   .ws { display: grid; height: 100%; min-width: 0; min-height: 0; flex: 1; overflow: hidden; }
   .ws.dragging { user-select: none; cursor: grabbing; }
   .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-  .bottom { flex: none; min-height: 0; max-height: 60%; overflow: hidden; border-top: 1px solid var(--border); background: var(--bg-app); }
+  /* its saved height, but it gives way (down to 96px) when the window is too short for it and the center's
+     minimum, rather than running past the window's bottom edge */
+  .bottom { flex: 0 1 auto; min-height: 96px; max-height: 60%; overflow: hidden; border-top: 1px solid var(--border); background: var(--bg-app); }
+  .bottom.folded { height: auto; min-height: 0; flex: none; }
+  .bottom.folded :global(.dock.bottom) { height: auto; padding: var(--space-3) var(--space-4); }
   .split { background: transparent; touch-action: none; }
   .split.v { cursor: col-resize; border-left: 1px solid var(--border); }
   .split.v:hover { background: var(--sel-bg); }
