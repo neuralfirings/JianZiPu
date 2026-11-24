@@ -6,7 +6,8 @@ import { Scene, isOpen, type Box, type PathLike } from './scene';
 import { Tools, type Mode } from './tools';
 import * as ops from './ops';
 import { loadImage, thresholdImage, traceCanvas, TRACE_DEFAULTS, type TraceOptions } from './trace';
-import { api, type SvgCheck } from '$lib/api';
+import { defaultTextSize, missingNote, textSvg } from './text';
+import { api, type BaseOutline, type SvgCheck } from '$lib/api';
 import { app } from '$lib/state.svelte';
 import { hosted } from '$lib/hosted.svelte';
 import { sha256 } from '$lib/sha256';
@@ -65,6 +66,14 @@ export class GlyphEditor {
   private traceRaster: paper.Raster | null = null;
   private tracePreview: paper.Group | null = null;
   private traceTimer: ReturnType<typeof setTimeout> | null = null;
+  // the Text tool: characters typed in the base font, shown where the click was until Enter makes them shapes
+  text = $state<null | { at: [number, number]; value: string; size: number; busy: boolean; note: string | null; error: string | null; ready: boolean }>(null);
+  /** The last size typed in this session: the next text starts at it. */
+  private textSize: number | null = null;
+  private textOutline: BaseOutline | null = null;
+  private textPreview: paper.Group | null = null;
+  private textTimer: ReturnType<typeof setTimeout> | null = null;
+  private textAsked = 0;
   // file
   built = $state<SvgCheck | null>(null);
   error = $state<string | null>(null);
@@ -91,6 +100,7 @@ export class GlyphEditor {
     this.scene.onChange = () => this.sync();
     this.tools.onChange = () => this.sync();
     this.tools.onPan = () => { this.userViewed = true; };
+    this.tools.onTextClick = (p) => this.placeText([p.x, p.y]);
     this.tools.onCursor = (p) => { this.cursor = p ? { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 } : null; };
     this.scene.loadSvg(svg);
     if (!svg) this.scene.setBox(box);
@@ -103,6 +113,7 @@ export class GlyphEditor {
   unmount() {
     if (this.previewTimer) clearTimeout(this.previewTimer);
     if (this.name) { const { [this.name]: _, ...rest } = app.preview; app.preview = rest; }
+    this.endText();
     this.tools?.destroy(); this.scene?.destroy();
     this.tools = null; this.scene = null; this.trace = null; this.preview = null;
   }
@@ -149,7 +160,7 @@ export class GlyphEditor {
   }
 
   // ---- tools & view
-  setMode(m: Mode) { this.tools?.setMode(m); }
+  setMode(m: Mode) { if (m !== 'text') this.endText(); this.tools?.setMode(m); }
   holdHand(on: boolean) { this.tools?.holdHand(on); }
   undo() { this.scene?.undo(); }
   redo() { this.scene?.redo(); }
@@ -360,6 +371,83 @@ export class GlyphEditor {
     this.tracePreview?.remove(); this.tracePreview = null;
     this.trace = null;
     if (cancel) { this.tools?.setMode('select'); this.sync(); }
+  }
+
+  // ---- the Text tool
+  /** A click with the Text tool: the text goes there (centred on the point); a second click moves it. */
+  placeText(at: [number, number]) {
+    if (this.text) { this.text = { ...this.text, at }; this.showTextPreview(); return; }
+    this.tools?.clearSelection();
+    this.text = { at, value: '', size: this.textSize ?? defaultTextSize(this.box), busy: false, note: null, error: null, ready: false };
+  }
+  /** Typed characters (fetched from the server, a moment after the last key) or a new size (redrawn at once). */
+  updateText(patch: { value?: string; size?: number }) {
+    const t = this.text; if (!t) return;
+    const size = patch.size != null && patch.size > 0 ? patch.size : t.size;
+    if (patch.size != null && patch.size > 0) this.textSize = size;
+    this.text = { ...t, value: patch.value ?? t.value, size };
+    if (patch.value != null && patch.value !== t.value) this.fetchText();
+    else this.showTextPreview();
+  }
+  private fetchText() {
+    if (this.textTimer) clearTimeout(this.textTimer);
+    this.textTimer = setTimeout(async () => {
+      const t = this.text; if (!t) return;
+      const asked = ++this.textAsked;
+      if (!t.value.trim()) { this.textOutline = null; this.text = { ...t, busy: false, note: null, error: null, ready: false }; this.showTextPreview(); return; }
+      this.text = { ...t, busy: true };
+      let r: BaseOutline | null = null, error: string | null = null;
+      try { r = await api.baseOutline(t.value); if (!r.ok) { error = r.error ?? 'The base font could not be read.'; r = null; } }
+      catch (e) { error = `Could not reach the Builder: ${(e as Error).message}`; }
+      if (asked !== this.textAsked || !this.text) return;       // a newer request, or the text was closed
+      this.textOutline = r;
+      this.text = { ...this.text, busy: false, error, note: r ? missingNote(r.missing, r.font?.startsWith('TW-Kai') || !r.font ? 'TW-Kai' : r.font) : null, ready: !!r?.chars.length };
+      this.showTextPreview();
+    }, 150);
+  }
+  /** The typed characters, centred on the click (Paper's position is the middle of their bounds). */
+  private textItems(): paper.Item | null {
+    const t = this.text, o = this.textOutline;
+    if (!t || !o) return null;
+    const svg = textSvg(o, t.size);
+    if (!svg) return null;
+    const item = paper.project.importSVG(svg, { insert: false, expandShapes: true, applyMatrix: true });
+    item.position = new paper.Point(t.at[0], t.at[1]);
+    return item;
+  }
+  private showTextPreview() {
+    const s = this.scene; if (!s) return;
+    this.textPreview?.remove(); this.textPreview = null;
+    const item = this.textItems(); if (!item) return;
+    const g = new paper.Group({ parent: s.ui });
+    // in ink, faded as one (the Compare glyph is the blue one): what the shapes will be
+    for (const p of await_collect(item)) { p.fillColor = s.ink.clone(); p.strokeColor = null; g.addChild(p); }
+    item.remove();
+    g.opacity = 0.4;
+    g.locked = true;
+    this.textPreview = g;
+    s.glyph.activate();
+  }
+  /** Enter: the typed characters become shapes of the glyph, selected. One undo step. */
+  useText() {
+    const s = this.scene, t = this.text; if (!s || !t || !t.ready) return;
+    const item = this.textItems(); if (!item) return;
+    const paths = await_collect(item);
+    for (const p of paths) s.adopt(p);
+    item.remove();
+    const chars = (this.textOutline?.chars ?? []).map((c) => c.char).join('');
+    this.endText();
+    s.commit(`type ${chars}`);
+    this.tools?.setMode('select');
+    this.tools?.selectPaths(paths);
+  }
+  /** Close the text without making shapes (Esc, another tool). */
+  endText() {
+    if (this.textTimer) clearTimeout(this.textTimer);
+    this.textTimer = null; this.textAsked++;
+    this.textPreview?.remove(); this.textPreview = null;
+    this.textOutline = null;
+    if (this.text) { this.text = null; this.sync(); }
   }
 
   // ---- compare overlays

@@ -65,6 +65,7 @@ python3 -m jzpbuild.webserver --port 9000
 | `PUT /api/glyphs` | `{rows, base_hash, design}` → checks the spellings (400 with `errors` on a clash or invalid spelling), rewrites `components.csv` keeping its row order and dropping empty rows; 409 if the file changed since `base_hash` |
 | `POST /api/typing/preview` | `{design, rows, words, base_rows?, compare_words?, roundtrip?}` → GSUB from the *unsaved* spellings compiled into a copy of the last build (≈0.5 s, cached): each word's glyphs, `issues`, a round trip of every spelling, `changed` sample words vs `base_rows`, `not_built` glyphs and `missing_chars` |
 | `POST /api/svg/check` | what the build makes of an SVG text: flattened outline `d`, contour / point counts, bounds (`glyphs.flatten_svg_text`) |
+| `GET /api/base-font/outline?text=…` | the glyph editor's Text tool: each character's outline in the base font (TW-Kai), SVG path data in its units, y down, and the characters it lacks; 404 without the base font (`base_outline.py`) |
 | `PUT /api/svg/<name>` | write `inputs/svg/<name>.svg` (validated the same way); 409 when the file exists and no `base_hash` was sent, or when it changed on disk since it was loaded |
 | `DELETE /api/svg/<name>` | delete `inputs/svg/<name>.svg` (a merged draft that deletes a glyph; local mode only) |
 | `GET /api/svgs` | every `inputs/svg/*.svg` as `{glyph_name: svg_text}` |
@@ -88,7 +89,7 @@ with paste-a-range, CSV import/export, clash checks as you type, and an
 inspector with Try it, What changes and Issues; see `docs/KEY-ENTRY-UX.md`;
 the **glyph editor** at `/glyphs/<name>/edit` and `/glyphs/new`
 edits outlines on a Paper.js canvas, imports SVGs, traces images with
-potrace, and writes the file through `PUT /api/svg/<name>`; see
+potrace, types characters in the base font as shapes (the Text tool), and writes the file through `PUT /api/svg/<name>`; see
 `docs/GLYPH-EDITOR-UX.md`), **Layouts** (word types; eight dockable, foldable,
 resizable panels around the canvas, arrangement kept in the browser; canvas with draggable parts;
 Structure, Spacing as a rule builder (base chain, rule rows, glyph-grid

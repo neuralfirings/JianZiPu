@@ -114,6 +114,9 @@ export type ServerConfig = { mode: 'local' | 'hosted'; commit: string | null; su
 export type BaseInfo = { commit: string | null; version?: string | null; date: string | null; design_hash: string; csv_hash: string; svg_hashes: Record<string, string>;
   /** CHANGELOG.md's "## [Unreleased]" lines: what builds have that the released font doesn't */
   unreleased?: string };
+/** Characters in the base font (TW-Kai), for the glyph editor's Text tool: each one's outline as SVG
+ *  path data in the font's units (y down, baseline at 0), and the characters it hasn't got. */
+export type BaseOutline = { ok: boolean; error?: string; upm: number; font?: string; chars: { char: string; d: string; advance: number }[]; missing: string[] };
 /** A draft to build instead of the files on disk (hosted mode). */
 export type BuildInputs = { design?: Design; rows?: Record<string, string>[]; svgs?: Record<string, string>; deleted?: string[] };
 
@@ -164,6 +167,8 @@ export const api = {
   svgs: () => call<Record<string, string>>('GET', '/api/svgs'),
   /** What the font build makes of an SVG: the flattened outline (`d`, SVG coordinates), counts, bounds. */
   checkSvg: (svg: string) => call<SvgCheck>('POST', '/api/svg/check', { svg }),
+  /** The base font's outlines of these characters (the glyph editor's Text tool). */
+  baseOutline: (text: string) => call<BaseOutline>('GET', `/api/base-font/outline?text=${encodeURIComponent(text)}`),
   /** Write inputs/svg/<name>.svg. A new file must not exist; an existing one must still match `baseHash` (else 409 conflict) unless `overwrite`. */
   saveSvg: (name: string, svg: string, baseHash: string | null, overwrite = false) =>
     call<{ ok: boolean; error?: string; exists?: boolean; conflict?: boolean; disk?: string; file?: string; bytes?: number; existed?: boolean; hash?: string; contours?: number; points?: number }>(
