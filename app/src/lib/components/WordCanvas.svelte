@@ -47,8 +47,11 @@
     onselectarrow?: (id: string | null) => void;
   } = $props();
 
+  /** A glyph's drawing: the glyph editor's unsaved outline first (app.preview, while it's open), so the
+   *  editor's Tester shows the work in progress before Save, then the saved file. */
+  const svgOf = (g: string): string | undefined => app.preview[g] ?? app.svgs[g];
   // viewBox in canvas units (y flipped: sy = -y)
-  let box = $derived(canvasBox(elements, { page, pageHeight, showPage, fit }, (g) => !!app.svgs[g]));
+  let box = $derived(canvasBox(elements, { page, pageHeight, showPage, fit }, (g) => !!svgOf(g)));
   let w = $derived(maxHeight > 0 ? Math.min(width, Math.round((maxHeight * box.w) / box.h)) : width);
   let h = $derived(height ?? Math.round((w * box.h) / box.w));
   const fs = $derived(Math.max(14, box.w / 30));
@@ -228,7 +231,7 @@
   {/each}
   {#each elements as e (e.name)}
     {#if e.x != null && e.y != null}
-      {@const g = e.glyph ? parseSvg(app.svgs[e.glyph]) : null}
+      {@const g = e.glyph ? parseSvg(svgOf(e.glyph)) : null}
       {@const tgt = link?.target?.name === e.name ? link.target.edge : null}
       {@const ov = overlay[e.name]}
       <g class="el" class:selected={selected === e.name} class:lifted={liftedName === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
@@ -236,7 +239,7 @@
          onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1" aria-label={e.glyph ? `${e.name}: ${e.glyph}` : e.name}>
         {#if ov && ov.length}
           {#each ov as og, oi (og)}
-            {@const pg = parseSvg(app.svgs[og])}
+            {@const pg = parseSvg(svgOf(og))}
             {#if pg}<svg x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} viewBox={pg.viewBox} class="g ov ov{(oi % 4) + 1}">{@html pg.inner}</svg>{/if}
           {/each}
         {:else if showGlyphs && g}
