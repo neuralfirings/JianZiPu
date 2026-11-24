@@ -100,7 +100,7 @@
             <tr><td><code>fys9k5</code></td><td><code>fy</code> (or <code>fanyin</code>) adds 泛音.</td></tr>
             <tr><td><code>:fenkai</code> <code>:shang79</code></td><td>A colon starts a vertical word: one to four rows, each a character or a finger + hui. A glyph's vertical form is used after the colon. New in 3.300: a word with a part only a vertical word can hold (上, 下, 分开…) gets its colon without one: <code>shang79</code> is <code>:shang79</code>. Type the colon for a word that would otherwise be read as a standard note: <code>:lun3</code>, <code>:v8</code>.</td></tr>
             <tr><td><code>C03|s6,5</code></td><td>Chords: <code>C</code> 撮 (also <code>DC</code>, <code>FC</code>), the left note, <code>|</code>, the right note. <code>TT</code> 双弹 and <code>BL</code> 拨剌 work the same way.</td></tr>
-            <tr><td><code>#</code> <code>+</code></td><td><code>#</code> starts a new word without a space; <code>+</code> adds an advance between words.</td></tr>
+            <tr><td><code>#</code> <code>+</code></td><td>A word typed in ASCII takes its own width. A word typed in Chinese has none: it needs a space or <code>+</code> after it, or <code>#</code> before it. <code>+</code> is an advance that is not a space, for lyrics in a music program; <code>#</code> on its own is an empty cell.</td></tr>
           </tbody>
         </table>
         <p>The exact keys for each part are its spellings, listed and edited in <a href="/glyphs?view=typing">Glyphs → List view</a>. The <strong>Sample set…</strong> menus in Layouts and Build & test hold ready-made word lists (basic words, decimals, modifiers, chords, vertical words, Chinese input, edge cases).</p>

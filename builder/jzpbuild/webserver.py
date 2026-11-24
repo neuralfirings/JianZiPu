@@ -240,9 +240,12 @@ def words_payload(design: schema.Design, words: list[str], runs: list[list[str]]
         pen = 0
         i = 0                          # where the piece starts in the run
         # the pen moves as in the font: a vertical word's colon gives its width back to the space
-        # after the word, a # pulls what follows back (emit.run_spacing), so the gap between two
-        # words is the font's, not a colon's em more
+        # after the word, a word typed in Latin takes its own (emit.run_spacing), so the gap between
+        # two words is the font's, not a colon's em more
         advs, dxs = emit.run_spacing(design, glyphs)
+        # the mark in front of a word typed in Latin counts for the spacing and is no part of the word
+        keep = [k for k, g in enumerate(glyphs) if g != emit.MARK]
+        glyphs, advs, dxs = [glyphs[k] for k in keep], [advs[k] for k in keep], [dxs[k] for k in keep]
         for piece in WordShaper.match(design, rules, glyphs, reg.other):
             if piece["layout"] is None:
                 pieces.append({"glyphs": piece["glyphs"], "layout": None, "elements": [], "pen": pen})

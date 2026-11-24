@@ -134,6 +134,7 @@ CONTROL_GLYPHS = {                                            # base.py
     "blank_colon": (0x58003, 1000),
     "advance": (0x58004, 1000),
     "half_advance": (0x58005, 500),
+    "word_mark": (0x58006, 0),         # in front of a word typed in Latin letters (features.gen_word_mark)
 }
 # First codepoint for the imported component glyphs; glyphs.py assigns them
 # in sorted-filename order from here.
