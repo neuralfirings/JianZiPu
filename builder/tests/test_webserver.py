@@ -449,8 +449,9 @@ def test_the_glossary_titles_and_descriptions_are_saved_with_the_rows(tmp_path, 
 def test_words_space_vertical_words_as_the_font_does():
     """/api/words moves the pen as the font does: a vertical word's colon gives its em back to the
     space after the word, so two words typed with a space are one em apart, not two (the Glossary's
-    Output showed a gap between them); a colon straight after a word keeps it, a # after a vertical
-    word makes room for it and pulls what follows back. Figures checked against the released font."""
+    Output showed a gap between them); a colon straight after a word keeps it. A word takes its own
+    em when a # or the mark of a word typed in Latin leads it and no space follows; a # before a
+    word takes no room and moves nothing (emit.run_spacing follows the font's rules)."""
     from jzpbuild.positioning import schema
     design = schema.load_design()
     runs = {
@@ -470,7 +471,11 @@ def test_words_space_vertical_words_as_the_font_does():
     xs, adv = laid("s9k6", "daiqi")                        # s9k6:daiqi: the colon keeps its em
     assert xs["md_dai"] - alone["md_dai"] == 1000 and adv == 1000
     assert laid("yin")[1] == 0
-    xs, adv = laid("yin", "numbersign", "s9k6")
+    xs, adv = laid("word_mark", "yin", "numbersign", "s9k6")     # yin#s9k6 typed in Latin
     assert xs["md_ming"] - alone["md_ming"] == 1000 and adv == 2000
+    xs, adv = laid("numbersign", "yin", "numbersign", "s9k6")    # #吟#名九勾六 typed in Chinese
+    assert xs["md_ming"] - alone["md_ming"] == 1000 and adv == 2000
+    xs, adv = laid("word_mark", "s9k6")                          # a word typed in Latin, alone
+    assert xs["md_ming"] == alone["md_ming"] and adv == 1000
     xs, adv = laid("s9k6", "numbersign", "yin")
     assert xs["md_yin"] == alone["md_yin"] and adv == 1000

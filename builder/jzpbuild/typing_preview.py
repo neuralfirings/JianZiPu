@@ -344,6 +344,7 @@ class PreviewFonts:
         drawn = _draw_in(font, sorted(drawings), drawings.get)
         copied = _copy_chars(font, rows)
         _name_chars(font)                 # a font from before a character was named (分 as ch_fen)
+        _add_word_mark(font)
         font_glyphs = set(font.getGlyphOrder())
         srows, sdesign, not_built, missing_chars, lacking = _shapeable(rows, design, font_glyphs)
         parsed = schema.parse_design(sdesign)
@@ -377,6 +378,17 @@ class PreviewFonts:
 FONTS = PreviewFonts()
 
 
+def _add_word_mark(font: TTFont) -> None:
+    """The rules put a zero-width mark in front of a word typed in Latin letters
+    (features.gen_word_mark); a font built before that has no such glyph."""
+    from fontTools.ttLib.tables._g_l_y_f import Glyph
+
+    from . import glyphs
+    if features.WORD_MARK not in font.getGlyphOrder():
+        code, width = config.CONTROL_GLYPHS[features.WORD_MARK]
+        glyphs.add_glyph(font, features.WORD_MARK, Glyph(), advance=width, lsb=0, codepoint=code)
+
+
 # ---------------------------------------------------------------- shaping
 
 def shape(p: Preview, words: list[str]) -> list[dict]:
@@ -388,7 +400,8 @@ def shape(p: Preview, words: list[str]) -> list[dict]:
         buf.add_str(w)
         buf.guess_segment_properties()
         hb.shape(p.hb_font, buf, {"liga": True, "kern": False})
-        infos = buf.glyph_infos
+        # the mark in front of a word typed in Latin letters is no part of what was typed
+        infos = [i for i in buf.glyph_infos if p.hb_font.glyph_to_string(i.codepoint) != features.WORD_MARK]
         # uharfbuzz's add_str fills the buffer with code points, so clusters are
         # character indexes into `w`
         starts = sorted({i.cluster for i in infos})

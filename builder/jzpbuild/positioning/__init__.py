@@ -24,6 +24,7 @@ Glyphs whose area carries an `advance` (the vertical-mode colon, the chord
 bar) are chain breakers: they are matched and consumed by the rule but never
 attached to, and the element after them starts a fresh chain. The colon's
 advance is the width of a vertical word, but the space after the word pays
-it, as for any word (`emit.COLON_WIDTH`): Safari shapes a word and its space
-apart, so no rule may reach over a word to its space.
+it, as for any word (`emit.COLON_WIDTH`). A word with no space after it takes
+its width itself (`emit.word_advance`). No rule changes a space's width:
+Safari draws a space as wide as the font file says, whatever a rule says.
 """
