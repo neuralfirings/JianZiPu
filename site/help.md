@@ -157,7 +157,7 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 
 ### The panels
 
-Panels can be docked left, right or below, folded and resized; **More** → **Reset panel layouts** puts them back. Each panel's **?** shows the same text as below.
+Panels can be docked left, right or below, folded and resized. A panel folded below becomes a tab at the foot of that strip (click it to open the panel again), and when every panel there is folded, the strip is just its tabs, right under the canvas. **More** → **Reset panel layouts** puts them back. Each panel's **?** shows the same text as below.
 
 - **Word types**: Pick the word type to edit: a standard note, a vertical word, the two halves of a chord. Each shows how many positioning rules it makes; **skipped** lists shapes that get no rule. With **Advanced** on you can add, duplicate or delete word types.
 - **Structure**: The parts of the word type, in order. Tick a part to include it in the example word and pick which glyph it shows. **anchor** marks the first part of the chain, which carries the word's position. With **Advanced** on you can add, remove, reorder and make parts optional or repeating.
