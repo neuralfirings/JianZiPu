@@ -2994,14 +2994,24 @@
         t.appendChild(el('b', '', 'Coming next: ')); t.appendChild(document.createTextNode(parts.join(', ') + '.'));
         var only = box.appendChild(el('button', 'chip', 'Show only these'));
         only.type = 'button'; only.setAttribute('aria-pressed', 'false');
-        only.addEventListener('click', function () {
-          var on = document.documentElement.classList.toggle('only-coming');
+        // #coming in the address is the same as pressing it: the button writes it there (to copy and share)
+        // and a link with it opens the page showing only these
+        var showOnly = function (on) {
+          document.documentElement.classList.toggle('only-coming', on);
           only.setAttribute('aria-pressed', String(on));
+        };
+        only.addEventListener('click', function () {
+          var on = !document.documentElement.classList.contains('only-coming');
+          showOnly(on);
+          if (on) history.replaceState(null, '', '#coming');
+          else if (location.hash === '#coming') history.replaceState(null, '', location.pathname + location.search);
         });
+        window.addEventListener('hashchange', function () { if (location.hash === '#coming') { showOnly(true); box.scrollIntoView(); } });
         box.appendChild(el('span', 'sp'));
         var req = box.appendChild(el('button', 'fb-link', 'Request a character'));
         req.type = 'button'; req.setAttribute('data-fb-request', '');
         box.hidden = false;
+        if (location.hash === '#coming') { showOnly(true); box.scrollIntoView(); }
         // a link to a coming character (#coming-u12, from an email or a comment) lands on it
         var target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
         if (target && target.classList.contains('ghost')) target.scrollIntoView({ block: 'center' });

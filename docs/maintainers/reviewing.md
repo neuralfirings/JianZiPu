@@ -119,6 +119,10 @@ the tester's guide. In short:
      people download until the release. Publishing again (**Update
      the draft on the glossary**, or the same glyph in a later request) updates
      the same row; it never adds a second one.
+   - To ask people for comments, send them
+     `https://jianzipufont.com/#coming`: the page opens with **Show only these**
+     on, so it lists just the coming characters (pressing the button puts
+     `#coming` in the address bar too). `#coming-u14` lands on one of them.
    - It doesn't depend on your decisions, and declining the request doesn't take
      a draft down. To take one down, **Delete…** it in Review › Glossary drafts (below).
    - If the After drawing shows the word in pieces, the new glyph fits no word
