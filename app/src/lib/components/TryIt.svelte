@@ -12,7 +12,8 @@
   import * as T from '$lib/typing';
   import Glyph from './Glyph.svelte';
   import WordCanvas from './WordCanvas.svelte';
-  let { glyph, full = false }: { glyph: string; full?: boolean } = $props();
+  /** `word`: the free-word box under the tiles (the glyph editor leaves it out: its Tester draws words). */
+  let { glyph, full = false, word = true }: { glyph: string; full?: boolean; word?: boolean } = $props();
 
   let free = $state(localStorage.getItem('jzp-tryit-word') ?? '');
   $effect(() => { try { localStorage.setItem('jzp-tryit-word', free); } catch {} });
@@ -38,7 +39,7 @@
     // one check per word: 简体 and 繁體 can be the same (推出 / 推出), and the list is keyed by word
     return out.filter((c, i) => out.findIndex((o) => o.word === c.word) === i);
   });
-  let words = $derived([...checks.map((c) => c.word), ...free.split(/\s+/).filter(Boolean)]);
+  let words = $derived([...checks.map((c) => c.word), ...(word ? free.split(/\s+/).filter(Boolean) : [])]);
 
   $effect(() => {
     const d = app.design, rows = T.toRecords(app.typing), ws = words;
@@ -94,6 +95,7 @@
       <span class="muted small">No spellings yet: type one and it previews here at once.</span>
     {/each}
   </div>
+  {#if word}
   <input type="text" bind:value={free} placeholder="Try a word: s7lun5" class="free" spellcheck="false" />
   {#each freeWords as w (w!.word)}
     <div class="word">
@@ -104,6 +106,7 @@
       </span>
     </div>
   {/each}
+  {/if}
 
   {#if full}
     <div class="sub">

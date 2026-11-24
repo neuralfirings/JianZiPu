@@ -80,7 +80,6 @@
       case 'compare': return { title: 'Compare', summary: [ed.dot && 'dot', ed.ghostName, ed.ghostSaved && 'last saved'].filter(Boolean).join(' · ') || 'off' };
       case 'glyph': return { title: 'Glyph', summary: `${areaName ? app.areaLabel(areaName) : 'no area'} · ${ed.box[0]} × ${ed.box[1]}` };
       case 'typing': return { title: 'Typing', badge: glyphErrors || null, warn: !!glyphErrors, summary: typedAs || 'no spelling yet' };
-      case 'tryit': return { title: 'Try it', summary: 'live, saved or not' };
       case 'checks': return { title: 'Checks', badge: checkWarnings || null, warn: !!checkWarnings, summary: checkWarnings ? `${checkWarnings} to look at` : 'all fine' };
       case 'tester': return { title: 'Tester', summary: 'words with this glyph' };
     }
@@ -329,8 +328,8 @@
     <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area Properties on the Layouts screen (box size)">{app.areaLabel(areaName)}</a>{/if}</span></div>
   {:else if id === 'typing'}
     <TypingFields glyph={name} />
-  {:else if id === 'tryit'}
-    <TryIt glyph={name} />
+    <!-- each spelling typed on its own: does it give this glyph (the words themselves are the Tester's) -->
+    <TryIt glyph={name} word={false} />
   {:else if id === 'checks'}
     <ul class="checks">
       <li class:bad={ed.stats.paths === 0}>{ed.stats.paths === 0 ? 'Empty: nothing to save yet' : 'Has an outline'}</li>

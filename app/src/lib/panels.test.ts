@@ -91,7 +91,7 @@ describe('glyph editor panels', () => {
     expect(editorPanels.a.docks.left).toEqual(['checks']);
     expect(editorPanels.a.docks.right[0]).toBe('selection');
     const all = [...editorPanels.a.docks.left, ...editorPanels.a.docks.right, ...editorPanels.a.docks.bottom].sort();
-    expect(all).toEqual(['checks', 'compare', 'glyph', 'selection', 'tester', 'trace', 'tryit', 'typing']);
+    expect(all).toEqual(['checks', 'compare', 'glyph', 'selection', 'tester', 'trace', 'typing']);
   });
   it('a phone has its own arrangement: one column, Spacing first and open; open() unfolds and asks to reveal', () => {
     panels.mode = 'phone';

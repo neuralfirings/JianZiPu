@@ -5,10 +5,10 @@
 // Layouts, `editorPanels` for the glyph editor.
 
 export type PanelId = 'types' | 'structure' | 'pagecenter' | 'budget' | 'spacing' | 'centering' | 'glyphs' | 'tester';
-export type EditorPanelId = 'trace' | 'selection' | 'compare' | 'glyph' | 'typing' | 'tryit' | 'checks' | 'tester';
+export type EditorPanelId = 'trace' | 'selection' | 'compare' | 'glyph' | 'typing' | 'checks' | 'tester';
 export type Dock = 'left' | 'right' | 'bottom';
 export const PANEL_IDS: PanelId[] = ['types', 'structure', 'pagecenter', 'budget', 'spacing', 'centering', 'glyphs', 'tester'];
-export const EDITOR_PANEL_IDS: EditorPanelId[] = ['trace', 'selection', 'compare', 'glyph', 'typing', 'tryit', 'checks', 'tester'];
+export const EDITOR_PANEL_IDS: EditorPanelId[] = ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks', 'tester'];
 export const DOCKS: Dock[] = ['left', 'right', 'bottom'];
 /** What a screen tells the panel frame about one panel. `hidden`: nothing to show right now, takes no room. */
 export type Meta = { title: string; badge?: string | number | null; warn?: boolean; summary?: string; tag?: string; hidden?: boolean };
@@ -136,20 +136,20 @@ export const panels = new PanelStore<PanelId>('jzp-panels-v1', PANEL_IDS, LAYOUT
 
 const EDITOR_DEFAULTS: Defaults<EditorPanelId> = {
   wide: {
-    docks: { left: [], right: ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks'], bottom: ['tester', 'tryit'] },
+    docks: { left: [], right: ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks'], bottom: ['tester'] },
     folded: { checks: true },
     size: { left: 300, right: 320, bottom: 210 },
     hidden: {}
   },
   narrow: {
-    docks: { left: [], right: ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks'], bottom: ['tester', 'tryit'] },
-    folded: { compare: true, glyph: true, typing: true, checks: true, tryit: true },
+    docks: { left: [], right: ['trace', 'selection', 'compare', 'glyph', 'typing', 'checks'], bottom: ['tester'] },
+    folded: { compare: true, glyph: true, typing: true, checks: true },
     size: { left: 260, right: 300, bottom: 180 },
     hidden: {}
   },
   phone: {
-    docks: { left: [], right: ['selection', 'glyph', 'typing', 'tryit', 'checks', 'compare', 'trace', 'tester'], bottom: [] },
-    folded: { glyph: true, typing: true, tryit: true, checks: true, compare: true, trace: true, tester: true },
+    docks: { left: [], right: ['selection', 'glyph', 'typing', 'checks', 'compare', 'trace', 'tester'], bottom: [] },
+    folded: { glyph: true, typing: true, checks: true, compare: true, trace: true, tester: true },
     size: { left: 0, right: 0, bottom: 0 },
     hidden: {}
   }
