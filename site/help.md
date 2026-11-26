@@ -118,6 +118,7 @@ Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), 
 - To edit points, double-click a shape: its points show (`Esc`, or a click off it, closes them). Click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
 - Combine two selected shapes with Union, Subtract, Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
 - Lines drawn with the Pen or Pencil are strokes until **Outline line(s)** turns them into filled shapes. Save does this for you.
+- Copy (`⌘C`) or cut (`⌘X`) the selected shapes and paste them (`⌘V`), into the same glyph or another one. In the same glyph a pasted copy lands a little down and to the right, so you can see it, and a cut one goes back where it was; in another glyph they land where they were. Each paste is one Undo step and leaves the pasted shapes selected. The copy is SVG on your clipboard too, so it pastes into a drawing program, or into the editor in another tab.
 - Text (`T`) starts a glyph from a Chinese character in TW-Kai, the font the Chinese characters come from. Click on the canvas where it goes and type, one character or a few: it shows faded, centred on your click (click again to move it). **Size** is how many units the character's em takes, at first the box's height. `Enter` (or **Make shapes**) turns it into shapes you edit like any other, as one Undo step; `Esc` leaves it. Take away what you don't need with Select and `⌫`, or double-click a shape for its points; the strokes of a character overlap, which **Clean up** (or the build) merges.
 - **SVG file…** imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.
 - **Image to trace…** turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then **Use this outline**. The image itself stays in your browser.
@@ -281,7 +282,8 @@ The full process, with testing a candidate and what to do when a step fails, is 
 **Glyph editor**
 
 - `⌘S`, `⌘Z`: Save the glyph, undo in the glyph
-- `V` `P` `⇧P` `R` `O` `H` `Z`: Select, Pen, Pencil, Rectangle, Ellipse, Hand, Zoom
+- `⌘C` `⌘X` `⌘V`: Copy, cut and paste the selected shapes
+- `V` `P` `⇧P` `R` `O` `T` `H` `Z`: Select, Pen, Pencil, Rectangle, Ellipse, Text, Hand, Zoom
 - `D` `G` `L`: Reference dot, compare glyph, last saved
 - `⇧1` / `⇧0` / `⇧2`: Fit / 100% / fit the selection
 - `⇧G`: Grid

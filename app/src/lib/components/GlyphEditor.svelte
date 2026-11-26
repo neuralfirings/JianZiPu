@@ -112,8 +112,14 @@
     const onKey = (e: KeyboardEvent) => key(e);
     const onKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') ed.holdHand(false); };
     const onUnload = (e: BeforeUnloadEvent) => { if (ed.dirty) { e.preventDefault(); e.returnValue = ''; } };
+    const onCut = (e: ClipboardEvent) => onCopy(e, true);
     window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKeyUp); window.addEventListener('beforeunload', onUnload);
-    return () => { ro.disconnect(); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); window.removeEventListener('beforeunload', onUnload); ed.unmount(); };
+    window.addEventListener('copy', onCopy); window.addEventListener('cut', onCut); window.addEventListener('paste', onPaste);
+    return () => {
+      ro.disconnect(); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('copy', onCopy); window.removeEventListener('cut', onCut); window.removeEventListener('paste', onPaste);
+      ed.unmount();
+    };
   });
   // the SVG texts load after the design: pick ours up when it arrives
   $effect(() => {
@@ -222,9 +228,24 @@
     const f = e.dataTransfer?.files?.[0]; if (!f) return;
     if (f.type === 'image/svg+xml' || f.name.endsWith('.svg')) askImport(await f.text()); else if (f.type.startsWith('image/')) void trace(f);
   }
+  // ---- the clipboard, listened for on the window: the canvas can't hold focus, so ⌘C ⌘X ⌘V arrive with the
+  // page focused. In a text field, or with text picked on the page, they're the browser's own.
+  function fieldFocused() {
+    const a = document.activeElement as HTMLElement | null;
+    return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable);
+  }
+  const busy = () => !!(leave || importAsk || ed.conflictDisk != null || ed.trace || ed.text || ed.preview);
+  function onCopy(e: ClipboardEvent, cut = false) {
+    if (fieldFocused() || busy() || (window.getSelection()?.toString().trim() ?? '')) return;
+    const r = ed.copySelection(cut); if (!r) return;
+    e.clipboardData?.setData('text/plain', r.svg);
+    e.preventDefault();
+    say(`${cut ? 'Cut' : 'Copied'} ${r.n === 1 ? '1 shape' : `${r.n} shapes`}: ⌘V pastes ${r.n === 1 ? 'it' : 'them'} here or into another glyph.`);
+  }
   async function onPaste(e: ClipboardEvent) {
-    if (typing(e as unknown as KeyboardEvent)) return;
+    if (fieldFocused() || busy()) return;
     const t = e.clipboardData?.getData('text') ?? '';
+    if (ed.pasteShapes(t)) { e.preventDefault(); return; }
     if (/<svg[\s>]/.test(t)) { e.preventDefault(); askImport(t); }
   }
 
@@ -346,7 +367,7 @@
   </div>
 {/snippet}
 
-<div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()} onpaste={onPaste}>
+<div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()}>
   <!-- glyph bar -->
   <div class="gbar">
     <a href={backHref} class="back"><I.Back />{backLabel}</a>
@@ -539,6 +560,7 @@
         <tr><td><kbd>⇧H</kbd> / <kbd>⇧V</kbd></td><td>Flip</td><td><kbd>⌥⇧U S I E</kbd></td><td>Union · Subtract · Intersect · Exclude</td></tr>
         <tr><td><kbd>⌥⌘O</kbd></td><td>Outline lines</td><td><kbd>D</kbd> / <kbd>G</kbd> / <kbd>L</kbd></td><td>Dot · compare glyph · last saved</td></tr>
         <tr><td><kbd>⌘Z</kbd> / <kbd>⇧⌘Z</kbd></td><td>Undo / redo (the glyph)</td><td><kbd>⌘S</kbd></td><td>Save glyph</td></tr>
+        <tr><td><kbd>⌘C</kbd> / <kbd>⌘X</kbd></td><td>Copy / cut the selected shapes</td><td><kbd>⌘V</kbd></td><td>Paste them (here, or in another glyph)</td></tr>
         <tr><td>double-click a point</td><td>Corner ↔ smooth</td><td><kbd>⌥</kbd>-drag a handle</td><td>Move one handle alone</td></tr>
       </tbody></table>
       <div class="row"><span class="spacer"></span><button onclick={() => (shortcuts = false)}>Close</button></div>

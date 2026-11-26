@@ -156,12 +156,13 @@ export class Scene {
   }
 
   /** The SVG file text, in the style of the existing files: one filled path per shape, viewBox = box,
-   *  coordinates to 0.1 unit. Open paths are written as their outlines. */
-  exportSvg(): string {
+   *  coordinates to 0.1 unit. Open paths are written as their outlines. `items`: only these shapes (a
+   *  copy), `attrs`: more attributes for the <svg> element. */
+  exportSvg(items: PathLike[] = this.paths, attrs = ''): string {
     const [w, h] = this.box;
     const pathData = (p: paper.Item) => (p as unknown as { getPathData(m: null, precision: number): string }).getPathData(null, 1); // to 0.1 unit
     const lines: string[] = [];
-    for (const p of this.paths) {
+    for (const p of items) {
       if (p.isEmpty()) continue;
       let item: PathLike = p;
       let temp: PathLike | null = null;
@@ -174,7 +175,7 @@ export class Scene {
       lines.push(`<path${rule} d="${pathData(item)}" fill="black"/>`);
       temp?.remove();
     }
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">\n${lines.join('\n')}\n</svg>\n`;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg"${attrs}>\n${lines.join('\n')}\n</svg>\n`;
   }
 
   // ---- history (one snapshot per committed edit)
