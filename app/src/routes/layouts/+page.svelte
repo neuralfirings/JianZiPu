@@ -2,7 +2,7 @@
   import * as I from '$lib/icons';
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
-  import { replaceState } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { api, type Design, type Layout, type Relationship } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { editor, attachGap, bumpGap, gapValue, gapEntryIndex } from '$lib/editor.svelte';
@@ -146,6 +146,12 @@
     else timer = setTimeout(() => run(job), 50);
   });
 
+  /** Double-clicking a part opens its glyph's outline editor; Back returns to Layouts (the word stays loaded). */
+  function openGlyph(name: string) {
+    if (editing) return;
+    const g = elements.find((e) => e.name === name)?.glyph;
+    if (g) goto(`/glyphs/${encodeURIComponent(g)}/edit?back=${encodeURIComponent(page.url.pathname + page.url.search)}`);
+  }
   let elements = $derived.by(() => {
     const res = editor.resolved;
     const anchors = anchorNames(editor.elements, d.areas);
@@ -501,7 +507,8 @@
         dimmed={editing ? elements.map((e) => e.name).filter((n) => n !== editor.selected && n !== editBase) : []}
         dragOnly={editing ? editor.selected : null} lockAxis={editing ? editing.axis : null} {overlay} baseMark={editing ? editBase : null}
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
-        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on} />
+        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on}
+        onopen={(n) => openGlyph(n)} />
     </div>
     {#if status && !phone.on}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">

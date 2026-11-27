@@ -23,7 +23,7 @@
     storageKey?: string | null;
     showBoxes?: boolean;
     size?: number;
-    /** Clicking a word: its first matched piece (Layouts opens that word type). */
+    /** Layouts: the info box's Edit in Layouts loads the picked word's piece into the canvas (no page load). */
     onpick?: (piece: WordPiece) => void;
   } = $props();
 
@@ -94,19 +94,23 @@
     {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
       {@const piece = w.pieces.find((p) => p.layout)}
       {@const pg = wordPage(w)}
-      <svelte:element this={onpick ? 'button' : 'div'} role={onpick ? undefined : 'figure'} class="word" class:on={pick?.wi === i}
-        title={onpick ? (piece ? `Open ${piece.layout} with this word` : 'No word type matched') : glyph && !w.glyphs.includes(glyph) ? `${w.glyphs.join(' ')} (doesn't use ${glyph})` : w.glyphs.join(' ')}
-        onclick={() => piece && onpick?.(piece)}>
+      <div role="figure" class="word" class:on={pick?.wi === i}
+        title={!piece ? 'No word type matched' : glyph && !w.glyphs.includes(glyph) ? `${w.glyphs.join(' ')} (doesn't use ${glyph})` : w.glyphs.join(' ')}>
         <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })}
           width={Math.round((size * pg[1]) / 1600)} height={size} {showBoxes} showGlyphs={true} showPage={true} page={pg} fit={false} {cells}
           picked={pick?.wi === i ? pick.name : null}
-          onselect={onpick ? undefined : (n) => { if (n) pick = { wi: i, name: n }; else if (pick?.wi === i) pick = null; }}
-          onopen={onpick ? undefined : (n) => open(i, n)} />
+          onselect={(n) => { if (n) pick = { wi: i, name: n }; else if (pick?.wi === i) pick = null; }}
+          onopen={(n) => open(i, n)} />
         <span class="id">{w.word}</span>
-      </svelte:element>
+      </div>
     {/each}
   </div>
-  {#if pick && result?.words[pick.wi]}<WordInfo word={result.words[pick.wi]} name={pick.name} back={here()} onclose={() => (pick = null)} />{/if}
+  {#if pick && result?.words[pick.wi]}
+    {@const pw = result.words[pick.wi]}
+    {@const pp = pw.pieces[+pick.name.slice(0, pick.name.indexOf(':'))]}
+    <!-- in Layouts (onpick), Edit in Layouts loads the word into the canvas there and then -->
+    <WordInfo word={pw} name={pick.name} back={here()} onclose={() => (pick = null)} onedit={onpick && pp?.layout ? () => onpick!(pp) : undefined} />
+  {/if}
   </div>
 </div>
 
@@ -120,7 +124,6 @@
   a { font-size: var(--t-small); white-space: nowrap; }
   .words { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: 4px; align-items: flex-end; }
   .word { height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: var(--bg-field); border: 1px solid transparent; border-radius: var(--radius-md); }
-  button.word { border-color: var(--border); }
   .word.on { border-color: var(--sel-border); }
   .body { display: flex; gap: var(--space-4); align-items: flex-start; min-width: 0; }
   .body .words { flex: 1; min-width: 0; }

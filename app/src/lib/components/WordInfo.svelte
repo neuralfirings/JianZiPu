@@ -8,13 +8,15 @@
   import Glyph from './Glyph.svelte';
 
   type Word = WordPayload['words'][number];
-  let { word, name, back, onclose }: {
+  let { word, name, back, onclose, onedit }: {
     word: Word;
     /** The picked element: `<piece index>:<slot>`, as the word strips name them. */
     name: string;
     /** Where the glyph editor's back link returns to (this screen). */
     back: string;
     onclose: () => void;
+    /** On the Layouts screen: load the word into its canvas rather than open /layouts again. */
+    onedit?: () => void;
   } = $props();
 
   let at = $derived(name.indexOf(':'));
@@ -40,7 +42,7 @@
     <span class="k">Word type</span>
     {#if layout}
       <span>{layout.label}</span>
-      <a href="/layouts?word={encodeURIComponent(word.word)}">Edit in Layouts</a>
+      {#if onedit}<button class="link" onclick={onedit}>Edit in Layouts</button>{:else}<a href="/layouts?word={encodeURIComponent(word.word)}">Edit in Layouts</a>{/if}
     {:else}
       <span class="muted">None: this part of the word matched no word type, so the font doesn't place it.</span>
     {/if}
@@ -59,4 +61,5 @@
   .cjk { font-family: var(--font-cjk); }
   .small { font-size: var(--t-caption); }
   p { margin: 0; }
+  button.link { align-self: flex-start; height: auto; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
 </style>

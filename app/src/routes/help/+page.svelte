@@ -199,7 +199,7 @@
         <figure><a href="/help/layouts.jpg" target="_blank"><img src="/help/layouts.jpg" alt="The Layouts screen: word types and structure on the left, the standard word on the canvas with part boxes, area properties and tester below" width="1280" height="800" loading="lazy" /></a><figcaption>The standard word type: its parts on the left, an example word with its part boxes in the middle.</figcaption></figure>
         <h3>The canvas</h3>
         <ul>
-          <li>Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.</li>
+          <li>Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap. Double-click a part to edit its glyph's outline; <strong>Back</strong> in the editor returns here, the word still on the canvas.</li>
           <li>Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.</li>
           <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
           <li>On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.</li>
