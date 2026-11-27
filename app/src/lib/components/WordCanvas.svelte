@@ -23,7 +23,7 @@
     page = [0, 1000], pageHeight = [-500, 1100], center = null, emBox = null, selected = null, hoverable = false,
     arrows = [], hotBar = null, labels = false, fit = true, maxHeight = 0, handles = false, selectedArrow = null,
     dimmed = [], dragOnly = null, lockAxis = null, overlay = {}, baseMark = null, marked = [], ghosts = [],
-    holdToDrag = false, cells = false, picked = null,
+    holdToDrag = false, cells = false, picked = null, bare = false,
     onselect, ondrag, onlink, onselectarrow, onopen
   }: {
     elements: El[]; width?: number; height?: number; showBoxes?: boolean; showGlyphs?: boolean; showPage?: boolean;
@@ -43,6 +43,8 @@
     holdToDrag?: boolean;
     /** The page ruled into cells of 1000 units (one character's room), in place of its dashed outline. */
     cells?: boolean;
+    /** Without cells, no page outline or baseline either: the word alone, as in running text (word strips). */
+    bare?: boolean;
     /** The part picked in a word strip, outlined clearly. */
     picked?: string | null;
     /** A part double-clicked (word strips: open its glyph's editor). */
@@ -218,10 +220,10 @@
   {#if showPage}
     {#if cells}
       {#each cellXs as cx (cx)}<rect x={cx} y={-pageHeight[1]} width={Math.min(1000, page[1] - cx)} height={pageHeight[1] - pageHeight[0]} class="cell" />{/each}
-    {:else}
+    {:else if !bare}
       <rect x={page[0]} y={-pageHeight[1]} width={page[1] - page[0]} height={pageHeight[1] - pageHeight[0]} class="page" />
     {/if}
-    <line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />
+    {#if !bare || cells}<line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />{/if}
     {#if emBox}
       <rect x={emBox.x - 500} y={-(emBox.y + 500)} width="1000" height="1000" class="embox"><title>1000 × 1000: a typical character</title></rect>
       <text x={emBox.x - 500 + 8} y={-(emBox.y - 500) + fs * 0.6 + 4} font-size={fs * 0.6} class="emlbl">1000 × 1000 character</text>

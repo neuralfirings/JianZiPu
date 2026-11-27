@@ -100,7 +100,13 @@
     if (word) {
       const r = await api.words(app.design!, [word]);
       const piece = r.ok ? r.words[0]?.pieces.find((p) => p.layout) : null;
-      if (piece) { editor.loadWord(piece); return; }
+      if (piece) {
+        editor.loadWord(piece);
+        // ?word=…&area=…&g=… (a word strip's Edit): that area's properties too, the glyph picked in them
+        const area = page.url.searchParams.get('area');
+        if (area && d.areas[area]) { editor.showArea(area, page.url.searchParams.get('g')); panels.setFolded('glyphs', false); }
+        return;
+      }
     }
     if (want && d.layouts.some((l) => l.name === want)) editor.setLayout(want);
     else if (!editor.layout) editor.setLayout(d.layouts[0]?.name ?? '');
@@ -478,7 +484,7 @@
     {:else}<div class="muted small">Click a part on the canvas to see and edit its spacing rules.</div>{/if}
   {:else if id === 'centering'}{#if editor.layout}<CenterPanel />{/if}
   {:else if id === 'glyphs'}<div class:greyed={editing}><AreaPanel /></div>
-  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p) => editor.loadWord(p)} /></div>
+  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p, at) => { editor.loadWord(p); editor.showArea(at.area, at.glyph); panels.setFolded('glyphs', false); }} /></div>
   {/if}
 {/snippet}
 <PanelWorkspace store={panels} {meta} {body} help={LAYOUTS_HELP}>

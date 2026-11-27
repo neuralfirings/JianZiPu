@@ -24,7 +24,7 @@
     showBoxes?: boolean;
     size?: number;
     /** Layouts: the info box's Edit in Layouts loads the picked word's piece into the canvas (no page load). */
-    onpick?: (piece: WordPiece) => void;
+    onpick?: (piece: WordPiece, at: { area: string; glyph: string | null }) => void;
   } = $props();
 
   const SIZES = [40, 72, 116];
@@ -95,21 +95,21 @@
       {@const piece = w.pieces.find((p) => p.layout)}
       {@const pg = wordPage(w)}
       <div role="figure" class="word" class:on={pick?.wi === i}
-        title={!piece ? 'No word type matched' : glyph && !w.glyphs.includes(glyph) ? `${w.glyphs.join(' ')} (doesn't use ${glyph})` : w.glyphs.join(' ')}>
+        title={`${w.word}: ${!piece ? 'no word type matched' : glyph && !w.glyphs.includes(glyph) ? `${w.glyphs.join(' ')} (doesn't use ${glyph})` : w.glyphs.join(' ')}`}>
         <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })}
-          width={Math.round((size * pg[1]) / 1600)} height={size} {showBoxes} showGlyphs={true} showPage={true} page={pg} fit={false} {cells}
+          width={Math.round((size * pg[1]) / 1600)} height={size} {showBoxes} showGlyphs={true} showPage={true} page={pg} fit={false} {cells} bare
           picked={pick?.wi === i ? pick.name : null}
           onselect={(n) => { if (n) pick = { wi: i, name: n }; else if (pick?.wi === i) pick = null; }}
           onopen={(n) => open(i, n)} />
-        <span class="id">{w.word}</span>
       </div>
     {/each}
   </div>
   {#if pick && result?.words[pick.wi]}
     {@const pw = result.words[pick.wi]}
     {@const pp = pw.pieces[+pick.name.slice(0, pick.name.indexOf(':'))]}
-    <!-- in Layouts (onpick), Edit in Layouts loads the word into the canvas there and then -->
-    <WordInfo word={pw} name={pick.name} back={here()} onclose={() => (pick = null)} onedit={onpick && pp?.layout ? () => onpick!(pp) : undefined} />
+    {@const pe = pp?.elements.find((e) => e.name === pick!.name.slice(pick!.name.indexOf(':') + 1))}
+    <!-- in Layouts (onpick), Edit loads the word into the canvas there and then, with the area's properties -->
+    <WordInfo word={pw} name={pick.name} back={here()} onclose={() => (pick = null)} onedit={onpick && pp?.layout && pe ? () => onpick!(pp, { area: pe.area, glyph: pe.glyph ?? null }) : undefined} />
   {/if}
   </div>
 </div>
@@ -122,9 +122,11 @@
   .sizes button { height: 24px; padding: 0 8px; border: 0; border-radius: 0; font-size: var(--t-caption); }
   .sizes button.on { background: var(--sel-bg); color: var(--ink); }
   a { font-size: var(--t-small); white-space: nowrap; }
-  .words { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: 4px; align-items: flex-end; }
-  .word { height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: var(--bg-field); border: 1px solid transparent; border-radius: var(--radius-md); }
-  .word.on { border-color: var(--sel-border); }
+  /* the words side by side as in running text: no gaps, each character boxed in light grey */
+  .words { display: flex; gap: 0; overflow-x: auto; padding: 1px 0 4px 1px; align-items: flex-end; }
+  .word { display: flex; border: 1px solid var(--border); margin-left: -1px; background: var(--bg-canvas); }
+  .word :global(.canvas) { border-radius: 0; }
+  .word.on { border-color: var(--sel-border); position: relative; z-index: 1; }
   .body { display: flex; gap: var(--space-4); align-items: flex-start; min-width: 0; }
   .body .words { flex: 1; min-width: 0; }
   .cellsopt { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--t-small); white-space: nowrap; }

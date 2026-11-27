@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Beside a strip of test words (the glyph editor's Tester, Build & test's Test the design): the glyph
-  // picked in a word, the word type that placed it, and links to edit either. Double-clicking a glyph in
-  // the word opens its editor too (WordCanvas onopen).
+  // Beside a strip of test words (the Testers, Build & test's Test the design): the glyph picked in a word,
+  // compactly: its name with Edit (its outline), and the area it sits in with Edit (Layouts, on this word,
+  // with that area's properties). Double-clicking a glyph in the word opens its editor too (WordCanvas onopen).
   import * as I from '$lib/icons';
   import { app } from '$lib/state.svelte';
   import type { WordPayload } from '$lib/api';
@@ -15,15 +15,14 @@
     /** Where the glyph editor's back link returns to (this screen). */
     back: string;
     onclose: () => void;
-    /** On the Layouts screen: load the word into its canvas rather than open /layouts again. */
+    /** On the Layouts screen: load the word into its canvas and show the area there, rather than open /layouts again. */
     onedit?: () => void;
   } = $props();
 
   let at = $derived(name.indexOf(':'));
   let piece = $derived(word.pieces[+name.slice(0, at)] ?? null);
   let el = $derived(piece?.elements.find((e) => e.name === name.slice(at + 1)) ?? null);
-  let layout = $derived(piece?.layout ? app.design?.layouts.find((l) => l.name === piece!.layout) ?? null : null);
-  let ch = $derived(el?.glyph ? app.charOf(el.glyph) : '');
+  let layoutHref = $derived(el ? `/layouts?word=${encodeURIComponent(word.word)}&area=${encodeURIComponent(el.area)}${el.glyph ? `&g=${encodeURIComponent(el.glyph)}` : ''}` : '');
 </script>
 
 <aside class="info" aria-label="The picked glyph">
@@ -31,35 +30,27 @@
     <span class="mono">{word.word}</span>
     <button class="ghost sm" onclick={onclose} data-tip="Close" aria-label="Close"><I.Close size={14} /></button>
   </div>
-  {#if el?.glyph}
-    <div class="sec">
-      <span class="k">Glyph</span>
-      <div class="g"><Glyph name={el.glyph} size={32} /><span><span class="mono">{el.glyph}</span>{#if ch} <span class="cjk">{ch}</span>{/if}<br /><span class="muted small">in {app.areaLabel(el.area)}</span></span></div>
-      <a href="/glyphs/{encodeURIComponent(el.glyph)}/edit?back={encodeURIComponent(back)}">Edit outline</a>
+  {#if el}
+    <div class="g">
+      {#if el.glyph}<Glyph name={el.glyph} size={32} />{/if}
+      <div class="lines">
+        {#if el.glyph}<div><span class="mono">{el.glyph}</span> <a href="/glyphs/{encodeURIComponent(el.glyph)}/edit?back={encodeURIComponent(back)}">Edit</a></div>{/if}
+        <div>
+          <span class="muted">in Layouts › {app.areaLabel(el.area)}</span>
+          {#if !piece?.layout}<span class="muted"> · no word type matched</span>{/if}
+          {#if onedit}<button class="link" onclick={onedit}>Edit</button>{:else}<a href={layoutHref}>Edit</a>{/if}
+        </div>
+      </div>
     </div>
   {/if}
-  <div class="sec">
-    <span class="k">Word type</span>
-    {#if layout}
-      <span>{layout.label}</span>
-      {#if onedit}<button class="link" onclick={onedit}>Edit in Layouts</button>{:else}<a href="/layouts?word={encodeURIComponent(word.word)}">Edit in Layouts</a>{/if}
-    {:else}
-      <span class="muted">None: this part of the word matched no word type, so the font doesn't place it.</span>
-    {/if}
-  </div>
-  <p class="muted small">Double-click a glyph to edit its outline.</p>
 </aside>
 
 <style>
-  .info { display: flex; flex-direction: column; gap: var(--space-4); width: 220px; flex: none; padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-panel); font-size: var(--t-small); align-self: flex-start; max-height: 100%; overflow: auto; }
+  .info { display: flex; flex-direction: column; gap: var(--space-3); width: 220px; flex: none; padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-panel); font-size: var(--t-small); align-self: flex-start; max-height: 100%; overflow: auto; }
   .head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
   .head .mono { font-family: var(--font-mono); font-size: var(--t-label); }
-  .sec { display: flex; flex-direction: column; gap: var(--space-2); }
-  .k { color: var(--ink-muted); font-size: var(--t-caption); }
   .g { display: flex; align-items: center; gap: var(--space-3); }
-  .mono { font-family: var(--font-mono); }
-  .cjk { font-family: var(--font-cjk); }
-  .small { font-size: var(--t-caption); }
-  p { margin: 0; }
-  button.link { align-self: flex-start; height: auto; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
+  .lines { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .mono { font-family: var(--font-mono); overflow-wrap: anywhere; }
+  button.link { height: auto; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font: inherit; cursor: pointer; }
 </style>
