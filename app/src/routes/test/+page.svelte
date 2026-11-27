@@ -278,7 +278,8 @@
 
   {#if err}<p class="error">{err}</p>{/if}
   {#if view === 'words'}
-    <div class="wbody">
+    <!-- a click beside the words (not on a live word, not in the info box) lets go of the picked glyph -->
+    <div class="wbody" role="presentation" onpointerdown={(e) => { if (!(e.target as Element).closest('.canvas, .info')) picked = null; }}>
     <div class="words">
       {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
         {@const pg = wordPage(w)}

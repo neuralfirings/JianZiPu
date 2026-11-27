@@ -89,7 +89,8 @@
     <span class="sizes" title="Size">{#each SIZES as s}<button class:on={size === s} onclick={() => (size = s)}>{s}</button>{/each}</span>
     <a href="/test?words={encodeURIComponent(text)}" title="These words on Build & test, next to the built font">Build & test <I.Opens size={12} /></a>
   </div>
-  <div class="body">
+  <!-- a click beside the words (not on one, not in the info box) lets go of the picked glyph -->
+  <div class="body" role="presentation" onpointerdown={(e) => { if (!(e.target as Element).closest('.word, .info')) pick = null; }}>
   <div class="words">
     {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
       {@const piece = w.pieces.find((p) => p.layout)}
