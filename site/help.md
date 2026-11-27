@@ -152,7 +152,7 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 
 - Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap. Double-click a part to edit its glyph's outline; **Back** in the editor returns here, the word still on the canvas.
 - Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.
-- **boxes** and **glyphs** switch the outlines; `b` toggles boxes, `⇧1` fits the word.
+- **boxes** and **glyphs** switch the outlines on the canvas (the Tester always shows plain words); `b` toggles boxes, `⇧1` fits the word.
 - On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.
 
 ### The panels

@@ -201,7 +201,7 @@
         <ul>
           <li>Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap. Double-click a part to edit its glyph's outline; <strong>Back</strong> in the editor returns here, the word still on the canvas.</li>
           <li>Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.</li>
-          <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines; <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
+          <li><strong>boxes</strong> and <strong>glyphs</strong> switch the outlines on the canvas (the Tester always shows plain words); <kbd>b</kbd> toggles boxes, <kbd>⇧1</kbd> fits the word.</li>
           <li>On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.</li>
         </ul>
         <h3>The panels</h3>

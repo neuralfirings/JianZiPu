@@ -484,7 +484,7 @@
     {:else}<div class="muted small">Click a part on the canvas to see and edit its spacing rules.</div>{/if}
   {:else if id === 'centering'}{#if editor.layout}<CenterPanel />{/if}
   {:else if id === 'glyphs'}<div class:greyed={editing}><AreaPanel /></div>
-  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p, at) => { editor.loadWord(p); editor.showArea(at.area, at.glyph); panels.setFolded('glyphs', false); }} /></div>
+  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" onpick={(p, at) => { editor.loadWord(p); editor.showArea(at.area, at.glyph); panels.setFolded('glyphs', false); }} /></div>
   {/if}
 {/snippet}
 <PanelWorkspace store={panels} {meta} {body} help={LAYOUTS_HELP}>
