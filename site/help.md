@@ -150,7 +150,7 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 
 ### The canvas
 
-- Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.
+- Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap. Double-click a part to edit its glyph's outline; **Back** in the editor returns here, the word still on the canvas.
 - Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.
 - **boxes** and **glyphs** switch the outlines; `b` toggles boxes, `⇧1` fits the word.
 - On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.
@@ -166,7 +166,7 @@ Panels can be docked left, right or below, folded and resized. A panel folded be
 - **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas (on a phone, press and hold it first).
 - **Centering**: Which parts the word is centred on, and where. When a word is centred on an axis, the whole word is shifted to the target, so a start height on that axis (marked * on the canvas) doesn't move it: change the gaps between parts instead, or the target here.
 - **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses. The **Chord divider** and **Vertical marker** areas also have **Width of |** (or **:**): how far the next part moves after the divider, and the divider's own width in the font; it sets the box width too.
-- **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**; click a word to put it on the canvas. **Show cells** rules each word into cells of 1000 units, the room one character takes. **Build & test** opens the same words next to the built font.
+- **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**. It works as the glyph editor's Tester: **Show cells** rules each word into cells of 1000 units, the room one character takes; click a glyph to outline it and see its name and word type, where **Edit in Layouts** puts the word on the canvas; double-click a glyph to edit its outline. **Build & test** opens the same words next to the built font.
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
 
