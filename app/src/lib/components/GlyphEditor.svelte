@@ -28,7 +28,9 @@
     back?: string | null;
   } = $props();
   let backHref = $derived(back && /^\/(?!\/)/.test(back) ? back : `/glyphs?g=${encodeURIComponent(name)}`);
-  let backLabel = $derived(backHref.startsWith('/layouts') ? 'Layouts' : 'Glyphs');
+  // where Back goes, named: Layouts, Build & test, or the glyph whose Tester opened this one (a double-click)
+  let backLabel = $derived(backHref.startsWith('/layouts') ? 'Layouts' : backHref.startsWith('/test') ? 'Build & test'
+    : (/^\/glyphs\/([^/?]+)\/edit/.exec(backHref)?.[1] ? decodeURIComponent(/^\/glyphs\/([^/?]+)\/edit/.exec(backHref)![1]) : 'Glyphs'));
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
   let svgInput: HTMLInputElement;
