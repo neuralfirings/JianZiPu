@@ -19,6 +19,15 @@ export async function sha16(text: string): Promise<string> {
   return (await sha256(text)).slice(0, 16);   // matches the server's file hash
 }
 
+/** Shapes copied or cut in the glyph editor, kept while the Builder is open so they paste into any
+ *  glyph: exactly (open lines stay lines) when the clipboard still holds what was copied here, else
+ *  from the SVG on the clipboard (another tab). `pastes`: how many times they went into `from`. */
+let clip: { from: string; cut: boolean; json: string; svg: string; pastes: number } | null = null;
+/** Marks the SVG a copy puts on the clipboard, so a paste takes it straight in (no Import dialog). */
+const CLIP_MARK = 'data-jzp-shapes';
+/** How far each paste into the glyph the shapes were copied from lands from them (font units). */
+const PASTE_STEP = 20;
+
 export type Selection =
   | { kind: 'none' }
   | { kind: 'points'; n: number; x: number; y: number; pointKind: 'corner' | 'smooth' | 'free' | 'mixed' }
@@ -202,6 +211,47 @@ export class GlyphEditor {
     this.scene.commit('move point');
   }
   deleteSelection() { this.tools?.deleteSelection(); }
+
+  // ---- copy, cut and paste (⌘C ⌘X ⌘V; the component listens for the clipboard events)
+  /** Copy the selected shapes (cut: and take them out, one undo step). Returns the SVG to put on the
+   *  clipboard and how many shapes, or null with nothing selected. */
+  copySelection(cut = false): { svg: string; n: number } | null {
+    const s = this.scene, t = this.tools; if (!s || !t) return null;
+    const sel = t.selectedPaths; if (!sel.length) return null;
+    const json = JSON.stringify(sel.map((p) => p.exportJSON({ asString: false })));
+    const svg = s.exportSvg(sel, ` ${CLIP_MARK}="${this.name}"`);
+    clip = { from: this.name, cut, json, svg, pastes: 0 };
+    if (cut) {
+      if (t.editing && sel.includes(t.editing)) t.setEditing(null);
+      for (const p of sel) p.remove();
+      s.commit(sel.length === 1 ? 'cut shape' : `cut ${sel.length} shapes`);
+      t.changed();
+    }
+    return { svg, n: sel.length };
+  }
+  /** Paste shapes copied in the glyph editor (this tab or another): selected, one undo step. Into the
+   *  glyph they were copied from they land a step down and right each time (in place after a cut);
+   *  into another glyph, where they were. Returns how many (0: the text isn't shapes copied here). */
+  pasteShapes(text: string): number {
+    const s = this.scene, t = this.tools; if (!s || !t || !text.includes(CLIP_MARK)) return 0;
+    const ours = clip && clip.svg === text ? clip : null;
+    let items: PathLike[];
+    if (ours) items = (JSON.parse(ours.json) as unknown[]).map((j) => paper.project.importJSON(JSON.stringify(j)) as PathLike);
+    else {
+      const item = paper.project.importSVG(text, { insert: false, expandShapes: true, applyMatrix: true });
+      items = await_collect(item);
+    }
+    if (!items.length) return 0;
+    let step = 0;
+    if (ours && ours.from === this.name) { step = ours.cut ? ours.pastes : ours.pastes + 1; ours.pastes++; }
+    if (t.drawing) t.finishPen(false);
+    for (const p of items) { s.adopt(p); if (step) p.translate(new paper.Point(step * PASTE_STEP, step * PASTE_STEP)); }
+    s.commit(items.length === 1 ? 'paste shape' : `paste ${items.length} shapes`);
+    t.setEditing(null);
+    t.setMode('select');
+    t.selectPaths(items);
+    return items.length;
+  }
   selectAll() { this.tools?.selectAll(); }
   clearSelection() { this.tools?.clearSelection(); }
   nudge(dx: number, dy: number) { this.tools?.nudge(dx, dy); }

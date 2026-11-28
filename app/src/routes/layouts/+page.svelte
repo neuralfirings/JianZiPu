@@ -2,7 +2,7 @@
   import * as I from '$lib/icons';
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
-  import { replaceState } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { api, type Design, type Layout, type Relationship } from '$lib/api';
   import { app } from '$lib/state.svelte';
   import { editor, attachGap, bumpGap, gapValue, gapEntryIndex } from '$lib/editor.svelte';
@@ -100,7 +100,13 @@
     if (word) {
       const r = await api.words(app.design!, [word]);
       const piece = r.ok ? r.words[0]?.pieces.find((p) => p.layout) : null;
-      if (piece) { editor.loadWord(piece); return; }
+      if (piece) {
+        editor.loadWord(piece);
+        // ?word=…&area=…&g=… (a word strip's Edit): that area's properties too, the glyph picked in them
+        const area = page.url.searchParams.get('area');
+        if (area && d.areas[area]) { editor.showArea(area, page.url.searchParams.get('g')); panels.setFolded('glyphs', false); }
+        return;
+      }
     }
     if (want && d.layouts.some((l) => l.name === want)) editor.setLayout(want);
     else if (!editor.layout) editor.setLayout(d.layouts[0]?.name ?? '');
@@ -146,6 +152,12 @@
     else timer = setTimeout(() => run(job), 50);
   });
 
+  /** Double-clicking a part opens its glyph's outline editor; Back returns to Layouts (the word stays loaded). */
+  function openGlyph(name: string) {
+    if (editing) return;
+    const g = elements.find((e) => e.name === name)?.glyph;
+    if (g) goto(`/glyphs/${encodeURIComponent(g)}/edit?back=${encodeURIComponent(page.url.pathname + page.url.search)}`);
+  }
   let elements = $derived.by(() => {
     const res = editor.resolved;
     const anchors = anchorNames(editor.elements, d.areas);
@@ -472,7 +484,7 @@
     {:else}<div class="muted small">Click a part on the canvas to see and edit its spacing rules.</div>{/if}
   {:else if id === 'centering'}{#if editor.layout}<CenterPanel />{/if}
   {:else if id === 'glyphs'}<div class:greyed={editing}><AreaPanel /></div>
-  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" showBoxes={editor.showBoxes} onpick={(p) => editor.loadWord(p)} /></div>
+  {:else if id === 'tester'}<div class:greyed={editing}><WordTester design={editor.dragDesign ?? app.design} storageKey="jzp-strip-words" onpick={(p, at) => { editor.loadWord(p); editor.showArea(at.area, at.glyph); panels.setFolded('glyphs', false); }} /></div>
   {/if}
 {/snippet}
 <PanelWorkspace store={panels} {meta} {body} help={LAYOUTS_HELP}>
@@ -501,7 +513,8 @@
         dimmed={editing ? elements.map((e) => e.name).filter((n) => n !== editor.selected && n !== editBase) : []}
         dragOnly={editing ? editor.selected : null} lockAxis={editing ? editing.axis : null} {overlay} baseMark={editing ? editBase : null}
         marked={editor.boxEdit ? elements.filter((e) => e.area === editor.boxEdit!.area).map((e) => e.name) : []} ghosts={editor.boxEdit && editor.dragDesign ? editor.boxEdit.before : []}
-        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on} />
+        onselect={(n) => { if (!editing) editor.select(n); }} {ondrag} {onlink} onselectarrow={selectArrow} holdToDrag={phone.on}
+        onopen={(n) => openGlyph(n)} />
     </div>
     {#if status && !phone.on}<div class="note" role="status"><span>{status}</span><button class="quiet sm" aria-label="Dismiss" onclick={() => (status = '')}><I.Close /></button></div>{/if}
     <div class="status">

@@ -118,6 +118,7 @@ Opening a glyph, or [+ New glyph](https://builder.jianzipufont.com/glyphs/new), 
 - To edit points, double-click a shape: its points show (`Esc`, or a click off it, closes them). Click a point and drag it (arrow keys nudge it, `⇧` × 10). A selected point shows its curve handles; drag a handle's round end to bend the curve. On a smooth point the opposite handle follows; `⌥`-drag moves one handle alone. Double-click a point to switch it between corner and smooth. `⇧`-click adds points to the selection, and `⇧`-drag a box around them picks several. With the Pen, click the outline to add a point, or click a point to remove it.
 - Combine two selected shapes with Union, Subtract, Intersect or Exclude (hover to preview). **Simplify…** removes points; **Thicken…** makes strokes heavier or lighter; **Clean up** fixes overlaps.
 - Lines drawn with the Pen or Pencil are strokes until **Outline line(s)** turns them into filled shapes. Save does this for you.
+- Copy (`⌘C`) or cut (`⌘X`) the selected shapes and paste them (`⌘V`), into the same glyph or another one. In the same glyph a pasted copy lands a little down and to the right, so you can see it, and a cut one goes back where it was; in another glyph they land where they were. Each paste is one Undo step and leaves the pasted shapes selected. The copy is SVG on your clipboard too, so it pastes into a drawing program, or into the editor in another tab.
 - Text (`T`) starts a glyph from a Chinese character in TW-Kai, the font the Chinese characters come from. Click on the canvas where it goes and type, one character or a few: it shows faded, centred on your click (click again to move it). **Size** is how many units the character's em takes, at first the box's height. `Enter` (or **Make shapes**) turns it into shapes you edit like any other, as one Undo step; `Esc` leaves it. Take away what you don't need with Select and `⌫`, or double-click a shape for its points; the strokes of a character overlap, which **Clean up** (or the build) merges.
 - **SVG file…** imports a drawing (fit to the box, or keep its size; replace or add). You can also drop a file on the canvas or paste SVG text.
 - **Image to trace…** turns a scan or photo into an outline: adjust Threshold, Corners and Simplify in the Trace panel, then **Use this outline**. The image itself stays in your browser.
@@ -129,10 +130,9 @@ Each panel's **?** shows the same text as below.
 - **Selection**: The position and size of what is selected: points (corner, smooth or free) or whole shapes (move, scale, rotate, centre in the box). With nothing selected it shows the glyph's shape count and its estimated stroke weight.
 - **Compare**: Things to measure against while drawing: a **reference dot** (`D`) at the stroke weight to aim for, another glyph laid over this one (`G`), or the last saved outline (`L`).
 - **Glyph**: Which areas the glyph is in (and so its box size), and the file it saves to.
-- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing).
-- **Try it**: Types each spelling on its own, and any word you enter, through the spellings as they are now, saved or not. A glyph newer than the last build is drawn in from its drawing and a new Chinese character copied from the base font, so no Build is needed; red means a character not even the base font has.
+- **Typing**: The glyph's spellings: what you type to get it, in Latin letters, numbers and symbols, 简体 and 繁體. Two glyphs can't share a spelling. The same fields are in [Glyphs → List view](https://builder.jianzipufont.com/glyphs?view=typing). Under them, each spelling is typed on its own through the spellings as they are now, saved or not: a check mark when it gives this glyph, a warning (hover it) when it gives something else, most often a clash or a typo. A new glyph or Chinese character is drawn in without a Build. To see the glyph in words, use the Tester.
 - **Checks**: Problems the build would trip on: an empty glyph, parts outside the box, open lines and specks, each with a button to fix it. **Check as built** runs the same conversion as the font build.
-- **Tester**: Words that use this glyph, drawn live as you edit, so you can see it in context before saving.
+- **Tester**: Words that use this glyph, drawn live as you edit, so you can see it in context before saving. Type your own too: the words sit side by side as in running text (hover one for what was typed). **Show cells** rules each word into cells of 1000 units, the room one character takes. Click a glyph in a word to outline it and see its name and area, each with **Edit**: its outline, or Layouts with that word and area; double-click it to edit its outline (Back returns here).
 - **Trace**: Turns the image you opened into an outline. Adjust **Threshold** (or **Auto**), specks, corners and simplify, then **Use this outline**. The image stays in your browser. `Esc` leaves trace mode.
 
 ### Saving a glyph
@@ -150,14 +150,14 @@ The editor has its own **Save glyph** (`⌘S`) and its own undo. Edits that aren
 
 ### The canvas
 
-- Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap.
+- Click a part to select it (Tab cycles through parts). Drag it, or nudge it with the arrow keys, to change its gap. Double-click a part to edit its glyph's outline; **Back** in the editor returns here, the word still on the canvas.
 - Arrows show spacing rules: click one to edit it. Drag a part's ○ handle onto another part's edge to attach it there.
-- **boxes** and **glyphs** switch the outlines; `b` toggles boxes, `⇧1` fits the word.
+- **boxes** and **glyphs** switch the outlines on the canvas (the Tester always shows plain words); `b` toggles boxes, `⇧1` fits the word.
 - On a phone: a swipe scrolls, even when it starts on the canvas; a tap selects a part or an arrow; press and hold a part (or a ○ handle): a ring fills around your finger, then the part lifts with a thicker outline and a shadow. Drag it; the rule's arrow and the line under the canvas show the gap, and letting go is one undo step.
 
 ### The panels
 
-Panels can be docked left, right or below, folded and resized; **More** → **Reset panel layouts** puts them back. Each panel's **?** shows the same text as below.
+Panels can be docked left, right or below, folded and resized. A panel folded below becomes a tab at the foot of that strip (click it to open the panel again), and when every panel there is folded, the strip is just its tabs, right under the canvas. **More** → **Reset panel layouts** puts them back. Each panel's **?** shows the same text as below.
 
 - **Word types**: Pick the word type to edit: a standard note, a vertical word, the two halves of a chord. Each shows how many positioning rules it makes; **skipped** lists shapes that get no rule. With **Advanced** on you can add, duplicate or delete word types.
 - **Structure**: The parts of the word type, in order. Tick a part to include it in the example word and pick which glyph it shows. **anchor** marks the first part of the chain, which carries the word's position. With **Advanced** on you can add, remove, reorder and make parts optional or repeating.
@@ -166,7 +166,7 @@ Panels can be docked left, right or below, folded and resized; **More** → **Re
 - **Spacing**: How the selected part sits against the others, vertically or horizontally (the **Vertical** and **Horizontal** tabs). A rule reads as a sentence: "its top edge sits at the bottom of 七 + gap". Rows change the gap when certain glyphs are present; *otherwise* covers the rest. **+ new rule** picks the glyphs it applies to, and the canvas previews every combination. You can also drag the part on the canvas (on a phone, press and hold it first).
 - **Centering**: Which parts the word is centred on, and where. When a word is centred on an axis, the whole word is shifted to the target, so a start height on that axis (marked * on the canvas) doesn't move it: change the gaps between parts instead, or the target here.
 - **Area Properties**: An area is a set of glyphs that share a box size and can stand in for each other in a word (all the strings, all the hui numbers…). Here: the box size (type to preview, `Enter` applies, `Esc` cancels), the word types that use the area, and its glyphs (**Manage** to add or remove). **Delete area** works only on an empty area nothing uses. The **Chord divider** and **Vertical marker** areas also have **Width of |** (or **:**): how far the next part moves after the divider, and the divider's own width in the font; it sets the box width too.
-- **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**; click a word to put it on the canvas. **Build & test** opens the same words next to the built font.
+- **Tester**: Words drawn by the live preview, unsaved changes included. Type your own, pick a **Sample set…** or **Random**. It works as the glyph editor's Tester: **Show cells** rules each word into cells of 1000 units, the room one character takes; the words sit side by side as in running text (hover one for what was typed); click a glyph to outline it and see its name and area, each with **Edit**: the outline, or the word on the canvas with that area open; double-click a glyph to edit its outline. **Build & test** opens the same words next to the built font.
 
 Structural edits (adding, removing or reordering parts, new word types, recognition rules) are behind the **Advanced** checkbox in the header, so they aren't changed by accident. It's off again after a reload.
 
@@ -186,7 +186,7 @@ On a phone, the canvas stays at the top and the panels are sections under it, in
 
 ### Two views
 
-- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design and the spellings as they are now, unsaved changes and new glyphs included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a live word to open it in Layouts. **+ Save as set** keeps the current words as a sample set.
+- **Test the design**: One cell per word, to check your design without building. **Live preview** draws from the design and the spellings as they are now, unsaved changes and new glyphs included, with optional boxes; **Font** shows the built font; **Compare both** puts them one above the other. Click a glyph in a live word to outline it and see its name and area, each with **Edit**: its outline, or Layouts with that word and area; double-click it to edit its outline (Back returns here). **show cells** rules each word into cells of 1000 units, the room one character takes, the font's words too, so you can see how many cells a word takes. **+ Save as set** keeps the current words as a sample set.
 - **Test the font file**: Running text in the font file, as a reader sees it. Switch **liga** (substitution) and **kern** (positioning) off to see the raw parts, try **vertical columns**, or **compare with a second font** side by side.
 
 ![Build and test, Test the font file view: the same words as running text in the built font](https://builder.jianzipufont.com/help/build-font.jpg)
@@ -282,7 +282,8 @@ The full process, with testing a candidate and what to do when a step fails, is 
 **Glyph editor**
 
 - `⌘S`, `⌘Z`: Save the glyph, undo in the glyph
-- `V` `P` `⇧P` `R` `O` `H` `Z`: Select, Pen, Pencil, Rectangle, Ellipse, Hand, Zoom
+- `⌘C` `⌘X` `⌘V`: Copy, cut and paste the selected shapes
+- `V` `P` `⇧P` `R` `O` `T` `H` `Z`: Select, Pen, Pencil, Rectangle, Ellipse, Text, Hand, Zoom
 - `D` `G` `L`: Reference dot, compare glyph, last saved
 - `⇧1` / `⇧0` / `⇧2`: Fit / 100% / fit the selection
 - `⇧G`: Grid

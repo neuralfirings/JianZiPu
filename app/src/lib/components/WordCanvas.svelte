@@ -23,8 +23,8 @@
     page = [0, 1000], pageHeight = [-500, 1100], center = null, emBox = null, selected = null, hoverable = false,
     arrows = [], hotBar = null, labels = false, fit = true, maxHeight = 0, handles = false, selectedArrow = null,
     dimmed = [], dragOnly = null, lockAxis = null, overlay = {}, baseMark = null, marked = [], ghosts = [],
-    holdToDrag = false,
-    onselect, ondrag, onlink, onselectarrow
+    holdToDrag = false, cells = false, picked = null, bare = false,
+    onselect, ondrag, onlink, onselectarrow, onopen
   }: {
     elements: El[]; width?: number; height?: number; showBoxes?: boolean; showGlyphs?: boolean; showPage?: boolean;
     page?: [number, number]; pageHeight?: [number, number]; center?: { x: number; y: number } | null;
@@ -41,14 +41,25 @@
     ghosts?: { x: number; y: number; size: [number, number] }[];
     /** A finger presses and holds to drag; swipes scroll the page (Layouts on a phone). */
     holdToDrag?: boolean;
+    /** The page ruled into cells of 1000 units (one character's room), in place of its dashed outline. */
+    cells?: boolean;
+    /** Without cells, no page outline or baseline either: the word alone, as in running text (word strips). */
+    bare?: boolean;
+    /** The part picked in a word strip, outlined clearly. */
+    picked?: string | null;
+    /** A part double-clicked (word strips: open its glyph's editor). */
+    onopen?: (name: string) => void;
     onselect?: (name: string | null) => void;
     ondrag?: (e: { name: string; dx: number; dy: number; phase: 'start' | 'move' | 'end' | 'cancel' }) => void;
     onlink?: (e: { name: string; edge: Edge; target: string; targetEdge: Edge }) => void;
     onselectarrow?: (id: string | null) => void;
   } = $props();
 
+  /** A glyph's drawing: the glyph editor's unsaved outline first (app.preview, while it's open), so the
+   *  editor's Tester shows the work in progress before Save, then the saved file. */
+  const svgOf = (g: string): string | undefined => app.preview[g] ?? app.svgs[g];
   // viewBox in canvas units (y flipped: sy = -y)
-  let box = $derived(canvasBox(elements, { page, pageHeight, showPage, fit }, (g) => !!app.svgs[g]));
+  let box = $derived(canvasBox(elements, { page, pageHeight, showPage, fit }, (g) => !!svgOf(g)));
   let w = $derived(maxHeight > 0 ? Math.min(width, Math.round((maxHeight * box.w) / box.h)) : width);
   let h = $derived(height ?? Math.round((w * box.h) / box.w));
   const fs = $derived(Math.max(14, box.w / 30));
@@ -197,6 +208,8 @@
     return best;
   }
   let sel = $derived(elements.find((e) => e.name === selected) ?? null);
+  /** Where each 1000-unit cell starts across the page. */
+  let cellXs = $derived(Array.from({ length: Math.max(1, Math.ceil((page[1] - page[0]) / 1000 - 1e-6)) }, (_, i) => page[0] + i * 1000));
 
 </script>
 
@@ -205,8 +218,12 @@
   onpointermove={move} onpointerup={up} onpointercancel={cancelDrag} oncontextmenu={(e) => { if (holdToDrag) e.preventDefault(); }}
   onpointerdown={(e) => tapOr(e, () => { onselect?.(null); onselectarrow?.(null); })} role="img"><!-- parts, arrows and handles stop their pointerdown, so anything reaching here (page, guides, empty space) deselects -->
   {#if showPage}
-    <rect x={page[0]} y={-pageHeight[1]} width={page[1] - page[0]} height={pageHeight[1] - pageHeight[0]} class="page" />
-    <line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />
+    {#if cells}
+      {#each cellXs as cx (cx)}<rect x={cx} y={-pageHeight[1]} width={Math.min(1000, page[1] - cx)} height={pageHeight[1] - pageHeight[0]} class="cell" />{/each}
+    {:else if !bare}
+      <rect x={page[0]} y={-pageHeight[1]} width={page[1] - page[0]} height={pageHeight[1] - pageHeight[0]} class="page" />
+    {/if}
+    {#if !bare || cells}<line x1={page[0]} x2={page[1]} y1="0" y2="0" class="baseline" />{/if}
     {#if emBox}
       <rect x={emBox.x - 500} y={-(emBox.y + 500)} width="1000" height="1000" class="embox"><title>1000 × 1000: a typical character</title></rect>
       <text x={emBox.x - 500 + 8} y={-(emBox.y - 500) + fs * 0.6 + 4} font-size={fs * 0.6} class="emlbl">1000 × 1000 character</text>
@@ -228,15 +245,15 @@
   {/each}
   {#each elements as e (e.name)}
     {#if e.x != null && e.y != null}
-      {@const g = e.glyph ? parseSvg(app.svgs[e.glyph]) : null}
+      {@const g = e.glyph ? parseSvg(svgOf(e.glyph)) : null}
       {@const tgt = link?.target?.name === e.name ? link.target.edge : null}
       {@const ov = overlay[e.name]}
-      <g class="el" class:selected={selected === e.name} class:lifted={liftedName === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
+      <g class="el" class:selected={selected === e.name} class:picked={picked === e.name} ondblclick={() => onopen?.(e.name)} class:lifted={liftedName === e.name} class:hoverable class:error={e.error} class:anchor={e.anchor} class:target={!!tgt}
          class:dim={dimmed.includes(e.name)} class:marked={marked.includes(e.name)} class:base={baseMark === e.name} class:rulebase={ruleBases.has(e.name)} class:rulebasedim={ruleBases.get(e.name) === false} class:locked={!!dragOnly && dragOnly !== e.name}
          onpointerdown={(ev) => { ev.stopPropagation(); down(ev, e.name); }} role="button" tabindex="-1" aria-label={e.glyph ? `${e.name}: ${e.glyph}` : e.name}>
         {#if ov && ov.length}
           {#each ov as og, oi (og)}
-            {@const pg = parseSvg(app.svgs[og])}
+            {@const pg = parseSvg(svgOf(og))}
             {#if pg}<svg x={e.x} y={-(e.y + e.size[1])} width={e.size[0]} height={e.size[1]} viewBox={pg.viewBox} class="g ov ov{(oi % 4) + 1}">{@html pg.inner}</svg>{/if}
           {/each}
         {:else if showGlyphs && g}
@@ -320,6 +337,9 @@
   .handle-hit { fill: transparent; stroke: none; }
   .handle.lifted { fill: var(--ov-active); }
   .page { fill: none; stroke: var(--ov-guide); stroke-dasharray: 12 12; stroke-width: 2; }
+  .cell { fill: var(--bg-sunken); stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  /* picked in a word strip: a clear outline round the glyph's box (drawn over the glyph, so no fill) */
+  .el.picked .box, .el.picked .box.hidden { stroke: var(--sel-border); stroke-width: 2.5; fill: none; }
   .baseline { stroke: var(--ov-guide); stroke-width: 2; }
   .embox { fill: none; stroke: var(--ov-guide); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
   .emlbl { fill: var(--ink-muted); opacity: .55; font-family: var(--font-serif); pointer-events: none; }

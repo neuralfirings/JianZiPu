@@ -14,6 +14,8 @@
   import { api, type BaseInfo, type Build, type BuildStatus, type WordPayload } from '$lib/api';
   import { anchorNames, wordPage } from '$lib/shape';
   import WordCanvas from '$lib/components/WordCanvas.svelte';
+  import WordInfo from '$lib/components/WordInfo.svelte';
+  import { goto } from '$app/navigation';
   import { SAMPLE_SETS } from '$lib/words';
   import { loadFontFrom, fmtBytes, fmtTime, type LoadedFont } from '$lib/fontload';
   import { segments } from '$lib/cmap';
@@ -25,6 +27,18 @@
   let mode = $state<'live' | 'font' | 'both'>('live');
   let size = $state(96);
   let showBoxes = $state(false);
+  /** Each word ruled into 1000-unit cells (kept in this browser, shared with the glyph editor's Tester). */
+  let cells = $state(((): boolean => { try { return localStorage.getItem('jzp-show-cells') === '1'; } catch { return false; } })());
+  $effect(() => { const c = cells; try { localStorage.setItem('jzp-show-cells', c ? '1' : '0'); } catch {} });
+  /** The glyph clicked in a word of the live preview: which word, which part. */
+  let picked = $state<{ wi: number; name: string } | null>(null);
+  const here = () => page.url.pathname + page.url.search;
+  /** Double-clicking a glyph opens its editor, with Back returning here. */
+  function openGlyph(wi: number, name: string) {
+    const w = result?.words[wi]; if (!w) return;
+    const at = name.indexOf(':'), el = w.pieces[+name.slice(0, at)]?.elements.find((e) => e.name === name.slice(at + 1));
+    if (el?.glyph) goto(`/glyphs/${encodeURIComponent(el.glyph)}/edit?back=${encodeURIComponent(here())}`);
+  }
   /** What builds have that the released font doesn't: CHANGELOG.md's Unreleased lines */
   let base = $state<BaseInfo | null>(null);
   const queued = $derived(unreleasedLines(base?.unreleased));
@@ -206,6 +220,7 @@
         <label><input type="radio" bind:group={mode} value="font" disabled={!font} /> Font</label>
         <label><input type="radio" bind:group={mode} value="both" disabled={!font} /> Compare both</label>
         <label><input type="checkbox" bind:checked={showBoxes} /> show boxes</label>
+        <label><input type="checkbox" bind:checked={cells} /> show cells</label>
       {:else}
         <label><input type="checkbox" bind:checked={liga} /> liga <span class="muted">(substitution)</span></label>
         <label><input type="checkbox" bind:checked={kern} /> kern <span class="muted">(positioning)</span></label>
@@ -263,26 +278,31 @@
 
   {#if err}<p class="error">{err}</p>{/if}
   {#if view === 'words'}
+    <!-- a click beside the words (not on a live word, not in the info box) lets go of the picked glyph -->
+    <div class="wbody" role="presentation" onpointerdown={(e) => { if (!(e.target as Element).closest('.canvas, .info')) picked = null; }}>
     <div class="words">
       {#each result?.words ?? [] as w, i (`${i}:${w.word}`)}
         {@const pg = wordPage(w)}
         {@const cellW = Math.round((pg[1] / 1000) * size)}
         <div class="word">
           {#if mode !== 'font'}
-            <a href="/layouts?word={encodeURIComponent(w.word)}" title="Open in Layouts">
-              <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })}
-                width={cellW} height={Math.round(size * 1.6)} showBoxes={showBoxes} showPage={true} page={pg} fit={false} />
-            </a>
+            <WordCanvas elements={w.pieces.flatMap((p, pi) => { const an = anchorNames(p.elements, app.design!.areas); return p.elements.map((e) => ({ ...e, name: `${pi}:${e.name}`, anchor: an.has(e.name) })); })}
+              width={cellW} height={Math.round(size * 1.6)} showBoxes={showBoxes} showPage={true} page={pg} fit={false} {cells}
+              picked={picked?.wi === i ? picked.name : null}
+              onselect={(n) => { if (n) picked = { wi: i, name: n }; else if (picked?.wi === i) picked = null; }}
+              onopen={(n) => openGlyph(i, n)} />
           {/if}
           {#if mode !== 'live' && font}
             {#key font}
-              <div class="font" style="font-family: '{font.family}', var(--font-cjk), serif; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by a fallback font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
+              <div class="font" class:cells style="font-family: '{font.family}', var(--font-cjk), serif; font-size: {size}px; height: {Math.round(size * 1.6)}px; width: {cellW}px">{#each segments(w.word, font.chars) as s}{#if s.missing}<span class="miss" title="Not in this font: drawn by a fallback font">{s.text}</span>{:else}{s.text}{/if}{/each}</div>
             {/key}
           {/if}
           <div class="keys muted">{w.word}{#if unplacedNote(w.pieces, app.design!.areas)}{@const why = unplacedNote(w.pieces, app.design!.areas)} <button type="button" class="badge-warn" data-tip={why} aria-label="Not drawn: {why}"><I.Warn size={14} /></button>{/if}</div>
           <div class="id">{w.glyphs.join(' ')}</div>
         </div>
       {/each}
+    </div>
+    {#if picked && result?.words[picked.wi]}<div class="side"><WordInfo word={result.words[picked.wi]} name={picked.name} back={here()} onclose={() => (picked = null)} /></div>{/if}
     </div>
   {:else}
     <div class="sheets" class:two={compare}>
@@ -328,7 +348,11 @@
   .file { display: inline-flex; align-items: center; height: var(--control-md); padding: 0 var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-panel); cursor: pointer; }
   .file input { display: none; }
   .type { flex: 1; min-width: 300px; font-family: var(--font-mono); resize: vertical; }
+  .wbody { flex: 1; min-height: 0; display: flex; }
   .words { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-6); align-content: flex-start; }
+  .side { flex: none; padding: var(--space-6) var(--space-6) 0 0; }
+  /* the font file's word on the same cells as the live preview: one cell per em (1000 units) */
+  .font.cells { background: repeating-linear-gradient(90deg, var(--bg-sunken) 0 calc(1em - 1px), var(--border-strong) calc(1em - 1px) 1em); }
   .word { display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .word a { display: block; }
   .font { font-feature-settings: "kern", "liga"; line-height: 1.6; background: var(--bg-canvas); border-radius: var(--radius-md); display: flex; align-items: center; padding-left: 0; white-space: nowrap; overflow: visible; }

@@ -28,7 +28,9 @@
     back?: string | null;
   } = $props();
   let backHref = $derived(back && /^\/(?!\/)/.test(back) ? back : `/glyphs?g=${encodeURIComponent(name)}`);
-  let backLabel = $derived(backHref.startsWith('/layouts') ? 'Layouts' : 'Glyphs');
+  // where Back goes, named: Layouts, Build & test, or the glyph whose Tester opened this one (a double-click)
+  let backLabel = $derived(backHref.startsWith('/layouts') ? 'Layouts' : backHref.startsWith('/test') ? 'Build & test'
+    : (/^\/glyphs\/([^/?]+)\/edit/.exec(backHref)?.[1] ? decodeURIComponent(/^\/glyphs\/([^/?]+)\/edit/.exec(backHref)![1]) : 'Glyphs'));
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
   let svgInput: HTMLInputElement;
@@ -80,7 +82,6 @@
       case 'compare': return { title: 'Compare', summary: [ed.dot && 'dot', ed.ghostName, ed.ghostSaved && 'last saved'].filter(Boolean).join(' · ') || 'off' };
       case 'glyph': return { title: 'Glyph', summary: `${areaName ? app.areaLabel(areaName) : 'no area'} · ${ed.box[0]} × ${ed.box[1]}` };
       case 'typing': return { title: 'Typing', badge: glyphErrors || null, warn: !!glyphErrors, summary: typedAs || 'no spelling yet' };
-      case 'tryit': return { title: 'Try it', summary: 'live, saved or not' };
       case 'checks': return { title: 'Checks', badge: checkWarnings || null, warn: !!checkWarnings, summary: checkWarnings ? `${checkWarnings} to look at` : 'all fine' };
       case 'tester': return { title: 'Tester', summary: 'words with this glyph' };
     }
@@ -113,8 +114,14 @@
     const onKey = (e: KeyboardEvent) => key(e);
     const onKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') ed.holdHand(false); };
     const onUnload = (e: BeforeUnloadEvent) => { if (ed.dirty) { e.preventDefault(); e.returnValue = ''; } };
+    const onCut = (e: ClipboardEvent) => onCopy(e, true);
     window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKeyUp); window.addEventListener('beforeunload', onUnload);
-    return () => { ro.disconnect(); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); window.removeEventListener('beforeunload', onUnload); ed.unmount(); };
+    window.addEventListener('copy', onCopy); window.addEventListener('cut', onCut); window.addEventListener('paste', onPaste);
+    return () => {
+      ro.disconnect(); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('copy', onCopy); window.removeEventListener('cut', onCut); window.removeEventListener('paste', onPaste);
+      ed.unmount();
+    };
   });
   // the SVG texts load after the design: pick ours up when it arrives
   $effect(() => {
@@ -141,6 +148,13 @@
     goto(to);
   }
 
+  /** A click on the canvas takes the keys back from a text field (the Tester's words, a panel's number):
+   *  the canvas can't hold focus itself, so Delete, arrows and the tool keys went on typing into the
+   *  field. The Text tool's box takes focus again when the click places its text. */
+  function releaseField() {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) a.blur();
+  }
   function typing(e: KeyboardEvent) { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
   function key(e: KeyboardEvent) {
     if (leave || importAsk || ed.conflictDisk != null) return;
@@ -216,9 +230,24 @@
     const f = e.dataTransfer?.files?.[0]; if (!f) return;
     if (f.type === 'image/svg+xml' || f.name.endsWith('.svg')) askImport(await f.text()); else if (f.type.startsWith('image/')) void trace(f);
   }
+  // ---- the clipboard, listened for on the window: the canvas can't hold focus, so ⌘C ⌘X ⌘V arrive with the
+  // page focused. In a text field, or with text picked on the page, they're the browser's own.
+  function fieldFocused() {
+    const a = document.activeElement as HTMLElement | null;
+    return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable);
+  }
+  const busy = () => !!(leave || importAsk || ed.conflictDisk != null || ed.trace || ed.text || ed.preview);
+  function onCopy(e: ClipboardEvent, cut = false) {
+    if (fieldFocused() || busy() || (window.getSelection()?.toString().trim() ?? '')) return;
+    const r = ed.copySelection(cut); if (!r) return;
+    e.clipboardData?.setData('text/plain', r.svg);
+    e.preventDefault();
+    say(`${cut ? 'Cut' : 'Copied'} ${r.n === 1 ? '1 shape' : `${r.n} shapes`}: ⌘V pastes ${r.n === 1 ? 'it' : 'them'} here or into another glyph.`);
+  }
   async function onPaste(e: ClipboardEvent) {
-    if (typing(e as unknown as KeyboardEvent)) return;
+    if (fieldFocused() || busy()) return;
     const t = e.clipboardData?.getData('text') ?? '';
+    if (ed.pasteShapes(t)) { e.preventDefault(); return; }
     if (/<svg[\s>]/.test(t)) { e.preventDefault(); askImport(t); }
   }
 
@@ -322,8 +351,8 @@
     <div class="f"><span>Box</span><span>{ed.box[0]} × {ed.box[1]} units{#if areaName} · from area <a href="/layouts?area={areaName}&g={encodeURIComponent(name)}" title="Area Properties on the Layouts screen (box size)">{app.areaLabel(areaName)}</a>{/if}</span></div>
   {:else if id === 'typing'}
     <TypingFields glyph={name} />
-  {:else if id === 'tryit'}
-    <TryIt glyph={name} />
+    <!-- each spelling typed on its own: does it give this glyph (the words themselves are the Tester's) -->
+    <TryIt glyph={name} word={false} />
   {:else if id === 'checks'}
     <ul class="checks">
       <li class:bad={ed.stats.paths === 0}>{ed.stats.paths === 0 ? 'Empty: nothing to save yet' : 'Has an outline'}</li>
@@ -340,7 +369,7 @@
   </div>
 {/snippet}
 
-<div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()} onpaste={onPaste}>
+<div class="ge" ondrop={onDrop} ondragover={(e) => e.preventDefault()}>
   <!-- glyph bar -->
   <div class="gbar">
     <a href={backHref} class="back"><I.Back />{backLabel}</a>
@@ -452,7 +481,7 @@
       {/if}
 
       <div class="wrap" bind:this={wrap}>
-        <canvas bind:this={canvas} class="m-{ed.mode}" onwheel={(e) => ed.wheel(e)} ondblclick={(e) => ed.doubleClick(e)}></canvas>
+        <canvas bind:this={canvas} class="m-{ed.mode}" onpointerdown={releaseField} onwheel={(e) => ed.wheel(e)} ondblclick={(e) => ed.doubleClick(e)}></canvas>
         {#if toast}<div class="toast">{toast}</div>{/if}
         {#if ed.trace}<div class="tracehint">Trace mode · adjust in the Trace panel, then <strong>Use this outline</strong></div>{/if}
       </div>
@@ -533,6 +562,7 @@
         <tr><td><kbd>⇧H</kbd> / <kbd>⇧V</kbd></td><td>Flip</td><td><kbd>⌥⇧U S I E</kbd></td><td>Union · Subtract · Intersect · Exclude</td></tr>
         <tr><td><kbd>⌥⌘O</kbd></td><td>Outline lines</td><td><kbd>D</kbd> / <kbd>G</kbd> / <kbd>L</kbd></td><td>Dot · compare glyph · last saved</td></tr>
         <tr><td><kbd>⌘Z</kbd> / <kbd>⇧⌘Z</kbd></td><td>Undo / redo (the glyph)</td><td><kbd>⌘S</kbd></td><td>Save glyph</td></tr>
+        <tr><td><kbd>⌘C</kbd> / <kbd>⌘X</kbd></td><td>Copy / cut the selected shapes</td><td><kbd>⌘V</kbd></td><td>Paste them (here, or in another glyph)</td></tr>
         <tr><td>double-click a point</td><td>Corner ↔ smooth</td><td><kbd>⌥</kbd>-drag a handle</td><td>Move one handle alone</td></tr>
       </tbody></table>
       <div class="row"><span class="spacer"></span><button onclick={() => (shortcuts = false)}>Close</button></div>
